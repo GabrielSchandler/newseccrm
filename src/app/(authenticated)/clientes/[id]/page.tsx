@@ -54,24 +54,24 @@ export default async function ClientePage({
   const [{ id }, queryParams] = await Promise.all([params, searchParams]);
   const { supabase, companyId, role } = await getCurrentUserContext();
 
-  const { data: client, error } = await supabase
+  const { data, error } = await supabase
     .from("clients")
     .select("*")
     .eq("id", id)
     .eq("company_id", companyId)
-    .returns<Client>()
     .single();
+  const client = data as Client | null;
 
   if (error || !client) {
     notFound();
   }
 
-  const { data: createdByProfile } = await supabase
+  const { data: createdByProfileData } = await supabase
     .from("user_profiles")
     .select("full_name, email")
     .eq("id", client.created_by)
-    .returns<ClientAuditUser>()
     .maybeSingle();
+  const createdByProfile = createdByProfileData as ClientAuditUser | null;
   const successMessage =
     queryParams.success === "created"
       ? "Cliente cadastrado com sucesso."

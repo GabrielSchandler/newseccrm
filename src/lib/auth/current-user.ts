@@ -28,12 +28,12 @@ export async function getCurrentUserContext() {
     redirect("/login");
   }
 
-  const { data: profile, error: profileError } = await supabase
+  const { data, error: profileError } = await supabase
     .from("user_profiles")
     .select("id, auth_user_id, company_id, role, email, full_name")
     .eq("auth_user_id", user.id)
-    .returns<CurrentUserProfile>()
     .maybeSingle();
+  const profile = data as CurrentUserProfile | null;
 
   if (profileError) {
     throw new UserProfileContextError(

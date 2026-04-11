@@ -214,14 +214,14 @@ export async function reactivateClientAction(
       return friendlyError("Apenas usuarios administradores podem reativar clientes.");
     }
 
-    const { data: client, error: clientError } = await supabase
+    const { data: clientData, error: clientError } = await supabase
       .from("clients")
       .select("cpf")
       .eq("id", clientId)
       .eq("company_id", companyId)
       .not("deleted_at", "is", null)
-      .returns<{ cpf: string }>()
       .single();
+    const client = clientData as { cpf: string } | null;
 
     if (clientError || !client) {
       return friendlyError("Cliente excluido nao encontrado.");

@@ -14,14 +14,14 @@ export default async function EditarClientePage({ params }: EditarClientePagePro
   const { id } = await params;
   const { supabase, companyId } = await getCurrentUserContext();
 
-  const { data: client, error } = await supabase
+  const { data, error } = await supabase
     .from("clients")
     .select("*")
     .eq("id", id)
     .eq("company_id", companyId)
     .is("deleted_at", null)
-    .returns<Client>()
     .single();
+  const client = data as Client | null;
 
   if (error || !client) {
     notFound();

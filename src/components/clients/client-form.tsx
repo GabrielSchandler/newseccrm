@@ -176,7 +176,9 @@ export function ClientForm({
               htmlFor={field.name}
             >
               {field.label}
-              {field.required ? <span className="text-red-600"> *</span> : null}
+              {"required" in field && field.required ? (
+                <span className="text-red-600"> *</span>
+              ) : null}
             </label>
             {field.type === "select" ? (
               <select
