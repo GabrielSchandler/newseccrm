@@ -36,17 +36,17 @@ export function DeleteClientButton({ clientId }: DeleteClientButtonProps) {
         className="inline-flex items-center gap-2 rounded-lg border border-red-200 bg-white px-4 py-2.5 text-sm font-semibold text-red-700 transition hover:bg-red-50"
       >
         <Trash2 className="h-4 w-4" />
-        Excluir
+        Desativar
       </button>
 
       {isOpen ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 px-4">
           <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-lg">
             <h2 className="text-lg font-semibold text-slate-950">
-              Excluir cliente
+              Desativar cliente
             </h2>
             <p className="mt-3 text-sm leading-6 text-slate-600">
-              Tem certeza que deseja excluir este cliente?
+              Tem certeza que deseja desativar este cliente?
             </p>
             {message ? (
               <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
@@ -68,7 +68,7 @@ export function DeleteClientButton({ clientId }: DeleteClientButtonProps) {
                 disabled={isPending}
                 className="rounded-lg bg-red-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-red-800 disabled:cursor-not-allowed disabled:opacity-70"
               >
-                {isPending ? "Excluindo..." : "Confirmar exclusao"}
+                {isPending ? "Desativando..." : "Confirmar desativacao"}
               </button>
             </div>
           </div>
