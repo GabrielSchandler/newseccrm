@@ -173,12 +173,7 @@ export async function softDeleteClientAction(
   clientId: string,
 ): Promise<ClientActionState> {
   try {
-    const { supabase, userProfileId, companyId, role } =
-      await getCurrentUserContext();
-
-    if (role !== "admin") {
-      return friendlyError("Apenas usuarios administradores podem excluir clientes.");
-    }
+    const { supabase, userProfileId, companyId } = await getCurrentUserContext();
 
     const { error } = await supabase
       .from("clients")

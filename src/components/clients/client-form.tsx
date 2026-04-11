@@ -90,12 +90,15 @@ export function ClientForm({
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [actionState, setActionState] = useState<ClientActionState | null>(null);
-  const [lastFetchedZipCode, setLastFetchedZipCode] = useState<string | null>(null);
+  const [lastFetchedZipCode, setLastFetchedZipCode] = useState<string | null>(() =>
+    onlyDigits(typeof defaultValues?.zip_code === "string" ? defaultValues.zip_code : ""),
+  );
 
   const {
     register,
     handleSubmit,
     setValue,
+    watch,
     formState: { errors, isDirty, isSubmitting },
   } = useForm<ClientFormValues, undefined, ClientPayload>({
     resolver: zodResolver(clientFormSchema),
@@ -119,6 +122,16 @@ export function ClientForm({
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [isDirty]);
 
+  const zipCodeValue = watch("zip_code");
+
+  useEffect(() => {
+    const zipCode = onlyDigits(typeof zipCodeValue === "string" ? zipCodeValue : "");
+
+    if (zipCode.length === 8) {
+      void fetchAddressByZipCode(zipCode);
+    }
+  }, [zipCodeValue]);
+
   function confirmNavigation() {
     return !isDirty || window.confirm("Existem alteracoes nao salvas. Deseja sair mesmo assim?");
   }
@@ -140,6 +153,7 @@ export function ClientForm({
       };
 
       if (data.erro) {
+        setLastFetchedZipCode(null);
         return;
       }
 
@@ -148,6 +162,7 @@ export function ClientForm({
       setValue("city", data.localidade ?? "", { shouldDirty: true });
       setValue("state", data.uf ?? "", { shouldDirty: true });
     } catch {
+      setLastFetchedZipCode(null);
       // CEP lookup is a convenience; manual address entry remains available.
     }
   }
@@ -213,9 +228,6 @@ export function ClientForm({
                   onChange(event: ChangeEvent<HTMLInputElement>) {
                     event.target.value = maskValue(field.name, event.target.value);
 
-                    if (field.name === "zip_code") {
-                      void fetchAddressByZipCode(onlyDigits(event.target.value));
-                    }
                   },
                 })}
               />

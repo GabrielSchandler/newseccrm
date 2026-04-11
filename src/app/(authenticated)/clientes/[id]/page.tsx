@@ -111,7 +111,7 @@ export default async function ClientePage({
             Voltar para clientes
           </Link>
           <WhatsAppLink phone={client.phone_mobile} />
-          {role === "admin" && !isDeletedClient(client) ? (
+          {!isDeletedClient(client) ? (
             <DeleteClientButton clientId={client.id} />
           ) : null}
           {role === "admin" && isDeletedClient(client) ? (
