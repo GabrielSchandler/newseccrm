@@ -8,8 +8,17 @@ import { PreSalesStatusBadge } from "@/components/pre-sales/pre-sales-status-bad
 import { PreSalesStatusSelect } from "@/components/pre-sales/pre-sales-status-select";
 import { formatDateTime } from "@/lib/clients/formatters";
 import { getCurrentUserContext } from "@/lib/auth/current-user";
-import { formatCurrency, formatUserName } from "@/lib/pre-sales/formatters";
-import type { ClientOption, PreSale, UserProfileOption } from "@/types/pre-sale";
+import {
+  formatCurrency,
+  formatPreSaleType,
+  formatUserName,
+} from "@/lib/pre-sales/formatters";
+import type {
+  ClientOption,
+  PreSale,
+  PreSaleFinancialCase,
+  UserProfileOption,
+} from "@/types/pre-sale";
 
 type PreVendaPageProps = {
   params: Promise<{ id: string }>;
@@ -32,7 +41,12 @@ export default async function PreVendaPage({ params, searchParams }: PreVendaPag
     notFound();
   }
 
-  const [{ data: clientData }, { data: consultantData }, { data: creatorData }] =
+  const [
+    { data: clientData },
+    { data: consultantData },
+    { data: creatorData },
+    { data: financialCaseData },
+  ] =
     await Promise.all([
       supabase
         .from("clients")
@@ -52,11 +66,17 @@ export default async function PreVendaPage({ params, searchParams }: PreVendaPag
         .select("id, full_name, email, role")
         .eq("id", preSale.created_by)
         .maybeSingle(),
+      supabase
+        .from("pre_sale_financial_cases")
+        .select("pre_sale_id, asset_brand_model, asset_color, asset_year, asset_plate")
+        .eq("pre_sale_id", preSale.id)
+        .maybeSingle(),
     ]);
 
   const client = clientData as ClientOption | null;
   const consultant = consultantData as UserProfileOption | null;
   const creator = creatorData as UserProfileOption | null;
+  const financialCase = financialCaseData as PreSaleFinancialCase | null;
   const canEdit =
     role === "admin" ||
     role === "manager" ||
@@ -120,6 +140,14 @@ export default async function PreVendaPage({ params, searchParams }: PreVendaPag
             </div>
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Tipo
+              </p>
+              <p className="mt-1 text-sm font-medium text-slate-950">
+                {formatPreSaleType(preSale.pre_sale_type)}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                 Valor estimado
               </p>
               <p className="mt-1 text-sm font-medium text-slate-950">
@@ -150,6 +178,42 @@ export default async function PreVendaPage({ params, searchParams }: PreVendaPag
                 {preSale.negotiation_notes || "-"}
               </p>
             </div>
+            {preSale.pre_sale_type === "veiculo" ? (
+              <>
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    Veiculo
+                  </p>
+                  <p className="mt-1 text-sm font-medium text-slate-950">
+                    {financialCase?.asset_brand_model || "-"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    Cor
+                  </p>
+                  <p className="mt-1 text-sm font-medium text-slate-950">
+                    {financialCase?.asset_color || "-"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    Ano
+                  </p>
+                  <p className="mt-1 text-sm font-medium text-slate-950">
+                    {financialCase?.asset_year || "-"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    Placa
+                  </p>
+                  <p className="mt-1 text-sm font-medium uppercase text-slate-950">
+                    {financialCase?.asset_plate || "-"}
+                  </p>
+                </div>
+              </>
+            ) : null}
           </div>
         </section>
 

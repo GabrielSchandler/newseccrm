@@ -1,3 +1,5 @@
+import { preSaleTypes, type PreSaleType } from "@/types/pre-sale";
+
 export function formatCurrency(value: number | string | null) {
   if (value === null || value === "") {
     return "-";
@@ -17,4 +19,8 @@ export function formatCurrency(value: number | string | null) {
 
 export function formatUserName(user: { full_name: string | null; email: string | null } | null) {
   return user?.full_name || user?.email || "-";
+}
+
+export function formatPreSaleType(type: PreSaleType | null | undefined) {
+  return preSaleTypes.find((item) => item.value === type)?.label ?? "-";
 }

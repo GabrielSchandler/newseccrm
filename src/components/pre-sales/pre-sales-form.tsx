@@ -11,7 +11,12 @@ import {
   type PreSaleFormValues,
   type PreSalePayload,
 } from "@/lib/pre-sales/schema";
-import { preSaleStatuses, type ClientOption, type UserProfileOption } from "@/types/pre-sale";
+import {
+  preSaleStatuses,
+  preSaleTypes,
+  type ClientOption,
+  type UserProfileOption,
+} from "@/types/pre-sale";
 import type { PreSaleActionState } from "@/app/(authenticated)/pre-vendas/actions";
 import { displayCpf, displayPhone } from "@/lib/clients/formatters";
 
@@ -37,6 +42,7 @@ export function PreSalesForm({
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<PreSaleFormValues, undefined, PreSalePayload>({
     resolver: zodResolver(preSaleFormSchema),
@@ -45,6 +51,7 @@ export function PreSalesForm({
       ...defaultValues,
     },
   });
+  const selectedPreSaleType = watch("pre_sale_type");
 
   function onValidSubmit(values: PreSalePayload) {
     setMessage(null);
@@ -83,6 +90,30 @@ export function PreSalesForm({
           </select>
           {errors.client_id?.message ? (
             <p className="text-sm text-red-600">{errors.client_id.message}</p>
+          ) : null}
+        </div>
+
+        <div className="space-y-2">
+          <label
+            className="text-sm font-medium text-slate-700"
+            htmlFor="pre_sale_type"
+          >
+            Tipo de pre-venda <span className="text-red-600">*</span>
+          </label>
+          <select
+            id="pre_sale_type"
+            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
+            disabled={disabled}
+            {...register("pre_sale_type")}
+          >
+            {preSaleTypes.map((type) => (
+              <option key={type.value} value={type.value}>
+                {type.label}
+              </option>
+            ))}
+          </select>
+          {errors.pre_sale_type?.message ? (
+            <p className="text-sm text-red-600">{errors.pre_sale_type.message}</p>
           ) : null}
         </div>
 
@@ -159,6 +190,62 @@ export function PreSalesForm({
             </p>
           ) : null}
         </div>
+
+        {selectedPreSaleType === "veiculo" ? (
+          <>
+            <div className="space-y-2">
+              <label
+                className="text-sm font-medium text-slate-700"
+                htmlFor="asset_brand_model"
+              >
+                Veiculo
+              </label>
+              <input
+                id="asset_brand_model"
+                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
+                disabled={disabled}
+                {...register("asset_brand_model")}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-700" htmlFor="asset_color">
+                Cor
+              </label>
+              <input
+                id="asset_color"
+                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
+                disabled={disabled}
+                {...register("asset_color")}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-700" htmlFor="asset_year">
+                Ano
+              </label>
+              <input
+                id="asset_year"
+                inputMode="numeric"
+                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
+                disabled={disabled}
+                {...register("asset_year")}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-700" htmlFor="asset_plate">
+                Placa
+              </label>
+              <input
+                id="asset_plate"
+                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm uppercase outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
+                disabled={disabled}
+                {...register("asset_plate")}
+              />
+            </div>
+          </>
+        ) : null}
 
         <div className="space-y-2 md:col-span-2">
           <label

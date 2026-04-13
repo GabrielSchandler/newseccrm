@@ -5,7 +5,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { WhatsAppLink } from "@/components/clients/whatsapp-link";
 import { displayCpf } from "@/lib/clients/formatters";
-import { formatCurrency, formatUserName } from "@/lib/pre-sales/formatters";
+import {
+  formatCurrency,
+  formatPreSaleType,
+  formatUserName,
+} from "@/lib/pre-sales/formatters";
 import { preSaleStatuses, type PreSaleStatus, type PreSaleWithRelations } from "@/types/pre-sale";
 import { updatePreSaleStatusAction } from "@/app/(authenticated)/pre-vendas/actions";
 import { PreSalesStatusBadge } from "./pre-sales-status-badge";
@@ -38,10 +42,11 @@ export function PreSalesList({ preSales }: PreSalesListProps) {
   return (
     <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[980px] border-collapse text-left text-sm">
+        <table className="w-full min-w-[1080px] border-collapse text-left text-sm">
           <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
             <tr>
               <th className="px-5 py-3 font-semibold">Cliente</th>
+              <th className="px-5 py-3 font-semibold">Tipo</th>
               <th className="px-5 py-3 font-semibold">Status</th>
               <th className="px-5 py-3 font-semibold">Valor estimado</th>
               <th className="px-5 py-3 font-semibold">Responsavel</th>
@@ -63,6 +68,9 @@ export function PreSalesList({ preSales }: PreSalesListProps) {
                   <div className="mt-1 text-xs text-slate-500">
                     {displayCpf(preSale.client?.cpf ?? null)}
                   </div>
+                </td>
+                <td className="px-5 py-4 text-slate-700">
+                  {formatPreSaleType(preSale.pre_sale_type)}
                 </td>
                 <td className="px-5 py-4">
                   <div className="flex items-center gap-2">

@@ -76,6 +76,92 @@ async function canEditPreSale(preSaleId: string, companyId: string, userProfileI
   return preSale.consultant_user_id === userProfileId;
 }
 
+function splitPreSalePayload(values: PreSalePayload) {
+  const {
+    asset_brand_model,
+    asset_color,
+    asset_year,
+    asset_plate,
+    ...preSaleValues
+  } = values;
+  const shouldKeepVehicleFields = values.pre_sale_type === "veiculo";
+
+  return {
+    preSaleValues,
+    financialCaseValues: {
+      asset_brand_model: shouldKeepVehicleFields ? asset_brand_model : null,
+      asset_color: shouldKeepVehicleFields ? asset_color : null,
+      asset_year: shouldKeepVehicleFields ? asset_year : null,
+      asset_plate: shouldKeepVehicleFields ? asset_plate : null,
+    },
+  };
+}
+
+async function saveFinancialCase(
+  preSaleId: string,
+  companyId: string,
+  values: ReturnType<typeof splitPreSalePayload>["financialCaseValues"],
+) {
+  const { supabase } = await getCurrentUserContext();
+  const { data, error } = await supabase
+    .from("pre_sale_financial_cases")
+    .select("pre_sale_id")
+    .eq("pre_sale_id", preSaleId)
+    .maybeSingle();
+  const existingCase = data as { pre_sale_id: string } | null;
+
+  if (error) {
+    throw error;
+  }
+
+  if (existingCase) {
+    const { error: updateError } = await supabase
+      .from("pre_sale_financial_cases")
+      .update(values)
+      .eq("pre_sale_id", existingCase.pre_sale_id);
+
+    if (updateError) {
+      throw updateError;
+    }
+
+    return;
+  }
+
+  const hasVehicleValues = Object.values(values).some(Boolean);
+
+  if (!hasVehicleValues) {
+    return;
+  }
+
+  const { error: insertError } = await supabase
+    .from("pre_sale_financial_cases")
+    .insert({
+      pre_sale_id: preSaleId,
+      company_id: companyId,
+      ...values,
+    });
+
+  if (insertError) {
+    if (
+      insertError.message.toLowerCase().includes("company_id") &&
+      insertError.message.toLowerCase().includes("column")
+    ) {
+      const { error: retryError } = await supabase
+        .from("pre_sale_financial_cases")
+        .insert({
+          pre_sale_id: preSaleId,
+          ...values,
+        });
+
+      if (!retryError) {
+        return;
+      }
+    }
+
+    throw insertError;
+  }
+}
+
 export async function createPreSaleAction(
   values: PreSalePayload,
 ): Promise<PreSaleActionState> {
@@ -89,6 +175,7 @@ export async function createPreSaleAction(
 
   try {
     const { supabase, companyId, userProfileId } = await getCurrentUserContext();
+    const { preSaleValues, financialCaseValues } = splitPreSalePayload(parsed.data);
     const clientExists = await assertClientBelongsToCompany(parsed.data.client_id, companyId);
 
     if (!clientExists) {
@@ -109,7 +196,7 @@ export async function createPreSaleAction(
     const { data, error } = await supabase
       .from("pre_sales")
       .insert({
-        ...parsed.data,
+        ...preSaleValues,
         company_id: companyId,
         created_by: userProfileId,
       })
@@ -121,6 +208,7 @@ export async function createPreSaleAction(
     }
 
     preSaleId = (data as { id: string }).id;
+    await saveFinancialCase(preSaleId, companyId, financialCaseValues);
   } catch (error) {
     return friendlyError(
       error instanceof Error ? error.message : "Nao foi possivel criar a pre-venda.",
@@ -143,6 +231,7 @@ export async function updatePreSaleAction(
 
   try {
     const { supabase, companyId, userProfileId, role } = await getCurrentUserContext();
+    const { preSaleValues, financialCaseValues } = splitPreSalePayload(parsed.data);
     const canEdit = await canEditPreSale(preSaleId, companyId, userProfileId, role);
 
     if (!canEdit) {
@@ -158,7 +247,7 @@ export async function updatePreSaleAction(
     const { error } = await supabase
       .from("pre_sales")
       .update({
-        ...parsed.data,
+        ...preSaleValues,
         updated_at: new Date().toISOString(),
       })
       .eq("id", preSaleId)
@@ -167,6 +256,8 @@ export async function updatePreSaleAction(
     if (error) {
       return friendlyError(error.message);
     }
+
+    await saveFinancialCase(preSaleId, companyId, financialCaseValues);
   } catch (error) {
     return friendlyError(
       error instanceof Error ? error.message : "Nao foi possivel atualizar a pre-venda.",

@@ -4,7 +4,12 @@ import { PageHeader } from "@/components/layout/page-header";
 import { PreSalesForm } from "@/components/pre-sales/pre-sales-form";
 import { getCurrentUserContext } from "@/lib/auth/current-user";
 import { preSaleToFormValues } from "@/lib/pre-sales/schema";
-import type { ClientOption, PreSale, UserProfileOption } from "@/types/pre-sale";
+import type {
+  ClientOption,
+  PreSale,
+  PreSaleFinancialCase,
+  UserProfileOption,
+} from "@/types/pre-sale";
 
 type EditarPreVendaPageProps = {
   params: Promise<{ id: string }>;
@@ -14,9 +19,19 @@ export default async function EditarPreVendaPage({ params }: EditarPreVendaPageP
   const { id } = await params;
   const { supabase, companyId, userProfileId, role } = await getCurrentUserContext();
 
-  const [{ data, error }, { data: clientsData }, { data: consultantsData }] =
+  const [
+    { data, error },
+    { data: financialCaseData },
+    { data: clientsData },
+    { data: consultantsData },
+  ] =
     await Promise.all([
       supabase.from("pre_sales").select("*").eq("id", id).eq("company_id", companyId).single(),
+      supabase
+        .from("pre_sale_financial_cases")
+        .select("pre_sale_id, asset_brand_model, asset_color, asset_year, asset_plate")
+        .eq("pre_sale_id", id)
+        .maybeSingle(),
       supabase
         .from("clients")
         .select("id, full_name, cpf, phone_mobile")
@@ -30,6 +45,7 @@ export default async function EditarPreVendaPage({ params }: EditarPreVendaPageP
         .order("full_name", { ascending: true }),
     ]);
   const preSale = data as PreSale | null;
+  const financialCase = financialCaseData as PreSaleFinancialCase | null;
 
   if (error || !preSale) {
     notFound();
@@ -56,7 +72,7 @@ export default async function EditarPreVendaPage({ params }: EditarPreVendaPageP
             clients={(clientsData ?? []) as ClientOption[]}
             consultants={(consultantsData ?? []) as UserProfileOption[]}
             submitLabel="Salvar alteracoes"
-            defaultValues={preSaleToFormValues(preSale)}
+            defaultValues={preSaleToFormValues(preSale, financialCase)}
             onSubmitAction={updatePreSaleAction.bind(null, preSale.id)}
           />
         </div>
