@@ -3,6 +3,7 @@
 import mammoth from "mammoth";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import sanitizeHtml from "sanitize-html";
 import { getCurrentUserContext } from "@/lib/auth/current-user";
 import { documentTemplateSchema } from "@/lib/documents/schema";
 import {
@@ -36,6 +37,21 @@ const docxMimeTypes = new Set([
   "application/octet-stream",
   "",
 ]);
+const docxStyleMap = [
+  "p[style-name='Title'] => h1:fresh",
+  "p[style-name='Heading 1'] => h1:fresh",
+  "p[style-name='Heading 2'] => h2:fresh",
+  "p[style-name='Heading 3'] => h3:fresh",
+  "p[style-name='Heading 4'] => h4:fresh",
+  "p[style-name='Heading 5'] => h5:fresh",
+  "p[style-name='Heading 6'] => h6:fresh",
+  "p[style-name='Titulo'] => h1:fresh",
+  "p[style-name='Título'] => h1:fresh",
+  "p[style-name='Cabeçalho 1'] => h1:fresh",
+  "p[style-name='Cabeçalho 2'] => h2:fresh",
+  "p[style-name='Cabeçalho 3'] => h3:fresh",
+  "p[style-name='Normal'] => p:fresh",
+];
 
 function friendlyError(message: string): DocumentActionState {
   return {
@@ -46,6 +62,111 @@ function friendlyError(message: string): DocumentActionState {
 
 function canManageTemplates(role: string | null) {
   return role === "admin" || role === "manager";
+}
+
+function normalizeDocxPlaceholders(html: string) {
+  return html.replace(/\{\{([\s\S]{0,160}?)\}\}/g, (match, rawInner: string) => {
+    const inner = rawInner
+      .replace(/<[^>]+>/g, "")
+      .replace(/&nbsp;/g, " ")
+      .replace(/\s+/g, "")
+      .trim();
+
+    if (/^[a-zA-Z0-9_]+$/.test(inner)) {
+      return `{{${inner}}}`;
+    }
+
+    return match;
+  });
+}
+
+function protectPlaceholders(html: string) {
+  const placeholders: string[] = [];
+  const htmlWithTokens = html.replace(
+    /\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g,
+    (match: string) => {
+      const token = `DOCX_PLACEHOLDER_${placeholders.length}_TOKEN`;
+      placeholders.push(match.replace(/\s+/g, ""));
+      return token;
+    },
+  );
+
+  return { htmlWithTokens, placeholders };
+}
+
+function restorePlaceholders(html: string, placeholders: string[]) {
+  return placeholders.reduce(
+    (content, placeholder, index) =>
+      content.replaceAll(`DOCX_PLACEHOLDER_${index}_TOKEN`, placeholder),
+    html,
+  );
+}
+
+function normalizeHtmlSpacing(html: string) {
+  return html
+    .replace(/\r\n/g, "\n")
+    .replace(/&nbsp;/g, " ")
+    .replace(/[ \t]{2,}/g, " ")
+    .replace(/>\s+</g, "><")
+    .replace(/(<br\s*\/?>\s*){3,}/gi, "<br><br>")
+    .replace(/(<\/(?:p|h[1-6]|li|tr|table|ul|ol)>)\s*(<(?:p|h[1-6]|ul|ol|table))/gi, "$1\n$2")
+    .trim();
+}
+
+function extractPlainText(html: string) {
+  return html
+    .replace(/<[^>]*>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function cleanImportedDocxHtml(html: string) {
+  const normalizedPlaceholders = normalizeDocxPlaceholders(html);
+  const { htmlWithTokens, placeholders } = protectPlaceholders(normalizedPlaceholders);
+  const sanitized = sanitizeHtml(htmlWithTokens, {
+    allowedTags: [
+      "p",
+      "br",
+      "strong",
+      "b",
+      "em",
+      "i",
+      "u",
+      "s",
+      "ul",
+      "ol",
+      "li",
+      "table",
+      "thead",
+      "tbody",
+      "tr",
+      "th",
+      "td",
+      "h1",
+      "h2",
+      "h3",
+      "h4",
+      "h5",
+      "h6",
+      "blockquote",
+      "a",
+    ],
+    allowedAttributes: {
+      a: ["href", "target", "rel"],
+      td: ["colspan", "rowspan"],
+      th: ["colspan", "rowspan"],
+    },
+    allowedSchemes: ["http", "https", "mailto", "tel"],
+    transformTags: {
+      b: "strong",
+      i: "em",
+      a: sanitizeHtml.simpleTransform("a", { rel: "noopener noreferrer" }),
+    },
+    disallowedTagsMode: "discard",
+  });
+
+  return normalizeHtmlSpacing(restorePlaceholders(sanitized, placeholders));
 }
 
 async function getTemplate(templateId: string, companyId: string, onlyActive = false) {
@@ -437,20 +558,28 @@ export async function importDocxTemplateAction(
     }
 
     const arrayBuffer = await file.arrayBuffer();
-    const result = await mammoth.convertToHtml({
-      buffer: Buffer.from(arrayBuffer),
-    });
+    const result = await mammoth.convertToHtml(
+      {
+        buffer: Buffer.from(arrayBuffer),
+      },
+      {
+        styleMap: docxStyleMap,
+        includeDefaultStyleMap: true,
+      },
+    );
+    const contentHtml = cleanImportedDocxHtml(result.value);
+    const plainText = extractPlainText(contentHtml);
 
-    if (!result.value.trim()) {
+    if (!contentHtml || !plainText) {
       return friendlyError("Nao foi possivel extrair HTML deste DOCX.");
     }
 
     return {
       ok: true,
-      message: result.messages.length
-        ? "DOCX convertido com avisos. Confira o HTML antes de salvar."
+      message: result.messages.length || plainText.length < 40
+        ? "Revise a formatacao importada antes de salvar."
         : "DOCX convertido com sucesso.",
-      content: result.value,
+      content: contentHtml,
     };
   } catch (error) {
     return friendlyError(
