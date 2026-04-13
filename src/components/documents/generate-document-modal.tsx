@@ -14,7 +14,7 @@ type GenerateDocumentModalProps = {
   templates: DocumentTemplate[];
 };
 
-function formatTemplateType(type: DocumentTemplate["type"]) {
+function formatTemplateType(type: DocumentTemplate["document_type"]) {
   return documentTemplateTypes.find((item) => item.value === type)?.label ?? type;
 }
 
@@ -116,7 +116,7 @@ export function GenerateDocumentModal({
                       >
                         {templates.map((template) => (
                           <option key={template.id} value={template.id}>
-                            {template.name} - {formatTemplateType(template.type)}
+                            {template.name} - {formatTemplateType(template.document_type)}
                           </option>
                         ))}
                       </select>
@@ -141,7 +141,7 @@ export function GenerateDocumentModal({
 
                   {selectedTemplate ? (
                     <p className="text-sm text-slate-600">
-                      Tipo selecionado: {formatTemplateType(selectedTemplate.type)}
+                      Tipo selecionado: {formatTemplateType(selectedTemplate.document_type)}
                     </p>
                   ) : null}
 

@@ -1,35 +1,56 @@
-export type DocumentTemplateType = "contrato" | "ordem_servico";
+export type DocumentTemplateType =
+  | "ordem_servico"
+  | "contrato"
+  | "aditivo"
+  | "declaracao"
+  | "procuracao"
+  | "outro";
 
 export type DocumentTemplate = {
   id: string;
   company_id: string;
   name: string;
-  type: DocumentTemplateType;
+  document_type: DocumentTemplateType;
+  description: string | null;
   content: string;
+  is_active: boolean;
+  is_default: boolean;
   created_by: string | null;
   created_at: string;
   updated_at: string | null;
 };
 
+export type GeneratedDocumentStatus = "gerado" | "rascunho" | "cancelado";
+
 export type GeneratedDocument = {
   id: string;
   company_id: string;
   pre_sale_id: string;
+  client_id: string | null;
   template_id: string;
-  content: string;
+  document_type: DocumentTemplateType;
+  title: string;
+  rendered_content_html: string;
+  rendered_variables: Record<string, string> | null;
+  status: GeneratedDocumentStatus;
   created_by: string | null;
   created_at: string;
-};
-
-export type GeneratedDocumentListItem = GeneratedDocument & {
-  template: DocumentTemplate | null;
-  clientName: string | null;
 };
 
 export const documentTemplateTypes: Array<{
   value: DocumentTemplateType;
   label: string;
 }> = [
-  { value: "contrato", label: "Contrato" },
   { value: "ordem_servico", label: "Ordem de servico" },
+  { value: "contrato", label: "Contrato" },
+  { value: "aditivo", label: "Aditivo" },
+  { value: "declaracao", label: "Declaracao" },
+  { value: "procuracao", label: "Procuracao" },
+  { value: "outro", label: "Outro" },
 ];
+
+export const documentStatusLabels: Record<GeneratedDocumentStatus, string> = {
+  gerado: "Gerado",
+  rascunho: "Rascunho",
+  cancelado: "Cancelado",
+};

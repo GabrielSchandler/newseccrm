@@ -145,6 +145,7 @@ export default async function PreVendaPage({ params, searchParams }: PreVendaPag
       .from("document_templates")
       .select("*")
       .eq("company_id", companyId)
+      .eq("is_active", true)
       .order("name", { ascending: true }),
   ]);
 

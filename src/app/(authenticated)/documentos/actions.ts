@@ -4,20 +4,30 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getCurrentUserContext } from "@/lib/auth/current-user";
 import { documentTemplateSchema } from "@/lib/documents/schema";
-import { renderDocumentTemplate } from "@/lib/documents/template-engine";
+import {
+  renderDocumentTemplate,
+  type RenderedDocument,
+} from "@/lib/documents/template-engine";
 import type { DocumentTemplatePayload } from "@/lib/documents/schema";
-import type { DocumentTemplate } from "@/types/document";
+import type {
+  DocumentTemplate,
+  DocumentTemplateType,
+} from "@/types/document";
+import type { Client } from "@/types/client";
 import type {
   PreSale,
   PreSaleClientSnapshot,
   PreSaleDebtHolder,
   PreSaleFinancialCase,
+  PreSalePayment,
+  UserProfileOption,
 } from "@/types/pre-sale";
 
 export type DocumentActionState = {
   ok: boolean;
   message: string;
   content?: string;
+  variables?: Record<string, string>;
 };
 
 function friendlyError(message: string): DocumentActionState {
@@ -31,14 +41,19 @@ function canManageTemplates(role: string | null) {
   return role === "admin" || role === "manager";
 }
 
-async function getTemplate(templateId: string, companyId: string) {
+async function getTemplate(templateId: string, companyId: string, onlyActive = false) {
   const { supabase } = await getCurrentUserContext();
-  const { data, error } = await supabase
+  let query = supabase
     .from("document_templates")
     .select("*")
     .eq("id", templateId)
-    .eq("company_id", companyId)
-    .maybeSingle();
+    .eq("company_id", companyId);
+
+  if (onlyActive) {
+    query = query.eq("is_active", true);
+  }
+
+  const { data, error } = await query.maybeSingle();
 
   if (error) {
     throw error;
@@ -54,6 +69,8 @@ async function getDocumentContext(preSaleId: string, companyId: string) {
     { data: snapshotData },
     { data: debtHolderData },
     { data: financialCaseData },
+    { data: paymentsData },
+    { data: companyData },
   ] = await Promise.all([
     supabase
       .from("pre_sales")
@@ -76,6 +93,12 @@ async function getDocumentContext(preSaleId: string, companyId: string) {
       .select("*")
       .eq("pre_sale_id", preSaleId)
       .maybeSingle(),
+    supabase
+      .from("pre_sale_payments")
+      .select("*")
+      .eq("pre_sale_id", preSaleId)
+      .order("installment_number", { ascending: true }),
+    supabase.from("companies").select("*").eq("id", companyId).maybeSingle(),
   ]);
 
   if (preSaleError) {
@@ -88,12 +111,66 @@ async function getDocumentContext(preSaleId: string, companyId: string) {
     throw new Error("Pre-venda nao encontrada.");
   }
 
+  const [{ data: clientData }, { data: consultantData }] = await Promise.all([
+    supabase
+      .from("clients")
+      .select("*")
+      .eq("id", preSale.client_id)
+      .eq("company_id", companyId)
+      .maybeSingle(),
+    preSale.consultant_user_id
+      ? supabase
+          .from("user_profiles")
+          .select("id, full_name, email, role")
+          .eq("id", preSale.consultant_user_id)
+          .eq("company_id", companyId)
+          .maybeSingle()
+      : Promise.resolve({ data: null }),
+  ]);
+
   return {
     preSale,
+    client: clientData as Client | null,
     snapshot: snapshotData as PreSaleClientSnapshot | null,
     debtHolder: debtHolderData as PreSaleDebtHolder | null,
     financialCase: financialCaseData as PreSaleFinancialCase | null,
+    payments: (paymentsData ?? []) as PreSalePayment[],
+    company: companyData as Record<string, unknown> | null,
+    consultant: consultantData as UserProfileOption | null,
   };
+}
+
+function buildDocumentTitle(
+  template: DocumentTemplate,
+  rendered: RenderedDocument,
+) {
+  const clientName =
+    rendered.variables.contratante_nome || rendered.variables.cliente_nome || "cliente";
+  const date = new Intl.DateTimeFormat("pt-BR").format(new Date());
+  return `${template.name} - ${clientName} - ${date}`;
+}
+
+async function ensureDefaultTemplateState(
+  companyId: string,
+  templateType: DocumentTemplateType,
+  templateId: string,
+  isDefault: boolean,
+) {
+  if (!isDefault) {
+    return;
+  }
+
+  const { supabase } = await getCurrentUserContext();
+  const { error } = await supabase
+    .from("document_templates")
+    .update({ is_default: false, updated_at: new Date().toISOString() })
+    .eq("company_id", companyId)
+    .eq("document_type", templateType)
+    .neq("id", templateId);
+
+  if (error) {
+    throw error;
+  }
 }
 
 export async function createDocumentTemplateAction(
@@ -105,6 +182,8 @@ export async function createDocumentTemplateAction(
     return friendlyError("Confira os campos do template.");
   }
 
+  let templateId = "";
+
   try {
     const { supabase, companyId, userProfileId, role } = await getCurrentUserContext();
 
@@ -112,15 +191,27 @@ export async function createDocumentTemplateAction(
       return friendlyError("Apenas admin ou gerente podem criar templates.");
     }
 
-    const { error } = await supabase.from("document_templates").insert({
-      ...parsed.data,
-      company_id: companyId,
-      created_by: userProfileId,
-    });
+    const { data, error } = await supabase
+      .from("document_templates")
+      .insert({
+        ...parsed.data,
+        company_id: companyId,
+        created_by: userProfileId,
+      })
+      .select("id")
+      .single();
 
     if (error) {
       return friendlyError(error.message);
     }
+
+    templateId = (data as { id: string }).id;
+    await ensureDefaultTemplateState(
+      companyId,
+      parsed.data.document_type,
+      templateId,
+      parsed.data.is_default,
+    );
   } catch (error) {
     return friendlyError(
       error instanceof Error ? error.message : "Nao foi possivel criar o template.",
@@ -128,10 +219,7 @@ export async function createDocumentTemplateAction(
   }
 
   revalidatePath("/documentos/templates");
-  return {
-    ok: true,
-    message: "Template criado com sucesso.",
-  };
+  redirect(`/documentos/templates/${templateId}`);
 }
 
 export async function updateDocumentTemplateAction(
@@ -163,6 +251,13 @@ export async function updateDocumentTemplateAction(
     if (error) {
       return friendlyError(error.message);
     }
+
+    await ensureDefaultTemplateState(
+      companyId,
+      parsed.data.document_type,
+      templateId,
+      parsed.data.is_default,
+    );
   } catch (error) {
     return friendlyError(
       error instanceof Error ? error.message : "Nao foi possivel editar o template.",
@@ -170,7 +265,138 @@ export async function updateDocumentTemplateAction(
   }
 
   revalidatePath("/documentos/templates");
-  redirect("/documentos/templates?success=updated");
+  redirect(`/documentos/templates/${templateId}?success=updated`);
+}
+
+export async function toggleDocumentTemplateActiveAction(
+  templateId: string,
+  isActive: boolean,
+): Promise<DocumentActionState> {
+  try {
+    const { supabase, companyId, role } = await getCurrentUserContext();
+
+    if (!canManageTemplates(role)) {
+      return friendlyError("Apenas admin ou gerente podem ativar templates.");
+    }
+
+    const updateValues = isActive
+      ? {
+          is_active: true,
+          updated_at: new Date().toISOString(),
+        }
+      : {
+          is_active: false,
+          is_default: false,
+          updated_at: new Date().toISOString(),
+        };
+
+    const { error } = await supabase
+      .from("document_templates")
+      .update(updateValues)
+      .eq("id", templateId)
+      .eq("company_id", companyId);
+
+    if (error) {
+      return friendlyError(error.message);
+    }
+  } catch (error) {
+    return friendlyError(
+      error instanceof Error ? error.message : "Nao foi possivel atualizar o template.",
+    );
+  }
+
+  revalidatePath("/documentos/templates");
+  return {
+    ok: true,
+    message: isActive ? "Template ativado." : "Template desativado.",
+  };
+}
+
+export async function setDefaultDocumentTemplateAction(
+  templateId: string,
+): Promise<DocumentActionState> {
+  try {
+    const { supabase, companyId, role } = await getCurrentUserContext();
+
+    if (!canManageTemplates(role)) {
+      return friendlyError("Apenas admin ou gerente podem definir template padrao.");
+    }
+
+    const template = await getTemplate(templateId, companyId);
+
+    if (!template) {
+      return friendlyError("Template nao encontrado.");
+    }
+
+    await ensureDefaultTemplateState(companyId, template.document_type, template.id, true);
+
+    const { error } = await supabase
+      .from("document_templates")
+      .update({
+        is_default: true,
+        is_active: true,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", templateId)
+      .eq("company_id", companyId);
+
+    if (error) {
+      return friendlyError(error.message);
+    }
+  } catch (error) {
+    return friendlyError(
+      error instanceof Error ? error.message : "Nao foi possivel definir o padrao.",
+    );
+  }
+
+  revalidatePath("/documentos/templates");
+  return {
+    ok: true,
+    message: "Template marcado como padrao.",
+  };
+}
+
+export async function duplicateDocumentTemplateAction(
+  templateId: string,
+): Promise<DocumentActionState> {
+  try {
+    const { supabase, companyId, userProfileId, role } = await getCurrentUserContext();
+
+    if (!canManageTemplates(role)) {
+      return friendlyError("Apenas admin ou gerente podem duplicar templates.");
+    }
+
+    const template = await getTemplate(templateId, companyId);
+
+    if (!template) {
+      return friendlyError("Template nao encontrado.");
+    }
+
+    const { error } = await supabase.from("document_templates").insert({
+      company_id: companyId,
+      name: `${template.name} (copia)`,
+      document_type: template.document_type,
+      description: template.description,
+      content: template.content,
+      is_active: false,
+      is_default: false,
+      created_by: userProfileId,
+    });
+
+    if (error) {
+      return friendlyError(error.message);
+    }
+  } catch (error) {
+    return friendlyError(
+      error instanceof Error ? error.message : "Nao foi possivel duplicar o template.",
+    );
+  }
+
+  revalidatePath("/documentos/templates");
+  return {
+    ok: true,
+    message: "Template duplicado como inativo.",
+  };
 }
 
 export async function previewDocumentAction(
@@ -180,18 +406,20 @@ export async function previewDocumentAction(
   try {
     const { companyId } = await getCurrentUserContext();
     const [template, context] = await Promise.all([
-      getTemplate(templateId, companyId),
+      getTemplate(templateId, companyId, true),
       getDocumentContext(preSaleId, companyId),
     ]);
 
     if (!template) {
-      return friendlyError("Template nao encontrado.");
+      return friendlyError("Template ativo nao encontrado.");
     }
 
+    const rendered = renderDocumentTemplate(template.content, context);
     return {
       ok: true,
       message: "Preview gerado.",
-      content: renderDocumentTemplate(template.content, context),
+      content: rendered.content,
+      variables: rendered.variables,
     };
   } catch (error) {
     return friendlyError(
@@ -207,20 +435,25 @@ export async function generateDocumentAction(
   try {
     const { supabase, companyId, userProfileId } = await getCurrentUserContext();
     const [template, context] = await Promise.all([
-      getTemplate(templateId, companyId),
+      getTemplate(templateId, companyId, true),
       getDocumentContext(preSaleId, companyId),
     ]);
 
     if (!template) {
-      return friendlyError("Template nao encontrado.");
+      return friendlyError("Template ativo nao encontrado.");
     }
 
-    const content = renderDocumentTemplate(template.content, context);
+    const rendered = renderDocumentTemplate(template.content, context);
     const { error } = await supabase.from("generated_documents").insert({
       company_id: companyId,
       pre_sale_id: preSaleId,
+      client_id: context.preSale.client_id,
       template_id: templateId,
-      content,
+      document_type: template.document_type,
+      title: buildDocumentTitle(template, rendered),
+      rendered_content_html: rendered.content,
+      rendered_variables: rendered.variables,
+      status: "gerado",
       created_by: userProfileId,
     });
 
@@ -233,7 +466,8 @@ export async function generateDocumentAction(
     return {
       ok: true,
       message: "Documento gerado com sucesso.",
-      content,
+      content: rendered.content,
+      variables: rendered.variables,
     };
   } catch (error) {
     return friendlyError(
