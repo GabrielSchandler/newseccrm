@@ -1,5 +1,6 @@
 import {
   BarChart3,
+  FileText,
   FileSignature,
   Handshake,
   LayoutDashboard,
@@ -8,16 +9,27 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { signOut } from "@/app/actions/auth";
+import { getCurrentUserContext } from "@/lib/auth/current-user";
 
 const navigation = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/clientes", label: "Clientes", icon: Users },
   { href: "/pre-vendas", label: "Pre-vendas", icon: Handshake },
+  { href: "/documentos", label: "Documentos", icon: FileText },
+  {
+    href: "/documentos/templates",
+    label: "Templates",
+    icon: FileText,
+    managerOnly: true,
+  },
   { href: "/contratos", label: "Contratos", icon: FileSignature },
   { href: "/usuarios", label: "Usuarios", icon: BarChart3 },
 ];
 
-export function AppSidebar() {
+export async function AppSidebar() {
+  const { role } = await getCurrentUserContext();
+  const canManageTemplates = role === "admin" || role === "manager";
+
   return (
     <aside className="flex min-h-screen w-full flex-col border-r border-slate-200 bg-white px-4 py-5 md:w-72">
       <div className="px-2">
@@ -31,6 +43,10 @@ export function AppSidebar() {
 
       <nav className="mt-8 flex flex-1 flex-col gap-1">
         {navigation.map((item) => {
+          if ("managerOnly" in item && item.managerOnly && !canManageTemplates) {
+            return null;
+          }
+
           const Icon = item.icon;
 
           return (

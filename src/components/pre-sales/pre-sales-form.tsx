@@ -161,6 +161,41 @@ function copyClientToSnapshot(
   setValue("snapshot_state", client.state ?? "", { shouldDirty: true });
 }
 
+function copySnapshotToDebtHolder(
+  values: PreSaleFormValues,
+  setValue: UseFormSetValue<PreSaleFormValues>,
+) {
+  setValue("debt_holder_full_name", values.snapshot_full_name, { shouldDirty: true });
+  setValue("debt_holder_cpf", values.snapshot_cpf, { shouldDirty: true });
+  setValue("debt_holder_rg", values.snapshot_rg ?? "", { shouldDirty: true });
+  setValue("debt_holder_birth_date", values.snapshot_birth_date ?? "", {
+    shouldDirty: true,
+  });
+  setValue("debt_holder_marital_status", values.snapshot_marital_status ?? "", {
+    shouldDirty: true,
+  });
+  setValue("debt_holder_profession", values.snapshot_profession ?? "", {
+    shouldDirty: true,
+  });
+  setValue("debt_holder_phone_mobile", values.snapshot_phone_mobile, {
+    shouldDirty: true,
+  });
+  setValue("debt_holder_phone_secondary", values.snapshot_phone_secondary ?? "", {
+    shouldDirty: true,
+  });
+  setValue("debt_holder_email", values.snapshot_email ?? "", { shouldDirty: true });
+  setValue("debt_holder_zip_code", values.snapshot_zip_code ?? "", {
+    shouldDirty: true,
+  });
+  setValue("debt_holder_street", values.snapshot_street ?? "", { shouldDirty: true });
+  setValue("debt_holder_number", values.snapshot_number ?? "", { shouldDirty: true });
+  setValue("debt_holder_district", values.snapshot_district ?? "", {
+    shouldDirty: true,
+  });
+  setValue("debt_holder_city", values.snapshot_city ?? "", { shouldDirty: true });
+  setValue("debt_holder_state", values.snapshot_state ?? "", { shouldDirty: true });
+}
+
 export function PreSalesForm({
   defaultValues,
   clients,
@@ -178,6 +213,7 @@ export function PreSalesForm({
     register,
     handleSubmit,
     watch,
+    getValues,
     setValue,
     formState: { errors, isSubmitting },
   } = useForm<PreSaleFormValues, undefined, PreSalePayload>({
@@ -212,6 +248,12 @@ export function PreSalesForm({
 
     if (client) {
       copyClientToSnapshot(client, setValue);
+    }
+  }
+
+  function handleDebtHolderCopyChange(event: ChangeEvent<HTMLInputElement>) {
+    if (event.target.checked) {
+      copySnapshotToDebtHolder(getValues(), setValue);
     }
   }
 
@@ -354,6 +396,21 @@ export function PreSalesForm({
         title="Titular da divida"
         description="Use quando o financiado tiver dados diferentes do contratante."
       >
+        <label className="flex items-start gap-3 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-700 md:col-span-2">
+          <input
+            type="checkbox"
+            className="mt-1 h-4 w-4 rounded border-slate-300 text-teal-700 focus:ring-teal-600"
+            disabled={disabled}
+            onChange={handleDebtHolderCopyChange}
+          />
+          <span>
+            Cliente e o titular da divida
+            <span className="mt-1 block text-xs font-normal leading-5 text-slate-500">
+              Ao marcar, os dados do contratante sao copiados para este bloco e podem
+              ser ajustados manualmente depois.
+            </span>
+          </span>
+        </label>
         <TextField name="debt_holder_full_name" label="Nome" register={register} errors={errors} disabled={disabled} />
         <TextField name="debt_holder_cpf" label="CPF" register={register} errors={errors} disabled={disabled} inputMode="numeric" onChange={maskCpf} />
         <TextField name="debt_holder_rg" label="RG" register={register} errors={errors} disabled={disabled} />

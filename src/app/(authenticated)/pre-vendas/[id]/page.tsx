@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
 import { ClientToast } from "@/components/clients/client-toast";
 import { WhatsAppLink } from "@/components/clients/whatsapp-link";
+import { GenerateDocumentModal } from "@/components/documents/generate-document-modal";
 import { PageHeader } from "@/components/layout/page-header";
 import { PreSalesStatusBadge } from "@/components/pre-sales/pre-sales-status-badge";
 import { PreSalesStatusSelect } from "@/components/pre-sales/pre-sales-status-select";
@@ -21,6 +22,7 @@ import {
   formatPreSaleType,
   formatUserName,
 } from "@/lib/pre-sales/formatters";
+import type { DocumentTemplate } from "@/types/document";
 import type {
   ClientOption,
   PreSale,
@@ -99,6 +101,7 @@ export default async function PreVendaPage({ params, searchParams }: PreVendaPag
     { data: debtHolderData },
     { data: financialCaseData },
     { data: paymentsData },
+    { data: templatesData },
   ] = await Promise.all([
     supabase
       .from("clients")
@@ -138,6 +141,11 @@ export default async function PreVendaPage({ params, searchParams }: PreVendaPag
       .select("*")
       .eq("pre_sale_id", preSale.id)
       .order("installment_number", { ascending: true }),
+    supabase
+      .from("document_templates")
+      .select("*")
+      .eq("company_id", companyId)
+      .order("name", { ascending: true }),
   ]);
 
   const client = clientData as ClientOption | null;
@@ -147,6 +155,7 @@ export default async function PreVendaPage({ params, searchParams }: PreVendaPag
   const debtHolder = debtHolderData as PreSaleDebtHolder | null;
   const financialCase = financialCaseData as PreSaleFinancialCase | null;
   const payments = (paymentsData ?? []) as PreSalePayment[];
+  const templates = (templatesData ?? []) as DocumentTemplate[];
   const canEdit =
     role === "admin" ||
     role === "manager" ||
@@ -190,6 +199,7 @@ export default async function PreVendaPage({ params, searchParams }: PreVendaPag
               Abrir cliente
             </Link>
           ) : null}
+          <GenerateDocumentModal preSaleId={preSale.id} templates={templates} />
           <WhatsAppLink phone={snapshot?.phone_mobile ?? client?.phone_mobile ?? null} />
         </div>
 
