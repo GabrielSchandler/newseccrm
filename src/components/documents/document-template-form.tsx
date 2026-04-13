@@ -2,9 +2,13 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
+import type { ChangeEvent } from "react";
 import { useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
-import type { DocumentActionState } from "@/app/(authenticated)/documentos/actions";
+import {
+  importDocxTemplateAction,
+  type DocumentActionState,
+} from "@/app/(authenticated)/documentos/actions";
 import { documentVariableCatalog } from "@/lib/documents/template-engine";
 import {
   documentTemplateSchema,
@@ -37,6 +41,7 @@ export function DocumentTemplateForm({
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<DocumentTemplateFormValues, undefined, DocumentTemplatePayload>({
     resolver: zodResolver(documentTemplateSchema),
@@ -44,12 +49,47 @@ export function DocumentTemplateForm({
       name: defaultValues?.name ?? "",
       document_type: defaultValues?.document_type ?? "contrato",
       description: defaultValues?.description ?? "",
-      content: defaultValues?.content ?? "",
+      content_html: defaultValues?.content_html ?? "",
       is_active: defaultValues?.is_active ?? true,
       is_default: defaultValues?.is_default ?? false,
     },
   });
   const disabled = isSubmitting || isPending;
+
+  function handleDocxImport(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    if (!file.name.toLowerCase().endsWith(".docx")) {
+      setMessage({
+        ok: false,
+        message: "Formato nao suportado. Envie um arquivo .docx.",
+      });
+      event.target.value = "";
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("file", file);
+    setMessage(null);
+
+    startTransition(async () => {
+      const result = await importDocxTemplateAction(formData);
+      setMessage(result);
+
+      if (result.ok && result.content) {
+        setValue("content_html", result.content, {
+          shouldDirty: true,
+          shouldValidate: true,
+        });
+      }
+    });
+
+    event.target.value = "";
+  }
 
   function onValidSubmit(values: DocumentTemplatePayload) {
     setMessage(null);
@@ -156,19 +196,34 @@ export function DocumentTemplateForm({
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700" htmlFor="content">
-              Conteudo do template <span className="text-red-600">*</span>
-            </label>
+            <div className="flex flex-col justify-between gap-3 md:flex-row md:items-center">
+              <label className="text-sm font-medium text-slate-700" htmlFor="content_html">
+                Conteudo do template <span className="text-red-600">*</span>
+              </label>
+              <label className="inline-flex cursor-pointer items-center justify-center rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
+                {isPending ? "Importando..." : "Importar DOCX"}
+                <input
+                  type="file"
+                  accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                  className="sr-only"
+                  disabled={disabled}
+                  onChange={handleDocxImport}
+                />
+              </label>
+            </div>
+            <p className="text-xs leading-5 text-slate-500">
+              O DOCX e convertido para HTML e pode ser editado antes de salvar.
+            </p>
             <textarea
-              id="content"
+              id="content_html"
               rows={22}
               className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 font-mono text-sm leading-6 outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
               disabled={disabled}
               placeholder="Digite texto ou HTML simples usando variaveis como {{contratante_nome}}."
-              {...register("content")}
+              {...register("content_html")}
             />
-            {errors.content?.message ? (
-              <p className="text-sm text-red-600">{errors.content.message}</p>
+            {errors.content_html?.message ? (
+              <p className="text-sm text-red-600">{errors.content_html.message}</p>
             ) : null}
           </div>
         </div>

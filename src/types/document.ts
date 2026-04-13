@@ -12,7 +12,7 @@ export type DocumentTemplate = {
   name: string;
   document_type: DocumentTemplateType;
   description: string | null;
-  content: string;
+  content_html: string;
   is_active: boolean;
   is_default: boolean;
   created_by: string | null;

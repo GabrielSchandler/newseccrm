@@ -10,7 +10,7 @@ export const documentTemplateSchema = z.object({
     },
   ),
   description: z.string().trim().nullable().optional(),
-  content: z.string().trim().min(1, "Informe o conteudo do template."),
+  content_html: z.string().trim().min(1, "Informe o conteudo do template."),
   is_active: z.boolean().default(true),
   is_default: z.boolean().default(false),
 });

@@ -122,7 +122,7 @@ export default async function TemplatePage({
         <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
           <h2 className="text-base font-semibold text-slate-950">Conteudo</h2>
           <pre className="mt-4 whitespace-pre-wrap rounded-lg border border-slate-200 bg-slate-50 p-4 font-mono text-sm leading-6 text-slate-900">
-            {template.content}
+            {template.content_html}
           </pre>
         </section>
       </div>

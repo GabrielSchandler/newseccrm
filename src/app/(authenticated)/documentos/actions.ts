@@ -1,5 +1,6 @@
 "use server";
 
+import mammoth from "mammoth";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getCurrentUserContext } from "@/lib/auth/current-user";
@@ -29,6 +30,12 @@ export type DocumentActionState = {
   content?: string;
   variables?: Record<string, string>;
 };
+
+const docxMimeTypes = new Set([
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/octet-stream",
+  "",
+]);
 
 function friendlyError(message: string): DocumentActionState {
   return {
@@ -377,7 +384,7 @@ export async function duplicateDocumentTemplateAction(
       name: `${template.name} (copia)`,
       document_type: template.document_type,
       description: template.description,
-      content: template.content,
+      content_html: template.content_html,
       is_active: false,
       is_default: false,
       created_by: userProfileId,
@@ -399,6 +406,59 @@ export async function duplicateDocumentTemplateAction(
   };
 }
 
+export async function importDocxTemplateAction(
+  formData: FormData,
+): Promise<DocumentActionState> {
+  try {
+    const { role } = await getCurrentUserContext();
+
+    if (!canManageTemplates(role)) {
+      return friendlyError("Apenas admin ou gerente podem importar DOCX.");
+    }
+
+    const file = formData.get("file");
+
+    if (!(file instanceof File)) {
+      return friendlyError("Selecione um arquivo DOCX.");
+    }
+
+    const fileName = file.name.toLowerCase();
+
+    if (!fileName.endsWith(".docx") || !docxMimeTypes.has(file.type)) {
+      return friendlyError("Formato nao suportado. Envie um arquivo .docx.");
+    }
+
+    if (file.size <= 0) {
+      return friendlyError("O arquivo DOCX esta vazio.");
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      return friendlyError("Envie um DOCX com ate 10 MB.");
+    }
+
+    const arrayBuffer = await file.arrayBuffer();
+    const result = await mammoth.convertToHtml({
+      buffer: Buffer.from(arrayBuffer),
+    });
+
+    if (!result.value.trim()) {
+      return friendlyError("Nao foi possivel extrair HTML deste DOCX.");
+    }
+
+    return {
+      ok: true,
+      message: result.messages.length
+        ? "DOCX convertido com avisos. Confira o HTML antes de salvar."
+        : "DOCX convertido com sucesso.",
+      content: result.value,
+    };
+  } catch (error) {
+    return friendlyError(
+      error instanceof Error ? error.message : "Nao foi possivel converter o DOCX.",
+    );
+  }
+}
+
 export async function previewDocumentAction(
   preSaleId: string,
   templateId: string,
@@ -414,7 +474,7 @@ export async function previewDocumentAction(
       return friendlyError("Template ativo nao encontrado.");
     }
 
-    const rendered = renderDocumentTemplate(template.content, context);
+    const rendered = renderDocumentTemplate(template.content_html, context);
     return {
       ok: true,
       message: "Preview gerado.",
@@ -443,7 +503,7 @@ export async function generateDocumentAction(
       return friendlyError("Template ativo nao encontrado.");
     }
 
-    const rendered = renderDocumentTemplate(template.content, context);
+    const rendered = renderDocumentTemplate(template.content_html, context);
     const { error } = await supabase.from("generated_documents").insert({
       company_id: companyId,
       pre_sale_id: preSaleId,
