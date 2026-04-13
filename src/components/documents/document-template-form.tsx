@@ -41,6 +41,7 @@ export function DocumentTemplateForm({
   const {
     register,
     handleSubmit,
+    getValues,
     setValue,
     formState: { errors, isSubmitting },
   } = useForm<DocumentTemplateFormValues, undefined, DocumentTemplatePayload>({
@@ -55,6 +56,7 @@ export function DocumentTemplateForm({
     },
   });
   const disabled = isSubmitting || isPending;
+  const isEditing = Boolean(defaultValues?.id);
 
   function handleDocxImport(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -81,6 +83,20 @@ export function DocumentTemplateForm({
       setMessage(result);
 
       if (result.ok && result.content) {
+        if (
+          isEditing &&
+          getValues("content_html").trim() &&
+          !window.confirm(
+            "Deseja substituir o conteúdo atual pelo conteúdo importado do DOCX?",
+          )
+        ) {
+          setMessage({
+            ok: true,
+            message: "Importacao concluida, mas o conteudo atual foi mantido.",
+          });
+          return;
+        }
+
         setValue("content_html", result.content, {
           shouldDirty: true,
           shouldValidate: true,
