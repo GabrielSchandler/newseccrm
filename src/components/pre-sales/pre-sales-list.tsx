@@ -48,9 +48,10 @@ export function PreSalesList({ preSales }: PreSalesListProps) {
               <th className="px-5 py-3 font-semibold">Cliente</th>
               <th className="px-5 py-3 font-semibold">Tipo</th>
               <th className="px-5 py-3 font-semibold">Status</th>
-              <th className="px-5 py-3 font-semibold">Valor estimado</th>
+              <th className="px-5 py-3 font-semibold">Servico</th>
+              <th className="px-5 py-3 font-semibold">Valor do contrato</th>
               <th className="px-5 py-3 font-semibold">Responsavel</th>
-              <th className="px-5 py-3 font-semibold">Data</th>
+              <th className="px-5 py-3 font-semibold">Data de abertura</th>
               <th className="px-5 py-3 text-right font-semibold">Acoes</th>
             </tr>
           </thead>
@@ -95,7 +96,10 @@ export function PreSalesList({ preSales }: PreSalesListProps) {
                   </div>
                 </td>
                 <td className="px-5 py-4 text-slate-700">
-                  {formatCurrency(preSale.estimated_contract_value)}
+                  {preSale.service_type || "-"}
+                </td>
+                <td className="px-5 py-4 text-slate-700">
+                  {formatCurrency(preSale.contract_value)}
                 </td>
                 <td className="px-5 py-4 text-slate-700">
                   {formatUserName(preSale.consultant)}

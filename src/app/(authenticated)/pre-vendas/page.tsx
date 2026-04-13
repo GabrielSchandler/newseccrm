@@ -16,6 +16,9 @@ import type {
 } from "@/types/pre-sale";
 import { preSaleStatuses, preSaleTypes } from "@/types/pre-sale";
 
+const clientOptionSelect =
+  "id, full_name, cpf, rg, birth_date, marital_status, profession, email, phone_mobile, phone_secondary, zip_code, street, number, district, city, state";
+
 type PreVendasPageProps = {
   searchParams: Promise<{
     q?: string;
@@ -74,7 +77,7 @@ export default async function PreVendasPage({ searchParams }: PreVendasPageProps
     preSalesQuery,
     supabase
       .from("clients")
-      .select("id, full_name, cpf, phone_mobile")
+      .select(clientOptionSelect)
       .eq("company_id", companyId),
     supabase
       .from("user_profiles")

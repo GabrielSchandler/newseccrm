@@ -3,11 +3,15 @@ import { updatePreSaleAction } from "@/app/(authenticated)/pre-vendas/actions";
 import { PageHeader } from "@/components/layout/page-header";
 import { PreSalesForm } from "@/components/pre-sales/pre-sales-form";
 import { getCurrentUserContext } from "@/lib/auth/current-user";
+import { formatDateTime } from "@/lib/clients/formatters";
 import { preSaleToFormValues } from "@/lib/pre-sales/schema";
 import type {
   ClientOption,
   PreSale,
+  PreSaleClientSnapshot,
+  PreSaleDebtHolder,
   PreSaleFinancialCase,
+  PreSalePayment,
   UserProfileOption,
 } from "@/types/pre-sale";
 
@@ -15,28 +19,48 @@ type EditarPreVendaPageProps = {
   params: Promise<{ id: string }>;
 };
 
+const clientOptionSelect =
+  "id, full_name, cpf, rg, birth_date, marital_status, profession, email, phone_mobile, phone_secondary, zip_code, street, number, district, city, state";
+
 export default async function EditarPreVendaPage({ params }: EditarPreVendaPageProps) {
   const { id } = await params;
   const { supabase, companyId, userProfileId, role } = await getCurrentUserContext();
 
   const [
     { data, error },
+    { data: snapshotData },
+    { data: debtHolderData },
     { data: financialCaseData },
+    { data: paymentsData },
     { data: clientsData },
     { data: consultantsData },
   ] =
     await Promise.all([
       supabase.from("pre_sales").select("*").eq("id", id).eq("company_id", companyId).single(),
       supabase
-        .from("pre_sale_financial_cases")
-        .select("pre_sale_id, asset_brand_model, asset_color, asset_year, asset_plate")
+        .from("pre_sale_client_snapshot")
+        .select("*")
         .eq("pre_sale_id", id)
         .maybeSingle(),
       supabase
+        .from("pre_sale_debt_holders")
+        .select("*")
+        .eq("pre_sale_id", id)
+        .maybeSingle(),
+      supabase
+        .from("pre_sale_financial_cases")
+        .select("*")
+        .eq("pre_sale_id", id)
+        .maybeSingle(),
+      supabase
+        .from("pre_sale_payments")
+        .select("*")
+        .eq("pre_sale_id", id)
+        .order("installment_number", { ascending: true }),
+      supabase
         .from("clients")
-        .select("id, full_name, cpf, phone_mobile")
+        .select(clientOptionSelect)
         .eq("company_id", companyId)
-        .is("deleted_at", null)
         .order("full_name", { ascending: true }),
       supabase
         .from("user_profiles")
@@ -45,7 +69,10 @@ export default async function EditarPreVendaPage({ params }: EditarPreVendaPageP
         .order("full_name", { ascending: true }),
     ]);
   const preSale = data as PreSale | null;
+  const snapshot = snapshotData as PreSaleClientSnapshot | null;
+  const debtHolder = debtHolderData as PreSaleDebtHolder | null;
   const financialCase = financialCaseData as PreSaleFinancialCase | null;
+  const payments = (paymentsData ?? []) as PreSalePayment[];
 
   if (error || !preSale) {
     notFound();
@@ -72,7 +99,14 @@ export default async function EditarPreVendaPage({ params }: EditarPreVendaPageP
             clients={(clientsData ?? []) as ClientOption[]}
             consultants={(consultantsData ?? []) as UserProfileOption[]}
             submitLabel="Salvar alteracoes"
-            defaultValues={preSaleToFormValues(preSale, financialCase)}
+            openingDateLabel={formatDateTime(preSale.created_at)}
+            defaultValues={preSaleToFormValues(
+              preSale,
+              snapshot,
+              debtHolder,
+              financialCase,
+              payments,
+            )}
             onSubmitAction={updatePreSaleAction.bind(null, preSale.id)}
           />
         </div>

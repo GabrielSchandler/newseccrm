@@ -4,12 +4,15 @@ import { PreSalesForm } from "@/components/pre-sales/pre-sales-form";
 import { getCurrentUserContext } from "@/lib/auth/current-user";
 import type { ClientOption, UserProfileOption } from "@/types/pre-sale";
 
+const clientOptionSelect =
+  "id, full_name, cpf, rg, birth_date, marital_status, profession, email, phone_mobile, phone_secondary, zip_code, street, number, district, city, state";
+
 export default async function NovaPreVendaPage() {
   const { supabase, companyId } = await getCurrentUserContext();
   const [{ data: clientsData }, { data: consultantsData }] = await Promise.all([
     supabase
       .from("clients")
-      .select("id, full_name, cpf, phone_mobile")
+      .select(clientOptionSelect)
       .eq("company_id", companyId)
       .is("deleted_at", null)
       .order("full_name", { ascending: true }),
@@ -32,6 +35,7 @@ export default async function NovaPreVendaPage() {
             clients={(clientsData ?? []) as ClientOption[]}
             consultants={(consultantsData ?? []) as UserProfileOption[]}
             submitLabel="Cadastrar pre-venda"
+            openingDateLabel="Sera definida ao salvar"
             onSubmitAction={createPreSaleAction}
           />
         </div>

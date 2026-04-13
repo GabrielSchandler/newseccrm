@@ -24,3 +24,15 @@ export function formatUserName(user: { full_name: string | null; email: string |
 export function formatPreSaleType(type: PreSaleType | null | undefined) {
   return preSaleTypes.find((item) => item.value === type)?.label ?? "-";
 }
+
+export function formatBoolean(value: boolean | null | undefined) {
+  if (value === true) {
+    return "Sim";
+  }
+
+  if (value === false) {
+    return "Nao";
+  }
+
+  return "-";
+}

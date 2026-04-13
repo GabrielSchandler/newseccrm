@@ -35,6 +35,22 @@ async function assertClientBelongsToCompany(clientId: string, companyId: string)
   return Boolean(data);
 }
 
+async function assertClientExistsInCompany(clientId: string, companyId: string) {
+  const { supabase } = await getCurrentUserContext();
+  const { data, error } = await supabase
+    .from("clients")
+    .select("id")
+    .eq("id", clientId)
+    .eq("company_id", companyId)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  return Boolean(data);
+}
+
 async function assertUserBelongsToCompany(userProfileId: string, companyId: string) {
   const { supabase } = await getCurrentUserContext();
   const { data, error } = await supabase
@@ -78,33 +94,130 @@ async function canEditPreSale(preSaleId: string, companyId: string, userProfileI
 
 function splitPreSalePayload(values: PreSalePayload) {
   const {
+    snapshot_full_name,
+    snapshot_cpf,
+    snapshot_rg,
+    snapshot_birth_date,
+    snapshot_marital_status,
+    snapshot_profession,
+    snapshot_email,
+    snapshot_phone_mobile,
+    snapshot_phone_secondary,
+    snapshot_zip_code,
+    snapshot_street,
+    snapshot_number,
+    snapshot_district,
+    snapshot_city,
+    snapshot_state,
+    debt_holder_full_name,
+    debt_holder_cpf,
+    debt_holder_rg,
+    debt_holder_birth_date,
+    debt_holder_marital_status,
+    debt_holder_profession,
+    debt_holder_nationality,
+    debt_holder_issuing_agency,
+    debt_holder_father_name,
+    debt_holder_mother_name,
+    debt_holder_phone_mobile,
+    debt_holder_phone_secondary,
+    debt_holder_email,
+    debt_holder_zip_code,
+    debt_holder_street,
+    debt_holder_number,
+    debt_holder_district,
+    debt_holder_city,
+    debt_holder_state,
+    financer_name,
+    has_financing_contract,
+    financed_amount,
+    down_payment,
+    installment_amount,
+    installment_count,
+    paid_installments,
+    overdue_installments,
+    due_day,
+    contract_number,
     asset_brand_model,
     asset_color,
     asset_year,
     asset_plate,
+    payments,
     ...preSaleValues
   } = values;
   const shouldKeepVehicleFields = values.pre_sale_type === "veiculo";
 
   return {
     preSaleValues,
+    snapshotValues: {
+      full_name: snapshot_full_name,
+      cpf: snapshot_cpf,
+      rg: snapshot_rg,
+      birth_date: snapshot_birth_date,
+      marital_status: snapshot_marital_status,
+      profession: snapshot_profession,
+      email: snapshot_email,
+      phone_mobile: snapshot_phone_mobile,
+      phone_secondary: snapshot_phone_secondary,
+      zip_code: snapshot_zip_code,
+      street: snapshot_street,
+      number: snapshot_number,
+      district: snapshot_district,
+      city: snapshot_city,
+      state: snapshot_state,
+    },
+    debtHolderValues: {
+      full_name: debt_holder_full_name,
+      cpf: debt_holder_cpf,
+      rg: debt_holder_rg,
+      birth_date: debt_holder_birth_date,
+      marital_status: debt_holder_marital_status,
+      profession: debt_holder_profession,
+      nationality: debt_holder_nationality,
+      issuing_agency: debt_holder_issuing_agency,
+      father_name: debt_holder_father_name,
+      mother_name: debt_holder_mother_name,
+      phone_mobile: debt_holder_phone_mobile,
+      phone_secondary: debt_holder_phone_secondary,
+      email: debt_holder_email,
+      zip_code: debt_holder_zip_code,
+      street: debt_holder_street,
+      number: debt_holder_number,
+      district: debt_holder_district,
+      city: debt_holder_city,
+      state: debt_holder_state,
+    },
     financialCaseValues: {
+      financer_name,
+      has_financing_contract,
+      financed_amount,
+      down_payment,
+      installment_amount,
+      installment_count,
+      paid_installments,
+      overdue_installments,
+      due_day,
+      contract_number,
       asset_brand_model: shouldKeepVehicleFields ? asset_brand_model : null,
       asset_color: shouldKeepVehicleFields ? asset_color : null,
       asset_year: shouldKeepVehicleFields ? asset_year : null,
       asset_plate: shouldKeepVehicleFields ? asset_plate : null,
     },
+    payments: payments.filter((payment) =>
+      Object.values(payment).some((value) => value !== null && value !== ""),
+    ),
   };
 }
 
-async function saveFinancialCase(
+async function savePreSaleChildRecord(
+  table: string,
   preSaleId: string,
-  companyId: string,
-  values: ReturnType<typeof splitPreSalePayload>["financialCaseValues"],
+  values: Record<string, unknown>,
+  forceInsert = false,
 ) {
   const { supabase } = await getCurrentUserContext();
   const { data, error } = await supabase
-    .from("pre_sale_financial_cases")
+    .from(table)
     .select("pre_sale_id")
     .eq("pre_sale_id", preSaleId)
     .maybeSingle();
@@ -116,7 +229,7 @@ async function saveFinancialCase(
 
   if (existingCase) {
     const { error: updateError } = await supabase
-      .from("pre_sale_financial_cases")
+      .from(table)
       .update(values)
       .eq("pre_sale_id", existingCase.pre_sale_id);
 
@@ -127,37 +240,55 @@ async function saveFinancialCase(
     return;
   }
 
-  const hasVehicleValues = Object.values(values).some(Boolean);
-
-  if (!hasVehicleValues) {
+  if (
+    !forceInsert &&
+    !Object.values(values).some((value) => value !== null && value !== "")
+  ) {
     return;
   }
 
   const { error: insertError } = await supabase
-    .from("pre_sale_financial_cases")
+    .from(table)
     .insert({
       pre_sale_id: preSaleId,
-      company_id: companyId,
       ...values,
     });
 
   if (insertError) {
-    if (
-      insertError.message.toLowerCase().includes("company_id") &&
-      insertError.message.toLowerCase().includes("column")
-    ) {
-      const { error: retryError } = await supabase
-        .from("pre_sale_financial_cases")
-        .insert({
-          pre_sale_id: preSaleId,
-          ...values,
-        });
+    throw insertError;
+  }
+}
 
-      if (!retryError) {
-        return;
-      }
-    }
+async function savePayments(
+  preSaleId: string,
+  payments: ReturnType<typeof splitPreSalePayload>["payments"],
+) {
+  const { supabase } = await getCurrentUserContext();
+  const { error: deleteError } = await supabase
+    .from("pre_sale_payments")
+    .delete()
+    .eq("pre_sale_id", preSaleId);
 
+  if (deleteError) {
+    throw deleteError;
+  }
+
+  if (!payments.length) {
+    return;
+  }
+
+  const { error: insertError } = await supabase.from("pre_sale_payments").insert(
+    payments.map((payment, index) => ({
+      pre_sale_id: preSaleId,
+      installment_number: payment.installment_number ?? index + 1,
+      amount: payment.amount,
+      payment_method: payment.payment_method,
+      due_date: payment.due_date,
+      status: payment.status ?? "previsto",
+    })),
+  );
+
+  if (insertError) {
     throw insertError;
   }
 }
@@ -175,7 +306,13 @@ export async function createPreSaleAction(
 
   try {
     const { supabase, companyId, userProfileId } = await getCurrentUserContext();
-    const { preSaleValues, financialCaseValues } = splitPreSalePayload(parsed.data);
+    const {
+      preSaleValues,
+      snapshotValues,
+      debtHolderValues,
+      financialCaseValues,
+      payments,
+    } = splitPreSalePayload(parsed.data);
     const clientExists = await assertClientBelongsToCompany(parsed.data.client_id, companyId);
 
     if (!clientExists) {
@@ -208,7 +345,10 @@ export async function createPreSaleAction(
     }
 
     preSaleId = (data as { id: string }).id;
-    await saveFinancialCase(preSaleId, companyId, financialCaseValues);
+    await savePreSaleChildRecord("pre_sale_client_snapshot", preSaleId, snapshotValues, true);
+    await savePreSaleChildRecord("pre_sale_debt_holders", preSaleId, debtHolderValues, true);
+    await savePreSaleChildRecord("pre_sale_financial_cases", preSaleId, financialCaseValues, true);
+    await savePayments(preSaleId, payments);
   } catch (error) {
     return friendlyError(
       error instanceof Error ? error.message : "Nao foi possivel criar a pre-venda.",
@@ -231,17 +371,23 @@ export async function updatePreSaleAction(
 
   try {
     const { supabase, companyId, userProfileId, role } = await getCurrentUserContext();
-    const { preSaleValues, financialCaseValues } = splitPreSalePayload(parsed.data);
+    const {
+      preSaleValues,
+      snapshotValues,
+      debtHolderValues,
+      financialCaseValues,
+      payments,
+    } = splitPreSalePayload(parsed.data);
     const canEdit = await canEditPreSale(preSaleId, companyId, userProfileId, role);
 
     if (!canEdit) {
       return friendlyError("Voce nao tem permissao para editar esta pre-venda.");
     }
 
-    const clientExists = await assertClientBelongsToCompany(parsed.data.client_id, companyId);
+    const clientExists = await assertClientExistsInCompany(parsed.data.client_id, companyId);
 
     if (!clientExists) {
-      return friendlyError("Selecione um cliente ativo da empresa.");
+      return friendlyError("Selecione um cliente da empresa.");
     }
 
     const { error } = await supabase
@@ -257,7 +403,10 @@ export async function updatePreSaleAction(
       return friendlyError(error.message);
     }
 
-    await saveFinancialCase(preSaleId, companyId, financialCaseValues);
+    await savePreSaleChildRecord("pre_sale_client_snapshot", preSaleId, snapshotValues, true);
+    await savePreSaleChildRecord("pre_sale_debt_holders", preSaleId, debtHolderValues, true);
+    await savePreSaleChildRecord("pre_sale_financial_cases", preSaleId, financialCaseValues, true);
+    await savePayments(preSaleId, payments);
   } catch (error) {
     return friendlyError(
       error instanceof Error ? error.message : "Nao foi possivel atualizar a pre-venda.",

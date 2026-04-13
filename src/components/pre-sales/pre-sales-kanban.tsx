@@ -3,7 +3,11 @@
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { WhatsAppLink } from "@/components/clients/whatsapp-link";
-import { formatCurrency, formatUserName } from "@/lib/pre-sales/formatters";
+import {
+  formatCurrency,
+  formatPreSaleType,
+  formatUserName,
+} from "@/lib/pre-sales/formatters";
 import { preSaleStatuses, type PreSaleStatus, type PreSaleWithRelations } from "@/types/pre-sale";
 import { updatePreSaleStatusAction } from "@/app/(authenticated)/pre-vendas/actions";
 import { PreSalesStatusBadge } from "./pre-sales-status-badge";
@@ -78,7 +82,13 @@ export function PreSalesKanban({ preSales }: PreSalesKanbanProps) {
                       {preSale.client?.full_name ?? "Cliente nao encontrado"}
                     </Link>
                     <p className="mt-2 text-sm font-medium text-slate-700">
-                      {formatCurrency(preSale.estimated_contract_value)}
+                      {formatPreSaleType(preSale.pre_sale_type)}
+                    </p>
+                    <p className="mt-1 text-xs text-slate-500">
+                      {preSale.service_type || "Servico nao informado"}
+                    </p>
+                    <p className="mt-2 text-sm font-medium text-slate-700">
+                      {formatCurrency(preSale.contract_value)}
                     </p>
                     <p className="mt-1 text-xs text-slate-500">
                       {formatUserName(preSale.consultant)}
