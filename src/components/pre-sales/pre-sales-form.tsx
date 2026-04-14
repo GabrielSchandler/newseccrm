@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { ChangeEvent, ReactNode } from "react";
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import type {
   FieldErrors,
@@ -215,7 +215,7 @@ export function PreSalesForm({
     watch,
     getValues,
     setValue,
-    formState: { errors, isSubmitting },
+    formState: { errors, isDirty, isSubmitting },
   } = useForm<PreSaleFormValues, undefined, PreSalePayload>({
     resolver: zodResolver(preSaleFormSchema),
     defaultValues: {
@@ -230,6 +230,24 @@ export function PreSalesForm({
   });
   const selectedPreSaleType = watch("pre_sale_type");
   const disabled = isSubmitting || isPending;
+
+  useEffect(() => {
+    function handleBeforeUnload(event: BeforeUnloadEvent) {
+      if (!isDirty) {
+        return;
+      }
+
+      event.preventDefault();
+      event.returnValue = "";
+    }
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [isDirty]);
+
+  function confirmNavigation() {
+    return !isDirty || window.confirm("Existem alteracoes nao salvas. Deseja sair mesmo assim?");
+  }
 
   function onValidSubmit(values: PreSalePayload) {
     setMessage(null);
@@ -606,12 +624,21 @@ export function PreSalesForm({
         <button
           type="button"
           className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-          onClick={() => router.back()}
+          onClick={() => {
+            if (confirmNavigation()) {
+              router.back();
+            }
+          }}
         >
           Voltar
         </button>
         <Link
           href="/pre-vendas"
+          onClick={(event) => {
+            if (!confirmNavigation()) {
+              event.preventDefault();
+            }
+          }}
           className="rounded-lg px-4 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-slate-950"
         >
           Lista de pre-vendas

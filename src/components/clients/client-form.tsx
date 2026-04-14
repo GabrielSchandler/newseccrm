@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { ChangeEvent } from "react";
-import { useEffect, useState, useTransition } from "react";
+import { useCallback, useEffect, useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import {
   clientDefaultValues,
@@ -124,19 +124,11 @@ export function ClientForm({
 
   const zipCodeValue = watch("zip_code");
 
-  useEffect(() => {
-    const zipCode = onlyDigits(typeof zipCodeValue === "string" ? zipCodeValue : "");
-
-    if (zipCode.length === 8) {
-      void fetchAddressByZipCode(zipCode);
-    }
-  }, [zipCodeValue]);
-
   function confirmNavigation() {
     return !isDirty || window.confirm("Existem alteracoes nao salvas. Deseja sair mesmo assim?");
   }
 
-  async function fetchAddressByZipCode(zipCode: string) {
+  const fetchAddressByZipCode = useCallback(async (zipCode: string) => {
     if (zipCode.length !== 8 || zipCode === lastFetchedZipCode) {
       return;
     }
@@ -165,7 +157,15 @@ export function ClientForm({
       setLastFetchedZipCode(null);
       // CEP lookup is a convenience; manual address entry remains available.
     }
-  }
+  }, [lastFetchedZipCode, setValue]);
+
+  useEffect(() => {
+    const zipCode = onlyDigits(typeof zipCodeValue === "string" ? zipCodeValue : "");
+
+    if (zipCode.length === 8) {
+      void fetchAddressByZipCode(zipCode);
+    }
+  }, [fetchAddressByZipCode, zipCodeValue]);
 
   function onValidSubmit(values: ClientPayload) {
     setActionState(null);

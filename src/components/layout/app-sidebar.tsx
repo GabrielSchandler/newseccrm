@@ -1,29 +1,23 @@
 import {
-  BarChart3,
-  FileText,
-  FileSignature,
-  Handshake,
-  LayoutDashboard,
   LogOut,
-  Users,
 } from "lucide-react";
-import Link from "next/link";
 import { signOut } from "@/app/actions/auth";
 import { getCurrentUserContext } from "@/lib/auth/current-user";
+import { SidebarNav, type SidebarNavigationItem } from "./sidebar-nav";
 
-const navigation = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/clientes", label: "Clientes", icon: Users },
-  { href: "/pre-vendas", label: "Pre-vendas", icon: Handshake },
-  { href: "/documentos", label: "Documentos", icon: FileText },
+const navigation: SidebarNavigationItem[] = [
+  { href: "/dashboard", label: "Dashboard", icon: "dashboard" },
+  { href: "/clientes", label: "Clientes", icon: "clients" },
+  { href: "/pre-vendas", label: "Pre-vendas", icon: "preSales" },
+  { href: "/documentos", label: "Documentos", icon: "documents" },
   {
     href: "/documentos/templates",
     label: "Templates",
-    icon: FileText,
+    icon: "templates",
     managerOnly: true,
   },
-  { href: "/contratos", label: "Contratos", icon: FileSignature },
-  { href: "/usuarios", label: "Usuarios", icon: BarChart3 },
+  { href: "/contratos", label: "Contratos", icon: "contracts" },
+  { href: "/usuarios", label: "Usuarios", icon: "users" },
 ];
 
 export async function AppSidebar() {
@@ -31,46 +25,66 @@ export async function AppSidebar() {
   const canManageTemplates = role === "admin" || role === "manager";
 
   return (
-    <aside className="flex min-h-screen w-full flex-col border-r border-slate-200 bg-white px-4 py-5 md:w-72">
-      <div className="px-2">
-        <p className="text-xs font-semibold uppercase tracking-wide text-teal-700">
-          CRM SaaS
-        </p>
-        <h1 className="mt-1 text-xl font-semibold text-slate-950">
-          Painel multiempresa
-        </h1>
+    <>
+      <div className="border-b border-slate-200 bg-white px-4 py-3 md:hidden">
+        <details className="group">
+          <summary className="flex cursor-pointer list-none items-center justify-between rounded-lg px-2 py-2 text-sm font-semibold text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600">
+            <span>
+              <span className="block text-xs uppercase tracking-wide text-teal-700">
+                CRM SaaS
+              </span>
+              Painel multiempresa
+            </span>
+            <span className="text-xs text-slate-500 group-open:hidden">Menu</span>
+            <span className="hidden text-xs text-slate-500 group-open:inline">
+              Fechar
+            </span>
+          </summary>
+          <div className="mt-3 space-y-3 pb-2">
+            <SidebarNav
+              items={navigation}
+              canManageTemplates={canManageTemplates}
+            />
+            <form action={signOut}>
+              <button
+                type="submit"
+                className="inline-flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600 focus-visible:ring-offset-2"
+              >
+                <LogOut aria-hidden="true" className="h-4 w-4" />
+                Sair
+              </button>
+            </form>
+          </div>
+        </details>
       </div>
 
-      <nav className="mt-8 flex flex-1 flex-col gap-1">
-        {navigation.map((item) => {
-          if ("managerOnly" in item && item.managerOnly && !canManageTemplates) {
-            return null;
-          }
+      <aside className="hidden min-h-screen w-72 flex-col border-r border-slate-200 bg-white px-4 py-5 md:flex">
+        <div className="px-2">
+          <p className="text-xs font-semibold uppercase tracking-wide text-teal-700">
+            CRM SaaS
+          </p>
+          <h1 className="mt-1 text-xl font-semibold text-slate-950">
+            Painel multiempresa
+          </h1>
+        </div>
 
-          const Icon = item.icon;
+        <div className="mt-8 flex flex-1">
+          <SidebarNav
+            items={navigation}
+            canManageTemplates={canManageTemplates}
+          />
+        </div>
 
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="inline-flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-100 hover:text-slate-950"
-            >
-              <Icon className="h-4 w-4 text-teal-700" />
-              {item.label}
-            </Link>
-          );
-        })}
-      </nav>
-
-      <form action={signOut}>
-        <button
-          type="submit"
-          className="inline-flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-950"
-        >
-          <LogOut className="h-4 w-4" />
-          Sair
-        </button>
-      </form>
-    </aside>
+        <form action={signOut}>
+          <button
+            type="submit"
+            className="inline-flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600 focus-visible:ring-offset-2"
+          >
+            <LogOut aria-hidden="true" className="h-4 w-4" />
+            Sair
+          </button>
+        </form>
+      </aside>
+    </>
   );
 }
