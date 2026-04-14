@@ -1,12 +1,14 @@
 "use client";
 
 import { FileText, X } from "lucide-react";
+import Link from "next/link";
 import { useState, useTransition } from "react";
 import {
   generateDocumentAction,
   previewDocumentAction,
   type DocumentActionState,
 } from "@/app/(authenticated)/documentos/actions";
+import { DocumentRenderedContent } from "@/components/documents/document-rendered-content";
 import { documentTemplateTypes, type DocumentTemplate } from "@/types/document";
 
 type GenerateDocumentModalProps = {
@@ -25,6 +27,7 @@ export function GenerateDocumentModal({
   const [isOpen, setIsOpen] = useState(false);
   const [selectedTemplateId, setSelectedTemplateId] = useState(templates[0]?.id ?? "");
   const [preview, setPreview] = useState("");
+  const [generatedDocumentId, setGeneratedDocumentId] = useState("");
   const [state, setState] = useState<DocumentActionState | null>(null);
   const [isPending, startTransition] = useTransition();
   const selectedTemplate = templates.find((template) => template.id === selectedTemplateId);
@@ -40,6 +43,7 @@ export function GenerateDocumentModal({
       const result = await previewDocumentAction(preSaleId, selectedTemplateId);
       setState(result);
       setPreview(result.content ?? "");
+      setGeneratedDocumentId("");
     });
   }
 
@@ -53,6 +57,7 @@ export function GenerateDocumentModal({
       const result = await generateDocumentAction(preSaleId, selectedTemplateId);
       setState(result);
       setPreview(result.content ?? preview);
+      setGeneratedDocumentId(result.documentId ?? "");
     });
   }
 
@@ -111,6 +116,7 @@ export function GenerateDocumentModal({
                         onChange={(event) => {
                           setSelectedTemplateId(event.target.value);
                           setPreview("");
+                          setGeneratedDocumentId("");
                           setState(null);
                         }}
                       >
@@ -145,18 +151,35 @@ export function GenerateDocumentModal({
                     </p>
                   ) : null}
 
+                  {generatedDocumentId ? (
+                    <div className="flex flex-wrap gap-2 rounded-lg border border-teal-200 bg-teal-50 px-4 py-3">
+                      <Link
+                        href={`/documentos/gerados/${generatedDocumentId}`}
+                        className="rounded-lg border border-teal-300 bg-white px-3 py-2 text-sm font-semibold text-teal-800 transition hover:bg-teal-100"
+                      >
+                        Abrir documento
+                      </Link>
+                      <Link
+                        href={`/documentos/gerados/${generatedDocumentId}/imprimir?print=1`}
+                        target="_blank"
+                        className="rounded-lg bg-teal-700 px-3 py-2 text-sm font-semibold text-white transition hover:bg-teal-800"
+                      >
+                        Abrir PDF
+                      </Link>
+                    </div>
+                  ) : null}
+
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-700" htmlFor="preview">
-                      Preview
-                    </label>
-                    <textarea
-                      id="preview"
-                      rows={16}
-                      readOnly
-                      value={preview}
-                      placeholder="Clique em Visualizar preview para conferir o documento."
-                      className="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2.5 font-mono text-sm leading-6 text-slate-900 outline-none"
-                    />
+                    <p className="text-sm font-medium text-slate-700">Preview</p>
+                    {preview ? (
+                      <div className="max-h-[520px] overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 p-4">
+                        <DocumentRenderedContent html={preview} />
+                      </div>
+                    ) : (
+                      <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-10 text-center text-sm text-slate-500">
+                        Clique em Visualizar preview para conferir o documento.
+                      </div>
+                    )}
                   </div>
                 </>
               ) : (

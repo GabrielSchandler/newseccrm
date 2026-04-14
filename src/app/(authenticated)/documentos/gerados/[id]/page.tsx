@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { DocumentRenderedContent } from "@/components/documents/document-rendered-content";
 import { DocumentsNav } from "@/components/documents/documents-nav";
 import { PageHeader } from "@/components/layout/page-header";
 import { getCurrentUserContext } from "@/lib/auth/current-user";
@@ -85,6 +86,13 @@ export default async function DocumentoPage({ params }: DocumentoPageProps) {
           >
             Abrir pre-venda
           </Link>
+          <Link
+            href={`/documentos/gerados/${document.id}/imprimir?print=1`}
+            target="_blank"
+            className="rounded-lg border border-teal-300 bg-teal-50 px-4 py-2.5 text-sm font-semibold text-teal-800 transition hover:bg-teal-100"
+          >
+            Abrir PDF
+          </Link>
         </div>
 
         <div className="grid gap-4 rounded-lg border border-slate-200 bg-white p-5 shadow-sm md:grid-cols-3">
@@ -140,8 +148,8 @@ export default async function DocumentoPage({ params }: DocumentoPageProps) {
 
         <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
           <h2 className="text-base font-semibold text-slate-950">Conteudo renderizado</h2>
-          <div className="mt-4 whitespace-pre-wrap rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm leading-6 text-slate-900">
-            {document.rendered_content_html}
+          <div className="mt-4 bg-slate-50 p-4">
+            <DocumentRenderedContent html={document.rendered_content_html} />
           </div>
         </section>
       </div>

@@ -197,12 +197,21 @@ export default async function DocumentosPage({ searchParams }: DocumentosPagePro
                           {creator?.full_name || creator?.email || "-"}
                         </td>
                         <td className="px-4 py-3">
+                          <div className="flex flex-wrap gap-2">
                           <Link
                             href={`/documentos/gerados/${document.id}`}
                             className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
                           >
                             Visualizar
                           </Link>
+                          <Link
+                            href={`/documentos/gerados/${document.id}/imprimir?print=1`}
+                            target="_blank"
+                            className="rounded-lg border border-teal-300 bg-teal-50 px-3 py-2 text-sm font-semibold text-teal-800 transition hover:bg-teal-100"
+                          >
+                            PDF
+                          </Link>
+                          </div>
                         </td>
                       </tr>
                     );

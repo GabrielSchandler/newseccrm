@@ -30,6 +30,7 @@ export type DocumentActionState = {
   message: string;
   content?: string;
   variables?: Record<string, string>;
+  documentId?: string;
 };
 
 const docxMimeTypes = new Set([
@@ -151,16 +152,24 @@ function cleanImportedDocxHtml(html: string) {
       "h6",
       "blockquote",
       "a",
+      "img",
     ],
     allowedAttributes: {
       a: ["href", "target", "rel"],
+      img: ["src", "alt", "title", "width", "height"],
       td: ["colspan", "rowspan"],
       th: ["colspan", "rowspan"],
     },
-    allowedSchemes: ["http", "https", "mailto", "tel"],
+    allowedSchemes: ["http", "https", "mailto", "tel", "data"],
+    allowedSchemesByTag: {
+      img: ["http", "https", "data"],
+    },
     transformTags: {
       b: "strong",
       i: "em",
+      img: sanitizeHtml.simpleTransform("img", {
+        loading: "lazy",
+      }),
       a: sanitizeHtml.simpleTransform("a", { rel: "noopener noreferrer" }),
     },
     disallowedTagsMode: "discard",
@@ -722,18 +731,22 @@ export async function generateDocumentAction(
     }
 
     const rendered = renderDocumentTemplate(template.content_html, context);
-    const { error } = await supabase.from("generated_documents").insert({
-      company_id: companyId,
-      pre_sale_id: preSaleId,
-      client_id: context.preSale.client_id,
-      template_id: templateId,
-      document_type: template.document_type,
-      title: buildDocumentTitle(template, rendered),
-      rendered_content_html: rendered.content,
-      rendered_variables: rendered.variables,
-      status: "gerado",
-      created_by: userProfileId,
-    });
+    const { data, error } = await supabase
+      .from("generated_documents")
+      .insert({
+        company_id: companyId,
+        pre_sale_id: preSaleId,
+        client_id: context.preSale.client_id,
+        template_id: templateId,
+        document_type: template.document_type,
+        title: buildDocumentTitle(template, rendered),
+        rendered_content_html: rendered.content,
+        rendered_variables: rendered.variables,
+        status: "gerado",
+        created_by: userProfileId,
+      })
+      .select("id")
+      .single();
 
     if (error) {
       return friendlyError(error.message);
@@ -746,6 +759,7 @@ export async function generateDocumentAction(
       message: "Documento gerado com sucesso.",
       content: rendered.content,
       variables: rendered.variables,
+      documentId: (data as { id: string }).id,
     };
   } catch (error) {
     return friendlyError(
