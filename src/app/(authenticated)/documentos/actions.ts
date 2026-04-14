@@ -301,6 +301,13 @@ async function ensureDefaultTemplateState(
   }
 }
 
+function buildTemplateWritePayload(values: DocumentTemplatePayload) {
+  return {
+    ...values,
+    type: values.document_type,
+  };
+}
+
 export async function createDocumentTemplateAction(
   values: DocumentTemplatePayload,
 ): Promise<DocumentActionState> {
@@ -322,7 +329,7 @@ export async function createDocumentTemplateAction(
     const { data, error } = await supabase
       .from("document_templates")
       .insert({
-        ...parsed.data,
+        ...buildTemplateWritePayload(parsed.data),
         company_id: companyId,
         created_by: userProfileId,
       })
@@ -370,7 +377,7 @@ export async function updateDocumentTemplateAction(
     const { error } = await supabase
       .from("document_templates")
       .update({
-        ...parsed.data,
+        ...buildTemplateWritePayload(parsed.data),
         updated_at: new Date().toISOString(),
       })
       .eq("id", templateId)
@@ -504,6 +511,7 @@ export async function duplicateDocumentTemplateAction(
       company_id: companyId,
       name: `${template.name} (copia)`,
       document_type: template.document_type,
+      type: template.document_type,
       description: template.description,
       content_html: template.content_html,
       is_active: false,
