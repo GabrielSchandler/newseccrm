@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useState, useTransition } from "react";
 import {
   generateDocumentAction,
+  generateOfficialDocumentAction,
   previewDocumentAction,
   type DocumentActionState,
 } from "@/app/(authenticated)/documentos/actions";
@@ -54,7 +55,9 @@ export function GenerateDocumentModal({
 
     setState(null);
     startTransition(async () => {
-      const result = await generateDocumentAction(preSaleId, selectedTemplateId);
+      const result = selectedTemplate?.original_docx_path
+        ? await generateOfficialDocumentAction(preSaleId, selectedTemplateId)
+        : await generateDocumentAction(preSaleId, selectedTemplateId);
       setState(result);
       setPreview(result.content ?? preview);
       setGeneratedDocumentId(result.documentId ?? "");
@@ -141,14 +144,26 @@ export function GenerateDocumentModal({
                       className="rounded-lg bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-70"
                       onClick={handleGenerate}
                     >
-                      {isPending ? "Salvando..." : "Gerar"}
+                      {isPending
+                        ? "Processando..."
+                        : selectedTemplate?.original_docx_path
+                          ? "Gerar documento oficial"
+                          : "Gerar por HTML"}
                     </button>
                   </div>
 
                   {selectedTemplate ? (
-                    <p className="text-sm text-slate-600">
-                      Tipo selecionado: {formatTemplateType(selectedTemplate.document_type)}
-                    </p>
+                    <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+                      <p>
+                        Tipo selecionado:{" "}
+                        {formatTemplateType(selectedTemplate.document_type)}
+                      </p>
+                      <p className="mt-1">
+                        {selectedTemplate.original_docx_path
+                          ? "Este template tem DOCX oficial. A emissao final sera gerada em DOCX e tentara converter para PDF."
+                          : "Este template ainda nao tem DOCX oficial. A geracao usara o fluxo antigo por HTML."}
+                      </p>
+                    </div>
                   ) : null}
 
                   {generatedDocumentId ? (
@@ -164,7 +179,7 @@ export function GenerateDocumentModal({
                         target="_blank"
                         className="rounded-lg bg-teal-700 px-3 py-2 text-sm font-semibold text-white transition hover:bg-teal-800"
                       >
-                        Abrir PDF
+                        Abrir PDF HTML
                       </Link>
                     </div>
                   ) : null}

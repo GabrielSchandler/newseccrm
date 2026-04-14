@@ -13,6 +13,10 @@ export type DocumentTemplate = {
   document_type: DocumentTemplateType;
   description: string | null;
   content_html: string;
+  original_docx_path: string | null;
+  original_docx_filename: string | null;
+  original_docx_size: number | null;
+  original_docx_uploaded_at: string | null;
   is_active: boolean;
   is_default: boolean;
   created_by: string | null;
@@ -20,7 +24,14 @@ export type DocumentTemplate = {
   updated_at: string | null;
 };
 
-export type GeneratedDocumentStatus = "gerado" | "rascunho" | "cancelado";
+export type GeneratedDocumentStatus =
+  | "gerado"
+  | "rascunho"
+  | "cancelado"
+  | "pdf_error"
+  | "erro";
+
+export type DocumentRenderSource = "html" | "docx";
 
 export type GeneratedDocument = {
   id: string;
@@ -32,6 +43,12 @@ export type GeneratedDocument = {
   title: string;
   rendered_content_html: string;
   rendered_variables: Record<string, string> | null;
+  generated_docx_path: string | null;
+  generated_pdf_path: string | null;
+  generated_docx_filename: string | null;
+  generated_pdf_filename: string | null;
+  render_source: DocumentRenderSource | null;
+  pdf_error_message: string | null;
   status: GeneratedDocumentStatus;
   created_by: string | null;
   created_at: string;
@@ -53,4 +70,6 @@ export const documentStatusLabels: Record<GeneratedDocumentStatus, string> = {
   gerado: "Gerado",
   rascunho: "Rascunho",
   cancelado: "Cancelado",
+  pdf_error: "DOCX gerado, PDF pendente",
+  erro: "Erro",
 };

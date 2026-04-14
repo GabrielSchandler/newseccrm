@@ -5,8 +5,11 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import sanitizeHtml from "sanitize-html";
 import { getCurrentUserContext } from "@/lib/auth/current-user";
+import { renderOfficialDocxTemplate } from "@/lib/documents/docx-engine";
+import { convertDocxToPdf } from "@/lib/documents/pdf-converter";
 import { documentTemplateSchema } from "@/lib/documents/schema";
 import {
+  buildDocumentVariables,
   renderDocumentTemplate,
   type RenderedDocument,
 } from "@/lib/documents/template-engine";
@@ -38,6 +41,8 @@ const docxMimeTypes = new Set([
   "application/octet-stream",
   "",
 ]);
+const documentsBucket = "documents";
+const maxDocxSize = 15 * 1024 * 1024;
 const docxStyleMap = [
   "p[style-name='Title'] => h1:fresh",
   "p[style-name='Heading 1'] => h1:fresh",
@@ -63,6 +68,31 @@ function friendlyError(message: string): DocumentActionState {
 
 function canManageTemplates(role: string | null) {
   return role === "admin" || role === "manager";
+}
+
+function isValidDocxFile(file: File) {
+  return file.name.toLowerCase().endsWith(".docx") && docxMimeTypes.has(file.type);
+}
+
+function safeFileName(name: string) {
+  const [baseName, extension = ""] = name.split(/\.([^.]+)$/);
+  const safeBase = baseName
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9_-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .toLowerCase();
+
+  return `${safeBase || "documento"}${extension ? `.${extension.toLowerCase()}` : ""}`;
+}
+
+function safeStorageName(name: string, extension: "docx" | "pdf") {
+  const withoutExtension = name.replace(/\.[^.]+$/, "");
+  return `${safeFileName(withoutExtension)}.${extension}`;
+}
+
+function storagePath(parts: string[]) {
+  return parts.map((part) => part.replace(/^\/+|\/+$/g, "")).join("/");
 }
 
 function normalizeDocxPlaceholders(html: string) {
@@ -594,6 +624,93 @@ export async function deleteDocumentTemplateAction(
   };
 }
 
+export async function uploadOfficialDocxTemplateAction(
+  templateId: string,
+  formData: FormData,
+): Promise<DocumentActionState> {
+  try {
+    const { supabase, companyId, role } = await getCurrentUserContext();
+
+    if (!canManageTemplates(role)) {
+      return friendlyError("Apenas admin ou gerente podem substituir o DOCX oficial.");
+    }
+
+    const template = await getTemplate(templateId, companyId);
+
+    if (!template) {
+      return friendlyError("Template nao encontrado.");
+    }
+
+    const file = formData.get("file");
+
+    if (!(file instanceof File)) {
+      return friendlyError("Selecione um arquivo DOCX.");
+    }
+
+    if (!isValidDocxFile(file)) {
+      return friendlyError("Formato nao suportado. Envie um arquivo .docx.");
+    }
+
+    if (file.size <= 0) {
+      return friendlyError("O arquivo DOCX esta vazio.");
+    }
+
+    if (file.size > maxDocxSize) {
+      return friendlyError("Envie um DOCX com ate 15 MB.");
+    }
+
+    const filename = safeFileName(file.name);
+    const path = storagePath([
+      companyId,
+      "templates",
+      templateId,
+      `${Date.now()}-${filename}`,
+    ]);
+    const buffer = Buffer.from(await file.arrayBuffer());
+    const { error: uploadError } = await supabase.storage
+      .from(documentsBucket)
+      .upload(path, buffer, {
+        contentType: file.type || "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        upsert: true,
+      });
+
+    if (uploadError) {
+      return friendlyError(uploadError.message);
+    }
+
+    const { error: updateError } = await supabase
+      .from("document_templates")
+      .update({
+        original_docx_path: path,
+        original_docx_filename: filename,
+        original_docx_size: file.size,
+        original_docx_uploaded_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", templateId)
+      .eq("company_id", companyId);
+
+    if (updateError) {
+      return friendlyError(updateError.message);
+    }
+
+    revalidatePath("/documentos/templates");
+    revalidatePath(`/documentos/templates/${templateId}`);
+    revalidatePath(`/documentos/templates/${templateId}/editar`);
+
+    return {
+      ok: true,
+      message: "DOCX oficial vinculado ao template.",
+    };
+  } catch (error) {
+    return friendlyError(
+      error instanceof Error
+        ? error.message
+        : "Nao foi possivel vincular o DOCX oficial.",
+    );
+  }
+}
+
 export async function importDocxTemplateAction(
   formData: FormData,
 ): Promise<DocumentActionState> {
@@ -711,6 +828,164 @@ export async function previewTemplateContentAction(
   } catch (error) {
     return friendlyError(
       error instanceof Error ? error.message : "Nao foi possivel gerar preview.",
+    );
+  }
+}
+
+async function uploadGeneratedFile(
+  supabase: Awaited<ReturnType<typeof getCurrentUserContext>>["supabase"],
+  path: string,
+  buffer: Buffer,
+  contentType: string,
+) {
+  const { error } = await supabase.storage.from(documentsBucket).upload(path, buffer, {
+    contentType,
+    upsert: true,
+  });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+}
+
+export async function generateOfficialDocumentAction(
+  preSaleId: string,
+  templateId: string,
+): Promise<DocumentActionState> {
+  try {
+    const { supabase, companyId, userProfileId } = await getCurrentUserContext();
+    const [template, context] = await Promise.all([
+      getTemplate(templateId, companyId, true),
+      getDocumentContext(preSaleId, companyId),
+    ]);
+
+    if (!template) {
+      return friendlyError("Template ativo nao encontrado.");
+    }
+
+    if (!template.original_docx_path) {
+      return friendlyError(
+        "Este template ainda nao possui DOCX oficial. Vincule um DOCX no cadastro do template.",
+      );
+    }
+
+    const { data: storedDocx, error: downloadError } = await supabase.storage
+      .from(documentsBucket)
+      .download(template.original_docx_path);
+
+    if (downloadError || !storedDocx) {
+      return friendlyError(
+        downloadError?.message || "Nao foi possivel baixar o DOCX oficial.",
+      );
+    }
+
+    const variables = buildDocumentVariables(context);
+    const officialDocx = renderOfficialDocxTemplate(
+      Buffer.from(await storedDocx.arrayBuffer()),
+      variables,
+    );
+    const renderedHtml = template.content_html
+      ? renderDocumentTemplate(template.content_html, context).content
+      : "";
+    const title = buildDocumentTitle(template, {
+      content: renderedHtml,
+      variables,
+    });
+    const fileBase = safeStorageName(title, "docx").replace(/\.docx$/, "");
+    const documentFolder = storagePath([
+      companyId,
+      "pre_sales",
+      preSaleId,
+      "documents",
+      `${Date.now()}-${safeFileName(template.name)}`,
+    ]);
+    const generatedDocxFilename = `${fileBase}.docx`;
+    const generatedPdfFilename = `${fileBase}.pdf`;
+    const generatedDocxPath = storagePath([documentFolder, generatedDocxFilename]);
+    const generatedPdfPath = storagePath([documentFolder, generatedPdfFilename]);
+
+    await uploadGeneratedFile(
+      supabase,
+      generatedDocxPath,
+      officialDocx.buffer,
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    );
+
+    const pdfResult = await convertDocxToPdf(officialDocx.buffer, fileBase);
+    let pdfErrorMessage: string | null = null;
+    let savedPdfPath: string | null = null;
+    let savedPdfFilename: string | null = null;
+
+    if (pdfResult.ok) {
+      await uploadGeneratedFile(
+        supabase,
+        generatedPdfPath,
+        pdfResult.pdfBuffer,
+        "application/pdf",
+      );
+      savedPdfPath = generatedPdfPath;
+      savedPdfFilename = generatedPdfFilename;
+    } else {
+      pdfErrorMessage =
+        `${pdfResult.message}. O DOCX foi gerado e salvo; configure LibreOffice ` +
+        "ou um servico externo para finalizar o PDF neste ambiente.";
+      console.error("[documents] PDF conversion failed", {
+        preSaleId,
+        templateId,
+        message: pdfResult.message,
+      });
+    }
+
+    const { data, error } = await supabase
+      .from("generated_documents")
+      .insert({
+        company_id: companyId,
+        pre_sale_id: preSaleId,
+        client_id: context.preSale.client_id,
+        template_id: templateId,
+        document_type: template.document_type,
+        title,
+        rendered_content_html: renderedHtml,
+        rendered_variables: variables,
+        generated_docx_path: generatedDocxPath,
+        generated_pdf_path: savedPdfPath,
+        generated_docx_filename: generatedDocxFilename,
+        generated_pdf_filename: savedPdfFilename,
+        render_source: "docx",
+        pdf_error_message: pdfErrorMessage,
+        status: "gerado",
+        created_by: userProfileId,
+      })
+      .select("id")
+      .single();
+
+    if (error) {
+      return friendlyError(error.message);
+    }
+
+    revalidatePath("/documentos");
+    revalidatePath(`/pre-vendas/${preSaleId}`);
+
+    return {
+      ok: true,
+      message: pdfResult.ok
+        ? "Documento oficial gerado em DOCX e PDF."
+        : "DOCX oficial gerado. PDF ficou pendente porque o conversor nao esta disponivel.",
+      content: renderedHtml,
+      variables,
+      documentId: (data as { id: string }).id,
+    };
+  } catch (error) {
+    console.error("[documents] Official document generation failed", {
+      preSaleId,
+      templateId,
+      error,
+    });
+
+    return friendlyError(
+      error instanceof Error
+        ? error.message
+        : "Nao foi possivel gerar o documento oficial.",
     );
   }
 }

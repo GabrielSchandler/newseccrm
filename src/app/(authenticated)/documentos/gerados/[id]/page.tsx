@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { getCurrentUserContext } from "@/lib/auth/current-user";
 import { displayValue, formatDateTime } from "@/lib/clients/formatters";
 import {
+  documentStatusLabels,
   documentTemplateTypes,
   type DocumentTemplate,
   type GeneratedDocument,
@@ -63,6 +64,18 @@ export default async function DocumentoPage({ params }: DocumentoPageProps) {
   const template = templateData as DocumentTemplate | null;
   const client = clientData as Pick<Client, "id" | "full_name"> | null;
   const creator = creatorData as UserProfileOption | null;
+  const [{ data: docxSignedUrl }, { data: pdfSignedUrl }] = await Promise.all([
+    document.generated_docx_path
+      ? supabase.storage
+          .from("documents")
+          .createSignedUrl(document.generated_docx_path, 60 * 10)
+      : Promise.resolve({ data: null }),
+    document.generated_pdf_path
+      ? supabase.storage
+          .from("documents")
+          .createSignedUrl(document.generated_pdf_path, 60 * 10)
+      : Promise.resolve({ data: null }),
+  ]);
 
   return (
     <>
@@ -93,6 +106,24 @@ export default async function DocumentoPage({ params }: DocumentoPageProps) {
           >
             Abrir PDF
           </Link>
+          {docxSignedUrl?.signedUrl ? (
+            <Link
+              href={docxSignedUrl.signedUrl}
+              target="_blank"
+              className="rounded-lg border border-teal-300 bg-white px-4 py-2.5 text-sm font-semibold text-teal-800 transition hover:bg-teal-50"
+            >
+              Baixar DOCX oficial
+            </Link>
+          ) : null}
+          {pdfSignedUrl?.signedUrl ? (
+            <Link
+              href={pdfSignedUrl.signedUrl}
+              target="_blank"
+              className="rounded-lg bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-800"
+            >
+              Baixar PDF oficial
+            </Link>
+          ) : null}
         </div>
 
         <div className="grid gap-4 rounded-lg border border-slate-200 bg-white p-5 shadow-sm md:grid-cols-3">
@@ -141,15 +172,55 @@ export default async function DocumentoPage({ params }: DocumentoPageProps) {
               Status
             </p>
             <p className="mt-1 text-sm font-medium text-slate-950">
-              {displayValue(document.status)}
+              {document.pdf_error_message
+                ? "DOCX gerado, PDF pendente"
+                : documentStatusLabels[document.status] ?? displayValue(document.status)}
+            </p>
+          </div>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Fonte
+            </p>
+            <p className="mt-1 text-sm font-medium text-slate-950">
+              {document.render_source === "docx" ? "DOCX oficial" : "HTML"}
+            </p>
+          </div>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Arquivos
+            </p>
+            <p className="mt-1 text-sm font-medium text-slate-950">
+              {document.generated_docx_filename || document.generated_pdf_filename
+                ? [document.generated_docx_filename, document.generated_pdf_filename]
+                    .filter(Boolean)
+                    .join(" / ")
+                : "-"}
             </p>
           </div>
         </div>
+        {document.pdf_error_message ? (
+          <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            {document.pdf_error_message}
+          </div>
+        ) : null}
 
         <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="text-base font-semibold text-slate-950">Conteudo renderizado</h2>
+          <h2 className="text-base font-semibold text-slate-950">
+            Preview HTML aproximado
+          </h2>
+          <p className="mt-1 text-sm text-slate-600">
+            Quando o documento tiver DOCX oficial, baixe o DOCX/PDF acima para conferir
+            a versao fiel. Este preview e apenas uma leitura rapida dentro do CRM.
+          </p>
           <div className="mt-4 bg-slate-50 p-4">
-            <DocumentRenderedContent html={document.rendered_content_html} />
+            {document.rendered_content_html ? (
+              <DocumentRenderedContent html={document.rendered_content_html} />
+            ) : (
+              <p className="text-sm text-slate-500">
+                Este documento foi gerado a partir do DOCX oficial e nao possui preview
+                HTML salvo.
+              </p>
+            )}
           </div>
         </section>
       </div>

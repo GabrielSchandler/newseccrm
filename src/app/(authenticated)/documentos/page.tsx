@@ -4,6 +4,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { getCurrentUserContext } from "@/lib/auth/current-user";
 import { displayValue, formatDateTime } from "@/lib/clients/formatters";
 import {
+  documentStatusLabels,
   documentTemplateTypes,
   type DocumentTemplate,
   type DocumentTemplateType,
@@ -163,6 +164,8 @@ export default async function DocumentosPage({ searchParams }: DocumentosPagePro
                     <th className="px-4 py-3 font-semibold">Tipo</th>
                     <th className="px-4 py-3 font-semibold">Cliente</th>
                     <th className="px-4 py-3 font-semibold">Template</th>
+                    <th className="px-4 py-3 font-semibold">Fonte</th>
+                    <th className="px-4 py-3 font-semibold">Status</th>
                     <th className="px-4 py-3 font-semibold">Data</th>
                     <th className="px-4 py-3 font-semibold">Criado por</th>
                     <th className="px-4 py-3 font-semibold">Acoes</th>
@@ -189,6 +192,14 @@ export default async function DocumentosPage({ searchParams }: DocumentosPagePro
                         </td>
                         <td className="px-4 py-3 text-slate-700">
                           {displayValue(template?.name ?? null)}
+                        </td>
+                        <td className="px-4 py-3 text-slate-700">
+                          {document.render_source === "docx" ? "DOCX" : "HTML"}
+                        </td>
+                        <td className="px-4 py-3 text-slate-700">
+                          {document.pdf_error_message
+                            ? "DOCX gerado, PDF pendente"
+                            : documentStatusLabels[document.status] ?? document.status}
                         </td>
                         <td className="px-4 py-3 text-slate-700">
                           {formatDateTime(document.created_at)}
@@ -218,7 +229,7 @@ export default async function DocumentosPage({ searchParams }: DocumentosPagePro
                   })}
                   {!documents.length ? (
                     <tr>
-                      <td className="px-4 py-6 text-center text-slate-500" colSpan={7}>
+                      <td className="px-4 py-6 text-center text-slate-500" colSpan={9}>
                         Nenhum documento gerado ainda.
                       </td>
                     </tr>

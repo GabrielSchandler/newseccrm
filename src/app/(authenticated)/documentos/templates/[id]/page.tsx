@@ -47,6 +47,12 @@ export default async function TemplatePage({
     notFound();
   }
 
+  const { data: officialDocxSignedUrl } = template.original_docx_path
+    ? await supabase.storage
+        .from("documents")
+        .createSignedUrl(template.original_docx_path, 60 * 10)
+    : { data: null };
+
   return (
     <>
       <PageHeader
@@ -74,6 +80,15 @@ export default async function TemplatePage({
             isActive={template.is_active}
             isDefault={template.is_default}
           />
+          {officialDocxSignedUrl?.signedUrl ? (
+            <Link
+              href={officialDocxSignedUrl.signedUrl}
+              target="_blank"
+              className="rounded-lg border border-teal-300 bg-teal-50 px-4 py-2.5 text-sm font-semibold text-teal-800 transition hover:bg-teal-100"
+            >
+              Baixar DOCX oficial
+            </Link>
+          ) : null}
         </div>
 
         <section className="grid gap-4 rounded-lg border border-slate-200 bg-white p-5 shadow-sm md:grid-cols-4">
@@ -107,6 +122,14 @@ export default async function TemplatePage({
             </p>
             <p className="mt-1 text-sm font-medium text-slate-950">
               {formatDateTime(template.updated_at ?? template.created_at)}
+            </p>
+          </div>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              DOCX oficial
+            </p>
+            <p className="mt-1 text-sm font-medium text-slate-950">
+              {displayValue(template.original_docx_filename)}
             </p>
           </div>
           <div className="md:col-span-4">

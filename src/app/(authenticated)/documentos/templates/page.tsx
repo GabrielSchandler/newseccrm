@@ -131,6 +131,7 @@ export default async function TemplatesPage({ searchParams }: TemplatesPageProps
                   <tr>
                     <th className="px-4 py-3 font-semibold">Nome</th>
                     <th className="px-4 py-3 font-semibold">Tipo</th>
+                    <th className="px-4 py-3 font-semibold">DOCX oficial</th>
                     <th className="px-4 py-3 font-semibold">Ativo</th>
                     <th className="px-4 py-3 font-semibold">Padrao</th>
                     <th className="px-4 py-3 font-semibold">Atualizado em</th>
@@ -152,6 +153,17 @@ export default async function TemplatesPage({ searchParams }: TemplatesPageProps
                       </td>
                       <td className="px-4 py-3 text-slate-700">
                         {formatTemplateType(template.document_type)}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span
+                          className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                            template.original_docx_path
+                              ? "bg-teal-50 text-teal-700"
+                              : "bg-amber-50 text-amber-700"
+                          }`}
+                        >
+                          {template.original_docx_path ? "Vinculado" : "Pendente"}
+                        </span>
                       </td>
                       <td className="px-4 py-3">
                         <span
@@ -205,7 +217,7 @@ export default async function TemplatesPage({ searchParams }: TemplatesPageProps
                   ))}
                   {!templates.length ? (
                     <tr>
-                      <td className="px-4 py-6 text-center text-slate-500" colSpan={6}>
+                      <td className="px-4 py-6 text-center text-slate-500" colSpan={7}>
                         Nenhum template encontrado.
                       </td>
                     </tr>

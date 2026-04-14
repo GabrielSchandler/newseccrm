@@ -10,6 +10,7 @@ import {
   deleteDocumentTemplateAction,
   importDocxTemplateAction,
   previewTemplateContentAction,
+  uploadOfficialDocxTemplateAction,
   type DocumentActionState,
 } from "@/app/(authenticated)/documentos/actions";
 import { documentVariableCatalog } from "@/lib/documents/template-engine";
@@ -23,7 +24,7 @@ import { DocumentRichEditor } from "./document-rich-editor";
 
 type TemplateOption = Pick<
   DocumentTemplate,
-  "id" | "name" | "document_type" | "is_active"
+  "id" | "name" | "document_type" | "is_active" | "original_docx_path"
 >;
 
 export type PreviewPreSaleOption = {
@@ -37,6 +38,7 @@ type DocumentTemplateFormProps = {
   onSubmitAction: (values: DocumentTemplatePayload) => Promise<DocumentActionState>;
   templates?: TemplateOption[];
   previewPreSales?: PreviewPreSaleOption[];
+  officialDocxUrl?: string | null;
 };
 
 type EditorActions = {
@@ -61,6 +63,7 @@ export function DocumentTemplateForm({
   onSubmitAction,
   templates = [],
   previewPreSales = [],
+  officialDocxUrl = null,
 }: DocumentTemplateFormProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -140,6 +143,55 @@ export function DocumentTemplateForm({
           shouldValidate: true,
         });
         setPreviewMode(false);
+      }
+    });
+
+    event.target.value = "";
+  }
+
+  function handleOfficialDocxUpload(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+
+    if (!defaultValues?.id) {
+      setMessage({
+        ok: false,
+        message: "Salve o template antes de vincular o DOCX oficial.",
+      });
+      event.target.value = "";
+      return;
+    }
+
+    if (!file) {
+      return;
+    }
+
+    if (!file.name.toLowerCase().endsWith(".docx")) {
+      setMessage({
+        ok: false,
+        message: "Formato nao suportado. Envie um arquivo .docx.",
+      });
+      event.target.value = "";
+      return;
+    }
+
+    if (
+      defaultValues.original_docx_path &&
+      !window.confirm("Deseja substituir o DOCX oficial atual deste template?")
+    ) {
+      event.target.value = "";
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("file", file);
+    setMessage(null);
+
+    startTransition(async () => {
+      const result = await uploadOfficialDocxTemplateAction(defaultValues.id, formData);
+      setMessage(result);
+
+      if (result.ok) {
+        router.refresh();
       }
     });
 
@@ -237,6 +289,7 @@ export function DocumentTemplateForm({
                 <span className="mt-1 block text-xs text-slate-500">
                   {formatTemplateType(template.document_type)}
                   {template.is_active ? "" : " - inativo"}
+                  {template.original_docx_path ? " - DOCX oficial" : ""}
                 </span>
               </Link>
             ))}
@@ -341,6 +394,58 @@ export function DocumentTemplateForm({
           </div>
 
           <div className="space-y-3">
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+              <div className="flex flex-col justify-between gap-3 md:flex-row md:items-start">
+                <div>
+                  <h2 className="text-sm font-semibold text-slate-950">
+                    DOCX oficial do documento
+                  </h2>
+                  <p className="mt-1 text-sm leading-6 text-slate-600">
+                    Este arquivo e a fonte principal para gerar DOCX/PDF com maior
+                    fidelidade. O editor HTML abaixo fica como apoio e preview.
+                  </p>
+                  {defaultValues?.original_docx_filename ? (
+                    <p className="mt-2 text-sm font-medium text-slate-800">
+                      Arquivo atual: {defaultValues.original_docx_filename}
+                    </p>
+                  ) : (
+                    <p className="mt-2 text-sm font-medium text-amber-800">
+                      Nenhum DOCX oficial vinculado ainda.
+                    </p>
+                  )}
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {officialDocxUrl ? (
+                    <Link
+                      href={officialDocxUrl}
+                      target="_blank"
+                      className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                    >
+                      Baixar DOCX
+                    </Link>
+                  ) : null}
+                  <label
+                    className={`inline-flex items-center justify-center rounded-lg px-3 py-2 text-sm font-semibold transition ${
+                      isEditing
+                        ? "cursor-pointer border border-teal-300 bg-white text-teal-800 hover:bg-teal-50"
+                        : "cursor-not-allowed border border-slate-200 bg-slate-100 text-slate-400"
+                    }`}
+                  >
+                    {defaultValues?.original_docx_path
+                      ? "Substituir DOCX oficial"
+                      : "Vincular DOCX oficial"}
+                    <input
+                      type="file"
+                      accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                      className="sr-only"
+                      disabled={disabled || !isEditing}
+                      onChange={handleOfficialDocxUpload}
+                    />
+                  </label>
+                </div>
+              </div>
+            </div>
+
             <div className="flex flex-col justify-between gap-3 md:flex-row md:items-center">
               <div>
                 <label
@@ -350,12 +455,13 @@ export function DocumentTemplateForm({
                   Editor visual <span className="text-red-600">*</span>
                 </label>
                 <p className="mt-1 text-xs leading-5 text-slate-500">
-                  O conteudo continua sendo salvo como HTML em content_html.
+                  Preview aproximado salvo em content_html. O documento oficial
+                  final usa o DOCX vinculado acima quando existir.
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">
                 <label className="inline-flex cursor-pointer items-center justify-center rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
-                  {isPending ? "Importando..." : "Importar DOCX"}
+                  {isPending ? "Importando..." : "Importar DOCX para editor"}
                   <input
                     type="file"
                     accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
