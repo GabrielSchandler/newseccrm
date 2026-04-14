@@ -527,6 +527,54 @@ export async function duplicateDocumentTemplateAction(
   };
 }
 
+export async function deleteDocumentTemplateAction(
+  templateId: string,
+): Promise<DocumentActionState> {
+  try {
+    const { supabase, companyId, role } = await getCurrentUserContext();
+
+    if (!canManageTemplates(role)) {
+      return friendlyError("Apenas admin ou gerente podem excluir templates.");
+    }
+
+    const { count, error: countError } = await supabase
+      .from("generated_documents")
+      .select("id", { count: "exact", head: true })
+      .eq("template_id", templateId)
+      .eq("company_id", companyId);
+
+    if (countError) {
+      return friendlyError(countError.message);
+    }
+
+    if ((count ?? 0) > 0) {
+      return friendlyError(
+        "Este template ja gerou documentos. Desative-o para preservar o historico.",
+      );
+    }
+
+    const { error } = await supabase
+      .from("document_templates")
+      .delete()
+      .eq("id", templateId)
+      .eq("company_id", companyId);
+
+    if (error) {
+      return friendlyError(error.message);
+    }
+  } catch (error) {
+    return friendlyError(
+      error instanceof Error ? error.message : "Nao foi possivel excluir o template.",
+    );
+  }
+
+  revalidatePath("/documentos/templates");
+  return {
+    ok: true,
+    message: "Template excluido com sucesso.",
+  };
+}
+
 export async function importDocxTemplateAction(
   formData: FormData,
 ): Promise<DocumentActionState> {
@@ -604,6 +652,37 @@ export async function previewDocumentAction(
     }
 
     const rendered = renderDocumentTemplate(template.content_html, context);
+    return {
+      ok: true,
+      message: "Preview gerado.",
+      content: rendered.content,
+      variables: rendered.variables,
+    };
+  } catch (error) {
+    return friendlyError(
+      error instanceof Error ? error.message : "Nao foi possivel gerar preview.",
+    );
+  }
+}
+
+export async function previewTemplateContentAction(
+  preSaleId: string,
+  contentHtml: string,
+): Promise<DocumentActionState> {
+  if (!contentHtml.trim()) {
+    return friendlyError("Informe o conteudo do template antes do preview.");
+  }
+
+  try {
+    const { companyId, role } = await getCurrentUserContext();
+
+    if (!canManageTemplates(role)) {
+      return friendlyError("Apenas admin ou gerente podem visualizar preview.");
+    }
+
+    const context = await getDocumentContext(preSaleId, companyId);
+    const rendered = renderDocumentTemplate(contentHtml, context);
+
     return {
       ok: true,
       message: "Preview gerado.",
