@@ -11,6 +11,7 @@ import {
   importDocxTemplateAction,
   previewTemplateContentAction,
   uploadOfficialDocxTemplateAction,
+  uploadOfficialPdfTemplateAction,
   type DocumentActionState,
 } from "@/app/(authenticated)/documentos/actions";
 import { documentVariableCatalog } from "@/lib/documents/template-engine";
@@ -25,6 +26,7 @@ import { DocumentRichEditor } from "./document-rich-editor";
 type TemplateOption = Pick<
   DocumentTemplate,
   "id" | "name" | "document_type" | "is_active" | "original_docx_path"
+  | "original_pdf_path"
 >;
 
 export type PreviewPreSaleOption = {
@@ -39,6 +41,7 @@ type DocumentTemplateFormProps = {
   templates?: TemplateOption[];
   previewPreSales?: PreviewPreSaleOption[];
   officialDocxUrl?: string | null;
+  officialPdfUrl?: string | null;
 };
 
 type EditorActions = {
@@ -64,6 +67,7 @@ export function DocumentTemplateForm({
   templates = [],
   previewPreSales = [],
   officialDocxUrl = null,
+  officialPdfUrl = null,
 }: DocumentTemplateFormProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -198,6 +202,55 @@ export function DocumentTemplateForm({
     event.target.value = "";
   }
 
+  function handleOfficialPdfUpload(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+
+    if (!defaultValues?.id) {
+      setMessage({
+        ok: false,
+        message: "Salve o template antes de vincular o PDF oficial.",
+      });
+      event.target.value = "";
+      return;
+    }
+
+    if (!file) {
+      return;
+    }
+
+    if (!file.name.toLowerCase().endsWith(".pdf")) {
+      setMessage({
+        ok: false,
+        message: "Formato nao suportado. Envie um arquivo .pdf.",
+      });
+      event.target.value = "";
+      return;
+    }
+
+    if (
+      defaultValues.original_pdf_path &&
+      !window.confirm("Deseja substituir o PDF oficial atual deste template?")
+    ) {
+      event.target.value = "";
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("file", file);
+    setMessage(null);
+
+    startTransition(async () => {
+      const result = await uploadOfficialPdfTemplateAction(defaultValues.id, formData);
+      setMessage(result);
+
+      if (result.ok) {
+        router.refresh();
+      }
+    });
+
+    event.target.value = "";
+  }
+
   function insertVariable(variable: string) {
     if (editorActions) {
       editorActions.insertVariable(variable);
@@ -289,7 +342,11 @@ export function DocumentTemplateForm({
                 <span className="mt-1 block text-xs text-slate-500">
                   {formatTemplateType(template.document_type)}
                   {template.is_active ? "" : " - inativo"}
-                  {template.original_docx_path ? " - DOCX oficial" : ""}
+                  {template.original_pdf_path
+                    ? " - PDF oficial"
+                    : template.original_docx_path
+                      ? " - DOCX oficial"
+                      : ""}
                 </span>
               </Link>
             ))}
@@ -401,20 +458,34 @@ export function DocumentTemplateForm({
                     DOCX oficial do documento
                   </h2>
                   <p className="mt-1 text-sm leading-6 text-slate-600">
-                    Este arquivo e a fonte principal para gerar DOCX/PDF com maior
-                    fidelidade. O editor HTML abaixo fica como apoio e preview.
+                    Para maior fidelidade, use PDF preenchivel como fonte final.
+                    DOCX fica disponivel para modelos editaveis.
                   </p>
+                  {defaultValues?.original_pdf_filename ? (
+                    <p className="mt-2 text-sm font-medium text-slate-800">
+                      PDF atual: {defaultValues.original_pdf_filename}
+                    </p>
+                  ) : null}
                   {defaultValues?.original_docx_filename ? (
                     <p className="mt-2 text-sm font-medium text-slate-800">
-                      Arquivo atual: {defaultValues.original_docx_filename}
+                      DOCX atual: {defaultValues.original_docx_filename}
                     </p>
                   ) : (
                     <p className="mt-2 text-sm font-medium text-amber-800">
-                      Nenhum DOCX oficial vinculado ainda.
+                      Nenhum arquivo oficial vinculado ainda.
                     </p>
                   )}
                 </div>
                 <div className="flex flex-wrap gap-2">
+                  {officialPdfUrl ? (
+                    <Link
+                      href={officialPdfUrl}
+                      target="_blank"
+                      className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                    >
+                      Baixar PDF
+                    </Link>
+                  ) : null}
                   {officialDocxUrl ? (
                     <Link
                       href={officialDocxUrl}
@@ -424,6 +495,24 @@ export function DocumentTemplateForm({
                       Baixar DOCX
                     </Link>
                   ) : null}
+                  <label
+                    className={`inline-flex items-center justify-center rounded-lg px-3 py-2 text-sm font-semibold transition ${
+                      isEditing
+                        ? "cursor-pointer border border-teal-300 bg-white text-teal-800 hover:bg-teal-50"
+                        : "cursor-not-allowed border border-slate-200 bg-slate-100 text-slate-400"
+                    }`}
+                  >
+                    {defaultValues?.original_pdf_path
+                      ? "Substituir PDF oficial"
+                      : "Vincular PDF oficial"}
+                    <input
+                      type="file"
+                      accept=".pdf,application/pdf"
+                      className="sr-only"
+                      disabled={disabled || !isEditing}
+                      onChange={handleOfficialPdfUpload}
+                    />
+                  </label>
                   <label
                     className={`inline-flex items-center justify-center rounded-lg px-3 py-2 text-sm font-semibold transition ${
                       isEditing

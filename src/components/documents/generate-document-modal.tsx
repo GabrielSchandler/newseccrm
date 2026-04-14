@@ -6,6 +6,7 @@ import { useState, useTransition } from "react";
 import {
   generateDocumentAction,
   generateOfficialDocumentAction,
+  generateOfficialPdfDocumentAction,
   previewDocumentAction,
   type DocumentActionState,
 } from "@/app/(authenticated)/documentos/actions";
@@ -55,9 +56,11 @@ export function GenerateDocumentModal({
 
     setState(null);
     startTransition(async () => {
-      const result = selectedTemplate?.original_docx_path
-        ? await generateOfficialDocumentAction(preSaleId, selectedTemplateId)
-        : await generateDocumentAction(preSaleId, selectedTemplateId);
+      const result = selectedTemplate?.original_pdf_path
+        ? await generateOfficialPdfDocumentAction(preSaleId, selectedTemplateId)
+        : selectedTemplate?.original_docx_path
+          ? await generateOfficialDocumentAction(preSaleId, selectedTemplateId)
+          : await generateDocumentAction(preSaleId, selectedTemplateId);
       setState(result);
       setPreview(result.content ?? preview);
       setGeneratedDocumentId(result.documentId ?? "");
@@ -146,9 +149,11 @@ export function GenerateDocumentModal({
                     >
                       {isPending
                         ? "Processando..."
-                        : selectedTemplate?.original_docx_path
-                          ? "Gerar documento oficial"
-                          : "Gerar por HTML"}
+                        : selectedTemplate?.original_pdf_path
+                          ? "Gerar PDF oficial"
+                          : selectedTemplate?.original_docx_path
+                            ? "Gerar documento oficial"
+                            : "Gerar por HTML"}
                     </button>
                   </div>
 
@@ -159,9 +164,11 @@ export function GenerateDocumentModal({
                         {formatTemplateType(selectedTemplate.document_type)}
                       </p>
                       <p className="mt-1">
-                        {selectedTemplate.original_docx_path
-                          ? "Este template tem DOCX oficial. A emissao final sera gerada em DOCX e tentara converter para PDF."
-                          : "Este template ainda nao tem DOCX oficial. A geracao usara o fluxo antigo por HTML."}
+                        {selectedTemplate.original_pdf_path
+                          ? "Este template tem PDF oficial. A emissao final vai preencher campos do PDF sem reconverter o layout."
+                          : selectedTemplate.original_docx_path
+                            ? "Este template tem DOCX oficial. A emissao final sera gerada em DOCX e tentara converter para PDF."
+                            : "Este template ainda nao tem arquivo oficial. A geracao usara o fluxo antigo por HTML."}
                       </p>
                     </div>
                   ) : null}

@@ -7,6 +7,7 @@ import sanitizeHtml from "sanitize-html";
 import { getCurrentUserContext } from "@/lib/auth/current-user";
 import { renderOfficialDocxTemplate } from "@/lib/documents/docx-engine";
 import { convertDocxToPdf } from "@/lib/documents/pdf-converter";
+import { renderOfficialPdfFormTemplate } from "@/lib/documents/pdf-form-engine";
 import { documentTemplateSchema } from "@/lib/documents/schema";
 import {
   buildDocumentVariables,
@@ -43,6 +44,7 @@ const docxMimeTypes = new Set([
 ]);
 const documentsBucket = "documents";
 const maxDocxSize = 15 * 1024 * 1024;
+const maxPdfSize = 20 * 1024 * 1024;
 const docxStyleMap = [
   "p[style-name='Title'] => h1:fresh",
   "p[style-name='Heading 1'] => h1:fresh",
@@ -72,6 +74,10 @@ function canManageTemplates(role: string | null) {
 
 function isValidDocxFile(file: File) {
   return file.name.toLowerCase().endsWith(".docx") && docxMimeTypes.has(file.type);
+}
+
+function isValidPdfFile(file: File) {
+  return file.name.toLowerCase().endsWith(".pdf") && ["application/pdf", ""].includes(file.type);
 }
 
 function safeFileName(name: string) {
@@ -711,6 +717,93 @@ export async function uploadOfficialDocxTemplateAction(
   }
 }
 
+export async function uploadOfficialPdfTemplateAction(
+  templateId: string,
+  formData: FormData,
+): Promise<DocumentActionState> {
+  try {
+    const { supabase, companyId, role } = await getCurrentUserContext();
+
+    if (!canManageTemplates(role)) {
+      return friendlyError("Apenas admin ou gerente podem substituir o PDF oficial.");
+    }
+
+    const template = await getTemplate(templateId, companyId);
+
+    if (!template) {
+      return friendlyError("Template nao encontrado.");
+    }
+
+    const file = formData.get("file");
+
+    if (!(file instanceof File)) {
+      return friendlyError("Selecione um arquivo PDF.");
+    }
+
+    if (!isValidPdfFile(file)) {
+      return friendlyError("Formato nao suportado. Envie um arquivo .pdf.");
+    }
+
+    if (file.size <= 0) {
+      return friendlyError("O arquivo PDF esta vazio.");
+    }
+
+    if (file.size > maxPdfSize) {
+      return friendlyError("Envie um PDF com ate 20 MB.");
+    }
+
+    const filename = safeFileName(file.name);
+    const path = storagePath([
+      companyId,
+      "templates",
+      templateId,
+      `${Date.now()}-${filename}`,
+    ]);
+    const buffer = Buffer.from(await file.arrayBuffer());
+    const { error: uploadError } = await supabase.storage
+      .from(documentsBucket)
+      .upload(path, buffer, {
+        contentType: file.type || "application/pdf",
+        upsert: true,
+      });
+
+    if (uploadError) {
+      return friendlyError(uploadError.message);
+    }
+
+    const { error: updateError } = await supabase
+      .from("document_templates")
+      .update({
+        original_pdf_path: path,
+        original_pdf_filename: filename,
+        original_pdf_size: file.size,
+        original_pdf_uploaded_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", templateId)
+      .eq("company_id", companyId);
+
+    if (updateError) {
+      return friendlyError(updateError.message);
+    }
+
+    revalidatePath("/documentos/templates");
+    revalidatePath(`/documentos/templates/${templateId}`);
+    revalidatePath(`/documentos/templates/${templateId}/editar`);
+
+    return {
+      ok: true,
+      message: "PDF oficial vinculado ao template.",
+    };
+  } catch (error) {
+    return friendlyError(
+      error instanceof Error
+        ? error.message
+        : "Nao foi possivel vincular o PDF oficial.",
+    );
+  }
+}
+
 export async function importDocxTemplateAction(
   formData: FormData,
 ): Promise<DocumentActionState> {
@@ -986,6 +1079,124 @@ export async function generateOfficialDocumentAction(
       error instanceof Error
         ? error.message
         : "Nao foi possivel gerar o documento oficial.",
+    );
+  }
+}
+
+export async function generateOfficialPdfDocumentAction(
+  preSaleId: string,
+  templateId: string,
+): Promise<DocumentActionState> {
+  try {
+    const { supabase, companyId, userProfileId } = await getCurrentUserContext();
+    const [template, context] = await Promise.all([
+      getTemplate(templateId, companyId, true),
+      getDocumentContext(preSaleId, companyId),
+    ]);
+
+    if (!template) {
+      return friendlyError("Template ativo nao encontrado.");
+    }
+
+    if (!template.original_pdf_path) {
+      return friendlyError("Este template ainda nao possui PDF oficial.");
+    }
+
+    const { data: storedPdf, error: downloadError } = await supabase.storage
+      .from(documentsBucket)
+      .download(template.original_pdf_path);
+
+    if (downloadError || !storedPdf) {
+      return friendlyError(
+        downloadError?.message || "Nao foi possivel baixar o PDF oficial.",
+      );
+    }
+
+    const variables = buildDocumentVariables(context);
+    const renderedPdf = await renderOfficialPdfFormTemplate(
+      Buffer.from(await storedPdf.arrayBuffer()),
+      variables,
+    );
+
+    if (!renderedPdf.filledFields.length) {
+      return friendlyError(
+        "O PDF oficial nao possui campos preenchiveis com nomes iguais as variaveis. Crie campos como cliente_nome, cliente_cpf ou contratante_nome no PDF.",
+      );
+    }
+
+    const renderedHtml = template.content_html
+      ? renderDocumentTemplate(template.content_html, context).content
+      : "";
+    const title = buildDocumentTitle(template, {
+      content: renderedHtml,
+      variables,
+    });
+    const fileBase = safeStorageName(title, "pdf").replace(/\.pdf$/, "");
+    const generatedPdfFilename = `${fileBase}.pdf`;
+    const documentFolder = storagePath([
+      companyId,
+      "pre_sales",
+      preSaleId,
+      "documents",
+      `${Date.now()}-${safeFileName(template.name)}`,
+    ]);
+    const generatedPdfPath = storagePath([documentFolder, generatedPdfFilename]);
+
+    await uploadGeneratedFile(
+      supabase,
+      generatedPdfPath,
+      renderedPdf.buffer,
+      "application/pdf",
+    );
+
+    const { data, error } = await supabase
+      .from("generated_documents")
+      .insert({
+        company_id: companyId,
+        pre_sale_id: preSaleId,
+        client_id: context.preSale.client_id,
+        template_id: templateId,
+        document_type: template.document_type,
+        title,
+        rendered_content_html: renderedHtml,
+        rendered_variables: variables,
+        generated_docx_path: null,
+        generated_pdf_path: generatedPdfPath,
+        generated_docx_filename: null,
+        generated_pdf_filename: generatedPdfFilename,
+        render_source: "pdf",
+        pdf_error_message: null,
+        status: "gerado",
+        created_by: userProfileId,
+      })
+      .select("id")
+      .single();
+
+    if (error) {
+      return friendlyError(error.message);
+    }
+
+    revalidatePath("/documentos");
+    revalidatePath(`/pre-vendas/${preSaleId}`);
+
+    return {
+      ok: true,
+      message: `PDF oficial gerado com ${renderedPdf.filledFields.length} campos preenchidos.`,
+      content: renderedHtml,
+      variables,
+      documentId: (data as { id: string }).id,
+    };
+  } catch (error) {
+    console.error("[documents] Official PDF document generation failed", {
+      preSaleId,
+      templateId,
+      error,
+    });
+
+    return friendlyError(
+      error instanceof Error
+        ? error.message
+        : "Nao foi possivel gerar o PDF oficial.",
     );
   }
 }

@@ -182,7 +182,11 @@ export default async function DocumentoPage({ params }: DocumentoPageProps) {
               Fonte
             </p>
             <p className="mt-1 text-sm font-medium text-slate-950">
-              {document.render_source === "docx" ? "DOCX oficial" : "HTML"}
+              {document.render_source === "pdf"
+                ? "PDF oficial"
+                : document.render_source === "docx"
+                  ? "DOCX oficial"
+                  : "HTML"}
             </p>
           </div>
           <div>

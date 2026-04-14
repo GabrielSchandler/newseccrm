@@ -17,6 +17,10 @@ export type DocumentTemplate = {
   original_docx_filename: string | null;
   original_docx_size: number | null;
   original_docx_uploaded_at: string | null;
+  original_pdf_path: string | null;
+  original_pdf_filename: string | null;
+  original_pdf_size: number | null;
+  original_pdf_uploaded_at: string | null;
   is_active: boolean;
   is_default: boolean;
   created_by: string | null;
@@ -31,7 +35,7 @@ export type GeneratedDocumentStatus =
   | "pdf_error"
   | "erro";
 
-export type DocumentRenderSource = "html" | "docx";
+export type DocumentRenderSource = "html" | "docx" | "pdf";
 
 export type GeneratedDocument = {
   id: string;

@@ -157,12 +157,16 @@ export default async function TemplatesPage({ searchParams }: TemplatesPageProps
                       <td className="px-4 py-3">
                         <span
                           className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
-                            template.original_docx_path
+                            template.original_pdf_path || template.original_docx_path
                               ? "bg-teal-50 text-teal-700"
                               : "bg-amber-50 text-amber-700"
                           }`}
                         >
-                          {template.original_docx_path ? "Vinculado" : "Pendente"}
+                          {template.original_pdf_path
+                            ? "PDF vinculado"
+                            : template.original_docx_path
+                              ? "DOCX vinculado"
+                              : "Pendente"}
                         </span>
                       </td>
                       <td className="px-4 py-3">

@@ -5,7 +5,11 @@ alter table public.document_templates
   add column if not exists original_docx_path text,
   add column if not exists original_docx_filename text,
   add column if not exists original_docx_size bigint,
-  add column if not exists original_docx_uploaded_at timestamptz;
+  add column if not exists original_docx_uploaded_at timestamptz,
+  add column if not exists original_pdf_path text,
+  add column if not exists original_pdf_filename text,
+  add column if not exists original_pdf_size bigint,
+  add column if not exists original_pdf_uploaded_at timestamptz;
 
 alter table public.generated_documents
   add column if not exists generated_docx_path text,

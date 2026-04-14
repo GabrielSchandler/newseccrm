@@ -47,11 +47,19 @@ export default async function TemplatePage({
     notFound();
   }
 
-  const { data: officialDocxSignedUrl } = template.original_docx_path
-    ? await supabase.storage
-        .from("documents")
-        .createSignedUrl(template.original_docx_path, 60 * 10)
-    : { data: null };
+  const [{ data: officialDocxSignedUrl }, { data: officialPdfSignedUrl }] =
+    await Promise.all([
+      template.original_docx_path
+        ? supabase.storage
+            .from("documents")
+            .createSignedUrl(template.original_docx_path, 60 * 10)
+        : Promise.resolve({ data: null }),
+      template.original_pdf_path
+        ? supabase.storage
+            .from("documents")
+            .createSignedUrl(template.original_pdf_path, 60 * 10)
+        : Promise.resolve({ data: null }),
+    ]);
 
   return (
     <>
@@ -87,6 +95,15 @@ export default async function TemplatePage({
               className="rounded-lg border border-teal-300 bg-teal-50 px-4 py-2.5 text-sm font-semibold text-teal-800 transition hover:bg-teal-100"
             >
               Baixar DOCX oficial
+            </Link>
+          ) : null}
+          {officialPdfSignedUrl?.signedUrl ? (
+            <Link
+              href={officialPdfSignedUrl.signedUrl}
+              target="_blank"
+              className="rounded-lg border border-teal-300 bg-white px-4 py-2.5 text-sm font-semibold text-teal-800 transition hover:bg-teal-50"
+            >
+              Baixar PDF oficial
             </Link>
           ) : null}
         </div>
@@ -130,6 +147,14 @@ export default async function TemplatePage({
             </p>
             <p className="mt-1 text-sm font-medium text-slate-950">
               {displayValue(template.original_docx_filename)}
+            </p>
+          </div>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              PDF oficial
+            </p>
+            <p className="mt-1 text-sm font-medium text-slate-950">
+              {displayValue(template.original_pdf_filename)}
             </p>
           </div>
           <div className="md:col-span-4">

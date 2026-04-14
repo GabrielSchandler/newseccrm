@@ -75,11 +75,19 @@ export default async function EditTemplatePage({ params }: EditTemplatePageProps
   );
 
   const updateAction = updateDocumentTemplateAction.bind(null, template.id);
-  const { data: officialDocxSignedUrl } = template.original_docx_path
-    ? await supabase.storage
-        .from("documents")
-        .createSignedUrl(template.original_docx_path, 60 * 10)
-    : { data: null };
+  const [{ data: officialDocxSignedUrl }, { data: officialPdfSignedUrl }] =
+    await Promise.all([
+      template.original_docx_path
+        ? supabase.storage
+            .from("documents")
+            .createSignedUrl(template.original_docx_path, 60 * 10)
+        : Promise.resolve({ data: null }),
+      template.original_pdf_path
+        ? supabase.storage
+            .from("documents")
+            .createSignedUrl(template.original_pdf_path, 60 * 10)
+        : Promise.resolve({ data: null }),
+    ]);
 
   return (
     <>
@@ -96,6 +104,7 @@ export default async function EditTemplatePage({ params }: EditTemplatePageProps
           templates={templates}
           previewPreSales={previewPreSales}
           officialDocxUrl={officialDocxSignedUrl?.signedUrl ?? null}
+          officialPdfUrl={officialPdfSignedUrl?.signedUrl ?? null}
         />
       </div>
     </>

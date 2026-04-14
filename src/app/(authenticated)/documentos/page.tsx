@@ -194,7 +194,11 @@ export default async function DocumentosPage({ searchParams }: DocumentosPagePro
                           {displayValue(template?.name ?? null)}
                         </td>
                         <td className="px-4 py-3 text-slate-700">
-                          {document.render_source === "docx" ? "DOCX" : "HTML"}
+                          {document.render_source === "pdf"
+                            ? "PDF"
+                            : document.render_source === "docx"
+                              ? "DOCX"
+                              : "HTML"}
                         </td>
                         <td className="px-4 py-3 text-slate-700">
                           {document.pdf_error_message
