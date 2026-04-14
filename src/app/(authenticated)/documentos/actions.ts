@@ -305,6 +305,7 @@ function buildTemplateWritePayload(values: DocumentTemplatePayload) {
   return {
     ...values,
     type: values.document_type,
+    content: values.content_html,
   };
 }
 
@@ -514,6 +515,7 @@ export async function duplicateDocumentTemplateAction(
       type: template.document_type,
       description: template.description,
       content_html: template.content_html,
+      content: template.content_html,
       is_active: false,
       is_default: false,
       created_by: userProfileId,
