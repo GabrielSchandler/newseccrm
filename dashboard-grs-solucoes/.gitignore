@@ -1,0 +1,10 @@
+.env*
+!.env.example
+.next
+node_modules
+out
+dist
+*.log
+*.tsbuildinfo
+BASE DE VENDAS.xlsx
+*.local.xlsx
