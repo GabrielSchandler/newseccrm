@@ -158,36 +158,49 @@ export async function listCalculationClients() {
 
 export async function listCalculationPreSales() {
   const { supabase, companyId } = await getCurrentUserContext();
+  const { data: preSalesData, error: preSalesError } = await supabase
+    .from("pre_sales")
+    .select("id, client_id, consultant_user_id, pre_sale_type, created_at")
+    .eq("company_id", companyId)
+    .order("created_at", { ascending: false });
+
+  if (preSalesError) {
+    throw new Error(preSalesError.message);
+  }
+
+  const preSales = (preSalesData ?? []) as Array<{
+    id: string;
+    client_id: string;
+    consultant_user_id: string | null;
+    pre_sale_type: "emprestimo" | "imovel" | "veiculo";
+    created_at: string;
+  }>;
+  const preSaleIds = preSales.map((item) => item.id);
+
+  if (!preSaleIds.length) {
+    return [];
+  }
+
   const [
-    { data: preSalesData, error: preSalesError },
     { data: snapshotsData, error: snapshotsError },
     { data: financialCasesData, error: financialCasesError },
     { data: consultantsData, error: consultantsError },
   ] = await Promise.all([
     supabase
-      .from("pre_sales")
-      .select(
-        "id, client_id, consultant_user_id, pre_sale_type, created_at, company_id",
-      )
-      .eq("company_id", companyId)
-      .order("created_at", { ascending: false }),
-    supabase
       .from("pre_sale_client_snapshot")
-      .select("pre_sale_id, full_name, cpf, phone_mobile"),
+      .select("pre_sale_id, full_name, cpf, phone_mobile")
+      .in("pre_sale_id", preSaleIds),
     supabase
       .from("pre_sale_financial_cases")
       .select(
         "pre_sale_id, financer_name, financed_amount, down_payment, installment_amount, installment_count, paid_installments, asset_brand_model, asset_year",
-      ),
+      )
+      .in("pre_sale_id", preSaleIds),
     supabase
       .from("user_profiles")
-      .select("id, full_name, company_id")
+      .select("id, full_name")
       .eq("company_id", companyId),
   ]);
-
-  if (preSalesError) {
-    throw new Error(preSalesError.message);
-  }
 
   if (snapshotsError) {
     throw new Error(snapshotsError.message);
@@ -211,13 +224,7 @@ export async function listCalculationPreSales() {
     (consultantsData ?? []).map((user) => [user.id, user.full_name ?? null]),
   );
 
-  return ((preSalesData ?? []) as Array<{
-    id: string;
-    client_id: string;
-    consultant_user_id: string | null;
-    pre_sale_type: "emprestimo" | "imovel" | "veiculo";
-    created_at: string;
-  }>).map((preSale) => {
+  return preSales.map((preSale) => {
     const snapshot = snapshotMap.get(preSale.id) as
       | {
           full_name: string | null;

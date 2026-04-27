@@ -36,10 +36,21 @@ export default async function NovoCalculoPage({
     redirect(role === "seller" ? "/pre-vendas" : "/dashboard");
   }
 
-  const [clients, preSales] = await Promise.all([
-    listCalculationClients(),
-    listCalculationPreSales(),
-  ]);
+  let loadError: string | null = null;
+  let clients = [] as Awaited<ReturnType<typeof listCalculationClients>>;
+  let preSales = [] as Awaited<ReturnType<typeof listCalculationPreSales>>;
+
+  try {
+    [clients, preSales] = await Promise.all([
+      listCalculationClients(),
+      listCalculationPreSales(),
+    ]);
+  } catch (error) {
+    loadError =
+      error instanceof Error
+        ? error.message
+        : "Nao foi possivel carregar clientes e pre-vendas para preenchimento automatico.";
+  }
 
   let defaultValues: FinancingCalculationFormValues = financingCalculationDefaultValues;
   const selectedPreSale = params.preSaleId
@@ -95,7 +106,13 @@ export default async function NovoCalculoPage({
         title="Novo calculo"
         description="Preencha os dados operacionais, revise os numeros e gere uma analise sintetizada para o cliente."
       />
-      <div className="p-6">
+      <div className="space-y-6 p-6">
+        {loadError ? (
+          <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            Nao foi possivel carregar as listas auxiliares de clientes e pre-vendas.
+            Voce ainda pode preencher o calculo manualmente. Detalhe: {loadError}
+          </div>
+        ) : null}
         <CalculationForm
           mode="create"
           submitLabel="Calcular e salvar"
