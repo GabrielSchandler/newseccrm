@@ -35,6 +35,14 @@ function friendlyError(message: string): CalculationActionState {
   };
 }
 
+function normalizeCalculationErrorMessage(message: string) {
+  if (message.includes("Could not find the table") && message.includes("financing_calculations")) {
+    return "A tabela public.financing_calculations ainda nao existe no Supabase desta instancia. Rode o SQL do modulo de calculos e tente novamente.";
+  }
+
+  return message;
+}
+
 function buildCalculationRecord(values: FinancingCalculationPayload) {
   const computed = calculateFinancingRevision(values);
 
@@ -104,7 +112,11 @@ export async function createFinancingCalculationAction(
       .single();
 
     if (error || !data) {
-      return friendlyError(error?.message || "Nao foi possivel salvar o calculo.");
+      return friendlyError(
+        normalizeCalculationErrorMessage(
+          error?.message || "Nao foi possivel salvar o calculo.",
+        ),
+      );
     }
 
     const calculationId = (data as { id: string }).id;
@@ -122,7 +134,9 @@ export async function createFinancingCalculationAction(
     };
   } catch (error) {
     return friendlyError(
-      error instanceof Error ? error.message : "Nao foi possivel salvar o calculo.",
+      error instanceof Error
+        ? normalizeCalculationErrorMessage(error.message)
+        : "Nao foi possivel salvar o calculo.",
     );
   }
 }
@@ -170,7 +184,7 @@ export async function updateFinancingCalculationAction(
       .eq("company_id", companyId);
 
     if (error) {
-      return friendlyError(error.message);
+      return friendlyError(normalizeCalculationErrorMessage(error.message));
     }
 
     await revalidateCalculationPages(
@@ -186,7 +200,9 @@ export async function updateFinancingCalculationAction(
     };
   } catch (error) {
     return friendlyError(
-      error instanceof Error ? error.message : "Nao foi possivel atualizar o calculo.",
+      error instanceof Error
+        ? normalizeCalculationErrorMessage(error.message)
+        : "Nao foi possivel atualizar o calculo.",
     );
   }
 }
@@ -232,7 +248,7 @@ export async function generateCalculationPdfAction(
       .eq("company_id", companyId);
 
     if (updateError) {
-      return friendlyError(updateError.message);
+      return friendlyError(normalizeCalculationErrorMessage(updateError.message));
     }
 
     await revalidateCalculationPages(

@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { ChangeEvent } from "react";
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import type { CalculationActionState } from "@/app/(authenticated)/calculos/actions";
 import { formatCpf, formatPhone, onlyDigits } from "@/lib/clients/masks";
@@ -65,6 +65,31 @@ function handleIntegerMask(event: ChangeEvent<HTMLInputElement>) {
   event.target.value = event.target.value.replace(/\D/g, "");
 }
 
+function parseCurrencyInputValue(value: string | number | null | undefined) {
+  if (value === null || value === undefined || value === "") {
+    return 0;
+  }
+
+  const normalized = String(value)
+    .replace(/\./g, "")
+    .replace(",", ".")
+    .replace(/[^\d.-]/g, "");
+  const parsed = Number(normalized);
+
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function formatCurrencyFromNumber(value: number) {
+  if (!Number.isFinite(value) || value <= 0) {
+    return "";
+  }
+
+  return new Intl.NumberFormat("pt-BR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(Number(value.toFixed(2)));
+}
+
 function CalculationActionMessage({
   state,
 }: {
@@ -112,8 +137,44 @@ export function CalculationForm({
     defaultValues: defaultValues ?? financingCalculationDefaultValues,
   });
   const selectedPreSaleId = watch("pre_sale_id");
+  const cashValue = watch("cash_value");
+  const downPayment = watch("down_payment");
+  const installmentCount = watch("installment_count");
+  const paidInstallments = watch("paid_installments");
+  const financedValue = watch("financed_value");
+  const remainingInstallments = watch("remaining_installments");
   const disabled = isPending || isSubmitting;
   const selectedPreSale = preSales.find((preSale) => preSale.id === selectedPreSaleId);
+
+  useEffect(() => {
+    const nextFinancedValue = Math.max(
+      parseCurrencyInputValue(cashValue ?? "") -
+        parseCurrencyInputValue(downPayment ?? ""),
+      0,
+    );
+    const formatted = formatCurrencyFromNumber(nextFinancedValue);
+
+    if ((financedValue ?? "") !== formatted) {
+      setValue("financed_value", formatted, {
+        shouldDirty: true,
+        shouldValidate: true,
+      });
+    }
+  }, [cashValue, downPayment, financedValue, setValue]);
+
+  useEffect(() => {
+    const totalInstallments = Number(String(installmentCount ?? "").replace(/\D/g, "")) || 0;
+    const paid = Number(String(paidInstallments ?? "").replace(/\D/g, "")) || 0;
+    const nextRemainingInstallments = Math.max(totalInstallments - paid, 0);
+    const formatted = nextRemainingInstallments ? String(nextRemainingInstallments) : "";
+
+    if ((remainingInstallments ?? "") !== formatted) {
+      setValue("remaining_installments", formatted, {
+        shouldDirty: true,
+        shouldValidate: true,
+      });
+    }
+  }, [installmentCount, paidInstallments, remainingInstallments, setValue]);
 
   function applyClientSelection(clientId: string) {
     const client = clients.find((item) => item.id === clientId);
@@ -496,10 +557,14 @@ export function CalculationForm({
             <input
               id="financed_value"
               disabled={disabled}
+              readOnly
               inputMode="numeric"
-              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
+              className="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
               {...register("financed_value", { onChange: handleCurrencyMask })}
             />
+            <p className="text-xs text-slate-500">
+              Calculado automaticamente: valor a vista menos entrada.
+            </p>
             {errors.financed_value?.message ? (
               <p className="text-sm text-red-600">
                 {String(errors.financed_value.message)}
@@ -578,10 +643,14 @@ export function CalculationForm({
             <input
               id="remaining_installments"
               disabled={disabled}
+              readOnly
               inputMode="numeric"
-              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
+              className="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
               {...register("remaining_installments", { onChange: handleIntegerMask })}
             />
+            <p className="text-xs text-slate-500">
+              Calculado automaticamente: total de parcelas menos parcelas pagas.
+            </p>
             {errors.remaining_installments?.message ? (
               <p className="text-sm text-red-600">
                 {String(errors.remaining_installments.message)}

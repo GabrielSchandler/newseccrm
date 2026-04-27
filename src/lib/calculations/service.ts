@@ -193,7 +193,7 @@ export async function listCalculationPreSales() {
     supabase
       .from("pre_sale_financial_cases")
       .select(
-        "pre_sale_id, financer_name, financed_amount, down_payment, installment_amount, installment_count, paid_installments, asset_brand_model, asset_year",
+        "pre_sale_id, financer_name, financed_amount, installment_amount, installment_count, paid_installments, asset_brand_model, asset_year",
       )
       .in("pre_sale_id", preSaleIds),
     supabase
@@ -236,7 +236,6 @@ export async function listCalculationPreSales() {
       | {
           financer_name: string | null;
           financed_amount: number | null;
-          down_payment: number | null;
           installment_amount: number | null;
           installment_count: number | null;
           paid_installments: number | null;
@@ -267,7 +266,7 @@ export async function listCalculationPreSales() {
           ? null
           : String(financial.asset_year),
       financed_value: financial?.financed_amount ?? null,
-      down_payment: financial?.down_payment ?? null,
+      down_payment: null,
       current_installment_value: financial?.installment_amount ?? null,
       installment_count: installmentCount || null,
       paid_installments: paidInstallments || null,
