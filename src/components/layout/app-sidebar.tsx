@@ -9,6 +9,7 @@ const navigation: SidebarNavigationItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: "dashboard" },
   { href: "/clientes", label: "Clientes", icon: "clients" },
   { href: "/pre-vendas", label: "Pre-vendas", icon: "preSales" },
+  { href: "/calculos", label: "Calculos", icon: "calculations" },
   { href: "/documentos", label: "Documentos", icon: "documents" },
   {
     href: "/documentos/templates",

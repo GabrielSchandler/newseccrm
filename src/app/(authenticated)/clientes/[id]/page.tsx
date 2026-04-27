@@ -8,6 +8,7 @@ import { CopyButton } from "@/components/clients/copy-button";
 import { ReactivateClientButton } from "@/components/clients/reactivate-client-button";
 import { WhatsAppLink } from "@/components/clients/whatsapp-link";
 import { ClientDocumentsSection } from "@/components/client-documents/client-documents-section";
+import { ClientCalculationsSection } from "@/components/calculations/client-calculations-section";
 import { PageHeader } from "@/components/layout/page-header";
 import {
   displayCpf,
@@ -237,6 +238,8 @@ export default async function ClientePage({
           title="Documentos do cliente"
           description="Anexe e consulte documentos vinculados a este cliente usando links temporarios e bucket privado."
         />
+
+        <ClientCalculationsSection clientId={client.id} />
       </div>
     </>
   );

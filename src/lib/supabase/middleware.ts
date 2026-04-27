@@ -12,6 +12,7 @@ const protectedRoutes = [
   "/dashboard",
   "/clientes",
   "/pre-vendas",
+  "/calculos",
   "/contratos",
   "/usuarios",
 ];

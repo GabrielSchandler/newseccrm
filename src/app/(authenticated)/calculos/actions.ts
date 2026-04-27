@@ -1,0 +1,286 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { renderToBuffer } from "@react-pdf/renderer";
+import { getCurrentUserContext } from "@/lib/auth/current-user";
+import {
+  calculateFinancingRevision,
+} from "@/lib/calculations/financing-calculation";
+import { CalculationReportPdf } from "@/lib/calculations/report-pdf";
+import {
+  financingCalculationFormSchema,
+  type FinancingCalculationPayload,
+} from "@/lib/calculations/schema";
+import {
+  assertCalculationAccess,
+  assertClientBelongsToCompany,
+  assertPreSaleBelongsToCompany,
+  buildCalculationReportPath,
+  calculationReportsBucket,
+  canManageCalculations,
+  createCalculationPdfFileName,
+} from "@/lib/calculations/service";
+
+export type CalculationActionState = {
+  ok: boolean;
+  message: string;
+  redirectTo?: string;
+  url?: string;
+};
+
+function friendlyError(message: string): CalculationActionState {
+  return {
+    ok: false,
+    message,
+  };
+}
+
+function buildCalculationRecord(values: FinancingCalculationPayload) {
+  const computed = calculateFinancingRevision(values);
+
+  return {
+    ...values,
+    ...computed,
+    status: "calculado" as const,
+  };
+}
+
+async function revalidateCalculationPages(
+  calculationId: string,
+  clientId?: string | null,
+  preSaleId?: string | null,
+) {
+  revalidatePath("/calculos");
+  revalidatePath(`/calculos/${calculationId}`);
+  revalidatePath(`/calculos/${calculationId}/editar`);
+
+  if (clientId) {
+    revalidatePath(`/clientes/${clientId}`);
+  }
+
+  if (preSaleId) {
+    revalidatePath(`/pre-vendas/${preSaleId}`);
+  }
+}
+
+export async function createFinancingCalculationAction(
+  values: FinancingCalculationPayload,
+): Promise<CalculationActionState> {
+  const parsed = financingCalculationFormSchema.safeParse(values);
+
+  if (!parsed.success) {
+    return friendlyError("Confira os dados do calculo.");
+  }
+
+  try {
+    const { supabase, companyId, userProfileId, role } = await getCurrentUserContext();
+
+    if (!canManageCalculations(role)) {
+      return friendlyError("Voce nao tem permissao para criar calculos.");
+    }
+
+    if (parsed.data.client_id) {
+      await assertClientBelongsToCompany(parsed.data.client_id, companyId);
+    }
+
+    if (parsed.data.pre_sale_id) {
+      await assertPreSaleBelongsToCompany(
+        parsed.data.pre_sale_id,
+        companyId,
+        parsed.data.client_id,
+      );
+    }
+
+    const record = buildCalculationRecord(parsed.data);
+    const { data, error } = await supabase
+      .from("financing_calculations")
+      .insert({
+        ...record,
+        company_id: companyId,
+        created_by: userProfileId,
+        updated_by: userProfileId,
+      })
+      .select("id")
+      .single();
+
+    if (error || !data) {
+      return friendlyError(error?.message || "Nao foi possivel salvar o calculo.");
+    }
+
+    const calculationId = (data as { id: string }).id;
+
+    await revalidateCalculationPages(
+      calculationId,
+      parsed.data.client_id,
+      parsed.data.pre_sale_id,
+    );
+
+    return {
+      ok: true,
+      message: "Calculo salvo com sucesso.",
+      redirectTo: `/calculos/${calculationId}?success=created`,
+    };
+  } catch (error) {
+    return friendlyError(
+      error instanceof Error ? error.message : "Nao foi possivel salvar o calculo.",
+    );
+  }
+}
+
+export async function updateFinancingCalculationAction(
+  calculationId: string,
+  values: FinancingCalculationPayload,
+): Promise<CalculationActionState> {
+  const parsed = financingCalculationFormSchema.safeParse(values);
+
+  if (!parsed.success) {
+    return friendlyError("Confira os dados do calculo.");
+  }
+
+  try {
+    const { supabase, companyId, userProfileId, role } = await getCurrentUserContext();
+
+    if (!canManageCalculations(role)) {
+      return friendlyError("Voce nao tem permissao para editar calculos.");
+    }
+
+    const existing = await assertCalculationAccess(calculationId);
+
+    if (parsed.data.client_id) {
+      await assertClientBelongsToCompany(parsed.data.client_id, companyId);
+    }
+
+    if (parsed.data.pre_sale_id) {
+      await assertPreSaleBelongsToCompany(
+        parsed.data.pre_sale_id,
+        companyId,
+        parsed.data.client_id,
+      );
+    }
+
+    const record = buildCalculationRecord(parsed.data);
+    const { error } = await supabase
+      .from("financing_calculations")
+      .update({
+        ...record,
+        updated_by: userProfileId,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", calculationId)
+      .eq("company_id", companyId);
+
+    if (error) {
+      return friendlyError(error.message);
+    }
+
+    await revalidateCalculationPages(
+      calculationId,
+      parsed.data.client_id ?? existing.client_id,
+      parsed.data.pre_sale_id ?? existing.pre_sale_id,
+    );
+
+    return {
+      ok: true,
+      message: "Calculo atualizado com sucesso.",
+      redirectTo: `/calculos/${calculationId}?success=updated`,
+    };
+  } catch (error) {
+    return friendlyError(
+      error instanceof Error ? error.message : "Nao foi possivel atualizar o calculo.",
+    );
+  }
+}
+
+export async function generateCalculationPdfAction(
+  calculationId: string,
+): Promise<CalculationActionState> {
+  try {
+    const { supabase, companyId, userProfileId, role } = await getCurrentUserContext();
+
+    if (!canManageCalculations(role)) {
+      return friendlyError("Voce nao tem permissao para gerar PDFs.");
+    }
+
+    const calculation = await assertCalculationAccess(calculationId);
+    const filePath = buildCalculationReportPath(companyId, calculationId);
+    const pdfBuffer = await renderToBuffer(
+      CalculationReportPdf({ calculation }),
+    );
+    const fileName =
+      calculation.pdf_file_name ?? createCalculationPdfFileName(calculation.client_name);
+    const { error: uploadError } = await supabase.storage
+      .from(calculationReportsBucket)
+      .upload(filePath, pdfBuffer, {
+        contentType: "application/pdf",
+        upsert: true,
+      });
+
+    if (uploadError) {
+      return friendlyError(uploadError.message);
+    }
+
+    const { error: updateError } = await supabase
+      .from("financing_calculations")
+      .update({
+        pdf_storage_path: filePath,
+        pdf_file_name: fileName,
+        status: "pdf_gerado",
+        updated_by: userProfileId,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", calculationId)
+      .eq("company_id", companyId);
+
+    if (updateError) {
+      return friendlyError(updateError.message);
+    }
+
+    await revalidateCalculationPages(
+      calculationId,
+      calculation.client_id,
+      calculation.pre_sale_id,
+    );
+
+    return {
+      ok: true,
+      message: "PDF gerado com sucesso.",
+    };
+  } catch (error) {
+    return friendlyError(
+      error instanceof Error ? error.message : "Nao foi possivel gerar o PDF.",
+    );
+  }
+}
+
+export async function createSignedCalculationPdfUrlAction(
+  calculationId: string,
+): Promise<CalculationActionState> {
+  try {
+    const { supabase } = await getCurrentUserContext();
+    const calculation = await assertCalculationAccess(calculationId);
+
+    if (!calculation.pdf_storage_path) {
+      return friendlyError("Este calculo ainda nao possui PDF gerado.");
+    }
+
+    const { data, error } = await supabase.storage
+      .from(calculationReportsBucket)
+      .createSignedUrl(calculation.pdf_storage_path, 60 * 10, {
+        download: calculation.pdf_file_name ?? "analise-sintetizada.pdf",
+      });
+
+    if (error || !data?.signedUrl) {
+      return friendlyError(error?.message || "Nao foi possivel gerar o link do PDF.");
+    }
+
+    return {
+      ok: true,
+      message: "Download liberado.",
+      url: data.signedUrl,
+    };
+  } catch (error) {
+    return friendlyError(
+      error instanceof Error ? error.message : "Nao foi possivel abrir o PDF.",
+    );
+  }
+}

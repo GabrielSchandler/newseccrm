@@ -2,6 +2,7 @@
 
 import {
   BarChart3,
+  Calculator,
   FileSignature,
   FileText,
   Handshake,
@@ -14,7 +15,15 @@ import { usePathname } from "next/navigation";
 export type SidebarNavigationItem = {
   href: string;
   label: string;
-  icon: "dashboard" | "clients" | "preSales" | "documents" | "templates" | "contracts" | "users";
+  icon:
+    | "dashboard"
+    | "clients"
+    | "preSales"
+    | "calculations"
+    | "documents"
+    | "templates"
+    | "contracts"
+    | "users";
   managerOnly?: boolean;
 };
 
@@ -27,6 +36,7 @@ const icons = {
   dashboard: LayoutDashboard,
   clients: Users,
   preSales: Handshake,
+  calculations: Calculator,
   documents: FileText,
   templates: FileText,
   contracts: FileSignature,
