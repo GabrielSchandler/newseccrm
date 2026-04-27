@@ -57,7 +57,7 @@ export default async function UsuariosPage({ searchParams }: UsuariosPageProps) 
   const { supabase, companyId, role } = await getCurrentUserContext();
 
   if (!canAccessUserManagement(role)) {
-    redirect("/dashboard");
+    redirect(role === "seller" ? "/pre-vendas" : "/dashboard");
   }
 
   const [{ data: companyData, error: companyError }, { data, error }] =

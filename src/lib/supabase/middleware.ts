@@ -53,6 +53,7 @@ export async function updateSession(request: NextRequest) {
     request.nextUrl.pathname.startsWith(route),
   );
   const isLoginRoute = request.nextUrl.pathname === "/login";
+  const isDashboardRoute = request.nextUrl.pathname.startsWith("/dashboard");
 
   if (!user && isProtectedRoute) {
     const url = request.nextUrl.clone();
@@ -61,9 +62,28 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
+  let profileRole: string | null = null;
+
+  if (user && (isLoginRoute || isDashboardRoute)) {
+    const { data: profile } = await supabase
+      .from("user_profiles")
+      .select("role")
+      .eq("auth_user_id", user.id)
+      .maybeSingle();
+
+    profileRole = (profile as { role?: string | null } | null)?.role ?? null;
+  }
+
   if (user && isLoginRoute) {
     const url = request.nextUrl.clone();
-    url.pathname = "/dashboard";
+    url.pathname = profileRole === "seller" ? "/pre-vendas" : "/dashboard";
+    url.search = "";
+    return NextResponse.redirect(url);
+  }
+
+  if (user && isDashboardRoute && profileRole === "seller") {
+    const url = request.nextUrl.clone();
+    url.pathname = "/pre-vendas";
     url.search = "";
     return NextResponse.redirect(url);
   }

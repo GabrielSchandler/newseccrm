@@ -24,8 +24,11 @@ export async function AppSidebar() {
   const { role } = await getCurrentUserContext();
   const canManageTemplates = role === "admin" || role === "manager";
   const canAccessUsers = role === "admin" || role === "manager";
+  const canAccessDashboard = role !== "seller";
   const visibleNavigation = navigation.filter(
-    (item) => item.href !== "/usuarios" || canAccessUsers,
+    (item) =>
+      (item.href !== "/usuarios" || canAccessUsers) &&
+      (item.href !== "/dashboard" || canAccessDashboard),
   );
 
   return (

@@ -22,7 +22,7 @@ export const companyUserRoles: Array<{
 }> = [
   { value: "admin", label: "Administrador" },
   { value: "manager", label: "Gerente" },
-  { value: "seller", label: "Vendedor" },
+  { value: "seller", label: "Consultor" },
 ];
 
 export function formatCompanyUserRole(role: CompanyUserRole | string | null) {

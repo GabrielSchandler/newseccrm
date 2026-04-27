@@ -28,7 +28,7 @@ export default async function EditarUsuarioPage({
   const { supabase, companyId, role } = await getCurrentUserContext();
 
   if (role !== "admin" && role !== "manager") {
-    redirect("/dashboard");
+    redirect(role === "seller" ? "/pre-vendas" : "/dashboard");
   }
 
   const { data, error } = await supabase

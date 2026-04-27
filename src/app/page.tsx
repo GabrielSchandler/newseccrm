@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { getCurrentUserContext } from "@/lib/auth/current-user";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function HomePage() {
@@ -7,5 +8,11 @@ export default async function HomePage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  redirect(user ? "/dashboard" : "/login");
+  if (!user) {
+    redirect("/login");
+  }
+
+  const { role } = await getCurrentUserContext();
+
+  redirect(role === "seller" ? "/pre-vendas" : "/dashboard");
 }

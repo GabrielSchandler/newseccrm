@@ -45,7 +45,7 @@ export function LoginForm() {
     }
 
     const redirectedFrom = searchParams.get("redirectedFrom");
-    router.replace(redirectedFrom || "/dashboard");
+    router.replace(redirectedFrom || "/");
     router.refresh();
   }
 
