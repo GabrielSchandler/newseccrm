@@ -23,6 +23,10 @@ const navigation: SidebarNavigationItem[] = [
 export async function AppSidebar() {
   const { role } = await getCurrentUserContext();
   const canManageTemplates = role === "admin" || role === "manager";
+  const canAccessUsers = role === "admin" || role === "manager";
+  const visibleNavigation = navigation.filter(
+    (item) => item.href !== "/usuarios" || canAccessUsers,
+  );
 
   return (
     <>
@@ -42,7 +46,7 @@ export async function AppSidebar() {
           </summary>
           <div className="mt-3 space-y-3 pb-2">
             <SidebarNav
-              items={navigation}
+              items={visibleNavigation}
               canManageTemplates={canManageTemplates}
             />
             <form action={signOut}>
@@ -70,7 +74,7 @@ export async function AppSidebar() {
 
         <div className="mt-8 flex flex-1">
           <SidebarNav
-            items={navigation}
+            items={visibleNavigation}
             canManageTemplates={canManageTemplates}
           />
         </div>

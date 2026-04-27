@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import type { CompanyUserRole } from "@/types/user";
 
 export class UserProfileContextError extends Error {
   constructor(message: string) {
@@ -12,9 +13,11 @@ export type CurrentUserProfile = {
   id: string;
   auth_user_id: string;
   company_id: string;
-  role: string | null;
+  role: CompanyUserRole | null;
   email: string | null;
   full_name: string | null;
+  phone: string | null;
+  is_active: boolean;
 };
 
 export async function getCurrentUserContext() {
@@ -30,7 +33,7 @@ export async function getCurrentUserContext() {
 
   const { data, error: profileError } = await supabase
     .from("user_profiles")
-    .select("id, auth_user_id, company_id, role, email, full_name")
+    .select("id, auth_user_id, company_id, role, email, full_name, phone, is_active")
     .eq("auth_user_id", user.id)
     .maybeSingle();
   const profile = data as CurrentUserProfile | null;
@@ -53,6 +56,10 @@ export async function getCurrentUserContext() {
     );
   }
 
+  if (!profile.is_active) {
+    redirect("/conta-inativa");
+  }
+
   return {
     supabase,
     user,
@@ -62,6 +69,8 @@ export async function getCurrentUserContext() {
     role: profile.role,
     email: profile.email,
     fullName: profile.full_name,
+    phone: profile.phone,
+    isActive: profile.is_active,
     profile,
   };
 }
