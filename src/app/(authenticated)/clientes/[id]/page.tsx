@@ -7,6 +7,7 @@ import { ClientToast } from "@/components/clients/client-toast";
 import { CopyButton } from "@/components/clients/copy-button";
 import { ReactivateClientButton } from "@/components/clients/reactivate-client-button";
 import { WhatsAppLink } from "@/components/clients/whatsapp-link";
+import { ClientDocumentsSection } from "@/components/client-documents/client-documents-section";
 import { PageHeader } from "@/components/layout/page-header";
 import {
   displayCpf,
@@ -230,6 +231,12 @@ export default async function ClientePage({
             </div>
           </div>
         </section>
+
+        <ClientDocumentsSection
+          clientId={client.id}
+          title="Documentos do cliente"
+          description="Anexe e consulte documentos vinculados a este cliente usando links temporarios e bucket privado."
+        />
       </div>
     </>
   );

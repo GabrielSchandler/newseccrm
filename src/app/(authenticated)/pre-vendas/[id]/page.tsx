@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
 import { ClientToast } from "@/components/clients/client-toast";
 import { WhatsAppLink } from "@/components/clients/whatsapp-link";
+import { ClientDocumentsSection } from "@/components/client-documents/client-documents-section";
 import { GenerateDocumentModal } from "@/components/documents/generate-document-modal";
 import { PageHeader } from "@/components/layout/page-header";
 import { PreSalesStatusBadge } from "@/components/pre-sales/pre-sales-status-badge";
@@ -347,6 +348,13 @@ export default async function PreVendaPage({ params, searchParams }: PreVendaPag
             </p>
           )}
         </DetailSection>
+
+        <ClientDocumentsSection
+          clientId={preSale.client_id}
+          preSaleId={preSale.id}
+          title="Anexos da operacao"
+          description="Documentos privados vinculados a esta pre-venda e ao cliente da operacao."
+        />
       </div>
     </>
   );

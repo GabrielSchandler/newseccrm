@@ -1,0 +1,54 @@
+import { ClientDocumentList } from "@/components/client-documents/client-document-list";
+import { ClientDocumentUpload } from "@/components/client-documents/client-document-upload";
+import {
+  canDeleteClientDocument,
+  listClientDocumentsByClient,
+  listClientDocumentsByPreSale,
+  listUploaderProfiles,
+} from "@/lib/client-documents/service";
+import { getCurrentUserContext } from "@/lib/auth/current-user";
+
+type ClientDocumentsSectionProps = {
+  clientId: string;
+  preSaleId?: string | null;
+  title: string;
+  description?: string;
+};
+
+export async function ClientDocumentsSection({
+  clientId,
+  preSaleId = null,
+  title,
+  description,
+}: ClientDocumentsSectionProps) {
+  const { role } = await getCurrentUserContext();
+  const documents = preSaleId
+    ? await listClientDocumentsByPreSale(clientId, preSaleId)
+    : await listClientDocumentsByClient(clientId);
+  const uploaders = await listUploaderProfiles(documents.map((document) => document.uploaded_by ?? ""));
+  const uploaderMap = new Map(
+    uploaders.map((user) => [user.id, user.full_name ?? user.email ?? null]),
+  );
+  const enrichedDocuments = documents.map((document) => ({
+    ...document,
+    uploaded_by_name: document.uploaded_by
+      ? (uploaderMap.get(document.uploaded_by) ?? null)
+      : null,
+  }));
+
+  return (
+    <section className="space-y-4">
+      <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+        <h2 className="text-base font-semibold text-slate-950">{title}</h2>
+        {description ? (
+          <p className="mt-1 text-sm leading-6 text-slate-600">{description}</p>
+        ) : null}
+      </div>
+      <ClientDocumentUpload clientId={clientId} preSaleId={preSaleId} />
+      <ClientDocumentList
+        documents={enrichedDocuments}
+        canDelete={canDeleteClientDocument(role)}
+      />
+    </section>
+  );
+}
