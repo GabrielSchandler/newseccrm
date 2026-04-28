@@ -30,7 +30,7 @@ export default async function NovoTemplatePage() {
     <>
       <PageHeader
         title="Novo template"
-        description="Cadastre os dados do template e depois vincule o DOCX oficial para editar o contrato no fluxo nativo."
+        description="Cadastre o template, salve e depois vincule o DOCX oficial preparado no Word com as variaveis do contrato."
       />
       <div className="space-y-6 p-6">
         <DocumentsNav />

@@ -1,6 +1,4 @@
 "use client";
-
-import type { IConfig } from "@onlyoffice/document-editor-react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -13,7 +11,6 @@ import {
   uploadOfficialPdfTemplateAction,
   type DocumentActionState,
 } from "@/app/(authenticated)/documentos/actions";
-import { OnlyOfficeTemplateEditor } from "@/components/documents/onlyoffice-template-editor";
 import { documentVariableCatalog } from "@/lib/documents/template-engine";
 import {
   defaultDocumentTemplateContentHtml,
@@ -40,9 +37,6 @@ type DocumentTemplateFormProps = {
   templates?: TemplateOption[];
   officialDocxUrl?: string | null;
   officialPdfUrl?: string | null;
-  onlyOfficeConfig?: IConfig | null;
-  onlyOfficeDocumentServerUrl?: string | null;
-  onlyOfficeConfigError?: string | null;
 };
 
 function formatTemplateType(type: DocumentTemplate["document_type"]) {
@@ -64,9 +58,6 @@ export function DocumentTemplateForm({
   templates = [],
   officialDocxUrl = null,
   officialPdfUrl = null,
-  onlyOfficeConfig = null,
-  onlyOfficeDocumentServerUrl = null,
-  onlyOfficeConfigError = null,
 }: DocumentTemplateFormProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -374,19 +365,44 @@ export function DocumentTemplateForm({
                   <ol className="mt-2 space-y-1.5 pl-5 text-sm leading-6 text-slate-600">
                     <li>1. Cadastre o template e vincule o DOCX oficial.</li>
                     <li>
-                      2. Edite o arquivo diretamente em DOCX usando o editor nativo.
+                      2. Edite o arquivo no Word, mantendo imagens, marca d&apos;agua,
+                      cabecalho e alinhamento.
                     </li>
                     <li>
                       3. Use placeholders como{" "}
                       <span className="font-mono text-slate-900">
                         {`{{contratante_nome}}`}
                       </span>{" "}
-                      no proprio documento.
+                      , {`{{cliente_cpf}}`} e {`{{valor_contrato}}`} no proprio
+                      documento.
                     </li>
                     <li>
-                      4. Gere na pre-venda e abra/baixe o DOCX e o PDF oficiais.
+                      4. Reenvie o DOCX atualizado no CRM sempre que ajustar o
+                      modelo.
+                    </li>
+                    <li>
+                      5. Gere na pre-venda e abra/baixe o DOCX e o PDF oficiais.
                     </li>
                   </ol>
+                </div>
+                <div className="rounded-lg border border-teal-200 bg-teal-50 p-3 text-sm text-teal-900">
+                  <p className="font-semibold">Como usar as variaveis no Word</p>
+                  <p className="mt-1 leading-6">
+                    A coluna da direita lista todas as variaveis disponiveis. Copie e
+                    cole no Word exatamente no formato com chaves duplas, por exemplo:
+                    <span className="ml-1 font-mono">{`{{contratante_nome}}`}</span>,
+                    <span className="ml-1 font-mono">{`{{titular_nome}}`}</span>,
+                    <span className="ml-1 font-mono">{`{{financeira}}`}</span> e
+                    <span className="ml-1 font-mono">{`{{valor_contrato}}`}</span>.
+                  </p>
+                  <p className="mt-2 leading-6">
+                    Exemplo pratico: no seu contrato em Word, troque o nome do
+                    cliente por <span className="font-mono">{`{{contratante_nome}}`}</span>,
+                    o CPF por <span className="font-mono">{`{{contratante_cpf}}`}</span> e o
+                    valor por <span className="font-mono">{`{{valor_contrato}}`}</span>. Depois
+                    salve o arquivo em <strong>.docx</strong> e envie aqui como DOCX
+                    oficial.
+                  </p>
                 </div>
                 {defaultValues?.original_docx_filename ? (
                   <p className="text-sm font-medium text-slate-800">
@@ -466,33 +482,49 @@ export function DocumentTemplateForm({
           <section className="space-y-3">
             <div>
               <h2 className="text-sm font-semibold text-slate-950">
-                Editor DOCX nativo
+                Como preparar e subir o contrato
               </h2>
               <p className="mt-1 text-sm leading-6 text-slate-600">
-                O editor em HTML foi removido deste fluxo para evitar perda de
+                O editor interno foi removido deste fluxo para evitar perda de
                 alinhamento, imagens, marca d&apos;agua e estrutura do contrato.
+                Agora o caminho recomendado e mais simples: editar o DOCX no Word,
+                salvar o arquivo com as variaveis e subir aqui como arquivo oficial.
               </p>
             </div>
 
             {!isEditing ? (
               <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
                 Salve o template primeiro. Depois volte nesta tela para vincular o
-                DOCX oficial e editar o contrato no editor nativo.
-              </div>
-            ) : defaultValues?.original_docx_path && onlyOfficeConfig && onlyOfficeDocumentServerUrl ? (
-              <OnlyOfficeTemplateEditor
-                documentServerUrl={onlyOfficeDocumentServerUrl}
-                config={onlyOfficeConfig}
-              />
-            ) : defaultValues?.original_docx_path ? (
-              <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-                {onlyOfficeConfigError ||
-                  "O editor nativo do OnlyOffice ainda nao esta configurado nesta instancia."}
+                DOCX oficial.
               </div>
             ) : (
-              <div className="rounded-lg border border-slate-200 bg-white px-4 py-4 text-sm text-slate-600">
-                Vincule um DOCX oficial para abrir o editor nativo e trabalhar no
-                contrato sem reconverter o arquivo para HTML.
+              <div className="rounded-lg border border-slate-200 bg-white p-4 text-sm text-slate-600">
+                <ol className="space-y-2 pl-5 leading-6">
+                  <li>1. Abra o contrato original no Word.</li>
+                  <li>
+                    2. Substitua os dados fixos pelas variaveis que estao na coluna da
+                    direita.
+                  </li>
+                  <li>3. Salve o arquivo em <strong>.docx</strong>.</li>
+                  <li>4. Clique em <strong>Vincular DOCX oficial</strong>.</li>
+                  <li>5. Escolha o arquivo .docx preparado no Word.</li>
+                  <li>
+                    6. Confira se o nome do arquivo apareceu em <strong>DOCX atual</strong>.
+                  </li>
+                  <li>
+                    7. Se precisar mexer no contrato, edite no Word e use{" "}
+                    <strong>Substituir DOCX oficial</strong>.
+                  </li>
+                  <li>
+                    8. Gere o documento na pre-venda usando o template oficial.
+                  </li>
+                </ol>
+                {defaultValues?.original_docx_path ? (
+                  <div className="mt-3 rounded-lg border border-teal-200 bg-teal-50 px-3 py-2 text-teal-900">
+                    DOCX oficial vinculado com sucesso. Agora ajuste o arquivo no
+                    Word sempre que precisar e reenvie a versao nova por aqui.
+                  </div>
+                ) : null}
               </div>
             )}
           </section>
