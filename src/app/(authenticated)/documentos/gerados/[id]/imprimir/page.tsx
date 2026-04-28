@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { DocumentPrintActions } from "@/components/documents/document-print-actions";
 import { DocumentRenderedContent } from "@/components/documents/document-rendered-content";
 import { getCurrentUserContext } from "@/lib/auth/current-user";
@@ -26,6 +26,38 @@ export default async function PrintDocumentPage({
 
   if (error || !document) {
     notFound();
+  }
+
+  if (document.render_source === "pdf" && document.generated_pdf_path) {
+    const { data: signedUrlData, error: signedUrlError } = await supabase.storage
+      .from("documents")
+      .createSignedUrl(document.generated_pdf_path, 60 * 10);
+
+    if (!signedUrlError && signedUrlData?.signedUrl) {
+      redirect(signedUrlData.signedUrl);
+    }
+  }
+
+  if (document.render_source === "docx") {
+    if (document.generated_pdf_path) {
+      const { data: signedPdfUrlData, error: signedPdfUrlError } = await supabase.storage
+        .from("documents")
+        .createSignedUrl(document.generated_pdf_path, 60 * 10);
+
+      if (!signedPdfUrlError && signedPdfUrlData?.signedUrl) {
+        redirect(signedPdfUrlData.signedUrl);
+      }
+    }
+
+    if (document.generated_docx_path) {
+      const { data: signedDocxUrlData, error: signedDocxUrlError } = await supabase.storage
+        .from("documents")
+        .createSignedUrl(document.generated_docx_path, 60 * 10);
+
+      if (!signedDocxUrlError && signedDocxUrlData?.signedUrl) {
+        redirect(signedDocxUrlData.signedUrl);
+      }
+    }
   }
 
   return (
