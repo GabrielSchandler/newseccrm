@@ -72,6 +72,32 @@ function buildCalculationRecord(values: FinancingCalculationPayload) {
   };
 }
 
+function stringFromUnknown(value: unknown) {
+  if (typeof value === "string") {
+    return value.trim();
+  }
+
+  if (typeof value === "number") {
+    return String(value);
+  }
+
+  return "";
+}
+
+function resolveCompanyDisplayName(companyRecord: Record<string, unknown> | null) {
+  if (!companyRecord) {
+    return "GRS CRM";
+  }
+
+  return (
+    stringFromUnknown(companyRecord.trade_name) ||
+    stringFromUnknown(companyRecord.legal_name) ||
+    stringFromUnknown(companyRecord.nome_fantasia) ||
+    stringFromUnknown(companyRecord.razao_social) ||
+    "GRS CRM"
+  );
+}
+
 async function revalidateCalculationPages(
   calculationId: string,
   clientId?: string | null,
@@ -243,9 +269,24 @@ export async function generateCalculationPdfAction(
     }
 
     const calculation = await assertCalculationAccess(calculationId);
+    const { data: companyData, error: companyError } = await supabase
+      .from("companies")
+      .select("*")
+      .eq("id", companyId)
+      .maybeSingle();
+
+    if (companyError) {
+      return friendlyError(companyError.message);
+    }
+
+    const companyRecord = (companyData ?? null) as Record<string, unknown> | null;
     const filePath = buildCalculationReportPath(companyId, calculationId);
     const pdfBuffer = await renderToBuffer(
-      CalculationReportPdf({ calculation }),
+      CalculationReportPdf({
+        calculation,
+        companyName: resolveCompanyDisplayName(companyRecord),
+        companyDocument: stringFromUnknown(companyRecord?.cnpj) || null,
+      }),
     );
     const fileName =
       calculation.pdf_file_name ?? createCalculationPdfFileName(calculation.client_name);
