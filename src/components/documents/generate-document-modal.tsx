@@ -4,6 +4,7 @@ import { FileText, X } from "lucide-react";
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import {
+  createGeneratedDocumentFileUrlAction,
   generateDocumentAction,
   generateOfficialDocumentAction,
   generateOfficialPdfDocumentAction,
@@ -64,6 +65,46 @@ export function GenerateDocumentModal({
       setState(result);
       setPreview(result.content ?? preview);
       setGeneratedDocumentId(result.documentId ?? "");
+    });
+  }
+
+  function handleOpenOfficialPdf() {
+    if (!generatedDocumentId) {
+      return;
+    }
+
+    setState(null);
+    startTransition(async () => {
+      const result = await createGeneratedDocumentFileUrlAction(
+        generatedDocumentId,
+        "pdf",
+        "view",
+      );
+      setState(result);
+
+      if (result.ok && result.url) {
+        window.open(result.url, "_blank", "noopener,noreferrer");
+      }
+    });
+  }
+
+  function handleDownloadOfficialDocx() {
+    if (!generatedDocumentId) {
+      return;
+    }
+
+    setState(null);
+    startTransition(async () => {
+      const result = await createGeneratedDocumentFileUrlAction(
+        generatedDocumentId,
+        "docx",
+        "download",
+      );
+      setState(result);
+
+      if (result.ok && result.url) {
+        window.open(result.url, "_blank", "noopener,noreferrer");
+      }
     });
   }
 
@@ -181,13 +222,33 @@ export function GenerateDocumentModal({
                       >
                         Abrir documento
                       </Link>
-                      <Link
-                        href={`/documentos/gerados/${generatedDocumentId}/imprimir?print=1`}
-                        target="_blank"
-                        className="rounded-lg bg-teal-700 px-3 py-2 text-sm font-semibold text-white transition hover:bg-teal-800"
-                      >
-                        Abrir PDF HTML
-                      </Link>
+                      {selectedTemplate?.original_pdf_path ? (
+                        <button
+                          type="button"
+                          className="rounded-lg bg-teal-700 px-3 py-2 text-sm font-semibold text-white transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-70"
+                          disabled={isPending}
+                          onClick={handleOpenOfficialPdf}
+                        >
+                          Abrir PDF oficial
+                        </button>
+                      ) : selectedTemplate?.original_docx_path ? (
+                        <button
+                          type="button"
+                          className="rounded-lg border border-teal-300 bg-white px-3 py-2 text-sm font-semibold text-teal-800 transition hover:bg-teal-100 disabled:cursor-not-allowed disabled:opacity-70"
+                          disabled={isPending}
+                          onClick={handleDownloadOfficialDocx}
+                        >
+                          Baixar DOCX oficial
+                        </button>
+                      ) : (
+                        <Link
+                          href={`/documentos/gerados/${generatedDocumentId}/imprimir?print=1`}
+                          target="_blank"
+                          className="rounded-lg bg-teal-700 px-3 py-2 text-sm font-semibold text-white transition hover:bg-teal-800"
+                        >
+                          Abrir PDF HTML
+                        </Link>
+                      )}
                     </div>
                   ) : null}
 

@@ -99,20 +99,22 @@ export default async function DocumentoPage({ params }: DocumentoPageProps) {
           >
             Abrir pre-venda
           </Link>
-          <Link
-            href={`/documentos/gerados/${document.id}/imprimir?print=1`}
-            target="_blank"
-            className="rounded-lg border border-teal-300 bg-teal-50 px-4 py-2.5 text-sm font-semibold text-teal-800 transition hover:bg-teal-100"
-          >
-            Abrir PDF
-          </Link>
+          {document.render_source === "html" ? (
+            <Link
+              href={`/documentos/gerados/${document.id}/imprimir?print=1`}
+              target="_blank"
+              className="rounded-lg border border-teal-300 bg-teal-50 px-4 py-2.5 text-sm font-semibold text-teal-800 transition hover:bg-teal-100"
+            >
+              Abrir PDF HTML
+            </Link>
+          ) : null}
           {docxSignedUrl?.signedUrl ? (
             <Link
               href={docxSignedUrl.signedUrl}
               target="_blank"
               className="rounded-lg border border-teal-300 bg-white px-4 py-2.5 text-sm font-semibold text-teal-800 transition hover:bg-teal-50"
             >
-              Baixar DOCX oficial
+              Abrir DOCX oficial
             </Link>
           ) : null}
           {pdfSignedUrl?.signedUrl ? (
@@ -121,7 +123,7 @@ export default async function DocumentoPage({ params }: DocumentoPageProps) {
               target="_blank"
               className="rounded-lg bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-800"
             >
-              Baixar PDF oficial
+              Abrir PDF oficial
             </Link>
           ) : null}
         </div>
@@ -208,25 +210,28 @@ export default async function DocumentoPage({ params }: DocumentoPageProps) {
           </div>
         ) : null}
 
-        <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="text-base font-semibold text-slate-950">
-            Preview HTML aproximado
-          </h2>
-          <p className="mt-1 text-sm text-slate-600">
-            Quando o documento tiver DOCX oficial, baixe o DOCX/PDF acima para conferir
-            a versao fiel. Este preview e apenas uma leitura rapida dentro do CRM.
-          </p>
-          <div className="mt-4 bg-slate-50 p-4">
-            {document.rendered_content_html ? (
-              <DocumentRenderedContent html={document.rendered_content_html} />
-            ) : (
-              <p className="text-sm text-slate-500">
-                Este documento foi gerado a partir do DOCX oficial e nao possui preview
-                HTML salvo.
-              </p>
-            )}
-          </div>
-        </section>
+        {document.render_source === "html" || document.rendered_content_html ? (
+          <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+            <h2 className="text-base font-semibold text-slate-950">
+              Preview HTML aproximado
+            </h2>
+            <p className="mt-1 text-sm text-slate-600">
+              Quando o documento tiver DOCX ou PDF oficial, use os arquivos oficiais
+              acima para conferir a versao fiel. Este preview serve apenas como
+              referencia rapida dentro do CRM.
+            </p>
+            <div className="mt-4 bg-slate-50 p-4">
+              {document.rendered_content_html ? (
+                <DocumentRenderedContent html={document.rendered_content_html} />
+              ) : (
+                <p className="text-sm text-slate-500">
+                  Este documento foi gerado a partir do arquivo oficial e nao possui
+                  preview HTML salvo.
+                </p>
+              )}
+            </div>
+          </section>
+        ) : null}
       </div>
     </>
   );

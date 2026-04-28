@@ -36,6 +36,7 @@ export type DocumentActionState = {
   content?: string;
   variables?: Record<string, string>;
   documentId?: string;
+  url?: string;
 };
 
 const docxMimeTypes = new Set([
@@ -353,6 +354,22 @@ async function getTemplate(templateId: string, companyId: string, onlyActive = f
   }
 
   return data as DocumentTemplate | null;
+}
+
+async function getGeneratedDocument(documentId: string, companyId: string) {
+  const { supabase } = await getCurrentUserContext();
+  const { data, error } = await supabase
+    .from("generated_documents")
+    .select("*")
+    .eq("id", documentId)
+    .eq("company_id", companyId)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  return data as import("@/types/document").GeneratedDocument | null;
 }
 
 async function getDocumentContext(preSaleId: string, companyId: string) {
@@ -1435,6 +1452,71 @@ export async function generateDocumentAction(
   } catch (error) {
     return friendlyError(
       error instanceof Error ? error.message : "Nao foi possivel gerar o documento.",
+    );
+  }
+}
+
+export async function createGeneratedDocumentFileUrlAction(
+  documentId: string,
+  fileType: "docx" | "pdf",
+  mode: "view" | "download" = "view",
+): Promise<DocumentActionState> {
+  try {
+    const bucketError = await ensureDocumentsBucketAvailable();
+
+    if (bucketError) {
+      return bucketError;
+    }
+
+    const { supabase, companyId } = await getCurrentUserContext();
+    const document = await getGeneratedDocument(documentId, companyId);
+
+    if (!document) {
+      return friendlyError("Documento gerado nao encontrado.");
+    }
+
+    const filePath =
+      fileType === "pdf" ? document.generated_pdf_path : document.generated_docx_path;
+    const fileName =
+      fileType === "pdf"
+        ? document.generated_pdf_filename ?? "documento.pdf"
+        : document.generated_docx_filename ?? "documento.docx";
+
+    if (!filePath) {
+      return friendlyError(
+        fileType === "pdf"
+          ? "Este documento ainda nao possui PDF oficial."
+          : "Este documento ainda nao possui DOCX oficial.",
+      );
+    }
+
+    const { data, error } = await supabase.storage
+      .from(documentsBucket)
+      .createSignedUrl(
+        filePath,
+        60 * 10,
+        mode === "download" ? { download: fileName } : undefined,
+      );
+
+    if (error || !data?.signedUrl) {
+      return friendlyError(
+        error?.message || "Nao foi possivel gerar o link do arquivo oficial.",
+      );
+    }
+
+    return {
+      ok: true,
+      message:
+        mode === "download"
+          ? "Download liberado."
+          : "Visualizacao liberada.",
+      url: data.signedUrl,
+    };
+  } catch (error) {
+    return friendlyError(
+      error instanceof Error
+        ? error.message
+        : "Nao foi possivel abrir o arquivo oficial.",
     );
   }
 }

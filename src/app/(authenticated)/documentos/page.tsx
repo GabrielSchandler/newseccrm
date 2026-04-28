@@ -219,13 +219,15 @@ export default async function DocumentosPage({ searchParams }: DocumentosPagePro
                           >
                             Visualizar
                           </Link>
-                          <Link
-                            href={`/documentos/gerados/${document.id}/imprimir?print=1`}
-                            target="_blank"
-                            className="rounded-lg border border-teal-300 bg-teal-50 px-3 py-2 text-sm font-semibold text-teal-800 transition hover:bg-teal-100"
-                          >
-                            PDF
-                          </Link>
+                          {document.render_source === "html" ? (
+                            <Link
+                              href={`/documentos/gerados/${document.id}/imprimir?print=1`}
+                              target="_blank"
+                              className="rounded-lg border border-teal-300 bg-teal-50 px-3 py-2 text-sm font-semibold text-teal-800 transition hover:bg-teal-100"
+                            >
+                              PDF HTML
+                            </Link>
+                          ) : null}
                           </div>
                         </td>
                       </tr>
