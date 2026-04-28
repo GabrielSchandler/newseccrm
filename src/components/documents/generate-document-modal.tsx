@@ -180,7 +180,12 @@ export function GenerateDocumentModal({
                       className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-70"
                       onClick={handlePreview}
                     >
-                      {isPending ? "Gerando..." : "Visualizar preview"}
+                      {isPending
+                        ? "Gerando..."
+                        : selectedTemplate?.original_pdf_path ||
+                            selectedTemplate?.original_docx_path
+                          ? "Visualizar preview auxiliar"
+                          : "Visualizar preview"}
                     </button>
                     <button
                       type="button"
@@ -208,7 +213,7 @@ export function GenerateDocumentModal({
                         {selectedTemplate.original_pdf_path
                           ? "Este template tem PDF oficial. A emissao final vai preencher campos do PDF sem reconverter o layout."
                           : selectedTemplate.original_docx_path
-                            ? "Este template tem DOCX oficial. A emissao final sera gerada em DOCX e tentara converter para PDF."
+                            ? "Este template tem DOCX oficial. A emissao final sera gerada a partir do Word original. O preview HTML abaixo e apenas auxiliar e pode nao refletir 100% do layout."
                             : "Este template ainda nao tem arquivo oficial. A geracao usara o fluxo antigo por HTML."}
                       </p>
                     </div>
@@ -260,7 +265,10 @@ export function GenerateDocumentModal({
                       </div>
                     ) : (
                       <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-10 text-center text-sm text-slate-500">
-                        Clique em Visualizar preview para conferir o documento.
+                        {selectedTemplate?.original_pdf_path ||
+                        selectedTemplate?.original_docx_path
+                          ? "Para contratos oficiais, use este preview apenas como referencia auxiliar. A versao fiel e o arquivo oficial gerado."
+                          : "Clique em Visualizar preview para conferir o documento."}
                       </div>
                     )}
                   </div>

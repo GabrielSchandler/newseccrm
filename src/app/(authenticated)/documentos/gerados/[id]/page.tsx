@@ -210,7 +210,7 @@ export default async function DocumentoPage({ params }: DocumentoPageProps) {
           </div>
         ) : null}
 
-        {document.render_source === "html" || document.rendered_content_html ? (
+        {document.render_source === "html" ? (
           <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
             <h2 className="text-base font-semibold text-slate-950">
               Preview HTML aproximado
