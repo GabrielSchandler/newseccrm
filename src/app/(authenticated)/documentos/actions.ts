@@ -773,6 +773,62 @@ export async function deleteDocumentTemplateAction(
   };
 }
 
+export async function deleteGeneratedDocumentAction(
+  documentId: string,
+): Promise<DocumentActionState> {
+  try {
+    const { supabase, companyId, role } = await getCurrentUserContext();
+
+    if (!canManageTemplates(role)) {
+      return friendlyError("Apenas admin ou gerente podem excluir documentos gerados.");
+    }
+
+    const document = await getGeneratedDocument(documentId, companyId);
+
+    if (!document) {
+      return friendlyError("Documento gerado nao encontrado.");
+    }
+
+    const filesToDelete = [
+      document.generated_docx_path,
+      document.generated_pdf_path,
+    ].filter(Boolean) as string[];
+
+    if (filesToDelete.length) {
+      const { error: storageError } = await supabase.storage
+        .from(documentsBucket)
+        .remove(filesToDelete);
+
+      if (storageError && !storageError.message.toLowerCase().includes("not found")) {
+        return friendlyError(storageError.message);
+      }
+    }
+
+    const { error } = await supabase
+      .from("generated_documents")
+      .delete()
+      .eq("id", documentId)
+      .eq("company_id", companyId);
+
+    if (error) {
+      return friendlyError(error.message);
+    }
+
+    revalidatePath("/documentos");
+    revalidatePath(`/documentos/gerados/${documentId}`);
+    revalidatePath(`/pre-vendas/${document.pre_sale_id}`);
+
+    return {
+      ok: true,
+      message: "Documento excluido com sucesso.",
+    };
+  } catch (error) {
+    return friendlyError(
+      error instanceof Error ? error.message : "Nao foi possivel excluir o documento.",
+    );
+  }
+}
+
 export async function uploadOfficialDocxTemplateAction(
   templateId: string,
   formData: FormData,

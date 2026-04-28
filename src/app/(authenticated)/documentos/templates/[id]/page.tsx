@@ -177,8 +177,9 @@ export default async function TemplatePage({
               contrato.
             </p>
             <p className="mt-3">
-              Se houver DOCX oficial vinculado, a edicao passa pelo editor nativo do
-              documento. O HTML antigo deixa de ser a fonte principal para contratos.
+              Quando houver DOCX oficial vinculado, edite o arquivo no Word e reenvie
+              a versao atualizada no CRM. O HTML antigo deixa de ser a fonte
+              principal para contratos.
             </p>
           </div>
         </section>

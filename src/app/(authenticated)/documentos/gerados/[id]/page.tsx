@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { DocumentDeleteButton } from "@/components/documents/document-delete-button";
 import { DocumentRenderedContent } from "@/components/documents/document-rendered-content";
 import { DocumentsNav } from "@/components/documents/documents-nav";
 import { PageHeader } from "@/components/layout/page-header";
@@ -24,7 +25,8 @@ function formatTemplateType(type: GeneratedDocument["document_type"]) {
 
 export default async function DocumentoPage({ params }: DocumentoPageProps) {
   const { id } = await params;
-  const { supabase, companyId } = await getCurrentUserContext();
+  const { supabase, companyId, role } = await getCurrentUserContext();
+  const canDeleteDocuments = role === "admin" || role === "manager";
   const { data, error } = await supabase
     .from("generated_documents")
     .select("*")
@@ -162,6 +164,9 @@ export default async function DocumentoPage({ params }: DocumentoPageProps) {
                 </Link>
               ) : null}
             </>
+          ) : null}
+          {canDeleteDocuments ? (
+            <DocumentDeleteButton documentId={document.id} />
           ) : null}
         </div>
 

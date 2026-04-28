@@ -4,6 +4,7 @@ import { Copy, Star, ToggleLeft, ToggleRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import {
+  deleteDocumentTemplateAction,
   duplicateDocumentTemplateAction,
   setDefaultDocumentTemplateAction,
   toggleDocumentTemplateActiveAction,
@@ -73,6 +74,19 @@ export function DocumentTemplateActions({
         >
           <Copy className="h-4 w-4" />
           Duplicar
+        </button>
+        <button
+          type="button"
+          disabled={isPending}
+          className="inline-flex items-center gap-2 rounded-lg border border-red-200 bg-white px-3 py-2 text-sm font-semibold text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-70"
+          onClick={() => {
+            if (!window.confirm("Deseja excluir este template?")) {
+              return;
+            }
+            runAction(() => deleteDocumentTemplateAction(templateId));
+          }}
+        >
+          Excluir
         </button>
       </div>
       {message ? (

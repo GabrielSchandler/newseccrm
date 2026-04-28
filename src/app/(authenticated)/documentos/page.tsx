@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { DocumentDeleteButton } from "@/components/documents/document-delete-button";
 import { DocumentsNav } from "@/components/documents/documents-nav";
 import { PageHeader } from "@/components/layout/page-header";
 import { getCurrentUserContext } from "@/lib/auth/current-user";
@@ -28,7 +29,8 @@ function formatTemplateType(type: DocumentTemplateType | null | undefined) {
 
 export default async function DocumentosPage({ searchParams }: DocumentosPageProps) {
   const params = await searchParams;
-  const { supabase, companyId } = await getCurrentUserContext();
+  const { supabase, companyId, role } = await getCurrentUserContext();
+  const canDeleteDocuments = role === "admin" || role === "manager";
   const type = params.type as DocumentTemplateType | undefined;
   let query = supabase
     .from("generated_documents")
@@ -227,6 +229,12 @@ export default async function DocumentosPage({ searchParams }: DocumentosPagePro
                             >
                               PDF HTML
                             </Link>
+                          ) : null}
+                          {canDeleteDocuments ? (
+                            <DocumentDeleteButton
+                              documentId={document.id}
+                              variant="inline"
+                            />
                           ) : null}
                           </div>
                         </td>
