@@ -73,6 +73,19 @@ function friendlyError(message: string): DocumentActionState {
   };
 }
 
+function normalizeDocumentsStorageErrorMessage(message: string) {
+  const normalized = message.toLowerCase();
+
+  if (normalized.includes("bucket not found")) {
+    return (
+      "O bucket privado 'documents' ainda nao existe nesta instancia do Supabase. " +
+      "Crie o bucket antes de subir DOCX/PDF oficiais."
+    );
+  }
+
+  return message;
+}
+
 function canManageTemplates(role: string | null) {
   return role === "admin" || role === "manager";
 }
@@ -796,11 +809,13 @@ export async function deleteGeneratedDocumentAction(
 
     if (filesToDelete.length) {
       const { error: storageError } = await supabase.storage
-        .from(documentsBucket)
-        .remove(filesToDelete);
+      .from(documentsBucket)
+      .remove(filesToDelete);
 
       if (storageError && !storageError.message.toLowerCase().includes("not found")) {
-        return friendlyError(storageError.message);
+        return friendlyError(
+          normalizeDocumentsStorageErrorMessage(storageError.message),
+        );
       }
     }
 
@@ -894,7 +909,9 @@ export async function uploadOfficialDocxTemplateAction(
       });
 
     if (uploadError) {
-      return friendlyError(uploadError.message);
+      return friendlyError(
+        normalizeDocumentsStorageErrorMessage(uploadError.message),
+      );
     }
 
     const { error: updateError } = await supabase
@@ -995,7 +1012,9 @@ export async function uploadOfficialPdfTemplateAction(
       });
 
     if (uploadError) {
-      return friendlyError(uploadError.message);
+      return friendlyError(
+        normalizeDocumentsStorageErrorMessage(uploadError.message),
+      );
     }
 
     const { error: updateError } = await supabase
@@ -1171,7 +1190,7 @@ async function uploadGeneratedFile(
   });
 
   if (error) {
-    throw new Error(error.message);
+    throw new Error(normalizeDocumentsStorageErrorMessage(error.message));
   }
 }
 
@@ -1217,7 +1236,9 @@ export async function generateOfficialDocumentAction(
 
     if (downloadError || !storedDocx) {
       return friendlyError(
-        downloadError?.message || "Nao foi possivel baixar o DOCX oficial.",
+        normalizeDocumentsStorageErrorMessage(
+          downloadError?.message || "Nao foi possivel baixar o DOCX oficial.",
+        ),
       );
     }
 
@@ -1372,7 +1393,9 @@ export async function generateOfficialPdfDocumentAction(
 
     if (downloadError || !storedPdf) {
       return friendlyError(
-        downloadError?.message || "Nao foi possivel baixar o PDF oficial.",
+        normalizeDocumentsStorageErrorMessage(
+          downloadError?.message || "Nao foi possivel baixar o PDF oficial.",
+        ),
       );
     }
 
@@ -1568,7 +1591,9 @@ export async function createGeneratedDocumentFileUrlAction(
 
     if (error || !data?.signedUrl) {
       return friendlyError(
-        error?.message || "Nao foi possivel gerar o link do arquivo oficial.",
+        normalizeDocumentsStorageErrorMessage(
+          error?.message || "Nao foi possivel gerar o link do arquivo oficial.",
+        ),
       );
     }
 
