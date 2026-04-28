@@ -464,30 +464,6 @@ function OpportunityTable({
   );
 }
 
-function ScenarioTable({
-  rows,
-}: {
-  rows: Array<{ label: string; value: string }>;
-}) {
-  return (
-    <View style={styles.scenarioBox}>
-      {rows.map((row, index) => (
-        <View
-          key={row.label}
-          style={
-            index === 0
-              ? [styles.scenarioRow, styles.scenarioFirstRow]
-              : styles.scenarioRow
-          }
-        >
-          <Text style={styles.scenarioLabel}>{row.label}</Text>
-          <Text style={styles.scenarioValue}>{row.value}</Text>
-        </View>
-      ))}
-    </View>
-  );
-}
-
 export function CalculationReportPdf({
   calculation,
   companyName,
@@ -565,37 +541,6 @@ export function CalculationReportPdf({
     {
       label: "Saldo real projetado",
       value: displayCurrency(calculation.real_debt),
-    },
-  ];
-
-  const scenarioRows = [
-    {
-      label: "Redução estimada de 30% sobre o saldo",
-      value: displayCurrency(calculation.discount_30_value),
-    },
-    {
-      label: "Possível saldo com redução de 30%",
-      value: displayCurrency(calculation.debt_after_30_discount),
-    },
-    {
-      label: "Redução estimada de 90% sobre o saldo",
-      value: displayCurrency(calculation.discount_90_value),
-    },
-    {
-      label: "Cenário agressivo com redução de 90%",
-      value: displayCurrency(calculation.debt_after_90_discount),
-    },
-    {
-      label: "Exemplo com 50% de abatimento em 15x",
-      value: displayCurrency(calculation.example_50_discount_15x),
-    },
-    {
-      label: "Exemplo com 50% de abatimento em 10x",
-      value: displayCurrency(calculation.example_50_discount_10x),
-    },
-    {
-      label: "Exemplo com 50% de abatimento em 5x",
-      value: displayCurrency(calculation.example_50_discount_5x),
     },
   ];
 
@@ -715,11 +660,6 @@ export function CalculationReportPdf({
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Panorama da oportunidade</Text>
           <OpportunityTable rows={opportunityRows} />
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Cenários estimados de negociação</Text>
-          <ScenarioTable rows={scenarioRows} />
         </View>
 
         <View style={styles.nextStepBox}>
