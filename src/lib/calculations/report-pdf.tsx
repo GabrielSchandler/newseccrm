@@ -16,21 +16,19 @@ import {
 
 const styles = StyleSheet.create({
   page: {
-    paddingTop: 28,
-    paddingHorizontal: 28,
-    paddingBottom: 24,
+    paddingTop: 32,
+    paddingHorizontal: 32,
+    paddingBottom: 28,
     fontSize: 10,
     fontFamily: "Helvetica",
-    color: "#0f172a",
+    color: "#111827",
     backgroundColor: "#ffffff",
   },
   header: {
-    backgroundColor: "#ffffff",
-    borderWidth: 1,
-    borderColor: "#111111",
-    borderRadius: 10,
-    padding: 18,
-    marginBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#d1d5db",
+    paddingBottom: 14,
+    marginBottom: 18,
   },
   headerTop: {
     flexDirection: "row",
@@ -39,76 +37,48 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   companyName: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: 700,
-    color: "#111111",
+    color: "#111827",
   },
   companyMeta: {
-    fontSize: 10,
-    color: "#334155",
+    fontSize: 9,
+    color: "#6b7280",
     marginTop: 4,
-    lineHeight: 1.5,
+    lineHeight: 1.4,
   },
   badge: {
     borderWidth: 1,
-    borderColor: "#111111",
-    color: "#111111",
+    borderColor: "#111827",
+    color: "#111827",
     borderRadius: 999,
-    paddingVertical: 4,
-    paddingHorizontal: 10,
+    paddingVertical: 3,
+    paddingHorizontal: 9,
     fontSize: 8,
     fontWeight: 700,
     textTransform: "uppercase",
   },
   title: {
-    fontSize: 24,
+    fontSize: 21,
     fontWeight: 700,
-    color: "#111111",
-    marginTop: 14,
+    color: "#111827",
+    marginTop: 16,
   },
   subtitle: {
     fontSize: 10,
-    color: "#334155",
+    color: "#4b5563",
     marginTop: 6,
     lineHeight: 1.5,
   },
-  summaryStrip: {
-    flexDirection: "row",
-    gap: 10,
-    marginTop: 14,
-  },
-  summaryCard: {
-    flex: 1,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#111111",
-    backgroundColor: "#ffffff",
-    padding: 10,
-  },
-  summaryLabel: {
-    fontSize: 8,
-    textTransform: "uppercase",
-    color: "#64748b",
-    marginBottom: 4,
-  },
-  summaryValue: {
-    fontSize: 12,
-    fontWeight: 700,
-    color: "#0f172a",
-  },
   section: {
-    borderWidth: 1,
-    borderColor: "#111111",
-    borderRadius: 10,
-    padding: 14,
-    marginBottom: 14,
-    backgroundColor: "#ffffff",
+    marginBottom: 16,
   },
   sectionTitle: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: 700,
     marginBottom: 10,
-    color: "#0f172a",
+    color: "#111827",
+    textTransform: "uppercase",
   },
   grid: {
     flexDirection: "row",
@@ -124,8 +94,8 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   label: {
-    fontSize: 9,
-    color: "#64748b",
+    fontSize: 8,
+    color: "#6b7280",
     textTransform: "uppercase",
     marginBottom: 3,
   },
@@ -133,62 +103,113 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: 600,
   },
+  executiveBox: {
+    borderWidth: 1,
+    borderColor: "#111827",
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 18,
+  },
+  executiveLabel: {
+    fontSize: 8,
+    color: "#6b7280",
+    textTransform: "uppercase",
+    marginBottom: 6,
+  },
+  executiveValue: {
+    fontSize: 28,
+    fontWeight: 700,
+    color: "#111827",
+  },
+  executiveText: {
+    fontSize: 10,
+    color: "#374151",
+    lineHeight: 1.6,
+    marginTop: 8,
+  },
+  gainGrid: {
+    flexDirection: "row",
+    gap: 12,
+    marginTop: 14,
+  },
+  gainColumn: {
+    flex: 1,
+  },
+  gainTitle: {
+    fontSize: 9,
+    color: "#6b7280",
+    textTransform: "uppercase",
+    marginBottom: 4,
+  },
+  gainValue: {
+    fontSize: 15,
+    fontWeight: 700,
+    color: "#111827",
+  },
   table: {
     borderWidth: 1,
-    borderColor: "#111111",
-    borderRadius: 10,
+    borderColor: "#d1d5db",
+    borderRadius: 8,
     overflow: "hidden",
     marginBottom: 14,
     backgroundColor: "#ffffff",
   },
   tableHeader: {
     flexDirection: "row",
-    backgroundColor: "#ffffff",
+    backgroundColor: "#f9fafb",
   },
   row: {
     flexDirection: "row",
     borderTopWidth: 1,
-    borderTopColor: "#e2e8f0",
+    borderTopColor: "#e5e7eb",
   },
   headerCell: {
     flex: 1,
-    padding: 10,
-    fontSize: 9,
+    padding: 9,
+    fontSize: 8,
     fontWeight: 700,
     textTransform: "uppercase",
-    color: "#475569",
+    color: "#4b5563",
   },
   cell: {
     flex: 1,
-    padding: 10,
-    fontSize: 10,
+    padding: 9,
+    fontSize: 9,
   },
-  highlightWrap: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    marginHorizontal: -6,
-  },
-  highlight: {
-    width: "50%",
-    paddingHorizontal: 6,
-    marginBottom: 12,
-  },
-  highlightBox: {
+  compactResultsTable: {
     borderWidth: 1,
-    borderColor: "#111111",
-    backgroundColor: "#ffffff",
-    borderRadius: 10,
-    padding: 12,
+    borderColor: "#d1d5db",
+    borderRadius: 8,
+    overflow: "hidden",
+    marginBottom: 16,
   },
-  highlightValue: {
-    fontSize: 14,
+  compactResultRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderTopWidth: 1,
+    borderTopColor: "#e5e7eb",
+  },
+  compactResultFirstRow: {
+    borderTopWidth: 0,
+  },
+  compactResultLabel: {
+    fontSize: 9,
+    color: "#4b5563",
+    maxWidth: "68%",
+    paddingRight: 12,
+  },
+  compactResultValue: {
+    fontSize: 11,
     fontWeight: 700,
-    marginTop: 6,
+    color: "#111827",
   },
   simulationTable: {
     borderWidth: 1,
-    borderColor: "#111111",
-    borderRadius: 10,
+    borderColor: "#d1d5db",
+    borderRadius: 8,
     backgroundColor: "#ffffff",
     overflow: "hidden",
   },
@@ -199,28 +220,47 @@ const styles = StyleSheet.create({
     paddingVertical: 9,
     paddingHorizontal: 12,
     borderTopWidth: 1,
-    borderTopColor: "#e2e8f0",
+    borderTopColor: "#e5e7eb",
   },
   simulationFirstRow: {
     borderTopWidth: 0,
   },
   simulationLabel: {
-    fontSize: 10,
-    color: "#334155",
+    fontSize: 9,
+    color: "#4b5563",
     paddingRight: 12,
     maxWidth: "70%",
   },
   simulationValue: {
+    fontSize: 10,
+    fontWeight: 700,
+    color: "#111827",
+  },
+  salesSection: {
+    borderWidth: 1,
+    borderColor: "#111827",
+    borderRadius: 10,
+    padding: 14,
+    marginBottom: 16,
+  },
+  salesTitle: {
     fontSize: 11,
     fontWeight: 700,
-    color: "#0f172a",
+    color: "#111827",
+    marginBottom: 8,
+  },
+  salesParagraph: {
+    fontSize: 10,
+    color: "#374151",
+    lineHeight: 1.6,
+    marginBottom: 8,
   },
   note: {
     fontSize: 9,
-    color: "#475569",
+    color: "#6b7280",
     lineHeight: 1.5,
     borderTopWidth: 1,
-    borderTopColor: "#e2e8f0",
+    borderTopColor: "#e5e7eb",
     paddingTop: 12,
     marginTop: 2,
   },
@@ -232,7 +272,7 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 8,
-    color: "#64748b",
+    color: "#6b7280",
   },
 });
 
@@ -264,38 +304,36 @@ export function CalculationReportPdf({
   companyName: string;
   companyDocument?: string | null;
 }): React.ReactElement<DocumentProps> {
-  const highlights = [
-    [
-      "Quanto o cliente paga hoje no total",
-      formatCalculationCurrency(calculation.current_total_financing),
-    ],
-    [
-      "Quanto deveria pagar desde o comeco",
-      formatCalculationCurrency(calculation.corrected_total_financing),
-    ],
-    [
-      "Valor cobrado a maior",
-      formatCalculationCurrency(calculation.estimated_savings),
-    ],
-    [
-      "Valor atualmente para quitacao",
-      formatCalculationCurrency(calculation.remaining_amount_to_pay),
-    ],
-    [
-      "Reducao estimada da parcela",
-      formatCalculationCurrency(calculation.installment_reduction_remaining),
-    ],
-    [
-      "Juros abusivos ja pagos",
-      formatCalculationCurrency(calculation.abusive_interest_paid),
-    ],
-  ];
+  const currentTotal = formatCalculationCurrency(calculation.current_total_financing);
+  const correctedTotal = formatCalculationCurrency(
+    calculation.corrected_total_financing,
+  );
+  const estimatedSavings = formatCalculationCurrency(calculation.estimated_savings);
+  const remainingDebt = formatCalculationCurrency(calculation.remaining_amount_to_pay);
+  const reducedInstallment = formatCalculationCurrency(
+    calculation.installment_reduction_remaining,
+  );
   const simulationRows = [
-    ["Reducao de 30% sobre o saldo", formatCalculationCurrency(calculation.debt_after_30_discount)],
-    ["Reducao de 90% sobre o saldo", formatCalculationCurrency(calculation.debt_after_90_discount)],
-    ["50% de abatimento em 15 parcelas", formatCalculationCurrency(calculation.example_50_discount_15x)],
-    ["50% de abatimento em 10 parcelas", formatCalculationCurrency(calculation.example_50_discount_10x)],
-    ["50% de abatimento em 5 parcelas", formatCalculationCurrency(calculation.example_50_discount_5x)],
+    [
+      "Possivel saldo com reducao de 30%",
+      formatCalculationCurrency(calculation.debt_after_30_discount),
+    ],
+    [
+      "Cenario agressivo com reducao de 90%",
+      formatCalculationCurrency(calculation.debt_after_90_discount),
+    ],
+    [
+      "Exemplo de acordo com 50% em 15 parcelas",
+      formatCalculationCurrency(calculation.example_50_discount_15x),
+    ],
+    [
+      "Exemplo de acordo com 50% em 10 parcelas",
+      formatCalculationCurrency(calculation.example_50_discount_10x),
+    ],
+    [
+      "Exemplo de acordo com 50% em 5 parcelas",
+      formatCalculationCurrency(calculation.example_50_discount_5x),
+    ],
   ];
 
   return (
@@ -313,31 +351,39 @@ export function CalculationReportPdf({
           </View>
           <Text style={styles.title}>ANALISE SINTETIZADA</Text>
           <Text style={styles.subtitle}>
-            Documento demonstrativo com estimativa revisional para apresentacao
-            comercial ao cliente.
+            Simulacao comercial inicial com foco no potencial de reducao do custo
+            financeiro e melhoria das condicoes atuais do contrato.
           </Text>
-          <View style={styles.summaryStrip}>
-            <View style={styles.summaryCard}>
-              <Text style={styles.summaryLabel}>Cliente</Text>
-              <Text style={styles.summaryValue}>{calculation.client_name}</Text>
-            </View>
-            <View style={styles.summaryCard}>
-              <Text style={styles.summaryLabel}>Economia estimada</Text>
-              <Text style={styles.summaryValue}>
-                {formatCalculationCurrency(calculation.estimated_savings)}
-              </Text>
-            </View>
-            <View style={styles.summaryCard}>
-              <Text style={styles.summaryLabel}>Parcela atual</Text>
-              <Text style={styles.summaryValue}>
+        </View>
+
+        <View style={styles.executiveBox}>
+          <Text style={styles.executiveLabel}>Potencial de economia identificado</Text>
+          <Text style={styles.executiveValue}>{estimatedSavings}</Text>
+          <Text style={styles.executiveText}>
+            A partir dos dados apresentados, identificamos uma oportunidade de
+            revisao com potencial para reduzir o custo total do contrato e abrir
+            espaco para uma negociacao mais vantajosa.
+          </Text>
+          <View style={styles.gainGrid}>
+            <View style={styles.gainColumn}>
+              <Text style={styles.gainTitle}>Parcela atual</Text>
+              <Text style={styles.gainValue}>
                 {formatCalculationCurrency(calculation.current_installment_value)}
               </Text>
+            </View>
+            <View style={styles.gainColumn}>
+              <Text style={styles.gainTitle}>Parcela projetada</Text>
+              <Text style={styles.gainValue}>{reducedInstallment}</Text>
+            </View>
+            <View style={styles.gainColumn}>
+              <Text style={styles.gainTitle}>Saldo atual estimado</Text>
+              <Text style={styles.gainValue}>{remainingDebt}</Text>
             </View>
           </View>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Dados do cliente</Text>
+          <Text style={styles.sectionTitle}>Identificacao do atendimento</Text>
           <View style={styles.grid}>
             <PdfItem label="Cliente" value={calculation.client_name} />
             <PdfItem
@@ -380,6 +426,7 @@ export function CalculationReportPdf({
           </View>
         </View>
 
+        <Text style={styles.sectionTitle}>Resumo da operacao atual</Text>
         <View style={styles.table}>
           <View style={styles.tableHeader}>
             <Text style={styles.headerCell}>Item</Text>
@@ -416,20 +463,35 @@ export function CalculationReportPdf({
           ))}
         </View>
 
-        <Text style={styles.sectionTitle}>Resultado do calculo</Text>
-        <View style={styles.highlightWrap}>
-          {highlights.map(([label, value]) => (
-            <View key={label} style={styles.highlight}>
-              <View style={styles.highlightBox}>
-                <Text style={styles.label}>{label}</Text>
-                <Text style={styles.highlightValue}>{value}</Text>
-              </View>
+        <Text style={styles.sectionTitle}>Panorama da oportunidade</Text>
+        <View style={styles.compactResultsTable}>
+          {[
+            ["Quanto o cliente paga hoje no total", currentTotal],
+            ["Quanto deveria pagar desde o comeco", correctedTotal],
+            ["Valor cobrado a maior", estimatedSavings],
+            ["Valor atualmente para quitacao", remainingDebt],
+            ["Reducao estimada da parcela", reducedInstallment],
+            [
+              "Juros abusivos ja pagos",
+              formatCalculationCurrency(calculation.abusive_interest_paid),
+            ],
+          ].map(([label, value], index) => (
+            <View
+              key={label}
+              style={
+                index === 0
+                  ? [styles.compactResultRow, styles.compactResultFirstRow]
+                  : styles.compactResultRow
+              }
+            >
+              <Text style={styles.compactResultLabel}>{label}</Text>
+              <Text style={styles.compactResultValue}>{value}</Text>
             </View>
           ))}
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Simulacao simplificada</Text>
+          <Text style={styles.sectionTitle}>Cenarios de negociacao</Text>
           <View style={styles.simulationTable}>
             {simulationRows.map(([label, value], index) => (
               <View
@@ -443,6 +505,22 @@ export function CalculationReportPdf({
               </View>
             ))}
           </View>
+        </View>
+
+        <View style={styles.salesSection}>
+          <Text style={styles.salesTitle}>Como essa simulacao pode ajudar no fechamento</Text>
+          <Text style={styles.salesParagraph}>
+            Este material foi preparado para mostrar, de forma objetiva, o ganho
+            financeiro que pode ser buscado com uma analise revisional adequada.
+            O foco do nosso trabalho e transformar essa oportunidade em reducao
+            real de custo, melhora da negociacao e alivio financeiro para o
+            cliente.
+          </Text>
+          <Text style={styles.salesParagraph}>
+            Com base nesta estimativa, o proximo passo comercial e avaliar a
+            estrategia mais aderente ao caso para avancar com a revisao e buscar
+            o melhor resultado pratico possivel.
+          </Text>
         </View>
 
         <Text style={styles.note}>
