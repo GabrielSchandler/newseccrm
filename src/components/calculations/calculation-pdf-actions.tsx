@@ -1,6 +1,7 @@
 "use client";
 
 import { FileDown, FileText } from "lucide-react";
+import { Eye } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import {
@@ -35,7 +36,25 @@ export function CalculationPdfActions({
   function handleDownload() {
     setState(null);
     startTransition(async () => {
-      const result = await createSignedCalculationPdfUrlAction(calculationId);
+      const result = await createSignedCalculationPdfUrlAction(
+        calculationId,
+        "download",
+      );
+      setState(result);
+
+      if (result.ok && result.url) {
+        window.open(result.url, "_blank", "noopener,noreferrer");
+      }
+    });
+  }
+
+  function handleView() {
+    setState(null);
+    startTransition(async () => {
+      const result = await createSignedCalculationPdfUrlAction(
+        calculationId,
+        "view",
+      );
       setState(result);
 
       if (result.ok && result.url) {
@@ -55,6 +74,15 @@ export function CalculationPdfActions({
         >
           <FileText className="h-4 w-4" />
           {isPending ? "Gerando..." : "Gerar PDF"}
+        </button>
+        <button
+          type="button"
+          disabled={isPending || !hasPdf}
+          onClick={handleView}
+          className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-70"
+        >
+          <Eye className="h-4 w-4" />
+          {hasPdf ? "Visualizar PDF" : "PDF indisponivel"}
         </button>
         <button
           type="button"

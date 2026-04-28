@@ -336,6 +336,7 @@ export async function generateCalculationPdfAction(
 
 export async function createSignedCalculationPdfUrlAction(
   calculationId: string,
+  mode: "view" | "download" = "download",
 ): Promise<CalculationActionState> {
   try {
     const bucketError = await ensureCalculationReportsBucketAvailable();
@@ -353,9 +354,16 @@ export async function createSignedCalculationPdfUrlAction(
 
     const { data, error } = await supabase.storage
       .from(calculationReportsBucket)
-      .createSignedUrl(calculation.pdf_storage_path, 60 * 10, {
-        download: calculation.pdf_file_name ?? "analise-sintetizada.pdf",
-      });
+      .createSignedUrl(
+        calculation.pdf_storage_path,
+        60 * 10,
+        mode === "download"
+          ? {
+              download:
+                calculation.pdf_file_name ?? "analise-sintetizada.pdf",
+            }
+          : undefined,
+      );
 
     if (error || !data?.signedUrl) {
       return friendlyError(error?.message || "Nao foi possivel gerar o link do PDF.");
@@ -363,7 +371,7 @@ export async function createSignedCalculationPdfUrlAction(
 
     return {
       ok: true,
-      message: "Download liberado.",
+      message: mode === "download" ? "Download liberado." : "Visualizacao liberada.",
       url: data.signedUrl,
     };
   } catch (error) {

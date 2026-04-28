@@ -22,10 +22,12 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontFamily: "Helvetica",
     color: "#0f172a",
-    backgroundColor: "#f8fafc",
+    backgroundColor: "#ffffff",
   },
   header: {
-    backgroundColor: "#0f766e",
+    backgroundColor: "#ffffff",
+    borderWidth: 1,
+    borderColor: "#111111",
     borderRadius: 10,
     padding: 18,
     marginBottom: 16,
@@ -39,17 +41,18 @@ const styles = StyleSheet.create({
   companyName: {
     fontSize: 16,
     fontWeight: 700,
-    color: "#ffffff",
+    color: "#111111",
   },
   companyMeta: {
     fontSize: 10,
-    color: "#ccfbf1",
+    color: "#334155",
     marginTop: 4,
     lineHeight: 1.5,
   },
   badge: {
-    backgroundColor: "#ccfbf1",
-    color: "#115e59",
+    borderWidth: 1,
+    borderColor: "#111111",
+    color: "#111111",
     borderRadius: 999,
     paddingVertical: 4,
     paddingHorizontal: 10,
@@ -60,12 +63,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: 700,
-    color: "#ffffff",
+    color: "#111111",
     marginTop: 14,
   },
   subtitle: {
     fontSize: 10,
-    color: "#e6fffb",
+    color: "#334155",
     marginTop: 6,
     lineHeight: 1.5,
   },
@@ -77,6 +80,8 @@ const styles = StyleSheet.create({
   summaryCard: {
     flex: 1,
     borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#111111",
     backgroundColor: "#ffffff",
     padding: 10,
   },
@@ -93,7 +98,7 @@ const styles = StyleSheet.create({
   },
   section: {
     borderWidth: 1,
-    borderColor: "#e2e8f0",
+    borderColor: "#111111",
     borderRadius: 10,
     padding: 14,
     marginBottom: 14,
@@ -130,7 +135,7 @@ const styles = StyleSheet.create({
   },
   table: {
     borderWidth: 1,
-    borderColor: "#dbeafe",
+    borderColor: "#111111",
     borderRadius: 10,
     overflow: "hidden",
     marginBottom: 14,
@@ -138,7 +143,7 @@ const styles = StyleSheet.create({
   },
   tableHeader: {
     flexDirection: "row",
-    backgroundColor: "#eff6ff",
+    backgroundColor: "#ffffff",
   },
   row: {
     flexDirection: "row",
@@ -170,8 +175,8 @@ const styles = StyleSheet.create({
   },
   highlightBox: {
     borderWidth: 1,
-    borderColor: "#99f6e4",
-    backgroundColor: "#f0fdfa",
+    borderColor: "#111111",
+    backgroundColor: "#ffffff",
     borderRadius: 10,
     padding: 12,
   },
@@ -182,7 +187,7 @@ const styles = StyleSheet.create({
   },
   simulationTable: {
     borderWidth: 1,
-    borderColor: "#e2e8f0",
+    borderColor: "#111111",
     borderRadius: 10,
     backgroundColor: "#ffffff",
     overflow: "hidden",
