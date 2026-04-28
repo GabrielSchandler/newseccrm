@@ -205,11 +205,12 @@ export function CalculationForm({
     setValue("client_phone", formatPhone(preSale.client_phone ?? ""), {
       shouldDirty: true,
     });
-    setValue("financer_name", preSale.financer_name ?? "", { shouldDirty: true });
+    setValue("financial_institution", preSale.financial_institution ?? "", {
+      shouldDirty: true,
+    });
     setValue("specialist_name", preSale.specialist_name ?? "", {
       shouldDirty: true,
     });
-    setValue("vehicle", preSale.vehicle ?? "", { shouldDirty: true });
     setValue("vehicle_year", preSale.vehicle_year ?? "", { shouldDirty: true });
     setValue(
       "financed_value",
@@ -232,11 +233,6 @@ export function CalculationForm({
         : formatCurrencyInputValue(
             String(Math.round(preSale.current_installment_value * 100)),
           ),
-      { shouldDirty: true },
-    );
-    setValue(
-      "installment_count",
-      preSale.installment_count === null ? "" : String(preSale.installment_count),
       { shouldDirty: true },
     );
     setValue(
@@ -404,14 +400,14 @@ export function CalculationForm({
         </div>
         <div className="grid gap-5 md:grid-cols-2">
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700" htmlFor="financer_name">
+            <label className="text-sm font-medium text-slate-700" htmlFor="financial_institution">
               Financeira
             </label>
             <input
-              id="financer_name"
+              id="financial_institution"
               disabled={disabled}
               className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
-              {...register("financer_name")}
+              {...register("financial_institution")}
             />
           </div>
           <div className="space-y-2">
@@ -437,27 +433,27 @@ export function CalculationForm({
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700" htmlFor="expires_at">
+            <label className="text-sm font-medium text-slate-700" htmlFor="expires_in">
               Expira em
             </label>
             <input
-              id="expires_at"
+              id="expires_in"
               type="date"
               disabled={disabled}
               className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
-              {...register("expires_at")}
+              {...register("expires_in")}
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700" htmlFor="service_date">
+            <label className="text-sm font-medium text-slate-700" htmlFor="attendance_date">
               Data de atendimento
             </label>
             <input
-              id="service_date"
+              id="attendance_date"
               type="date"
               disabled={disabled}
               className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
-              {...register("service_date")}
+              {...register("attendance_date")}
             />
           </div>
         </div>
@@ -468,17 +464,6 @@ export function CalculationForm({
           <h2 className="text-base font-semibold text-slate-950">Dados do veiculo</h2>
         </div>
         <div className="grid gap-5 md:grid-cols-2">
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700" htmlFor="vehicle">
-              Veiculo
-            </label>
-            <input
-              id="vehicle"
-              disabled={disabled}
-              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
-              {...register("vehicle")}
-            />
-          </div>
           <div className="space-y-2">
             <label className="text-sm font-medium text-slate-700" htmlFor="vehicle_year">
               Ano
@@ -491,15 +476,15 @@ export function CalculationForm({
             />
           </div>
           <div className="space-y-2 md:col-span-2">
-            <label className="text-sm font-medium text-slate-700" htmlFor="observations">
+            <label className="text-sm font-medium text-slate-700" htmlFor="notes">
               Observacoes
             </label>
             <textarea
-              id="observations"
+              id="notes"
               rows={4}
               disabled={disabled}
               className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
-              {...register("observations")}
+              {...register("notes")}
             />
           </div>
         </div>

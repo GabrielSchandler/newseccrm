@@ -31,6 +31,23 @@ function friendlyError(message: string): ClientDocumentActionState {
   };
 }
 
+async function ensureClientDocumentsBucketAvailable() {
+  const { supabase } = await getCurrentUserContext();
+  const { error } = await supabase.storage.from(clientDocumentsBucket).list("", { limit: 1 });
+
+  if (!error) {
+    return null;
+  }
+
+  if (error.message.toLowerCase().includes("bucket not found")) {
+    return friendlyError(
+      "O bucket privado 'client-documents' ainda nao existe nesta instancia do Supabase.",
+    );
+  }
+
+  return null;
+}
+
 export async function uploadClientDocumentAction(
   values: ClientDocumentUploadPayload,
   formData: FormData,
@@ -68,6 +85,12 @@ export async function uploadClientDocumentAction(
 
     if (!canManageClientDocuments(role)) {
       return friendlyError("Voce nao tem permissao para enviar documentos.");
+    }
+
+    const bucketError = await ensureClientDocumentsBucketAvailable();
+
+    if (bucketError) {
+      return bucketError;
     }
 
     await assertClientBelongsToCompany(clientId, companyId);
@@ -132,6 +155,12 @@ export async function createSignedDocumentUrlAction(
 ): Promise<ClientDocumentActionState> {
   try {
     const { supabase } = await getCurrentUserContext();
+    const bucketError = await ensureClientDocumentsBucketAvailable();
+
+    if (bucketError) {
+      return bucketError;
+    }
+
     const document = await getClientDocumentWithAccess(documentId);
     const { data, error } = await supabase.storage
       .from(clientDocumentsBucket)

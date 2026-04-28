@@ -193,7 +193,7 @@ export async function listCalculationPreSales() {
     supabase
       .from("pre_sale_financial_cases")
       .select(
-        "pre_sale_id, financer_name, financed_amount, installment_amount, installment_count, paid_installments, asset_brand_model, asset_year",
+        "pre_sale_id, financer_name, financed_amount, installment_amount, paid_installments, asset_year",
       )
       .in("pre_sale_id", preSaleIds),
     supabase
@@ -237,15 +237,11 @@ export async function listCalculationPreSales() {
           financer_name: string | null;
           financed_amount: number | null;
           installment_amount: number | null;
-          installment_count: number | null;
           paid_installments: number | null;
-          asset_brand_model: string | null;
           asset_year: string | number | null;
         }
       | undefined;
-    const installmentCount = Number(financial?.installment_count ?? 0);
     const paidInstallments = Number(financial?.paid_installments ?? 0);
-    const remainingInstallments = Math.max(installmentCount - paidInstallments, 0);
 
     return {
       id: preSale.id,
@@ -256,11 +252,10 @@ export async function listCalculationPreSales() {
       client_name: snapshot?.full_name ?? "",
       client_cpf: snapshot?.cpf ?? "",
       client_phone: snapshot?.phone_mobile ?? null,
-      financer_name: financial?.financer_name ?? null,
+      financial_institution: financial?.financer_name ?? null,
       specialist_name: preSale.consultant_user_id
         ? (consultantMap.get(preSale.consultant_user_id) ?? null)
         : null,
-      vehicle: financial?.asset_brand_model ?? null,
       vehicle_year:
         financial?.asset_year === null || financial?.asset_year === undefined
           ? null
@@ -268,9 +263,8 @@ export async function listCalculationPreSales() {
       financed_value: financial?.financed_amount ?? null,
       down_payment: null,
       current_installment_value: financial?.installment_amount ?? null,
-      installment_count: installmentCount || null,
       paid_installments: paidInstallments || null,
-      remaining_installments: remainingInstallments || null,
+      remaining_installments: null,
     } satisfies CalculationPreSaleOption;
   });
 }

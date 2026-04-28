@@ -179,11 +179,11 @@ export function CalculationReportPdf({
             />
             <PdfItem
               label="Data de atendimento"
-              value={formatCalculationDate(calculation.service_date)}
+              value={formatCalculationDate(calculation.attendance_date)}
             />
             <PdfItem
               label="Financeira"
-              value={calculation.financer_name ?? "Nao informado"}
+              value={calculation.financial_institution ?? "Nao informado"}
             />
             <PdfItem
               label="Especialista"
@@ -195,11 +195,7 @@ export function CalculationReportPdf({
             />
             <PdfItem
               label="Expira em"
-              value={formatCalculationDate(calculation.expires_at)}
-            />
-            <PdfItem
-              label="Veiculo"
-              value={calculation.vehicle ?? "Nao informado"}
+              value={formatCalculationDate(calculation.expires_in)}
             />
             <PdfItem
               label="Ano"
@@ -207,7 +203,7 @@ export function CalculationReportPdf({
             />
             <PdfItem
               label="Observacoes"
-              value={calculation.observations ?? "Nao informado"}
+              value={calculation.notes ?? "Nao informado"}
               full
             />
           </View>

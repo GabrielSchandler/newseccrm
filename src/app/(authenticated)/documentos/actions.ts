@@ -214,6 +214,89 @@ function cleanImportedDocxHtml(html: string) {
   return normalizeHtmlSpacing(restorePlaceholders(sanitized, placeholders));
 }
 
+const officialTemplateColumns = [
+  "original_docx_path",
+  "original_docx_filename",
+  "original_docx_size",
+  "original_docx_uploaded_at",
+  "original_pdf_path",
+  "original_pdf_filename",
+  "original_pdf_size",
+  "original_pdf_uploaded_at",
+] as const;
+
+const officialGeneratedDocumentColumns = [
+  "generated_docx_path",
+  "generated_pdf_path",
+  "generated_docx_filename",
+  "generated_pdf_filename",
+  "render_source",
+  "pdf_error_message",
+] as const;
+
+function isMissingColumnError(error: { code?: string; message?: string } | null) {
+  return error?.code === "42703" || error?.message?.toLowerCase().includes("column") || false;
+}
+
+async function ensureOfficialDocumentSchema(
+  options: { requireTemplateColumns?: boolean; requireGeneratedColumns?: boolean } = {},
+) {
+  const { supabase } = await getCurrentUserContext();
+
+  if (options.requireTemplateColumns) {
+    const { error } = await supabase
+      .from("document_templates")
+      .select(officialTemplateColumns.join(","))
+      .limit(1);
+
+    if (error) {
+      if (isMissingColumnError(error)) {
+        return friendlyError(
+          "Esta instancia ainda nao recebeu as colunas oficiais de documentos. Rode o SQL docs/sql/documentos-docx-oficial.sql no Supabase antes de usar DOCX/PDF oficial.",
+        );
+      }
+
+      return friendlyError(error.message);
+    }
+  }
+
+  if (options.requireGeneratedColumns) {
+    const { error } = await supabase
+      .from("generated_documents")
+      .select(officialGeneratedDocumentColumns.join(","))
+      .limit(1);
+
+    if (error) {
+      if (isMissingColumnError(error)) {
+        return friendlyError(
+          "A tabela generated_documents desta instancia ainda nao possui as colunas de arquivo oficial. Rode o SQL docs/sql/documentos-docx-oficial.sql no Supabase antes de gerar documentos oficiais.",
+        );
+      }
+
+      return friendlyError(error.message);
+    }
+  }
+
+  return null;
+}
+
+async function ensureDocumentsBucketAvailable() {
+  const { supabase } = await getCurrentUserContext();
+  const { error } = await supabase.storage.from(documentsBucket).list("", { limit: 1 });
+
+  if (!error) {
+    return null;
+  }
+
+  if (error.message.toLowerCase().includes("bucket not found")) {
+    return friendlyError(
+      "O bucket privado 'documents' ainda nao existe nesta instancia. Crie-o no Supabase Storage antes de usar os arquivos oficiais.",
+    );
+  }
+
+  return null;
+}
+
 async function getTemplate(templateId: string, companyId: string, onlyActive = false) {
   const { supabase } = await getCurrentUserContext();
   let query = supabase
@@ -641,6 +724,20 @@ export async function uploadOfficialDocxTemplateAction(
       return friendlyError("Apenas admin ou gerente podem substituir o DOCX oficial.");
     }
 
+    const schemaError = await ensureOfficialDocumentSchema({
+      requireTemplateColumns: true,
+    });
+
+    if (schemaError) {
+      return schemaError;
+    }
+
+    const bucketError = await ensureDocumentsBucketAvailable();
+
+    if (bucketError) {
+      return bucketError;
+    }
+
     const template = await getTemplate(templateId, companyId);
 
     if (!template) {
@@ -726,6 +823,20 @@ export async function uploadOfficialPdfTemplateAction(
 
     if (!canManageTemplates(role)) {
       return friendlyError("Apenas admin ou gerente podem substituir o PDF oficial.");
+    }
+
+    const schemaError = await ensureOfficialDocumentSchema({
+      requireTemplateColumns: true,
+    });
+
+    if (schemaError) {
+      return schemaError;
+    }
+
+    const bucketError = await ensureDocumentsBucketAvailable();
+
+    if (bucketError) {
+      return bucketError;
     }
 
     const template = await getTemplate(templateId, companyId);
@@ -946,6 +1057,21 @@ export async function generateOfficialDocumentAction(
   templateId: string,
 ): Promise<DocumentActionState> {
   try {
+    const schemaError = await ensureOfficialDocumentSchema({
+      requireTemplateColumns: true,
+      requireGeneratedColumns: true,
+    });
+
+    if (schemaError) {
+      return schemaError;
+    }
+
+    const bucketError = await ensureDocumentsBucketAvailable();
+
+    if (bucketError) {
+      return bucketError;
+    }
+
     const { supabase, companyId, userProfileId } = await getCurrentUserContext();
     const [template, context] = await Promise.all([
       getTemplate(templateId, companyId, true),
@@ -1088,6 +1214,21 @@ export async function generateOfficialPdfDocumentAction(
   templateId: string,
 ): Promise<DocumentActionState> {
   try {
+    const schemaError = await ensureOfficialDocumentSchema({
+      requireTemplateColumns: true,
+      requireGeneratedColumns: true,
+    });
+
+    if (schemaError) {
+      return schemaError;
+    }
+
+    const bucketError = await ensureDocumentsBucketAvailable();
+
+    if (bucketError) {
+      return bucketError;
+    }
+
     const { supabase, companyId, userProfileId } = await getCurrentUserContext();
     const [template, context] = await Promise.all([
       getTemplate(templateId, companyId, true),

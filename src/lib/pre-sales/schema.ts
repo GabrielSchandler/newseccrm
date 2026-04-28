@@ -112,7 +112,7 @@ export const preSaleFormSchema = z.object({
   debt_holder_marital_status: optionalText,
   debt_holder_profession: optionalText,
   debt_holder_nationality: optionalText,
-  debt_holder_issuing_agency: optionalText,
+  debt_holder_issuer_agency: optionalText,
   debt_holder_father_name: optionalText,
   debt_holder_mother_name: optionalText,
   debt_holder_phone_mobile: optionalPhone,
@@ -137,11 +137,9 @@ export const preSaleFormSchema = z.object({
       }
 
       return null;
-    }),
+  }),
   financed_amount: optionalNumber,
-  down_payment: optionalNumber,
   installment_amount: optionalNumber,
-  installment_count: optionalInteger,
   paid_installments: optionalInteger,
   overdue_installments: optionalInteger,
   due_day: optionalInteger.refine(
@@ -159,7 +157,7 @@ export const preSaleFormSchema = z.object({
         installment_number: optionalInteger,
         amount: optionalNumber,
         payment_method: optionalText,
-        due_date: optionalText,
+        payment_date: optionalText,
         status: optionalText,
       }),
     )
@@ -221,7 +219,7 @@ export const preSaleDefaultValues: PreSaleFormValues = {
   debt_holder_marital_status: "",
   debt_holder_profession: "",
   debt_holder_nationality: "",
-  debt_holder_issuing_agency: "",
+  debt_holder_issuer_agency: "",
   debt_holder_father_name: "",
   debt_holder_mother_name: "",
   debt_holder_phone_mobile: "",
@@ -236,9 +234,7 @@ export const preSaleDefaultValues: PreSaleFormValues = {
   financer_name: "",
   has_financing_contract: "",
   financed_amount: "",
-  down_payment: "",
   installment_amount: "",
-  installment_count: "",
   paid_installments: "",
   overdue_installments: "",
   due_day: "",
@@ -248,9 +244,9 @@ export const preSaleDefaultValues: PreSaleFormValues = {
   asset_year: "",
   asset_plate: "",
   payments: [
-    { installment_number: "1", amount: "", payment_method: "", due_date: "", status: "previsto" },
-    { installment_number: "2", amount: "", payment_method: "", due_date: "", status: "previsto" },
-    { installment_number: "3", amount: "", payment_method: "", due_date: "", status: "previsto" },
+    { installment_number: "1", amount: "", payment_method: "", payment_date: "", status: "previsto" },
+    { installment_number: "2", amount: "", payment_method: "", payment_date: "", status: "previsto" },
+    { installment_number: "3", amount: "", payment_method: "", payment_date: "", status: "previsto" },
   ],
 };
 
@@ -295,7 +291,7 @@ export function preSaleToFormValues(
     debt_holder_marital_status: debtHolder?.marital_status ?? "",
     debt_holder_profession: debtHolder?.profession ?? "",
     debt_holder_nationality: debtHolder?.nationality ?? "",
-    debt_holder_issuing_agency: debtHolder?.issuing_agency ?? "",
+    debt_holder_issuer_agency: debtHolder?.issuer_agency ?? "",
     debt_holder_father_name: debtHolder?.father_name ?? "",
     debt_holder_mother_name: debtHolder?.mother_name ?? "",
     debt_holder_phone_mobile: debtHolder?.phone_mobile ?? "",
@@ -318,20 +314,11 @@ export function preSaleToFormValues(
       financialCase?.financed_amount === undefined
         ? ""
         : String(financialCase.financed_amount).replace(".", ","),
-    down_payment:
-      financialCase?.down_payment === null || financialCase?.down_payment === undefined
-        ? ""
-        : String(financialCase.down_payment).replace(".", ","),
     installment_amount:
       financialCase?.installment_amount === null ||
       financialCase?.installment_amount === undefined
         ? ""
         : String(financialCase.installment_amount).replace(".", ","),
-    installment_count:
-      financialCase?.installment_count === null ||
-      financialCase?.installment_count === undefined
-        ? ""
-        : String(financialCase.installment_count),
     paid_installments:
       financialCase?.paid_installments === null ||
       financialCase?.paid_installments === undefined
@@ -363,7 +350,7 @@ export function preSaleToFormValues(
               ? ""
               : String(payment.amount).replace(".", ","),
           payment_method: payment.payment_method ?? "",
-          due_date: payment.due_date ?? "",
+          payment_date: payment.payment_date ?? "",
           status: payment.status ?? "previsto",
         }))
       : preSaleDefaultValues.payments,

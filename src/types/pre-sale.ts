@@ -43,7 +43,7 @@ export type DebtHolder = {
   marital_status: string | null;
   profession: string | null;
   nationality: string | null;
-  issuing_agency: string | null;
+  issuer_agency: string | null;
   father_name: string | null;
   mother_name: string | null;
   phone_mobile: string | null;
@@ -89,9 +89,7 @@ export type PreSaleFinancialCase = {
   financer_name: string | null;
   has_financing_contract: boolean | null;
   financed_amount: number | string | null;
-  down_payment: number | string | null;
   installment_amount: number | string | null;
-  installment_count: number | string | null;
   paid_installments: number | string | null;
   overdue_installments: number | string | null;
   due_day: number | string | null;
@@ -108,7 +106,7 @@ export type PreSalePayment = {
   installment_number: number | string | null;
   amount: number | string | null;
   payment_method: string | null;
-  due_date: string | null;
+  payment_date: string | null;
   status: string | null;
 };
 

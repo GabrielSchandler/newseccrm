@@ -44,7 +44,7 @@ export async function ClientCalculationsSection({ clientId }: { clientId: string
             {calculations.map((calculation) => (
               <tr key={calculation.id} className="transition hover:bg-slate-50">
                 <td className="px-4 py-3 text-slate-700">
-                  {calculation.financer_name ?? "Nao informado"}
+                  {calculation.financial_institution ?? "Nao informado"}
                 </td>
                 <td className="px-4 py-3 text-slate-700">
                   {formatCalculationCurrency(calculation.financed_value)}

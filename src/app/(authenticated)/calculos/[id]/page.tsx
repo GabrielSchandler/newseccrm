@@ -137,11 +137,11 @@ export default async function CalculoPage({
 
         <DetailSection title="Resumo do calculo">
           <DetailItem label="Status" value={<CalculationStatusBadge status={calculation.status} />} />
-          <DetailItem label="Financeira" value={calculation.financer_name ?? "Nao informado"} />
+          <DetailItem label="Financeira" value={calculation.financial_institution ?? "Nao informado"} />
           <DetailItem label="Criado por" value={creatorName} />
           <DetailItem label="Criado em" value={formatCalculationDateTime(calculation.created_at)} />
-          <DetailItem label="Data de atendimento" value={formatCalculationDate(calculation.service_date)} />
-          <DetailItem label="Expira em" value={formatCalculationDate(calculation.expires_at)} />
+          <DetailItem label="Data de atendimento" value={formatCalculationDate(calculation.attendance_date)} />
+          <DetailItem label="Expira em" value={formatCalculationDate(calculation.expires_in)} />
         </DetailSection>
 
         <DetailSection title="Dados do cliente">
@@ -150,7 +150,7 @@ export default async function CalculoPage({
           <DetailItem label="Telefone" value={calculation.client_phone ?? "Nao informado"} />
           <DetailItem label="Especialista" value={calculation.specialist_name ?? "Nao informado"} />
           <DetailItem label="Situacao" value={calculation.situation ?? "Nao informado"} />
-          <DetailItem label="Observacoes" value={calculation.observations ?? "Nao informado"} className="md:col-span-2" />
+          <DetailItem label="Observacoes" value={calculation.notes ?? "Nao informado"} className="md:col-span-2" />
         </DetailSection>
 
         <DetailSection title="Dados do financiamento">
@@ -161,7 +161,6 @@ export default async function CalculoPage({
           <DetailItem label="Quantidade de parcelas" value={String(calculation.installment_count ?? "Nao informado")} />
           <DetailItem label="Parcelas pagas" value={String(calculation.paid_installments ?? "Nao informado")} />
           <DetailItem label="Parcelas a pagar" value={String(calculation.remaining_installments ?? "Nao informado")} />
-          <DetailItem label="Veiculo" value={calculation.vehicle ?? "Nao informado"} />
           <DetailItem label="Ano" value={calculation.vehicle_year ?? "Nao informado"} />
         </DetailSection>
 

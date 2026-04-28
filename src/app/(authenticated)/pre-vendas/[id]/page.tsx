@@ -266,7 +266,7 @@ export default async function PreVendaPage({ params, searchParams }: PreVendaPag
           <DetailItem label="Estado civil" value={displayValue(debtHolder?.marital_status ?? null)} />
           <DetailItem label="Profissao" value={displayValue(debtHolder?.profession ?? null)} />
           <DetailItem label="Nacionalidade" value={displayValue(debtHolder?.nationality ?? null)} />
-          <DetailItem label="Orgao emissor" value={displayValue(debtHolder?.issuing_agency ?? null)} />
+          <DetailItem label="Orgao emissor" value={displayValue(debtHolder?.issuer_agency ?? null)} />
           <DetailItem label="Pai" value={displayValue(debtHolder?.father_name ?? null)} />
           <DetailItem label="Mae" value={displayValue(debtHolder?.mother_name ?? null)} />
           <DetailItem label="Celular" value={displayPhone(debtHolder?.phone_mobile ?? null)} />
@@ -287,9 +287,7 @@ export default async function PreVendaPage({ params, searchParams }: PreVendaPag
             value={formatBoolean(financialCase?.has_financing_contract)}
           />
           <DetailItem label="Valor financiado" value={formatCurrency(financialCase?.financed_amount ?? null)} />
-          <DetailItem label="Valor de entrada" value={formatCurrency(financialCase?.down_payment ?? null)} />
           <DetailItem label="Valor da parcela" value={formatCurrency(financialCase?.installment_amount ?? null)} />
-          <DetailItem label="Quantidade de parcelas" value={displayValue(financialCase?.installment_count === null || financialCase?.installment_count === undefined ? null : String(financialCase.installment_count))} />
           <DetailItem label="Parcelas pagas" value={displayValue(financialCase?.paid_installments === null || financialCase?.paid_installments === undefined ? null : String(financialCase.paid_installments))} />
           <DetailItem label="Parcelas em atraso" value={displayValue(financialCase?.overdue_installments === null || financialCase?.overdue_installments === undefined ? null : String(financialCase.overdue_installments))} />
           <DetailItem label="Dia do vencimento" value={displayValue(financialCase?.due_day === null || financialCase?.due_day === undefined ? null : String(financialCase.due_day))} />
@@ -333,7 +331,7 @@ export default async function PreVendaPage({ params, searchParams }: PreVendaPag
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {payments.map((payment, index) => (
-                    <tr key={`${payment.installment_number ?? index}-${payment.due_date ?? ""}`}>
+                    <tr key={`${payment.installment_number ?? index}-${payment.payment_date ?? ""}`}>
                       <td className="px-4 py-3">
                         {payment.installment_number ?? index + 1}
                       </td>
@@ -341,7 +339,7 @@ export default async function PreVendaPage({ params, searchParams }: PreVendaPag
                       <td className="px-4 py-3">
                         {displayValue(payment.payment_method)}
                       </td>
-                      <td className="px-4 py-3">{formatDate(payment.due_date ?? null)}</td>
+                      <td className="px-4 py-3">{formatDate(payment.payment_date ?? null)}</td>
                       <td className="px-4 py-3">{displayValue(payment.status)}</td>
                     </tr>
                   ))}

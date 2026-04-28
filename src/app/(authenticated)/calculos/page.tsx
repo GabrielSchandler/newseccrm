@@ -213,7 +213,7 @@ export default async function CalculosPage({ searchParams }: CalculosPageProps) 
                         {calculation.client_cpf}
                       </td>
                       <td className="px-4 py-3 text-slate-700">
-                        {calculation.financer_name ?? "Nao informado"}
+                        {calculation.financial_institution ?? "Nao informado"}
                       </td>
                       <td className="px-4 py-3 text-slate-700">
                         {formatCalculationCurrency(calculation.financed_value)}

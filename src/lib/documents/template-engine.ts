@@ -283,7 +283,7 @@ export function buildDocumentVariables(context: DocumentTemplateContext) {
     titular_estado_civil: formatText(debtHolder?.marital_status),
     titular_profissao: formatText(debtHolder?.profession),
     titular_nacionalidade: formatText(debtHolder?.nationality),
-    titular_orgao_emissor: formatText(debtHolder?.issuing_agency),
+    titular_orgao_emissor: formatText(debtHolder?.issuer_agency),
     titular_pai: formatText(debtHolder?.father_name),
     titular_mae: formatText(debtHolder?.mother_name),
     titular_email: formatText(debtHolder?.email),
@@ -308,14 +308,9 @@ export function buildDocumentVariables(context: DocumentTemplateContext) {
       formatBoolean(financialCase?.has_financing_contract),
     ),
     valor_operacao: formatCurrencyValue(financialCase?.financed_amount),
-    valor_entrada: formatCurrencyValue(financialCase?.down_payment),
+    valor_entrada: "",
     valor_parcela: formatCurrencyValue(financialCase?.installment_amount),
-    quantidade_parcelas: formatText(
-      financialCase?.installment_count === null ||
-        financialCase?.installment_count === undefined
-        ? null
-        : String(financialCase.installment_count),
-    ),
+    quantidade_parcelas: "",
     parcelas_pagas: formatText(
       financialCase?.paid_installments === null ||
         financialCase?.paid_installments === undefined

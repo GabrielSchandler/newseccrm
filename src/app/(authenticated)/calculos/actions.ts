@@ -43,6 +43,25 @@ function normalizeCalculationErrorMessage(message: string) {
   return message;
 }
 
+async function ensureCalculationReportsBucketAvailable() {
+  const { supabase } = await getCurrentUserContext();
+  const { error } = await supabase.storage
+    .from(calculationReportsBucket)
+    .list("", { limit: 1 });
+
+  if (!error) {
+    return null;
+  }
+
+  if (error.message.toLowerCase().includes("bucket not found")) {
+    return friendlyError(
+      "O bucket privado 'calculation-reports' ainda nao existe nesta instancia do Supabase.",
+    );
+  }
+
+  return null;
+}
+
 function buildCalculationRecord(values: FinancingCalculationPayload) {
   const computed = calculateFinancingRevision(values);
 
@@ -211,6 +230,12 @@ export async function generateCalculationPdfAction(
   calculationId: string,
 ): Promise<CalculationActionState> {
   try {
+    const bucketError = await ensureCalculationReportsBucketAvailable();
+
+    if (bucketError) {
+      return bucketError;
+    }
+
     const { supabase, companyId, userProfileId, role } = await getCurrentUserContext();
 
     if (!canManageCalculations(role)) {
@@ -272,6 +297,12 @@ export async function createSignedCalculationPdfUrlAction(
   calculationId: string,
 ): Promise<CalculationActionState> {
   try {
+    const bucketError = await ensureCalculationReportsBucketAvailable();
+
+    if (bucketError) {
+      return bucketError;
+    }
+
     const { supabase } = await getCurrentUserContext();
     const calculation = await assertCalculationAccess(calculationId);
 

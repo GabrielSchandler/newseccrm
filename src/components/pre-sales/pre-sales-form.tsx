@@ -436,7 +436,7 @@ export function PreSalesForm({
         <TextField name="debt_holder_marital_status" label="Estado civil" register={register} errors={errors} disabled={disabled} />
         <TextField name="debt_holder_profession" label="Profissao" register={register} errors={errors} disabled={disabled} />
         <TextField name="debt_holder_nationality" label="Nacionalidade" register={register} errors={errors} disabled={disabled} />
-        <TextField name="debt_holder_issuing_agency" label="Orgao emissor" register={register} errors={errors} disabled={disabled} />
+        <TextField name="debt_holder_issuer_agency" label="Orgao emissor" register={register} errors={errors} disabled={disabled} />
         <TextField name="debt_holder_father_name" label="Pai" register={register} errors={errors} disabled={disabled} />
         <TextField name="debt_holder_mother_name" label="Mae" register={register} errors={errors} disabled={disabled} />
         <TextField name="debt_holder_phone_mobile" label="Celular" register={register} errors={errors} disabled={disabled} inputMode="numeric" onChange={maskPhone} />
@@ -471,9 +471,7 @@ export function PreSalesForm({
           </select>
         </div>
         <TextField name="financed_amount" label="Valor da operacao / financiado" register={register} errors={errors} disabled={disabled} inputMode="decimal" placeholder="0,00" />
-        <TextField name="down_payment" label="Valor de entrada" register={register} errors={errors} disabled={disabled} inputMode="decimal" placeholder="0,00" />
         <TextField name="installment_amount" label="Valor da parcela" register={register} errors={errors} disabled={disabled} inputMode="decimal" placeholder="0,00" />
-        <TextField name="installment_count" label="Quantidade de parcelas" register={register} errors={errors} disabled={disabled} inputMode="numeric" />
         <TextField name="paid_installments" label="Parcelas pagas" register={register} errors={errors} disabled={disabled} inputMode="numeric" />
         <TextField name="overdue_installments" label="Parcelas em atraso" register={register} errors={errors} disabled={disabled} inputMode="numeric" />
         <TextField name="due_day" label="Dia do vencimento" register={register} errors={errors} disabled={disabled} inputMode="numeric" />
@@ -535,7 +533,7 @@ export function PreSalesForm({
                 installment_number: String(fields.length + 1),
                 amount: "",
                 payment_method: "",
-                due_date: "",
+                payment_date: "",
                 status: "previsto",
               })
             }
@@ -577,7 +575,7 @@ export function PreSalesForm({
                 type="date"
                 className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
                 disabled={disabled}
-                {...register(`payments.${index}.due_date`)}
+                {...register(`payments.${index}.payment_date`)}
               />
               <select
                 aria-label="Status"

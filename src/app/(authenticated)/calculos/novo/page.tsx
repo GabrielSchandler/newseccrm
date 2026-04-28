@@ -68,19 +68,14 @@ export default async function NovoCalculoPage({
       client_name: selectedPreSale.client_name,
       client_cpf: formatCpf(selectedPreSale.client_cpf),
       client_phone: formatPhone(selectedPreSale.client_phone ?? ""),
-      financer_name: selectedPreSale.financer_name ?? "",
+      financial_institution: selectedPreSale.financial_institution ?? "",
       specialist_name: selectedPreSale.specialist_name ?? "",
-      vehicle: selectedPreSale.vehicle ?? "",
       vehicle_year: selectedPreSale.vehicle_year ?? "",
       financed_value: numberToInput(selectedPreSale.financed_value),
       down_payment: numberToInput(selectedPreSale.down_payment),
       current_installment_value: numberToInput(
         selectedPreSale.current_installment_value,
       ),
-      installment_count:
-        selectedPreSale.installment_count === null
-          ? ""
-          : String(selectedPreSale.installment_count),
       paid_installments:
         selectedPreSale.paid_installments === null
           ? ""
