@@ -1,51 +1,48 @@
 "use client";
 
+import type { IConfig } from "@onlyoffice/document-editor-react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { ChangeEvent } from "react";
-import { useCallback, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import {
   deleteDocumentTemplateAction,
-  importDocxTemplateAction,
-  previewTemplateContentAction,
   uploadOfficialDocxTemplateAction,
   uploadOfficialPdfTemplateAction,
   type DocumentActionState,
 } from "@/app/(authenticated)/documentos/actions";
+import { OnlyOfficeTemplateEditor } from "@/components/documents/onlyoffice-template-editor";
 import { documentVariableCatalog } from "@/lib/documents/template-engine";
 import {
+  defaultDocumentTemplateContentHtml,
   documentTemplateSchema,
   type DocumentTemplateFormValues,
   type DocumentTemplatePayload,
 } from "@/lib/documents/schema";
 import { documentTemplateTypes, type DocumentTemplate } from "@/types/document";
-import { DocumentRichEditor } from "./document-rich-editor";
 
 type TemplateOption = Pick<
   DocumentTemplate,
-  "id" | "name" | "document_type" | "is_active" | "original_docx_path"
+  | "id"
+  | "name"
+  | "document_type"
+  | "is_active"
+  | "original_docx_path"
   | "original_pdf_path"
 >;
-
-export type PreviewPreSaleOption = {
-  id: string;
-  label: string;
-};
 
 type DocumentTemplateFormProps = {
   defaultValues?: DocumentTemplate | null;
   submitLabel: string;
   onSubmitAction: (values: DocumentTemplatePayload) => Promise<DocumentActionState>;
   templates?: TemplateOption[];
-  previewPreSales?: PreviewPreSaleOption[];
   officialDocxUrl?: string | null;
   officialPdfUrl?: string | null;
-};
-
-type EditorActions = {
-  insertVariable: (variable: string) => void;
+  onlyOfficeConfig?: IConfig | null;
+  onlyOfficeDocumentServerUrl?: string | null;
+  onlyOfficeConfigError?: string | null;
 };
 
 function formatTemplateType(type: DocumentTemplate["document_type"]) {
@@ -65,25 +62,18 @@ export function DocumentTemplateForm({
   submitLabel,
   onSubmitAction,
   templates = [],
-  previewPreSales = [],
   officialDocxUrl = null,
   officialPdfUrl = null,
+  onlyOfficeConfig = null,
+  onlyOfficeDocumentServerUrl = null,
+  onlyOfficeConfigError = null,
 }: DocumentTemplateFormProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [message, setMessage] = useState<DocumentActionState | null>(null);
-  const [editorActions, setEditorActions] = useState<EditorActions | null>(null);
-  const [previewMode, setPreviewMode] = useState(false);
-  const [previewHtml, setPreviewHtml] = useState("");
-  const [selectedPreviewPreSale, setSelectedPreviewPreSale] = useState(
-    previewPreSales[0]?.id ?? "",
-  );
   const {
     register,
     handleSubmit,
-    getValues,
-    setValue,
-    watch,
     formState: { errors, isSubmitting },
   } = useForm<DocumentTemplateFormValues, undefined, DocumentTemplatePayload>({
     resolver: zodResolver(documentTemplateSchema),
@@ -91,67 +81,16 @@ export function DocumentTemplateForm({
       name: defaultValues?.name ?? "",
       document_type: defaultValues?.document_type ?? "contrato",
       description: defaultValues?.description ?? "",
-      content_html: defaultValues?.content_html ?? "",
+      content_html: defaultValues?.content_html ?? defaultDocumentTemplateContentHtml,
       is_active: defaultValues?.is_active ?? true,
       is_default: defaultValues?.is_default ?? false,
     },
   });
   const disabled = isSubmitting || isPending;
   const isEditing = Boolean(defaultValues?.id);
-  const contentHtml = watch("content_html") ?? "";
-  const handleEditorReady = useCallback((actions: EditorActions) => {
-    setEditorActions(actions);
-  }, []);
-
-  function handleDocxImport(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-
-    if (!file) {
-      return;
-    }
-
-    if (!file.name.toLowerCase().endsWith(".docx")) {
-      setMessage({
-        ok: false,
-        message: "Formato nao suportado. Envie um arquivo .docx.",
-      });
-      event.target.value = "";
-      return;
-    }
-
-    const formData = new FormData();
-    formData.append("file", file);
-    setMessage(null);
-
-    startTransition(async () => {
-      const result = await importDocxTemplateAction(formData);
-      setMessage(result);
-
-      if (result.ok && result.content) {
-        if (
-          isEditing &&
-          getValues("content_html").trim() &&
-          !window.confirm(
-            "Deseja substituir o conteúdo atual pelo conteúdo importado do DOCX?",
-          )
-        ) {
-          setMessage({
-            ok: true,
-            message: "Importacao concluida, mas o conteudo atual foi mantido.",
-          });
-          return;
-        }
-
-        setValue("content_html", result.content, {
-          shouldDirty: true,
-          shouldValidate: true,
-        });
-        setPreviewMode(false);
-      }
-    });
-
-    event.target.value = "";
-  }
+  const hasOfficialFile = Boolean(
+    defaultValues?.original_docx_path || defaultValues?.original_pdf_path,
+  );
 
   function handleOfficialDocxUpload(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -251,45 +190,12 @@ export function DocumentTemplateForm({
     event.target.value = "";
   }
 
-  function insertVariable(variable: string) {
-    if (editorActions) {
-      editorActions.insertVariable(variable);
-      return;
-    }
-
-    copyVariable(variable);
-  }
-
   function onValidSubmit(values: DocumentTemplatePayload) {
     setMessage(null);
 
     startTransition(async () => {
       const result = await onSubmitAction(values);
       setMessage(result);
-    });
-  }
-
-  function handlePreview() {
-    if (!selectedPreviewPreSale) {
-      setMessage({
-        ok: false,
-        message: "Selecione uma pre-venda para gerar o preview.",
-      });
-      return;
-    }
-
-    setMessage(null);
-    startTransition(async () => {
-      const result = await previewTemplateContentAction(
-        selectedPreviewPreSale,
-        getValues("content_html"),
-      );
-      setMessage(result);
-
-      if (result.ok && result.content) {
-        setPreviewHtml(result.content);
-        setPreviewMode(true);
-      }
     });
   }
 
@@ -346,7 +252,7 @@ export function DocumentTemplateForm({
                     ? " - PDF oficial"
                     : template.original_docx_path
                       ? " - DOCX oficial"
-                      : ""}
+                      : " - aguardando DOCX/PDF"}
                 </span>
               </Link>
             ))}
@@ -450,208 +356,153 @@ export function DocumentTemplateForm({
             </label>
           </div>
 
-          <div className="space-y-3">
-            <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-              <div className="flex flex-col justify-between gap-3 md:flex-row md:items-start">
-                <div>
-                  <h2 className="text-sm font-semibold text-slate-950">
-                    DOCX oficial do documento
-                  </h2>
-                  <p className="mt-1 text-sm leading-6 text-slate-600">
-                    Para manter alinhamento, imagens, marca d&apos;agua, cabecalho e
-                    formatacao do Word, o arquivo oficial deve ser o DOCX ou PDF
-                    vinculado aqui. Esse e o fluxo que preserva o documento com
-                    fidelidade maxima.
-                  </p>
-                  <div className="mt-3 rounded-lg border border-slate-200 bg-white p-3 text-sm text-slate-700">
-                    <p className="font-semibold text-slate-950">Fluxo recomendado</p>
-                    <ol className="mt-2 space-y-1.5 pl-5 text-sm leading-6 text-slate-600">
-                      <li>1. Suba o DOCX oficial ja formatado no Word.</li>
-                      <li>
-                        2. Insira as variaveis no proprio Word usando o formato
-                        <span className="mx-1 font-mono text-slate-900">
-                          {`{{cliente_nome}}`}
-                        </span>
-                        e salve.
-                      </li>
-                      <li>3. Reenvie o DOCX oficial atualizado no CRM.</li>
-                      <li>
-                        4. Gere o documento final a partir desse DOCX, sem converter
-                        o layout para HTML.
-                      </li>
-                    </ol>
-                  </div>
-                  {defaultValues?.original_pdf_filename ? (
-                    <p className="mt-2 text-sm font-medium text-slate-800">
-                      PDF atual: {defaultValues.original_pdf_filename}
-                    </p>
-                  ) : null}
-                  {defaultValues?.original_docx_filename ? (
-                    <p className="mt-2 text-sm font-medium text-slate-800">
-                      DOCX atual: {defaultValues.original_docx_filename}
-                    </p>
-                  ) : (
-                    <p className="mt-2 text-sm font-medium text-amber-800">
-                      Nenhum arquivo oficial vinculado ainda.
-                    </p>
-                  )}
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {officialPdfUrl ? (
-                    <Link
-                      href={officialPdfUrl}
-                      target="_blank"
-                      className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-                    >
-                      Baixar PDF
-                    </Link>
-                  ) : null}
-                  {officialDocxUrl ? (
-                    <Link
-                      href={officialDocxUrl}
-                      target="_blank"
-                      className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-                    >
-                      Baixar DOCX
-                    </Link>
-                  ) : null}
-                  <label
-                    className={`inline-flex items-center justify-center rounded-lg px-3 py-2 text-sm font-semibold transition ${
-                      isEditing
-                        ? "cursor-pointer border border-teal-300 bg-white text-teal-800 hover:bg-teal-50"
-                        : "cursor-not-allowed border border-slate-200 bg-slate-100 text-slate-400"
-                    }`}
-                  >
-                    {defaultValues?.original_pdf_path
-                      ? "Substituir PDF oficial"
-                      : "Vincular PDF oficial"}
-                    <input
-                      type="file"
-                      accept=".pdf,application/pdf"
-                      className="sr-only"
-                      disabled={disabled || !isEditing}
-                      onChange={handleOfficialPdfUpload}
-                    />
-                  </label>
-                  <label
-                    className={`inline-flex items-center justify-center rounded-lg px-3 py-2 text-sm font-semibold transition ${
-                      isEditing
-                        ? "cursor-pointer border border-teal-300 bg-white text-teal-800 hover:bg-teal-50"
-                        : "cursor-not-allowed border border-slate-200 bg-slate-100 text-slate-400"
-                    }`}
-                  >
-                    {defaultValues?.original_docx_path
-                      ? "Substituir DOCX oficial"
-                      : "Vincular DOCX oficial"}
-                    <input
-                      type="file"
-                      accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                      className="sr-only"
-                      disabled={disabled || !isEditing}
-                      onChange={handleOfficialDocxUpload}
-                    />
-                  </label>
-                </div>
-              </div>
-            </div>
+          <input type="hidden" {...register("content_html")} />
 
-            <div className="flex flex-col justify-between gap-3 md:flex-row md:items-center">
-              <div>
-                <label
-                  className="text-sm font-medium text-slate-700"
-                  htmlFor="content_html"
-                >
-                  Editor auxiliar / preview aproximado <span className="text-red-600">*</span>
-                </label>
-                <p className="mt-1 text-xs leading-5 text-slate-500">
-                  O conteudo salvo em <span className="font-mono">content_html</span>{" "}
-                  serve para preview e apoio operacional. Ele nao preserva 100% do
-                  layout de um DOCX complexo. O documento oficial final usa o DOCX
-                  vinculado acima quando existir.
+          <section className="space-y-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
+            <div className="flex flex-col justify-between gap-3 md:flex-row md:items-start">
+              <div className="space-y-2">
+                <h2 className="text-sm font-semibold text-slate-950">
+                  Documento oficial do template
+                </h2>
+                <p className="text-sm leading-6 text-slate-600">
+                  Para contratos e documentos com fidelidade alta, o CRM passa a usar
+                  somente o arquivo oficial em DOCX ou PDF. O fluxo HTML antigo nao e
+                  mais a base para gerar contrato.
                 </p>
+                <div className="rounded-lg border border-slate-200 bg-white p-3 text-sm text-slate-700">
+                  <p className="font-semibold text-slate-950">Fluxo recomendado</p>
+                  <ol className="mt-2 space-y-1.5 pl-5 text-sm leading-6 text-slate-600">
+                    <li>1. Cadastre o template e vincule o DOCX oficial.</li>
+                    <li>
+                      2. Edite o arquivo diretamente em DOCX usando o editor nativo.
+                    </li>
+                    <li>
+                      3. Use placeholders como{" "}
+                      <span className="font-mono text-slate-900">
+                        {`{{contratante_nome}}`}
+                      </span>{" "}
+                      no proprio documento.
+                    </li>
+                    <li>
+                      4. Gere na pre-venda e abra/baixe o DOCX e o PDF oficiais.
+                    </li>
+                  </ol>
+                </div>
+                {defaultValues?.original_docx_filename ? (
+                  <p className="text-sm font-medium text-slate-800">
+                    DOCX atual: {defaultValues.original_docx_filename}
+                  </p>
+                ) : null}
+                {defaultValues?.original_pdf_filename ? (
+                  <p className="text-sm font-medium text-slate-800">
+                    PDF atual: {defaultValues.original_pdf_filename}
+                  </p>
+                ) : null}
+                {!hasOfficialFile ? (
+                  <p className="text-sm font-medium text-amber-800">
+                    Nenhum arquivo oficial vinculado ainda.
+                  </p>
+                ) : null}
               </div>
               <div className="flex flex-wrap gap-2">
-                <label className="inline-flex cursor-pointer items-center justify-center rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
-                  {isPending
-                    ? "Importando..."
-                    : "Importar DOCX para editor auxiliar"}
+                {officialDocxUrl ? (
+                  <Link
+                    href={officialDocxUrl}
+                    target="_blank"
+                    className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                  >
+                    Baixar DOCX
+                  </Link>
+                ) : null}
+                {officialPdfUrl ? (
+                  <Link
+                    href={officialPdfUrl}
+                    target="_blank"
+                    className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                  >
+                    Baixar PDF
+                  </Link>
+                ) : null}
+                <label
+                  className={`inline-flex items-center justify-center rounded-lg px-3 py-2 text-sm font-semibold transition ${
+                    isEditing
+                      ? "cursor-pointer border border-teal-300 bg-white text-teal-800 hover:bg-teal-50"
+                      : "cursor-not-allowed border border-slate-200 bg-slate-100 text-slate-400"
+                  }`}
+                >
+                  {defaultValues?.original_pdf_path
+                    ? "Substituir PDF oficial"
+                    : "Vincular PDF oficial"}
+                  <input
+                    type="file"
+                    accept=".pdf,application/pdf"
+                    className="sr-only"
+                    disabled={disabled || !isEditing}
+                    onChange={handleOfficialPdfUpload}
+                  />
+                </label>
+                <label
+                  className={`inline-flex items-center justify-center rounded-lg px-3 py-2 text-sm font-semibold transition ${
+                    isEditing
+                      ? "cursor-pointer border border-teal-300 bg-white text-teal-800 hover:bg-teal-50"
+                      : "cursor-not-allowed border border-slate-200 bg-slate-100 text-slate-400"
+                  }`}
+                >
+                  {defaultValues?.original_docx_path
+                    ? "Substituir DOCX oficial"
+                    : "Vincular DOCX oficial"}
                   <input
                     type="file"
                     accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                     className="sr-only"
-                    disabled={disabled}
-                    onChange={handleDocxImport}
+                    disabled={disabled || !isEditing}
+                    onChange={handleOfficialDocxUpload}
                   />
                 </label>
-                <button
-                  type="button"
-                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-                  disabled={disabled || !previewPreSales.length}
-                  onClick={handlePreview}
-                >
-                  Visualizar preview
-                </button>
-                {previewMode ? (
-                  <button
-                    type="button"
-                    className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-                    onClick={() => setPreviewMode(false)}
-                  >
-                    Voltar para edicao
-                  </button>
-                ) : null}
               </div>
             </div>
+          </section>
 
-            {previewPreSales.length ? (
-              <select
-                value={selectedPreviewPreSale}
-                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
-                disabled={disabled}
-                onChange={(event) => setSelectedPreviewPreSale(event.target.value)}
-              >
-                {previewPreSales.map((preSale) => (
-                  <option key={preSale.id} value={preSale.id}>
-                    Preview com {preSale.label}
-                  </option>
-                ))}
-              </select>
-            ) : (
-              <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
-                Cadastre uma pre-venda para visualizar preview com dados reais.
+          <section className="space-y-3">
+            <div>
+              <h2 className="text-sm font-semibold text-slate-950">
+                Editor DOCX nativo
+              </h2>
+              <p className="mt-1 text-sm leading-6 text-slate-600">
+                O editor em HTML foi removido deste fluxo para evitar perda de
+                alinhamento, imagens, marca d&apos;agua e estrutura do contrato.
               </p>
-            )}
+            </div>
 
-            <input type="hidden" {...register("content_html")} />
-            {previewMode ? (
-              <div className="min-h-[620px] rounded-lg border border-slate-300 bg-white px-8 py-8 text-sm leading-7 text-slate-950">
-                <div dangerouslySetInnerHTML={{ __html: previewHtml }} />
+            {!isEditing ? (
+              <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                Salve o template primeiro. Depois volte nesta tela para vincular o
+                DOCX oficial e editar o contrato no editor nativo.
+              </div>
+            ) : defaultValues?.original_docx_path && onlyOfficeConfig && onlyOfficeDocumentServerUrl ? (
+              <OnlyOfficeTemplateEditor
+                documentServerUrl={onlyOfficeDocumentServerUrl}
+                config={onlyOfficeConfig}
+              />
+            ) : defaultValues?.original_docx_path ? (
+              <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                {onlyOfficeConfigError ||
+                  "O editor nativo do OnlyOffice ainda nao esta configurado nesta instancia."}
               </div>
             ) : (
-              <DocumentRichEditor
-                value={contentHtml}
-                disabled={disabled}
-                onChange={(html) =>
-                  setValue("content_html", html, {
-                    shouldDirty: true,
-                    shouldValidate: true,
-                  })
-                }
-                onReady={handleEditorReady}
-              />
+              <div className="rounded-lg border border-slate-200 bg-white px-4 py-4 text-sm text-slate-600">
+                Vincule um DOCX oficial para abrir o editor nativo e trabalhar no
+                contrato sem reconverter o arquivo para HTML.
+              </div>
             )}
-            {errors.content_html?.message ? (
-              <p className="text-sm text-red-600">{errors.content_html.message}</p>
-            ) : null}
-          </div>
+          </section>
         </main>
 
         <aside className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="text-base font-semibold text-slate-950">Dados</h2>
+          <h2 className="text-base font-semibold text-slate-950">Variaveis</h2>
           <p className="mt-1 text-sm leading-6 text-slate-600">
-            Use estas variaveis no editor auxiliar ou copie para inserir diretamente
-            no Word oficial, que e o caminho recomendado para preservar 100% da
-            formatacao do documento.
+            Copie estes placeholders para dentro do DOCX oficial. Eles serao trocados
+            pelos dados da pre-venda na hora de gerar o documento final.
           </p>
           <div className="mt-4 max-h-[760px] space-y-4 overflow-y-auto pr-1">
             {documentVariableCatalog.map((group) => (
@@ -665,7 +516,7 @@ export function DocumentTemplateForm({
                       type="button"
                       key={variable}
                       className="rounded border border-slate-200 bg-slate-50 px-2 py-1 font-mono text-xs text-slate-700 transition hover:border-teal-300 hover:bg-teal-50 hover:text-teal-800"
-                      onClick={() => insertVariable(variable)}
+                      onClick={() => copyVariable(variable)}
                     >
                       {`{{${variable}}}`}
                     </button>

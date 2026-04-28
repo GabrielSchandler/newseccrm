@@ -5,13 +5,10 @@ import Link from "next/link";
 import { useState, useTransition } from "react";
 import {
   createGeneratedDocumentFileUrlAction,
-  generateDocumentAction,
   generateOfficialDocumentAction,
   generateOfficialPdfDocumentAction,
-  previewDocumentAction,
   type DocumentActionState,
 } from "@/app/(authenticated)/documentos/actions";
-import { DocumentRenderedContent } from "@/components/documents/document-rendered-content";
 import { documentTemplateTypes, type DocumentTemplate } from "@/types/document";
 
 type GenerateDocumentModalProps = {
@@ -29,29 +26,17 @@ export function GenerateDocumentModal({
 }: GenerateDocumentModalProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedTemplateId, setSelectedTemplateId] = useState(templates[0]?.id ?? "");
-  const [preview, setPreview] = useState("");
   const [generatedDocumentId, setGeneratedDocumentId] = useState("");
   const [state, setState] = useState<DocumentActionState | null>(null);
   const [isPending, startTransition] = useTransition();
   const selectedTemplate = templates.find((template) => template.id === selectedTemplateId);
-  const disabled = isPending || !selectedTemplateId;
-
-  function handlePreview() {
-    if (!selectedTemplateId) {
-      return;
-    }
-
-    setState(null);
-    startTransition(async () => {
-      const result = await previewDocumentAction(preSaleId, selectedTemplateId);
-      setState(result);
-      setPreview(result.content ?? "");
-      setGeneratedDocumentId("");
-    });
-  }
+  const canGenerateOfficial = Boolean(
+    selectedTemplate?.original_docx_path || selectedTemplate?.original_pdf_path,
+  );
+  const disabled = isPending || !selectedTemplateId || !canGenerateOfficial;
 
   function handleGenerate() {
-    if (!selectedTemplateId) {
+    if (!selectedTemplateId || !canGenerateOfficial) {
       return;
     }
 
@@ -61,9 +46,12 @@ export function GenerateDocumentModal({
         ? await generateOfficialPdfDocumentAction(preSaleId, selectedTemplateId)
         : selectedTemplate?.original_docx_path
           ? await generateOfficialDocumentAction(preSaleId, selectedTemplateId)
-          : await generateDocumentAction(preSaleId, selectedTemplateId);
+          : {
+              ok: false,
+              message:
+                "Este template ainda nao possui arquivo oficial vinculado. Vincule o DOCX ou o PDF oficial no cadastro do template.",
+            };
       setState(result);
-      setPreview(result.content ?? preview);
       setGeneratedDocumentId(result.documentId ?? "");
     });
   }
@@ -108,6 +96,26 @@ export function GenerateDocumentModal({
     });
   }
 
+  function handleDownloadOfficialPdf() {
+    if (!generatedDocumentId) {
+      return;
+    }
+
+    setState(null);
+    startTransition(async () => {
+      const result = await createGeneratedDocumentFileUrlAction(
+        generatedDocumentId,
+        "pdf",
+        "download",
+      );
+      setState(result);
+
+      if (result.ok && result.url) {
+        window.open(result.url, "_blank", "noopener,noreferrer");
+      }
+    });
+  }
+
   return (
     <>
       <button
@@ -131,7 +139,8 @@ export function GenerateDocumentModal({
                   Gerar documento
                 </h2>
                 <p className="mt-1 text-sm text-slate-600">
-                  Selecione um template, confira o preview e gere o conteudo final.
+                  Selecione um template oficial e gere o documento final a partir do
+                  arquivo DOCX ou PDF vinculado.
                 </p>
               </div>
               <button
@@ -147,7 +156,7 @@ export function GenerateDocumentModal({
             <div className="space-y-5 p-5">
               {templates.length ? (
                 <>
-                  <div className="grid gap-4 md:grid-cols-[1fr_auto_auto] md:items-end">
+                    <div className="grid gap-4 md:grid-cols-[1fr_auto_auto] md:items-end">
                     <div className="space-y-2">
                       <label
                         className="text-sm font-medium text-slate-700"
@@ -162,7 +171,6 @@ export function GenerateDocumentModal({
                         className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
                         onChange={(event) => {
                           setSelectedTemplateId(event.target.value);
-                          setPreview("");
                           setGeneratedDocumentId("");
                           setState(null);
                         }}
@@ -174,19 +182,9 @@ export function GenerateDocumentModal({
                         ))}
                       </select>
                     </div>
-                    <button
-                      type="button"
-                      disabled={disabled}
-                      className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-70"
-                      onClick={handlePreview}
-                    >
-                      {isPending
-                        ? "Gerando..."
-                        : selectedTemplate?.original_pdf_path ||
-                            selectedTemplate?.original_docx_path
-                          ? "Visualizar preview auxiliar"
-                          : "Visualizar preview"}
-                    </button>
+                    <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-600">
+                      Contratos oficiais nao usam mais preview HTML para emissao.
+                    </div>
                     <button
                       type="button"
                       disabled={disabled}
@@ -199,7 +197,7 @@ export function GenerateDocumentModal({
                           ? "Gerar PDF oficial"
                           : selectedTemplate?.original_docx_path
                             ? "Gerar documento oficial"
-                            : "Gerar por HTML"}
+                            : "Vincule arquivo oficial"}
                     </button>
                   </div>
 
@@ -213,8 +211,8 @@ export function GenerateDocumentModal({
                         {selectedTemplate.original_pdf_path
                           ? "Este template tem PDF oficial. A emissao final vai preencher campos do PDF sem reconverter o layout."
                           : selectedTemplate.original_docx_path
-                            ? "Este template tem DOCX oficial. A emissao final sera gerada a partir do Word original. O preview HTML abaixo e apenas auxiliar e pode nao refletir 100% do layout."
-                            : "Este template ainda nao tem arquivo oficial. A geracao usara o fluxo antigo por HTML."}
+                            ? "Este template tem DOCX oficial. A emissao final sera gerada a partir do Word original, preservando melhor a estrutura do contrato."
+                            : "Este template ainda nao tem arquivo oficial. Vincule um DOCX ou PDF oficial antes de gerar documentos na pre-venda."}
                       </p>
                     </div>
                   ) : null}
@@ -228,49 +226,42 @@ export function GenerateDocumentModal({
                         Abrir documento
                       </Link>
                       {selectedTemplate?.original_pdf_path ? (
-                        <button
-                          type="button"
-                          className="rounded-lg bg-teal-700 px-3 py-2 text-sm font-semibold text-white transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-70"
-                          disabled={isPending}
-                          onClick={handleOpenOfficialPdf}
-                        >
-                          Abrir PDF oficial
-                        </button>
+                        <>
+                          <button
+                            type="button"
+                            className="rounded-lg bg-teal-700 px-3 py-2 text-sm font-semibold text-white transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-70"
+                            disabled={isPending}
+                            onClick={handleOpenOfficialPdf}
+                          >
+                            Abrir PDF oficial
+                          </button>
+                          <button
+                            type="button"
+                            className="rounded-lg border border-teal-300 bg-white px-3 py-2 text-sm font-semibold text-teal-800 transition hover:bg-teal-100 disabled:cursor-not-allowed disabled:opacity-70"
+                            disabled={isPending}
+                            onClick={handleDownloadOfficialPdf}
+                          >
+                            Baixar PDF oficial
+                          </button>
+                        </>
                       ) : selectedTemplate?.original_docx_path ? (
-                        <button
-                          type="button"
-                          className="rounded-lg border border-teal-300 bg-white px-3 py-2 text-sm font-semibold text-teal-800 transition hover:bg-teal-100 disabled:cursor-not-allowed disabled:opacity-70"
-                          disabled={isPending}
-                          onClick={handleDownloadOfficialDocx}
-                        >
-                          Baixar DOCX oficial
-                        </button>
-                      ) : (
-                        <Link
-                          href={`/documentos/gerados/${generatedDocumentId}/imprimir?print=1`}
-                          target="_blank"
-                          className="rounded-lg bg-teal-700 px-3 py-2 text-sm font-semibold text-white transition hover:bg-teal-800"
-                        >
-                          Abrir PDF HTML
-                        </Link>
-                      )}
+                        <>
+                          <button
+                            type="button"
+                            className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-70"
+                            disabled={isPending}
+                            onClick={handleDownloadOfficialDocx}
+                          >
+                            Baixar DOCX oficial
+                          </button>
+                        </>
+                      ) : null}
                     </div>
                   ) : null}
 
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium text-slate-700">Preview</p>
-                    {preview ? (
-                      <div className="max-h-[520px] overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 p-4">
-                        <DocumentRenderedContent html={preview} />
-                      </div>
-                    ) : (
-                      <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-10 text-center text-sm text-slate-500">
-                        {selectedTemplate?.original_pdf_path ||
-                        selectedTemplate?.original_docx_path
-                          ? "Para contratos oficiais, use este preview apenas como referencia auxiliar. A versao fiel e o arquivo oficial gerado."
-                          : "Clique em Visualizar preview para conferir o documento."}
-                      </div>
-                    )}
+                  <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-600">
+                    O documento final sera aberto a partir do arquivo oficial gerado.
+                    Para contratos, o CRM nao usa mais o HTML como fonte principal.
                   </div>
                 </>
               ) : (

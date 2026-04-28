@@ -4,9 +4,15 @@ import { DocumentTemplateForm } from "@/components/documents/document-template-f
 import { DocumentsNav } from "@/components/documents/documents-nav";
 import { PageHeader } from "@/components/layout/page-header";
 import { getCurrentUserContext } from "@/lib/auth/current-user";
-import type { PreviewPreSaleOption } from "@/components/documents/document-template-form";
+import { getAppOrigin } from "@/lib/app-origin";
+import {
+  buildOnlyOfficeCallbackToken,
+  buildOnlyOfficeEditorConfig,
+  getOnlyOfficeMissingConfigReason,
+  isOnlyOfficeConfigured,
+} from "@/lib/documents/onlyoffice";
+import type { DocumentCompany } from "@/lib/documents/template-engine";
 import type { DocumentTemplate } from "@/types/document";
-import type { PreSaleClientSnapshot } from "@/types/pre-sale";
 
 type EditTemplatePageProps = {
   params: Promise<{ id: string }>;
@@ -18,7 +24,8 @@ function canManageTemplates(role: string | null) {
 
 export default async function EditTemplatePage({ params }: EditTemplatePageProps) {
   const { id } = await params;
-  const { supabase, companyId, role } = await getCurrentUserContext();
+  const { supabase, companyId, role, userProfileId, fullName, email } =
+    await getCurrentUserContext();
 
   if (!canManageTemplates(role)) {
     notFound();
@@ -36,7 +43,7 @@ export default async function EditTemplatePage({ params }: EditTemplatePageProps
     notFound();
   }
 
-  const [{ data: templatesData }, { data: preSalesData }] = await Promise.all([
+  const [{ data: templatesData }, { data: companyData }] = await Promise.all([
     supabase
       .from("document_templates")
       .select("*")
@@ -44,43 +51,17 @@ export default async function EditTemplatePage({ params }: EditTemplatePageProps
       .order("updated_at", { ascending: false, nullsFirst: false })
       .order("created_at", { ascending: false })
       .limit(50),
-    supabase
-      .from("pre_sales")
-      .select("id, created_at")
-      .eq("company_id", companyId)
-      .order("created_at", { ascending: false })
-      .limit(30),
+    supabase.from("companies").select("*").eq("id", companyId).maybeSingle(),
   ]);
-  const preSaleIds = (preSalesData ?? []).map((preSale) => String(preSale.id));
-  const { data: snapshotsData } = preSaleIds.length
-    ? await supabase
-        .from("pre_sale_client_snapshot")
-        .select("pre_sale_id, full_name")
-        .in("pre_sale_id", preSaleIds)
-    : { data: [] };
   const templates = (templatesData ?? []) as DocumentTemplate[];
-  const snapshots = (snapshotsData ?? []) as Pick<
-    PreSaleClientSnapshot,
-    "pre_sale_id" | "full_name"
-  >[];
-  const previewPreSales: PreviewPreSaleOption[] = (preSalesData ?? []).map(
-    (preSale) => {
-      const snapshot = snapshots.find((item) => item.pre_sale_id === preSale.id);
-
-      return {
-        id: String(preSale.id),
-        label: snapshot?.full_name ?? `Pre-venda ${String(preSale.id).slice(0, 8)}`,
-      };
-    },
-  );
-
   const updateAction = updateDocumentTemplateAction.bind(null, template.id);
+  const appOrigin = await getAppOrigin();
   const [{ data: officialDocxSignedUrl }, { data: officialPdfSignedUrl }] =
     await Promise.all([
       template.original_docx_path
         ? supabase.storage
             .from("documents")
-            .createSignedUrl(template.original_docx_path, 60 * 10)
+            .createSignedUrl(template.original_docx_path, 60 * 60 * 6)
         : Promise.resolve({ data: null }),
       template.original_pdf_path
         ? supabase.storage
@@ -88,12 +69,34 @@ export default async function EditTemplatePage({ params }: EditTemplatePageProps
             .createSignedUrl(template.original_pdf_path, 60 * 10)
         : Promise.resolve({ data: null }),
     ]);
+  const onlyOfficeConfigError = getOnlyOfficeMissingConfigReason();
+  const onlyOfficeSession =
+    template.original_docx_path &&
+    officialDocxSignedUrl?.signedUrl &&
+    isOnlyOfficeConfigured()
+      ? buildOnlyOfficeEditorConfig({
+          template,
+          documentUrl: officialDocxSignedUrl.signedUrl,
+          callbackUrl: `${appOrigin}/api/onlyoffice/templates/${template.id}/callback?token=${encodeURIComponent(
+            buildOnlyOfficeCallbackToken({
+              templateId: template.id,
+              companyId,
+              storagePath: template.original_docx_path,
+            }),
+          )}`,
+          user: {
+            id: userProfileId,
+            name: fullName || email || "Usuario",
+          },
+          company: (companyData ?? null) as DocumentCompany | null,
+        })
+      : null;
 
   return (
     <>
       <PageHeader
         title="Editar template"
-        description="Atualize o texto base usado para gerar documentos."
+        description="Atualize os metadados do template e edite o DOCX oficial sem reconverter o contrato para HTML."
       />
       <div className="space-y-6 p-6">
         <DocumentsNav />
@@ -102,9 +105,11 @@ export default async function EditTemplatePage({ params }: EditTemplatePageProps
           submitLabel="Salvar template"
           onSubmitAction={updateAction}
           templates={templates}
-          previewPreSales={previewPreSales}
           officialDocxUrl={officialDocxSignedUrl?.signedUrl ?? null}
           officialPdfUrl={officialPdfSignedUrl?.signedUrl ?? null}
+          onlyOfficeConfig={onlyOfficeSession?.config ?? null}
+          onlyOfficeDocumentServerUrl={onlyOfficeSession?.documentServerUrl ?? null}
+          onlyOfficeConfigError={onlyOfficeConfigError}
         />
       </div>
     </>

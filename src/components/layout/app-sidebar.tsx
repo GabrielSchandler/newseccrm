@@ -1,6 +1,7 @@
 import {
   LogOut,
 } from "lucide-react";
+import packageJson from "../../../package.json";
 import { signOut } from "@/app/actions/auth";
 import { getCurrentUserContext } from "@/lib/auth/current-user";
 import { SidebarNav, type SidebarNavigationItem } from "./sidebar-nav";
@@ -81,6 +82,10 @@ export async function AppSidebar() {
             items={visibleNavigation}
             canManageTemplates={canManageTemplates}
           />
+        </div>
+
+        <div className="px-3 pb-3 text-xs text-slate-400">
+          Versao {packageJson.version}
         </div>
 
         <form action={signOut}>

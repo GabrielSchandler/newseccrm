@@ -9,7 +9,10 @@ import { analyzeDocxStructure } from "@/lib/documents/docx-analysis";
 import { renderOfficialDocxTemplate } from "@/lib/documents/docx-engine";
 import { convertDocxToPdf } from "@/lib/documents/pdf-converter";
 import { renderOfficialPdfFormTemplate } from "@/lib/documents/pdf-form-engine";
-import { documentTemplateSchema } from "@/lib/documents/schema";
+import {
+  defaultDocumentTemplateContentHtml,
+  documentTemplateSchema,
+} from "@/lib/documents/schema";
 import {
   buildDocumentVariables,
   renderDocumentTemplate,
@@ -484,10 +487,13 @@ async function ensureDefaultTemplateState(
 }
 
 function buildTemplateWritePayload(values: DocumentTemplatePayload) {
+  const contentHtml = values.content_html?.trim() || defaultDocumentTemplateContentHtml;
+
   return {
     ...values,
+    content_html: contentHtml,
     type: values.document_type,
-    content: values.content_html,
+    content: contentHtml,
   };
 }
 
@@ -1416,6 +1422,12 @@ export async function generateDocumentAction(
 
     if (!template) {
       return friendlyError("Template ativo nao encontrado.");
+    }
+
+    if (template.document_type === "contrato") {
+      return friendlyError(
+        "Templates de contrato agora exigem arquivo oficial em DOCX ou PDF. Vincule o arquivo oficial no cadastro do template antes de gerar pela pre-venda.",
+      );
     }
 
     const rendered = renderDocumentTemplate(template.content_html, context);

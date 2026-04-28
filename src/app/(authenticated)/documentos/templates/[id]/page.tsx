@@ -168,10 +168,19 @@ export default async function TemplatePage({
         </section>
 
         <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="text-base font-semibold text-slate-950">Conteudo</h2>
-          <pre className="mt-4 whitespace-pre-wrap rounded-lg border border-slate-200 bg-slate-50 p-4 font-mono text-sm leading-6 text-slate-900">
-            {template.content_html}
-          </pre>
+          <h2 className="text-base font-semibold text-slate-950">Fluxo oficial</h2>
+          <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm leading-6 text-slate-700">
+            <p>
+              Este template foi preparado para trabalhar com arquivo oficial em DOCX
+              ou PDF. A geracao final da pre-venda deve usar o arquivo oficial para
+              preservar alinhamento, imagens, marca d&apos;agua e a estrutura do
+              contrato.
+            </p>
+            <p className="mt-3">
+              Se houver DOCX oficial vinculado, a edicao passa pelo editor nativo do
+              documento. O HTML antigo deixa de ser a fonte principal para contratos.
+            </p>
+          </div>
         </section>
       </div>
     </>

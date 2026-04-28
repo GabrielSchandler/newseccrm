@@ -64,16 +64,31 @@ export default async function DocumentoPage({ params }: DocumentoPageProps) {
   const template = templateData as DocumentTemplate | null;
   const client = clientData as Pick<Client, "id" | "full_name"> | null;
   const creator = creatorData as UserProfileOption | null;
-  const [{ data: docxSignedUrl }, { data: pdfSignedUrl }] = await Promise.all([
+  const [
+    { data: docxSignedUrl },
+    { data: docxDownloadSignedUrl },
+    { data: pdfSignedUrl },
+    { data: pdfDownloadSignedUrl },
+  ] = await Promise.all([
     document.generated_docx_path
       ? supabase.storage
           .from("documents")
           .createSignedUrl(document.generated_docx_path, 60 * 10)
       : Promise.resolve({ data: null }),
+    document.generated_docx_path
+      ? supabase.storage.from("documents").createSignedUrl(document.generated_docx_path, 60 * 10, {
+          download: document.generated_docx_filename ?? "documento.docx",
+        })
+      : Promise.resolve({ data: null }),
     document.generated_pdf_path
       ? supabase.storage
           .from("documents")
           .createSignedUrl(document.generated_pdf_path, 60 * 10)
+      : Promise.resolve({ data: null }),
+    document.generated_pdf_path
+      ? supabase.storage.from("documents").createSignedUrl(document.generated_pdf_path, 60 * 10, {
+          download: document.generated_pdf_filename ?? "documento.pdf",
+        })
       : Promise.resolve({ data: null }),
   ]);
 
@@ -109,22 +124,44 @@ export default async function DocumentoPage({ params }: DocumentoPageProps) {
             </Link>
           ) : null}
           {docxSignedUrl?.signedUrl ? (
-            <Link
-              href={docxSignedUrl.signedUrl}
-              target="_blank"
-              className="rounded-lg border border-teal-300 bg-white px-4 py-2.5 text-sm font-semibold text-teal-800 transition hover:bg-teal-50"
-            >
-              Abrir DOCX oficial
-            </Link>
+            <>
+              <Link
+                href={docxSignedUrl.signedUrl}
+                target="_blank"
+                className="rounded-lg border border-teal-300 bg-white px-4 py-2.5 text-sm font-semibold text-teal-800 transition hover:bg-teal-50"
+              >
+                Abrir DOCX oficial
+              </Link>
+              {docxDownloadSignedUrl?.signedUrl ? (
+                <Link
+                  href={docxDownloadSignedUrl.signedUrl}
+                  target="_blank"
+                  className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                >
+                  Baixar DOCX oficial
+                </Link>
+              ) : null}
+            </>
           ) : null}
           {pdfSignedUrl?.signedUrl ? (
-            <Link
-              href={pdfSignedUrl.signedUrl}
-              target="_blank"
-              className="rounded-lg bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-800"
-            >
-              Abrir PDF oficial
-            </Link>
+            <>
+              <Link
+                href={pdfSignedUrl.signedUrl}
+                target="_blank"
+                className="rounded-lg bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-800"
+              >
+                Abrir PDF oficial
+              </Link>
+              {pdfDownloadSignedUrl?.signedUrl ? (
+                <Link
+                  href={pdfDownloadSignedUrl.signedUrl}
+                  target="_blank"
+                  className="rounded-lg border border-teal-300 bg-white px-4 py-2.5 text-sm font-semibold text-teal-800 transition hover:bg-teal-50"
+                >
+                  Baixar PDF oficial
+                </Link>
+              ) : null}
+            </>
           ) : null}
         </div>
 
