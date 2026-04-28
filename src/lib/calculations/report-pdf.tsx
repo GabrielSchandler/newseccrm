@@ -7,28 +7,40 @@ import {
   View,
   type DocumentProps,
 } from "@react-pdf/renderer";
-import type { FinancingCalculation } from "@/types/calculation";
 import {
   formatCalculationCurrency,
   formatCalculationDate,
   formatCpfDigits,
 } from "@/lib/calculations/formatters";
+import { formatPhone } from "@/lib/clients/masks";
+import type { FinancingCalculation } from "@/types/calculation";
+
+const COLORS = {
+  text: "#111111",
+  muted: "#6b7280",
+  subtle: "#f5f5f5",
+  border: "#d4d4d8",
+  borderStrong: "#111111",
+  accent: "#b91c1c",
+  accentSoft: "#fef2f2",
+  white: "#ffffff",
+};
 
 const styles = StyleSheet.create({
   page: {
-    paddingTop: 32,
-    paddingHorizontal: 32,
-    paddingBottom: 28,
-    fontSize: 10,
+    paddingTop: 26,
+    paddingHorizontal: 28,
+    paddingBottom: 24,
+    fontSize: 9.5,
     fontFamily: "Helvetica",
-    color: "#111827",
-    backgroundColor: "#ffffff",
+    color: COLORS.text,
+    backgroundColor: COLORS.white,
   },
   header: {
     borderBottomWidth: 1,
-    borderBottomColor: "#d1d5db",
-    paddingBottom: 14,
-    marginBottom: 18,
+    borderBottomColor: COLORS.border,
+    paddingBottom: 12,
+    marginBottom: 16,
   },
   headerTop: {
     flexDirection: "row",
@@ -36,247 +48,361 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
     gap: 12,
   },
+  brandBlock: {
+    maxWidth: "62%",
+  },
   companyName: {
     fontSize: 15,
     fontWeight: 700,
-    color: "#111827",
+    color: COLORS.text,
   },
   companyMeta: {
-    fontSize: 9,
-    color: "#6b7280",
+    fontSize: 8.5,
+    color: COLORS.muted,
     marginTop: 4,
-    lineHeight: 1.4,
+    lineHeight: 1.45,
+  },
+  badgeStack: {
+    flexDirection: "row",
+    gap: 6,
+    flexWrap: "wrap",
+    justifyContent: "flex-end",
+    maxWidth: "38%",
   },
   badge: {
-    borderWidth: 1,
-    borderColor: "#111827",
-    color: "#111827",
     borderRadius: 999,
+    borderWidth: 1,
+    borderColor: COLORS.borderStrong,
+    paddingHorizontal: 8,
     paddingVertical: 3,
-    paddingHorizontal: 9,
-    fontSize: 8,
+    fontSize: 7.5,
     fontWeight: 700,
-    textTransform: "uppercase",
+    color: COLORS.text,
+  },
+  badgeAccent: {
+    borderColor: COLORS.accent,
+    color: COLORS.accent,
   },
   title: {
     fontSize: 21,
     fontWeight: 700,
-    color: "#111827",
-    marginTop: 16,
+    marginTop: 14,
+    color: COLORS.text,
   },
   subtitle: {
-    fontSize: 10,
-    color: "#4b5563",
-    marginTop: 6,
+    marginTop: 5,
+    fontSize: 9.5,
+    color: COLORS.muted,
     lineHeight: 1.5,
+    maxWidth: "92%",
   },
   section: {
-    marginBottom: 16,
+    marginBottom: 14,
   },
   sectionTitle: {
-    fontSize: 11,
+    fontSize: 10.5,
     fontWeight: 700,
-    marginBottom: 10,
-    color: "#111827",
+    color: COLORS.text,
     textTransform: "uppercase",
+    marginBottom: 8,
   },
-  grid: {
+  impactCard: {
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: COLORS.borderStrong,
+    backgroundColor: COLORS.accentSoft,
+    padding: 16,
+    marginBottom: 16,
+  },
+  impactLabel: {
+    fontSize: 8,
+    fontWeight: 700,
+    textTransform: "uppercase",
+    color: COLORS.accent,
+    marginBottom: 6,
+  },
+  impactValue: {
+    fontSize: 28,
+    fontWeight: 700,
+    color: COLORS.text,
+  },
+  impactText: {
+    marginTop: 7,
+    fontSize: 10,
+    lineHeight: 1.55,
+    color: "#3f3f46",
+  },
+  comparisonRow: {
+    flexDirection: "row",
+    gap: 10,
+    marginBottom: 16,
+  },
+  comparisonCard: {
+    flex: 1,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    backgroundColor: COLORS.white,
+    padding: 12,
+  },
+  comparisonCardAccent: {
+    borderColor: COLORS.accent,
+  },
+  comparisonLabel: {
+    fontSize: 8,
+    color: COLORS.muted,
+    textTransform: "uppercase",
+    marginBottom: 6,
+  },
+  comparisonValue: {
+    fontSize: 15,
+    fontWeight: 700,
+    color: COLORS.text,
+  },
+  comparisonValueAccent: {
+    color: COLORS.accent,
+  },
+  comparisonHint: {
+    fontSize: 8,
+    color: COLORS.muted,
+    marginTop: 4,
+    lineHeight: 1.4,
+  },
+  infoBox: {
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    padding: 12,
+    backgroundColor: COLORS.white,
+  },
+  infoGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
     marginHorizontal: -6,
   },
-  item: {
+  infoItem: {
     width: "50%",
     paddingHorizontal: 6,
-    marginBottom: 10,
+    marginBottom: 9,
   },
-  fullItem: {
+  infoItemFull: {
     width: "100%",
   },
-  label: {
-    fontSize: 8,
-    color: "#6b7280",
+  infoLabel: {
+    fontSize: 7.5,
+    color: COLORS.muted,
     textTransform: "uppercase",
     marginBottom: 3,
   },
-  value: {
-    fontSize: 11,
+  infoValue: {
+    fontSize: 9.5,
     fontWeight: 600,
+    color: COLORS.text,
+    lineHeight: 1.4,
   },
-  executiveBox: {
-    borderWidth: 1,
-    borderColor: "#111827",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 18,
-  },
-  executiveLabel: {
-    fontSize: 8,
-    color: "#6b7280",
-    textTransform: "uppercase",
-    marginBottom: 6,
-  },
-  executiveValue: {
-    fontSize: 28,
-    fontWeight: 700,
-    color: "#111827",
-  },
-  executiveText: {
-    fontSize: 10,
-    color: "#374151",
-    lineHeight: 1.6,
-    marginTop: 8,
-  },
-  gainGrid: {
-    flexDirection: "row",
-    gap: 12,
-    marginTop: 14,
-  },
-  gainColumn: {
-    flex: 1,
-  },
-  gainTitle: {
-    fontSize: 9,
-    color: "#6b7280",
-    textTransform: "uppercase",
-    marginBottom: 4,
-  },
-  gainValue: {
-    fontSize: 15,
-    fontWeight: 700,
-    color: "#111827",
-  },
-  table: {
-    borderWidth: 1,
-    borderColor: "#d1d5db",
-    borderRadius: 8,
-    overflow: "hidden",
-    marginBottom: 14,
-    backgroundColor: "#ffffff",
-  },
-  tableHeader: {
-    flexDirection: "row",
-    backgroundColor: "#f9fafb",
-  },
-  row: {
-    flexDirection: "row",
-    borderTopWidth: 1,
-    borderTopColor: "#e5e7eb",
-  },
-  headerCell: {
-    flex: 1,
-    padding: 9,
-    fontSize: 8,
-    fontWeight: 700,
-    textTransform: "uppercase",
-    color: "#4b5563",
-  },
-  cell: {
-    flex: 1,
-    padding: 9,
-    fontSize: 9,
-  },
-  compactResultsTable: {
-    borderWidth: 1,
-    borderColor: "#d1d5db",
-    borderRadius: 8,
-    overflow: "hidden",
-    marginBottom: 16,
-  },
-  compactResultRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderTopWidth: 1,
-    borderTopColor: "#e5e7eb",
-  },
-  compactResultFirstRow: {
-    borderTopWidth: 0,
-  },
-  compactResultLabel: {
-    fontSize: 9,
-    color: "#4b5563",
-    maxWidth: "68%",
-    paddingRight: 12,
-  },
-  compactResultValue: {
-    fontSize: 11,
-    fontWeight: 700,
-    color: "#111827",
-  },
-  simulationTable: {
-    borderWidth: 1,
-    borderColor: "#d1d5db",
-    borderRadius: 8,
-    backgroundColor: "#ffffff",
-    overflow: "hidden",
-  },
-  simulationRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: 9,
-    paddingHorizontal: 12,
-    borderTopWidth: 1,
-    borderTopColor: "#e5e7eb",
-  },
-  simulationFirstRow: {
-    borderTopWidth: 0,
-  },
-  simulationLabel: {
-    fontSize: 9,
-    color: "#4b5563",
-    paddingRight: 12,
-    maxWidth: "70%",
-  },
-  simulationValue: {
-    fontSize: 10,
-    fontWeight: 700,
-    color: "#111827",
-  },
-  salesSection: {
-    borderWidth: 1,
-    borderColor: "#111827",
+  compactTable: {
     borderRadius: 10,
-    padding: 14,
-    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    overflow: "hidden",
+    backgroundColor: COLORS.white,
   },
-  salesTitle: {
-    fontSize: 11,
+  compactHeader: {
+    flexDirection: "row",
+    backgroundColor: COLORS.subtle,
+  },
+  compactHeaderCell: {
+    flex: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    fontSize: 7.5,
     fontWeight: 700,
-    color: "#111827",
-    marginBottom: 8,
+    color: "#52525b",
+    textTransform: "uppercase",
   },
-  salesParagraph: {
-    fontSize: 10,
-    color: "#374151",
-    lineHeight: 1.6,
-    marginBottom: 8,
-  },
-  note: {
-    fontSize: 9,
-    color: "#6b7280",
-    lineHeight: 1.5,
+  compactRow: {
+    flexDirection: "row",
     borderTopWidth: 1,
     borderTopColor: "#e5e7eb",
-    paddingTop: 12,
+  },
+  compactCellLabel: {
+    flex: 1.25,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    fontSize: 8.8,
+    color: "#3f3f46",
+  },
+  compactCellValue: {
+    flex: 0.95,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    fontSize: 8.8,
+    fontWeight: 700,
+    color: COLORS.text,
+    textAlign: "right",
+  },
+  opportunityCard: {
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    overflow: "hidden",
+    backgroundColor: COLORS.white,
+    marginBottom: 14,
+  },
+  opportunityRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    gap: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    borderTopWidth: 1,
+    borderTopColor: "#e5e7eb",
+  },
+  opportunityFirstRow: {
+    borderTopWidth: 0,
+  },
+  opportunityLabel: {
+    flex: 1,
+    fontSize: 8.8,
+    color: "#3f3f46",
+    lineHeight: 1.45,
+  },
+  opportunityValue: {
+    width: 124,
+    fontSize: 9.2,
+    fontWeight: 700,
+    color: COLORS.text,
+    textAlign: "right",
+  },
+  scenarioBox: {
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    overflow: "hidden",
+    backgroundColor: COLORS.white,
+  },
+  scenarioRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    borderTopWidth: 1,
+    borderTopColor: "#e5e7eb",
+  },
+  scenarioFirstRow: {
+    borderTopWidth: 0,
+  },
+  scenarioLabel: {
+    flex: 1,
+    fontSize: 8.8,
+    color: "#3f3f46",
+    lineHeight: 1.4,
+  },
+  scenarioValue: {
+    width: 124,
+    fontSize: 9.2,
+    fontWeight: 700,
+    color: COLORS.accent,
+    textAlign: "right",
+  },
+  nextStepBox: {
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: COLORS.borderStrong,
+    padding: 14,
     marginTop: 2,
   },
+  nextStepTitle: {
+    fontSize: 10.5,
+    fontWeight: 700,
+    color: COLORS.text,
+    marginBottom: 7,
+  },
+  paragraph: {
+    fontSize: 9.3,
+    color: "#3f3f46",
+    lineHeight: 1.6,
+    marginBottom: 7,
+  },
+  cta: {
+    fontSize: 9.3,
+    fontWeight: 700,
+    color: COLORS.accent,
+    marginTop: 3,
+  },
   footer: {
-    marginTop: 12,
+    marginTop: 14,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+    paddingTop: 10,
+  },
+  disclaimer: {
+    fontSize: 8,
+    color: COLORS.muted,
+    lineHeight: 1.5,
+  },
+  footerMeta: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+    marginTop: 8,
   },
   footerText: {
-    fontSize: 8,
-    color: "#6b7280",
+    fontSize: 7.8,
+    color: COLORS.muted,
   },
 });
 
-function PdfItem({
+function displayText(value: string | null | undefined, fallback = "Não informado") {
+  if (typeof value !== "string") {
+    return fallback;
+  }
+
+  const trimmed = value.trim();
+  return trimmed ? trimmed : fallback;
+}
+
+function displayDate(value: string | null | undefined) {
+  const result = formatCalculationDate(value);
+  return result === "Nao informado" ? "Não informado" : result;
+}
+
+function displayCurrency(value: number | string | null | undefined) {
+  const result = formatCalculationCurrency(value);
+  return result === "Nao informado" ? "Não informado" : result;
+}
+
+function displayPhone(value: string | null | undefined) {
+  const formatted = formatPhone(value);
+  return formatted || "Não informado";
+}
+
+function displayInt(value: number | string | null | undefined) {
+  if (value === null || value === undefined || value === "") {
+    return "Não informado";
+  }
+
+  return String(value);
+}
+
+function PdfBadge({
+  label,
+  accent = false,
+}: {
+  label: string;
+  accent?: boolean;
+}) {
+  return (
+    <Text style={accent ? [styles.badge, styles.badgeAccent] : styles.badge}>
+      {label}
+    </Text>
+  );
+}
+
+function InfoItem({
   label,
   value,
   full = false,
@@ -285,12 +411,79 @@ function PdfItem({
   value: string;
   full?: boolean;
 }) {
-  const itemStyles = full ? [styles.item, styles.fullItem] : [styles.item];
-
   return (
-    <View style={itemStyles}>
-      <Text style={styles.label}>{label}</Text>
-      <Text style={styles.value}>{value}</Text>
+    <View style={full ? [styles.infoItem, styles.infoItemFull] : styles.infoItem}>
+      <Text style={styles.infoLabel}>{label}</Text>
+      <Text style={styles.infoValue}>{value}</Text>
+    </View>
+  );
+}
+
+function DataTable({
+  rows,
+}: {
+  rows: Array<{ label: string; value: string }>;
+}) {
+  return (
+    <View style={styles.compactTable}>
+      <View style={styles.compactHeader}>
+        <Text style={styles.compactHeaderCell}>Indicador</Text>
+        <Text style={styles.compactHeaderCell}>Valor</Text>
+      </View>
+      {rows.map((row) => (
+        <View key={row.label} style={styles.compactRow}>
+          <Text style={styles.compactCellLabel}>{row.label}</Text>
+          <Text style={styles.compactCellValue}>{row.value}</Text>
+        </View>
+      ))}
+    </View>
+  );
+}
+
+function OpportunityTable({
+  rows,
+}: {
+  rows: Array<{ label: string; value: string }>;
+}) {
+  return (
+    <View style={styles.opportunityCard}>
+      {rows.map((row, index) => (
+        <View
+          key={row.label}
+          style={
+            index === 0
+              ? [styles.opportunityRow, styles.opportunityFirstRow]
+              : styles.opportunityRow
+          }
+        >
+          <Text style={styles.opportunityLabel}>{row.label}</Text>
+          <Text style={styles.opportunityValue}>{row.value}</Text>
+        </View>
+      ))}
+    </View>
+  );
+}
+
+function ScenarioTable({
+  rows,
+}: {
+  rows: Array<{ label: string; value: string }>;
+}) {
+  return (
+    <View style={styles.scenarioBox}>
+      {rows.map((row, index) => (
+        <View
+          key={row.label}
+          style={
+            index === 0
+              ? [styles.scenarioRow, styles.scenarioFirstRow]
+              : styles.scenarioRow
+          }
+        >
+          <Text style={styles.scenarioLabel}>{row.label}</Text>
+          <Text style={styles.scenarioValue}>{row.value}</Text>
+        </View>
+      ))}
     </View>
   );
 }
@@ -304,36 +497,106 @@ export function CalculationReportPdf({
   companyName: string;
   companyDocument?: string | null;
 }): React.ReactElement<DocumentProps> {
-  const currentTotal = formatCalculationCurrency(calculation.current_total_financing);
-  const correctedTotal = formatCalculationCurrency(
-    calculation.corrected_total_financing,
+  const issueDate = displayDate(new Date().toISOString().slice(0, 10));
+  const specialist = displayText(calculation.specialist_name);
+  const expiresIn = displayDate(calculation.expires_in);
+  const monthlyReduction = displayCurrency(
+    calculation.abusive_interest_per_installment,
   );
-  const estimatedSavings = formatCalculationCurrency(calculation.estimated_savings);
-  const remainingDebt = formatCalculationCurrency(calculation.remaining_amount_to_pay);
-  const reducedInstallment = formatCalculationCurrency(
-    calculation.installment_reduction_remaining,
-  );
-  const simulationRows = [
-    [
-      "Possivel saldo com reducao de 30%",
-      formatCalculationCurrency(calculation.debt_after_30_discount),
-    ],
-    [
-      "Cenario agressivo com reducao de 90%",
-      formatCalculationCurrency(calculation.debt_after_90_discount),
-    ],
-    [
-      "Exemplo de acordo com 50% em 15 parcelas",
-      formatCalculationCurrency(calculation.example_50_discount_15x),
-    ],
-    [
-      "Exemplo de acordo com 50% em 10 parcelas",
-      formatCalculationCurrency(calculation.example_50_discount_10x),
-    ],
-    [
-      "Exemplo de acordo com 50% em 5 parcelas",
-      formatCalculationCurrency(calculation.example_50_discount_5x),
-    ],
+
+  const operationRows = [
+    { label: "Valor à vista", value: displayCurrency(calculation.cash_value) },
+    { label: "Entrada", value: displayCurrency(calculation.down_payment) },
+    {
+      label: "Valor financiado",
+      value: displayCurrency(calculation.financed_value),
+    },
+    {
+      label: "Quantidade de parcelas",
+      value: displayInt(calculation.installment_count),
+    },
+    {
+      label: "Valor atual da parcela",
+      value: displayCurrency(calculation.current_installment_value),
+    },
+    {
+      label: "Parcelas pagas",
+      value: displayInt(calculation.paid_installments),
+    },
+    {
+      label: "Parcelas a pagar",
+      value: displayInt(calculation.remaining_installments),
+    },
+  ];
+
+  const opportunityRows = [
+    {
+      label: "Total projetado no cenário atual",
+      value: displayCurrency(calculation.current_total_financing),
+    },
+    {
+      label: "Total projetado com estratégia revisional",
+      value: displayCurrency(calculation.corrected_total_financing),
+    },
+    {
+      label: "Potencial de economia identificado",
+      value: displayCurrency(calculation.estimated_savings),
+    },
+    {
+      label: "Redução estimada por parcela",
+      value: displayCurrency(calculation.abusive_interest_per_installment),
+    },
+    {
+      label: "Parcela estimada sobre o saldo remanescente",
+      value: displayCurrency(calculation.installment_reduction_remaining),
+    },
+    {
+      label: "Total pago até o momento",
+      value: displayCurrency(calculation.paid_amount_until_now),
+    },
+    {
+      label: "Encargos estimados já pagos",
+      value: displayCurrency(calculation.abusive_interest_paid),
+    },
+    {
+      label: "Saldo atual estimado",
+      value: displayCurrency(calculation.remaining_amount_to_pay),
+    },
+    {
+      label: "Saldo real projetado",
+      value: displayCurrency(calculation.real_debt),
+    },
+  ];
+
+  const scenarioRows = [
+    {
+      label: "Redução estimada de 30% sobre o saldo",
+      value: displayCurrency(calculation.discount_30_value),
+    },
+    {
+      label: "Possível saldo com redução de 30%",
+      value: displayCurrency(calculation.debt_after_30_discount),
+    },
+    {
+      label: "Redução estimada de 90% sobre o saldo",
+      value: displayCurrency(calculation.discount_90_value),
+    },
+    {
+      label: "Cenário agressivo com redução de 90%",
+      value: displayCurrency(calculation.debt_after_90_discount),
+    },
+    {
+      label: "Exemplo com 50% de abatimento em 15x",
+      value: displayCurrency(calculation.example_50_discount_15x),
+    },
+    {
+      label: "Exemplo com 50% de abatimento em 10x",
+      value: displayCurrency(calculation.example_50_discount_10x),
+    },
+    {
+      label: "Exemplo com 50% de abatimento em 5x",
+      value: displayCurrency(calculation.example_50_discount_5x),
+    },
   ];
 
   return (
@@ -341,200 +604,155 @@ export function CalculationReportPdf({
       <Page size="A4" style={styles.page}>
         <View style={styles.header}>
           <View style={styles.headerTop}>
-            <View>
-              <Text style={styles.companyName}>{companyName}</Text>
+            <View style={styles.brandBlock}>
+              <Text style={styles.companyName}>{displayText(companyName, "GRS")}</Text>
               <Text style={styles.companyMeta}>
-                {companyDocument ? `Documento: ${companyDocument}` : "Simulacao gratuita de analise revisional"}
+                {companyDocument
+                  ? `Documento/empresa: ${companyDocument}`
+                  : "Documento/empresa: Não informado"}
               </Text>
+              <Text style={styles.companyMeta}>Data de emissão: {issueDate}</Text>
             </View>
-            <Text style={styles.badge}>Simulacao gratuita</Text>
+            <View style={styles.badgeStack}>
+              <PdfBadge label="SIMULAÇÃO GRATUITA" accent />
+              <PdfBadge label="ANÁLISE INICIAL" />
+              <PdfBadge label="ESTIMATIVA" />
+            </View>
           </View>
-          <Text style={styles.title}>ANALISE SINTETIZADA</Text>
+          <Text style={styles.title}>ANÁLISE SINTETIZADA</Text>
           <Text style={styles.subtitle}>
-            Simulacao comercial inicial com foco no potencial de reducao do custo
-            financeiro e melhoria das condicoes atuais do contrato.
+            Simulação inicial de potencial revisional.
+          </Text>
+          <Text style={styles.subtitle}>
+            Esta análise apresenta uma visão inicial do potencial de redução
+            identificado a partir dos dados informados. O objetivo é demonstrar,
+            de forma clara e objetiva, onde pode existir oportunidade de revisão
+            e negociação do contrato.
           </Text>
         </View>
 
-        <View style={styles.executiveBox}>
-          <Text style={styles.executiveLabel}>Potencial de economia identificado</Text>
-          <Text style={styles.executiveValue}>{estimatedSavings}</Text>
-          <Text style={styles.executiveText}>
-            A partir dos dados apresentados, identificamos uma oportunidade de
-            revisao com potencial para reduzir o custo total do contrato e abrir
-            espaco para uma negociacao mais vantajosa.
+        <View style={styles.impactCard}>
+          <Text style={styles.impactLabel}>POTENCIAL DE ECONOMIA IDENTIFICADO</Text>
+          <Text style={styles.impactValue}>
+            {displayCurrency(calculation.estimated_savings)}
           </Text>
-          <View style={styles.gainGrid}>
-            <View style={styles.gainColumn}>
-              <Text style={styles.gainTitle}>Parcela atual</Text>
-              <Text style={styles.gainValue}>
-                {formatCalculationCurrency(calculation.current_installment_value)}
-              </Text>
-            </View>
-            <View style={styles.gainColumn}>
-              <Text style={styles.gainTitle}>Parcela projetada</Text>
-              <Text style={styles.gainValue}>{reducedInstallment}</Text>
-            </View>
-            <View style={styles.gainColumn}>
-              <Text style={styles.gainTitle}>Saldo atual estimado</Text>
-              <Text style={styles.gainValue}>{remainingDebt}</Text>
+          <Text style={styles.impactText}>
+            Com base nos dados informados, identificamos um potencial relevante
+            de redução no custo total do contrato.
+          </Text>
+        </View>
+
+        <View style={styles.comparisonRow}>
+          <View style={styles.comparisonCard}>
+            <Text style={styles.comparisonLabel}>Parcela atual</Text>
+            <Text style={styles.comparisonValue}>
+              {displayCurrency(calculation.current_installment_value)}
+            </Text>
+          </View>
+          <View style={[styles.comparisonCard, styles.comparisonCardAccent]}>
+            <Text style={styles.comparisonLabel}>Parcela projetada</Text>
+            <Text style={[styles.comparisonValue, styles.comparisonValueAccent]}>
+              {displayCurrency(calculation.corrected_installment_value)}
+            </Text>
+          </View>
+          <View style={styles.comparisonCard}>
+            <Text style={styles.comparisonLabel}>Redução estimada mensal</Text>
+            <Text style={styles.comparisonValue}>{monthlyReduction}</Text>
+            <Text style={styles.comparisonHint}>
+              Estimativa inicial com base no cenário informado.
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Dados do atendimento</Text>
+          <View style={styles.infoBox}>
+            <View style={styles.infoGrid}>
+              <InfoItem label="Cliente" value={displayText(calculation.client_name)} />
+              <InfoItem label="CPF" value={formatCpfDigits(calculation.client_cpf)} />
+              <InfoItem
+                label="Telefone"
+                value={displayPhone(calculation.client_phone)}
+              />
+              <InfoItem
+                label="Financeira"
+                value={displayText(calculation.financial_institution)}
+              />
+              <InfoItem
+                label="Especialista responsável"
+                value={specialist}
+              />
+              <InfoItem
+                label="Data do atendimento"
+                value={displayDate(calculation.attendance_date)}
+              />
+              <InfoItem
+                label="Situação"
+                value={displayText(calculation.situation)}
+              />
+              <InfoItem
+                label="Condição estimativa válida por"
+                value={expiresIn}
+              />
+              <InfoItem
+                label="Veículo/Ano"
+                value={displayText(calculation.vehicle_year)}
+              />
+              <InfoItem
+                label="Observações"
+                value={displayText(calculation.notes)}
+                full
+              />
             </View>
           </View>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Identificacao do atendimento</Text>
-          <View style={styles.grid}>
-            <PdfItem label="Cliente" value={calculation.client_name} />
-            <PdfItem
-              label="CPF"
-              value={formatCpfDigits(calculation.client_cpf)}
-            />
-            <PdfItem
-              label="Telefone"
-              value={calculation.client_phone ?? "Nao informado"}
-            />
-            <PdfItem
-              label="Data de atendimento"
-              value={formatCalculationDate(calculation.attendance_date)}
-            />
-            <PdfItem
-              label="Financeira"
-              value={calculation.financial_institution ?? "Nao informado"}
-            />
-            <PdfItem
-              label="Especialista"
-              value={calculation.specialist_name ?? "Nao informado"}
-            />
-            <PdfItem
-              label="Situacao"
-              value={calculation.situation ?? "Nao informado"}
-            />
-            <PdfItem
-              label="Expira em"
-              value={formatCalculationDate(calculation.expires_in)}
-            />
-            <PdfItem
-              label="Ano"
-              value={calculation.vehicle_year ?? "Nao informado"}
-            />
-            <PdfItem
-              label="Observacoes"
-              value={calculation.notes ?? "Nao informado"}
-              full
-            />
-          </View>
-        </View>
-
-        <Text style={styles.sectionTitle}>Resumo da operacao atual</Text>
-        <View style={styles.table}>
-          <View style={styles.tableHeader}>
-            <Text style={styles.headerCell}>Item</Text>
-            <Text style={styles.headerCell}>Valor</Text>
-          </View>
-          {[
-            ["Valor a vista", formatCalculationCurrency(calculation.cash_value)],
-            ["Entrada", formatCalculationCurrency(calculation.down_payment)],
-            [
-              "Valor financiado",
-              formatCalculationCurrency(calculation.financed_value),
-            ],
-            [
-              "Quantidade de parcelas",
-              String(calculation.installment_count ?? "Nao informado"),
-            ],
-            [
-              "Valor atual da parcela",
-              formatCalculationCurrency(calculation.current_installment_value),
-            ],
-            [
-              "Parcelas pagas",
-              String(calculation.paid_installments ?? "Nao informado"),
-            ],
-            [
-              "Parcelas a pagar",
-              String(calculation.remaining_installments ?? "Nao informado"),
-            ],
-          ].map(([label, value]) => (
-            <View key={label} style={styles.row}>
-              <Text style={styles.cell}>{label}</Text>
-              <Text style={styles.cell}>{value}</Text>
-            </View>
-          ))}
-        </View>
-
-        <Text style={styles.sectionTitle}>Panorama da oportunidade</Text>
-        <View style={styles.compactResultsTable}>
-          {[
-            ["Quanto o cliente paga hoje no total", currentTotal],
-            ["Quanto deveria pagar desde o comeco", correctedTotal],
-            ["Valor cobrado a maior", estimatedSavings],
-            ["Valor atualmente para quitacao", remainingDebt],
-            ["Reducao estimada da parcela", reducedInstallment],
-            [
-              "Juros abusivos ja pagos",
-              formatCalculationCurrency(calculation.abusive_interest_paid),
-            ],
-          ].map(([label, value], index) => (
-            <View
-              key={label}
-              style={
-                index === 0
-                  ? [styles.compactResultRow, styles.compactResultFirstRow]
-                  : styles.compactResultRow
-              }
-            >
-              <Text style={styles.compactResultLabel}>{label}</Text>
-              <Text style={styles.compactResultValue}>{value}</Text>
-            </View>
-          ))}
+          <Text style={styles.sectionTitle}>Resumo da operação atual</Text>
+          <DataTable rows={operationRows} />
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Cenarios de negociacao</Text>
-          <View style={styles.simulationTable}>
-            {simulationRows.map(([label, value], index) => (
-              <View
-                key={label}
-                style={index === 0
-                  ? [styles.simulationRow, styles.simulationFirstRow]
-                  : styles.simulationRow}
-              >
-                <Text style={styles.simulationLabel}>{label}</Text>
-                <Text style={styles.simulationValue}>{value}</Text>
-              </View>
-            ))}
-          </View>
+          <Text style={styles.sectionTitle}>Panorama da oportunidade</Text>
+          <OpportunityTable rows={opportunityRows} />
         </View>
 
-        <View style={styles.salesSection}>
-          <Text style={styles.salesTitle}>Como essa simulacao pode ajudar no fechamento</Text>
-          <Text style={styles.salesParagraph}>
-            Este material foi preparado para mostrar, de forma objetiva, o ganho
-            financeiro que pode ser buscado com uma analise revisional adequada.
-            O foco do nosso trabalho e transformar essa oportunidade em reducao
-            real de custo, melhora da negociacao e alivio financeiro para o
-            cliente.
-          </Text>
-          <Text style={styles.salesParagraph}>
-            Com base nesta estimativa, o proximo passo comercial e avaliar a
-            estrategia mais aderente ao caso para avancar com a revisao e buscar
-            o melhor resultado pratico possivel.
-          </Text>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Cenários estimados de negociação</Text>
+          <ScenarioTable rows={scenarioRows} />
         </View>
 
-        <Text style={styles.note}>
-          Todos os valores informados neste calculo foram baseados em taxas medias
-          utilizadas pelo mercado na categoria de financiamentos bancarios. Os
-          verdadeiros valores serao revogados e decididos posteriormente a
-          prestacao de servicos.
-        </Text>
+        <View style={styles.nextStepBox}>
+          <Text style={styles.nextStepTitle}>Como esta análise pode ajudar você</Text>
+          <Text style={styles.paragraph}>
+            A partir desta simulação, nossa equipe pode avaliar a documentação e
+            indicar o caminho mais adequado para buscar uma condição mais
+            vantajosa, com segurança e estratégia.
+          </Text>
+          <Text style={styles.nextStepTitle}>Próximo passo recomendado</Text>
+          <Text style={styles.paragraph}>
+            Para avançarmos com segurança, o próximo passo é validar a
+            documentação do contrato e definir a estratégia mais adequada para
+            buscar a melhor condição possível junto à instituição financeira.
+          </Text>
+          <Text style={styles.cta}>
+            Fale com seu consultor para validar os documentos e avançar para a
+            próxima etapa.
+          </Text>
+        </View>
 
         <View style={styles.footer}>
-          <Text style={styles.footerText}>
-            Documento emitido em {formatCalculationDate(new Date().toISOString().slice(0, 10))}
+          <Text style={styles.disclaimer}>
+            Esta simulação possui caráter comercial e estimativo. Os valores
+            apresentados são baseados nos dados fornecidos e em parâmetros médios
+            de análise revisional. O resultado final depende da análise
+            documental, estratégia aplicada e condições da instituição
+            financeira.
           </Text>
-          <Text style={styles.footerText}>{companyName}</Text>
+          <View style={styles.footerMeta}>
+            <Text style={styles.footerText}>Emitido em {issueDate}</Text>
+            <Text style={styles.footerText}>{displayText(companyName, "GRS")}</Text>
+          </View>
         </View>
       </Page>
     </Document>
