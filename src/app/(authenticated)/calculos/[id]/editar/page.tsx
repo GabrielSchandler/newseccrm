@@ -26,6 +26,7 @@ export default async function EditarCalculoPage({
   }
 
   const calculation = await assertCalculationAccess(id);
+  const updateCalculationAction = updateFinancingCalculationAction.bind(null, id);
   let loadError: string | null = null;
   let clients = [] as Awaited<ReturnType<typeof listCalculationClients>>;
   let preSales = [] as Awaited<ReturnType<typeof listCalculationPreSales>>;
@@ -61,7 +62,7 @@ export default async function EditarCalculoPage({
           clients={clients}
           preSales={preSales}
           defaultValues={financingCalculationToFormValues(calculation)}
-          onSubmitAction={(values) => updateFinancingCalculationAction(id, values)}
+          onSubmitAction={updateCalculationAction}
         />
       </div>
     </>

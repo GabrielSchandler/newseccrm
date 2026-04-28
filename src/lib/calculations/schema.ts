@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { isValidPhone, onlyDigits } from "@/lib/clients/masks";
+import { formatCpf, formatPhone, isValidPhone, onlyDigits } from "@/lib/clients/masks";
 import type { FinancingCalculation } from "@/types/calculation";
 
 const optionalText = z
@@ -116,6 +116,15 @@ function integerToInput(value: number | string | null | undefined) {
   return String(value);
 }
 
+function dateToInput(value: string | null | undefined) {
+  if (!value) {
+    return "";
+  }
+
+  const match = value.match(/^(\d{4}-\d{2}-\d{2})/);
+  return match ? match[1] : "";
+}
+
 export function financingCalculationToFormValues(
   calculation: FinancingCalculation,
 ): FinancingCalculationFormValues {
@@ -123,13 +132,13 @@ export function financingCalculationToFormValues(
     client_id: calculation.client_id ?? "",
     pre_sale_id: calculation.pre_sale_id ?? "",
     client_name: calculation.client_name,
-    client_cpf: calculation.client_cpf,
-    client_phone: calculation.client_phone ?? "",
+    client_cpf: formatCpf(calculation.client_cpf),
+    client_phone: formatPhone(calculation.client_phone ?? ""),
     financial_institution: calculation.financial_institution ?? "",
     specialist_name: calculation.specialist_name ?? "",
     situation: calculation.situation ?? "",
-    expires_in: calculation.expires_in ?? "",
-    attendance_date: calculation.attendance_date ?? "",
+    expires_in: dateToInput(calculation.expires_in),
+    attendance_date: dateToInput(calculation.attendance_date),
     vehicle_year: calculation.vehicle_year ?? "",
     notes: calculation.notes ?? "",
     cash_value: numberToInput(calculation.cash_value),
