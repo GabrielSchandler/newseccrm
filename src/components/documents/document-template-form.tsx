@@ -458,9 +458,29 @@ export function DocumentTemplateForm({
                     DOCX oficial do documento
                   </h2>
                   <p className="mt-1 text-sm leading-6 text-slate-600">
-                    Para maior fidelidade, use PDF preenchivel como fonte final.
-                    DOCX fica disponivel para modelos editaveis.
+                    Para manter alinhamento, imagens, marca d&apos;agua, cabecalho e
+                    formatacao do Word, o arquivo oficial deve ser o DOCX ou PDF
+                    vinculado aqui. Esse e o fluxo que preserva o documento com
+                    fidelidade maxima.
                   </p>
+                  <div className="mt-3 rounded-lg border border-slate-200 bg-white p-3 text-sm text-slate-700">
+                    <p className="font-semibold text-slate-950">Fluxo recomendado</p>
+                    <ol className="mt-2 space-y-1.5 pl-5 text-sm leading-6 text-slate-600">
+                      <li>1. Suba o DOCX oficial ja formatado no Word.</li>
+                      <li>
+                        2. Insira as variaveis no proprio Word usando o formato
+                        <span className="mx-1 font-mono text-slate-900">
+                          {`{{cliente_nome}}`}
+                        </span>
+                        e salve.
+                      </li>
+                      <li>3. Reenvie o DOCX oficial atualizado no CRM.</li>
+                      <li>
+                        4. Gere o documento final a partir desse DOCX, sem converter
+                        o layout para HTML.
+                      </li>
+                    </ol>
+                  </div>
                   {defaultValues?.original_pdf_filename ? (
                     <p className="mt-2 text-sm font-medium text-slate-800">
                       PDF atual: {defaultValues.original_pdf_filename}
@@ -541,16 +561,20 @@ export function DocumentTemplateForm({
                   className="text-sm font-medium text-slate-700"
                   htmlFor="content_html"
                 >
-                  Editor visual <span className="text-red-600">*</span>
+                  Editor auxiliar / preview aproximado <span className="text-red-600">*</span>
                 </label>
                 <p className="mt-1 text-xs leading-5 text-slate-500">
-                  Preview aproximado salvo em content_html. O documento oficial
-                  final usa o DOCX vinculado acima quando existir.
+                  O conteudo salvo em <span className="font-mono">content_html</span>{" "}
+                  serve para preview e apoio operacional. Ele nao preserva 100% do
+                  layout de um DOCX complexo. O documento oficial final usa o DOCX
+                  vinculado acima quando existir.
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">
                 <label className="inline-flex cursor-pointer items-center justify-center rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
-                  {isPending ? "Importando..." : "Importar DOCX para editor"}
+                  {isPending
+                    ? "Importando..."
+                    : "Importar DOCX para editor auxiliar"}
                   <input
                     type="file"
                     accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
@@ -625,7 +649,9 @@ export function DocumentTemplateForm({
         <aside className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
           <h2 className="text-base font-semibold text-slate-950">Dados</h2>
           <p className="mt-1 text-sm leading-6 text-slate-600">
-            Clique em uma variavel para inserir no ponto do cursor.
+            Use estas variaveis no editor auxiliar ou copie para inserir diretamente
+            no Word oficial, que e o caminho recomendado para preservar 100% da
+            formatacao do documento.
           </p>
           <div className="mt-4 max-h-[760px] space-y-4 overflow-y-auto pr-1">
             {documentVariableCatalog.map((group) => (

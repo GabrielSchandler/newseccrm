@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import sanitizeHtml from "sanitize-html";
 import { getCurrentUserContext } from "@/lib/auth/current-user";
+import { analyzeDocxStructure } from "@/lib/documents/docx-analysis";
 import { renderOfficialDocxTemplate } from "@/lib/documents/docx-engine";
 import { convertDocxToPdf } from "@/lib/documents/pdf-converter";
 import { renderOfficialPdfFormTemplate } from "@/lib/documents/pdf-form-engine";
@@ -295,6 +296,42 @@ async function ensureDocumentsBucketAvailable() {
   }
 
   return null;
+}
+
+function buildDocxImportMessage(
+  summary: ReturnType<typeof analyzeDocxStructure>,
+  mammothMessagesCount: number,
+  plainTextLength: number,
+) {
+  const fidelityRisk =
+    summary.imageCount > 0 ||
+    summary.hasInlineImages ||
+    summary.hasFloatingImages ||
+    summary.hasHeaders ||
+    summary.hasFooters ||
+    summary.hasTextBoxes ||
+    summary.hasShapeOrPict ||
+    summary.hasWatermarkLikeElements;
+
+  if (fidelityRisk) {
+    const details = [
+      summary.imageCount ? `${summary.imageCount} imagem(ns)` : null,
+      summary.hasFloatingImages ? "elementos flutuantes" : null,
+      summary.hasHeaders ? "cabecalho" : null,
+      summary.hasFooters ? "rodape" : null,
+      summary.hasWatermarkLikeElements ? "marca d'agua/shape" : null,
+    ]
+      .filter(Boolean)
+      .join(", ");
+
+    return `Este DOCX possui ${details}. Para manter 100% da formatacao, imagens e alinhamento, use o DOCX oficial. O editor HTML abaixo serve apenas como apoio e pode perder fidelidade visual.`;
+  }
+
+  if (mammothMessagesCount || plainTextLength < 40) {
+    return "Revise a formatacao importada antes de salvar.";
+  }
+
+  return "DOCX convertido com sucesso para o editor auxiliar.";
 }
 
 async function getTemplate(templateId: string, companyId: string, onlyActive = false) {
@@ -946,13 +983,18 @@ export async function importDocxTemplateAction(
     }
 
     const arrayBuffer = await file.arrayBuffer();
+    const docxBuffer = Buffer.from(arrayBuffer);
+    const structureSummary = analyzeDocxStructure(docxBuffer);
     const result = await mammoth.convertToHtml(
       {
-        buffer: Buffer.from(arrayBuffer),
+        buffer: docxBuffer,
       },
       {
         styleMap: docxStyleMap,
         includeDefaultStyleMap: true,
+        convertImage: mammoth.images.imgElement(async (image) => ({
+          src: `data:${image.contentType};base64,${await image.read("base64")}`,
+        })),
       },
     );
     const contentHtml = cleanImportedDocxHtml(result.value);
@@ -964,9 +1006,11 @@ export async function importDocxTemplateAction(
 
     return {
       ok: true,
-      message: result.messages.length || plainText.length < 40
-        ? "Revise a formatacao importada antes de salvar."
-        : "DOCX convertido com sucesso.",
+      message: buildDocxImportMessage(
+        structureSummary,
+        result.messages.length,
+        plainText.length,
+      ),
       content: contentHtml,
     };
   } catch (error) {
