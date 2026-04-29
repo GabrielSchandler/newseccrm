@@ -394,14 +394,17 @@ export function DocumentTemplateForm({
                     <span className="ml-1 font-mono">{`{{titular_nome}}`}</span>,
                     <span className="ml-1 font-mono">{`{{financeira}}`}</span> e
                     <span className="ml-1 font-mono">{`{{valor_contrato}}`}</span>.
+                    Para a data do contrato, use{" "}
+                    <span className="ml-1 font-mono">{`{{data_contrato}}`}</span>.
                   </p>
                   <p className="mt-2 leading-6">
                     Exemplo pratico: no seu contrato em Word, troque o nome do
                     cliente por <span className="font-mono">{`{{contratante_nome}}`}</span>,
                     o CPF por <span className="font-mono">{`{{contratante_cpf}}`}</span> e o
-                    valor por <span className="font-mono">{`{{valor_contrato}}`}</span>. Depois
-                    salve o arquivo em <strong>.docx</strong> e envie aqui como DOCX
-                    oficial.
+                    valor por <span className="font-mono">{`{{valor_contrato}}`}</span>. Para a
+                    data por extenso, use{" "}
+                    <span className="font-mono">{`{{data_contrato}}`}</span>. Depois salve o
+                    arquivo em <strong>.docx</strong> e envie aqui como DOCX oficial.
                   </p>
                 </div>
                 {defaultValues?.original_docx_filename ? (

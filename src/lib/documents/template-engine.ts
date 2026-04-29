@@ -153,7 +153,7 @@ export const documentVariableCatalog = [
   },
   {
     group: "Contratacao",
-    variables: ["valor_contrato"],
+    variables: ["valor_contrato", "data_contrato"],
   },
   {
     group: "Empresa",
@@ -191,6 +191,231 @@ function formatDateValue(value: string | null | undefined) {
 
 function formatCurrencyValue(value: number | string | null | undefined) {
   return emptyDash(formatCurrency(value ?? null));
+}
+
+const PT_BR_MONTHS = [
+  "janeiro",
+  "fevereiro",
+  "março",
+  "abril",
+  "maio",
+  "junho",
+  "julho",
+  "agosto",
+  "setembro",
+  "outubro",
+  "novembro",
+  "dezembro",
+] as const;
+
+const UNITS = [
+  "zero",
+  "um",
+  "dois",
+  "tres",
+  "quatro",
+  "cinco",
+  "seis",
+  "sete",
+  "oito",
+  "nove",
+] as const;
+
+const TEENS = [
+  "dez",
+  "onze",
+  "doze",
+  "treze",
+  "quatorze",
+  "quinze",
+  "dezesseis",
+  "dezessete",
+  "dezoito",
+  "dezenove",
+] as const;
+
+const TENS = [
+  "",
+  "",
+  "vinte",
+  "trinta",
+  "quarenta",
+  "cinquenta",
+  "sessenta",
+  "setenta",
+  "oitenta",
+  "noventa",
+] as const;
+
+const HUNDREDS = [
+  "",
+  "cento",
+  "duzentos",
+  "trezentos",
+  "quatrocentos",
+  "quinhentos",
+  "seiscentos",
+  "setecentos",
+  "oitocentos",
+  "novecentos",
+] as const;
+
+function parseNumericValue(value: number | string | null | undefined) {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+
+  if (typeof value === "string") {
+    const normalized = value
+      .trim()
+      .replace(/\./g, "")
+      .replace(",", ".");
+    const parsed = Number(normalized);
+
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+
+  return null;
+}
+
+function numberToWordsUnderOneThousand(value: number): string {
+  if (value === 0) {
+    return "";
+  }
+
+  if (value < 10) {
+    return UNITS[value] ?? "";
+  }
+
+  if (value < 20) {
+    return TEENS[value - 10] ?? "";
+  }
+
+  if (value < 100) {
+    const tens = Math.floor(value / 10);
+    const unit = value % 10;
+    return unit ? `${TENS[tens]} e ${UNITS[unit]}` : TENS[tens] ?? "";
+  }
+
+  if (value === 100) {
+    return "cem";
+  }
+
+  const hundreds = Math.floor(value / 100);
+  const remainder = value % 100;
+  const hundredText = HUNDREDS[hundreds] ?? "";
+
+  return remainder
+    ? `${hundredText} e ${numberToWordsUnderOneThousand(remainder)}`
+    : hundredText;
+}
+
+function joinParts(parts: string[]) {
+  if (parts.length <= 1) {
+    return parts[0] ?? "";
+  }
+
+  if (parts.length === 2) {
+    return `${parts[0]} e ${parts[1]}`;
+  }
+
+  return `${parts.slice(0, -1).join(", ")} e ${parts.at(-1)}`;
+}
+
+function numberToPortugueseWords(value: number): string {
+  if (!Number.isFinite(value) || value < 0) {
+    return "";
+  }
+
+  if (value === 0) {
+    return "zero";
+  }
+
+  const billions = Math.floor(value / 1_000_000_000);
+  const millions = Math.floor((value % 1_000_000_000) / 1_000_000);
+  const thousands = Math.floor((value % 1_000_000) / 1_000);
+  const hundreds = value % 1_000;
+  const parts: string[] = [];
+
+  if (billions) {
+    parts.push(
+      billions === 1
+        ? "um bilhão"
+        : `${numberToWordsUnderOneThousand(billions)} bilhões`,
+    );
+  }
+
+  if (millions) {
+    parts.push(
+      millions === 1
+        ? "um milhão"
+        : `${numberToWordsUnderOneThousand(millions)} milhões`,
+    );
+  }
+
+  if (thousands) {
+    parts.push(
+      thousands === 1
+        ? "mil"
+        : `${numberToWordsUnderOneThousand(thousands)} mil`,
+    );
+  }
+
+  if (hundreds) {
+    parts.push(numberToWordsUnderOneThousand(hundreds));
+  }
+
+  return joinParts(parts.filter(Boolean));
+}
+
+function capitalizeFirstLetter(value: string) {
+  if (!value) {
+    return value;
+  }
+
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
+function formatLongDatePtBr(date: Date) {
+  const day = date.getDate();
+  const month = PT_BR_MONTHS[date.getMonth()] ?? "";
+  const year = date.getFullYear();
+  return `${day} de ${month} de ${year}`;
+}
+
+function formatCurrencyWithWords(value: number | string | null | undefined) {
+  const numericValue = parseNumericValue(value);
+
+  if (numericValue === null) {
+    return "";
+  }
+
+  const absoluteValue = Math.abs(numericValue);
+  const rounded = Math.round((absoluteValue + Number.EPSILON) * 100) / 100;
+  const integerPart = Math.floor(rounded);
+  const cents = Math.round((rounded - integerPart) * 100);
+  const integerWords = numberToPortugueseWords(integerPart);
+  const centsWords = numberToPortugueseWords(cents);
+
+  const currencyParts: string[] = [];
+
+  if (integerPart > 0 || cents === 0) {
+    currencyParts.push(
+      `${integerWords} ${integerPart === 1 ? "real" : "reais"}`,
+    );
+  }
+
+  if (cents > 0) {
+    currencyParts.push(
+      `${centsWords} ${cents === 1 ? "centavo" : "centavos"}`,
+    );
+  }
+
+  const words = capitalizeFirstLetter(joinParts(currencyParts.filter(Boolean)) || "Zero reais");
+
+  return `${formatCurrencyValue(rounded)} (${words})`;
 }
 
 function buildAddress(
@@ -337,7 +562,8 @@ export function buildDocumentVariables(context: DocumentTemplateContext) {
         : String(financialCase.asset_year),
     ),
     veiculo_placa: formatText(financialCase?.asset_plate),
-    valor_contrato: formatCurrencyValue(preSale.contract_value),
+    valor_contrato: formatCurrencyWithWords(preSale.contract_value),
+    data_contrato: formatLongDatePtBr(now),
     empresa_razao_social:
       stringFromUnknown(companyRecord.legal_name) ||
       stringFromUnknown(companyRecord.corporate_name) ||
