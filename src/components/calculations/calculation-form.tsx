@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import type { ChangeEvent } from "react";
+import type { ChangeEvent, FocusEvent } from "react";
 import { useEffect, useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import type { CalculationActionState } from "@/app/(authenticated)/calculos/actions";
@@ -43,22 +43,14 @@ type EditFormProps = BaseFormProps & {
 
 type CalculationFormProps = CreateFormProps | EditFormProps;
 
-function formatCurrencyInputValue(value: string) {
-  const digits = value.replace(/\D/g, "");
-
-  if (!digits) {
-    return "";
-  }
-
-  const numeric = Number(digits) / 100;
-  return new Intl.NumberFormat("pt-BR", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(numeric);
+function sanitizeCurrencyInputValue(value: string) {
+  return value
+    .replace(/[^\d,.-]/g, "")
+    .replace(/(?!^)-/g, "");
 }
 
-function handleCurrencyMask(event: ChangeEvent<HTMLInputElement>) {
-  event.target.value = formatCurrencyInputValue(event.target.value);
+function handleCurrencyChange(event: ChangeEvent<HTMLInputElement>) {
+  event.target.value = sanitizeCurrencyInputValue(event.target.value);
 }
 
 function handleIntegerMask(event: ChangeEvent<HTMLInputElement>) {
@@ -70,11 +62,37 @@ function parseCurrencyInputValue(value: string | number | null | undefined) {
     return 0;
   }
 
-  const normalized = String(value)
-    .replace(/\./g, "")
-    .replace(",", ".")
-    .replace(/[^\d.-]/g, "");
-  const parsed = Number(normalized);
+  const normalized = sanitizeCurrencyInputValue(String(value).trim());
+
+  if (!normalized) {
+    return 0;
+  }
+
+  const lastComma = normalized.lastIndexOf(",");
+  const lastDot = normalized.lastIndexOf(".");
+  const decimalSeparatorIndex = Math.max(lastComma, lastDot);
+
+  if (decimalSeparatorIndex >= 0) {
+    const decimalDigits = normalized
+      .slice(decimalSeparatorIndex + 1)
+      .replace(/\D/g, "");
+
+    if (decimalDigits.length >= 1 && decimalDigits.length <= 2) {
+      const integerPart = normalized
+        .slice(0, decimalSeparatorIndex)
+        .replace(/[^\d-]/g, "");
+      const parsed = Number(
+        `${integerPart || "0"}.${decimalDigits.padEnd(2, "0")}`,
+      );
+
+      if (Number.isFinite(parsed)) {
+        return parsed;
+      }
+    }
+  }
+
+  const integerOnly = normalized.replace(/\D/g, "");
+  const parsed = Number(integerOnly);
 
   return Number.isFinite(parsed) ? parsed : 0;
 }
@@ -88,6 +106,17 @@ function formatCurrencyFromNumber(value: number) {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(Number(value.toFixed(2)));
+}
+
+function handleCurrencyBlur(event: FocusEvent<HTMLInputElement>) {
+  const rawValue = event.target.value.trim();
+
+  if (!rawValue) {
+    event.target.value = "";
+    return;
+  }
+
+  event.target.value = formatCurrencyFromNumber(parseCurrencyInputValue(rawValue));
 }
 
 function CalculationActionMessage({
@@ -216,23 +245,21 @@ export function CalculationForm({
       "financed_value",
       preSale.financed_value === null
         ? ""
-        : formatCurrencyInputValue(String(Math.round(preSale.financed_value * 100))),
+        : formatCurrencyFromNumber(preSale.financed_value),
       { shouldDirty: true },
     );
     setValue(
       "down_payment",
       preSale.down_payment === null
         ? ""
-        : formatCurrencyInputValue(String(Math.round(preSale.down_payment * 100))),
+        : formatCurrencyFromNumber(preSale.down_payment),
       { shouldDirty: true },
     );
     setValue(
       "current_installment_value",
       preSale.current_installment_value === null
         ? ""
-        : formatCurrencyInputValue(
-            String(Math.round(preSale.current_installment_value * 100)),
-          ),
+        : formatCurrencyFromNumber(preSale.current_installment_value),
       { shouldDirty: true },
     );
     setValue(
@@ -510,9 +537,12 @@ export function CalculationForm({
             <input
               id="cash_value"
               disabled={disabled}
-              inputMode="numeric"
+              inputMode="decimal"
               className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
-              {...register("cash_value", { onChange: handleCurrencyMask })}
+              {...register("cash_value", {
+                onChange: handleCurrencyChange,
+                onBlur: handleCurrencyBlur,
+              })}
             />
             {errors.cash_value?.message ? (
               <p className="text-sm text-red-600">{String(errors.cash_value.message)}</p>
@@ -525,9 +555,12 @@ export function CalculationForm({
             <input
               id="down_payment"
               disabled={disabled}
-              inputMode="numeric"
+              inputMode="decimal"
               className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
-              {...register("down_payment", { onChange: handleCurrencyMask })}
+              {...register("down_payment", {
+                onChange: handleCurrencyChange,
+                onBlur: handleCurrencyBlur,
+              })}
             />
             {errors.down_payment?.message ? (
               <p className="text-sm text-red-600">
@@ -543,9 +576,12 @@ export function CalculationForm({
               id="financed_value"
               disabled={disabled}
               readOnly
-              inputMode="numeric"
+              inputMode="decimal"
               className="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
-              {...register("financed_value", { onChange: handleCurrencyMask })}
+              {...register("financed_value", {
+                onChange: handleCurrencyChange,
+                onBlur: handleCurrencyBlur,
+              })}
             />
             <p className="text-xs text-slate-500">
               Calculado automaticamente: valor a vista menos entrada.
@@ -566,10 +602,11 @@ export function CalculationForm({
             <input
               id="current_installment_value"
               disabled={disabled}
-              inputMode="numeric"
+              inputMode="decimal"
               className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
               {...register("current_installment_value", {
-                onChange: handleCurrencyMask,
+                onChange: handleCurrencyChange,
+                onBlur: handleCurrencyBlur,
               })}
             />
             {errors.current_installment_value?.message ? (

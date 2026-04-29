@@ -105,7 +105,16 @@ function numberToInput(value: number | string | null | undefined) {
     return "";
   }
 
-  return String(value).replace(".", ",");
+  const parsed = Number(value);
+
+  if (!Number.isFinite(parsed)) {
+    return "";
+  }
+
+  return new Intl.NumberFormat("pt-BR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(parsed);
 }
 
 function integerToInput(value: number | string | null | undefined) {
