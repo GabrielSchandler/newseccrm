@@ -468,20 +468,6 @@ function formatInstallmentCount(value: number | string | null | undefined) {
   return rounded ? String(rounded) : "";
 }
 
-function formatInstallmentDescription(value: number | string | null | undefined) {
-  const count = formatInstallmentCount(value);
-
-  if (!count) {
-    return "";
-  }
-
-  if (count === "1") {
-    return "a vista";
-  }
-
-  return `em ${count} parcelas`;
-}
-
 function buildAddress(
   source:
     | Pick<
@@ -529,18 +515,61 @@ function hasPaymentContent(payment: PreSalePayment) {
   );
 }
 
-function buildPaymentLineSummary(payment: PreSalePayment) {
-  const amount = formatCurrencyWithWords(payment.amount);
-  const method = formatText(payment.payment_method);
-  const installmentsText = formatInstallmentDescription(payment.installment_number);
+type PaymentGroup = {
+  method: string;
+  items: PreSalePayment[];
+};
+
+function normalizePaymentMethod(value: string | null | undefined) {
+  return formatText(value).trim().toLowerCase();
+}
+
+function groupPayments(payments: PreSalePayment[]) {
+  const groups: PaymentGroup[] = [];
+  const methodIndex = new Map<string, number>();
+
+  payments.forEach((payment, index) => {
+    const method = formatText(payment.payment_method);
+    const normalizedMethod = normalizePaymentMethod(payment.payment_method);
+    const uniqueKey = normalizedMethod || `__payment_${index}`;
+    const existingIndex = methodIndex.get(uniqueKey);
+
+    if (existingIndex === undefined) {
+      methodIndex.set(uniqueKey, groups.length);
+      groups.push({
+        method,
+        items: [payment],
+      });
+      return;
+    }
+
+    groups[existingIndex]?.items.push(payment);
+  });
+
+  return groups.slice(0, 10);
+}
+
+function groupPaymentTotal(group: PaymentGroup) {
+  const total = group.items.reduce((sum, payment) => {
+    const amount = parseNumericValue(payment.amount);
+    return sum + (amount ?? 0);
+  }, 0);
+
+  return Math.round((total + Number.EPSILON) * 100) / 100;
+}
+
+function buildPaymentLineSummary(group: PaymentGroup) {
+  const amount = formatCurrencyWithWords(groupPaymentTotal(group));
+  const method = group.method;
+  const installmentsCount = group.items.length;
   const parts = [amount];
 
   if (method) {
     parts.push(`via ${method}`);
   }
 
-  if (installmentsText) {
-    parts.push(installmentsText);
+  if (installmentsCount > 1) {
+    parts.push(`em ${installmentsCount} parcelas`);
   }
 
   return parts
@@ -554,10 +583,8 @@ function buildPaymentVariables(
   payments: PreSalePayment[],
   fallbackTotal: number | string | null | undefined,
 ) {
-  const filteredPayments = payments.filter(hasPaymentContent).slice(0, 10);
-  const totals = filteredPayments
-    .map((payment) => parseNumericValue(payment.amount))
-    .filter((value): value is number => value !== null);
+  const paymentGroups = groupPayments(payments.filter(hasPaymentContent));
+  const totals = paymentGroups.map(groupPaymentTotal).filter((value) => value > 0);
   const totalValue =
     totals.length > 0
       ? Math.round(
@@ -565,38 +592,32 @@ function buildPaymentVariables(
         ) / 100
       : parseNumericValue(fallbackTotal);
   const variables: Record<string, string> = {
-    pagamento_quantidade: filteredPayments.length ? String(filteredPayments.length) : "",
+    pagamento_quantidade: paymentGroups.length ? String(paymentGroups.length) : "",
     pagamento_total: totalValue === null ? "" : formatCurrencyValue(totalValue),
     pagamento_total_extenso: totalValue === null ? "" : formatCurrencyWordsOnly(totalValue),
     pagamento_total_com_extenso:
       totalValue === null ? "" : formatCurrencyWithWords(totalValue),
-    pagamentos_resumo: filteredPayments.map(buildPaymentLineSummary).filter(Boolean).join(" e "),
+    pagamentos_resumo: paymentGroups.map(buildPaymentLineSummary).filter(Boolean).join(" e "),
   };
 
   for (let index = 0; index < 10; index += 1) {
-    const payment = filteredPayments[index];
+    const group = paymentGroups[index];
+    const payment = group?.items[0];
     const paymentIndex = index + 1;
+    const groupedTotal = group ? groupPaymentTotal(group) : null;
+    const groupedInstallments = group && group.items.length > 1 ? String(group.items.length) : "";
 
-    variables[`pagamento_${paymentIndex}_metodo`] = payment
-      ? formatText(payment.payment_method)
-      : "";
-    variables[`pagamento_${paymentIndex}_forma`] = payment
-      ? formatText(payment.payment_method)
-      : "";
-    variables[`pagamento_${paymentIndex}_valor`] = payment
-      ? formatCurrencyValue(payment.amount)
-      : "";
-    variables[`pagamento_${paymentIndex}_valor_extenso`] = payment
-      ? formatCurrencyWordsOnly(payment.amount)
-      : "";
-    variables[`pagamento_${paymentIndex}_valor_com_extenso`] = payment
-      ? formatCurrencyWithWords(payment.amount)
-      : "";
-    variables[`pagamento_${paymentIndex}_parcelas`] = payment
-      ? formatInstallmentCount(payment.installment_number)
-      : "";
-    variables[`pagamento_${paymentIndex}_parcelas_texto`] = payment
-      ? formatInstallmentDescription(payment.installment_number)
+    variables[`pagamento_${paymentIndex}_metodo`] = group?.method ?? "";
+    variables[`pagamento_${paymentIndex}_forma`] = group?.method ?? "";
+    variables[`pagamento_${paymentIndex}_valor`] =
+      groupedTotal === null ? "" : formatCurrencyValue(groupedTotal);
+    variables[`pagamento_${paymentIndex}_valor_extenso`] =
+      groupedTotal === null ? "" : formatCurrencyWordsOnly(groupedTotal);
+    variables[`pagamento_${paymentIndex}_valor_com_extenso`] =
+      groupedTotal === null ? "" : formatCurrencyWithWords(groupedTotal);
+    variables[`pagamento_${paymentIndex}_parcelas`] = groupedInstallments;
+    variables[`pagamento_${paymentIndex}_parcelas_texto`] = groupedInstallments
+      ? `em ${groupedInstallments} parcelas`
       : "";
     variables[`pagamento_${paymentIndex}_data`] = payment
       ? formatDateValue(payment.payment_date)
@@ -604,8 +625,8 @@ function buildPaymentVariables(
     variables[`pagamento_${paymentIndex}_status`] = payment
       ? formatText(payment.status)
       : "";
-    variables[`pagamento_${paymentIndex}_resumo`] = payment
-      ? buildPaymentLineSummary(payment)
+    variables[`pagamento_${paymentIndex}_resumo`] = group
+      ? buildPaymentLineSummary(group)
       : "";
   }
 
