@@ -406,6 +406,18 @@ export function DocumentTemplateForm({
                     <span className="font-mono">{`{{data_contrato}}`}</span>. Depois salve o
                     arquivo em <strong>.docx</strong> e envie aqui como DOCX oficial.
                   </p>
+                  <p className="mt-2 leading-6">
+                    Para recibos e termos de pagamento, use{" "}
+                    <span className="font-mono">{`{{pagamento_total_com_extenso}}`}</span>{" "}
+                    para o total e{" "}
+                    <span className="font-mono">{`{{pagamentos_resumo}}`}</span>{" "}
+                    para montar a frase com boleto, PIX, cartao e parcelamentos
+                    exatamente com base na aba de pagamentos previstos. Se quiser
+                    quebrar em partes, tambem existem variaveis como{" "}
+                    <span className="font-mono">{`{{pagamento_1_valor_com_extenso}}`}</span>,{" "}
+                    <span className="font-mono">{`{{pagamento_1_metodo}}`}</span> e{" "}
+                    <span className="font-mono">{`{{pagamento_1_parcelas_texto}}`}</span>.
+                  </p>
                 </div>
                 {defaultValues?.original_docx_filename ? (
                   <p className="text-sm font-medium text-slate-800">

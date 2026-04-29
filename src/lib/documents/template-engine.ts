@@ -47,6 +47,23 @@ export type RenderedDocument = {
   variables: Record<string, string>;
 };
 
+const paymentDocumentVariables = Array.from({ length: 10 }, (_, index) => {
+  const paymentIndex = index + 1;
+
+  return [
+    `pagamento_${paymentIndex}_metodo`,
+    `pagamento_${paymentIndex}_forma`,
+    `pagamento_${paymentIndex}_valor`,
+    `pagamento_${paymentIndex}_valor_extenso`,
+    `pagamento_${paymentIndex}_valor_com_extenso`,
+    `pagamento_${paymentIndex}_parcelas`,
+    `pagamento_${paymentIndex}_parcelas_texto`,
+    `pagamento_${paymentIndex}_data`,
+    `pagamento_${paymentIndex}_status`,
+    `pagamento_${paymentIndex}_resumo`,
+  ];
+}).flat();
+
 export const documentVariableCatalog = [
   {
     group: "Cliente",
@@ -154,6 +171,17 @@ export const documentVariableCatalog = [
   {
     group: "Contratacao",
     variables: ["valor_contrato", "data_contrato"],
+  },
+  {
+    group: "Pagamentos",
+    variables: [
+      "pagamento_quantidade",
+      "pagamento_total",
+      "pagamento_total_extenso",
+      "pagamento_total_com_extenso",
+      "pagamentos_resumo",
+      ...paymentDocumentVariables,
+    ],
   },
   {
     group: "Empresa",
@@ -385,7 +413,7 @@ function formatLongDatePtBr(date: Date) {
   return `${day} de ${month} de ${year}`;
 }
 
-function formatCurrencyWithWords(value: number | string | null | undefined) {
+function formatCurrencyWordsOnly(value: number | string | null | undefined) {
   const numericValue = parseNumericValue(value);
 
   if (numericValue === null) {
@@ -413,9 +441,45 @@ function formatCurrencyWithWords(value: number | string | null | undefined) {
     );
   }
 
-  const words = capitalizeFirstLetter(joinParts(currencyParts.filter(Boolean)) || "Zero reais");
+  return capitalizeFirstLetter(joinParts(currencyParts.filter(Boolean)) || "Zero reais");
+}
+
+function formatCurrencyWithWords(value: number | string | null | undefined) {
+  const numericValue = parseNumericValue(value);
+
+  if (numericValue === null) {
+    return "";
+  }
+
+  const rounded = Math.round((Math.abs(numericValue) + Number.EPSILON) * 100) / 100;
+  const words = formatCurrencyWordsOnly(rounded);
 
   return `${formatCurrencyValue(rounded)} (${words})`;
+}
+
+function formatInstallmentCount(value: number | string | null | undefined) {
+  const numericValue = parseNumericValue(value);
+
+  if (numericValue === null) {
+    return "";
+  }
+
+  const rounded = Math.max(0, Math.round(numericValue));
+  return rounded ? String(rounded) : "";
+}
+
+function formatInstallmentDescription(value: number | string | null | undefined) {
+  const count = formatInstallmentCount(value);
+
+  if (!count) {
+    return "";
+  }
+
+  if (count === "1") {
+    return "a vista";
+  }
+
+  return `em ${count} parcelas`;
 }
 
 function buildAddress(
@@ -455,6 +519,99 @@ function stringFromUnknown(value: unknown) {
   return "";
 }
 
+function hasPaymentContent(payment: PreSalePayment) {
+  return Boolean(
+    parseNumericValue(payment.amount) !== null ||
+      formatText(payment.payment_method) ||
+      formatInstallmentCount(payment.installment_number) ||
+      formatDateValue(payment.payment_date) ||
+      formatText(payment.status),
+  );
+}
+
+function buildPaymentLineSummary(payment: PreSalePayment) {
+  const amount = formatCurrencyWithWords(payment.amount);
+  const method = formatText(payment.payment_method);
+  const installmentsText = formatInstallmentDescription(payment.installment_number);
+  const parts = [amount];
+
+  if (method) {
+    parts.push(`via ${method}`);
+  }
+
+  if (installmentsText) {
+    parts.push(installmentsText);
+  }
+
+  return parts
+    .filter(Boolean)
+    .join(" ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function buildPaymentVariables(
+  payments: PreSalePayment[],
+  fallbackTotal: number | string | null | undefined,
+) {
+  const filteredPayments = payments.filter(hasPaymentContent).slice(0, 10);
+  const totals = filteredPayments
+    .map((payment) => parseNumericValue(payment.amount))
+    .filter((value): value is number => value !== null);
+  const totalValue =
+    totals.length > 0
+      ? Math.round(
+          (totals.reduce((sum, currentValue) => sum + currentValue, 0) + Number.EPSILON) * 100,
+        ) / 100
+      : parseNumericValue(fallbackTotal);
+  const variables: Record<string, string> = {
+    pagamento_quantidade: filteredPayments.length ? String(filteredPayments.length) : "",
+    pagamento_total: totalValue === null ? "" : formatCurrencyValue(totalValue),
+    pagamento_total_extenso: totalValue === null ? "" : formatCurrencyWordsOnly(totalValue),
+    pagamento_total_com_extenso:
+      totalValue === null ? "" : formatCurrencyWithWords(totalValue),
+    pagamentos_resumo: filteredPayments.map(buildPaymentLineSummary).filter(Boolean).join(" e "),
+  };
+
+  for (let index = 0; index < 10; index += 1) {
+    const payment = filteredPayments[index];
+    const paymentIndex = index + 1;
+
+    variables[`pagamento_${paymentIndex}_metodo`] = payment
+      ? formatText(payment.payment_method)
+      : "";
+    variables[`pagamento_${paymentIndex}_forma`] = payment
+      ? formatText(payment.payment_method)
+      : "";
+    variables[`pagamento_${paymentIndex}_valor`] = payment
+      ? formatCurrencyValue(payment.amount)
+      : "";
+    variables[`pagamento_${paymentIndex}_valor_extenso`] = payment
+      ? formatCurrencyWordsOnly(payment.amount)
+      : "";
+    variables[`pagamento_${paymentIndex}_valor_com_extenso`] = payment
+      ? formatCurrencyWithWords(payment.amount)
+      : "";
+    variables[`pagamento_${paymentIndex}_parcelas`] = payment
+      ? formatInstallmentCount(payment.installment_number)
+      : "";
+    variables[`pagamento_${paymentIndex}_parcelas_texto`] = payment
+      ? formatInstallmentDescription(payment.installment_number)
+      : "";
+    variables[`pagamento_${paymentIndex}_data`] = payment
+      ? formatDateValue(payment.payment_date)
+      : "";
+    variables[`pagamento_${paymentIndex}_status`] = payment
+      ? formatText(payment.status)
+      : "";
+    variables[`pagamento_${paymentIndex}_resumo`] = payment
+      ? buildPaymentLineSummary(payment)
+      : "";
+  }
+
+  return variables;
+}
+
 export function buildDocumentVariables(context: DocumentTemplateContext) {
   const {
     preSale,
@@ -464,9 +621,11 @@ export function buildDocumentVariables(context: DocumentTemplateContext) {
     financialCase,
     company,
     consultant,
+    payments,
   } = context;
   const now = new Date();
   const companyRecord = (company ?? {}) as Record<string, unknown>;
+  const paymentVariables = buildPaymentVariables(payments, preSale.contract_value);
 
   const variables = {
     cliente_id: client?.id ?? "",
@@ -580,6 +739,7 @@ export function buildDocumentVariables(context: DocumentTemplateContext) {
       hour: "2-digit",
       minute: "2-digit",
     }).format(now),
+    ...paymentVariables,
   } satisfies Record<string, string>;
 
   return variables as Record<string, string>;
