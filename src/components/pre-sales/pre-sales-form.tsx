@@ -134,6 +134,28 @@ function maskZipCode(event: ChangeEvent<HTMLInputElement>) {
   event.target.value = formatZipCode(event.target.value);
 }
 
+function formatCurrencyInputValue(value: string) {
+  const digits = value.replace(/\D/g, "");
+
+  if (!digits) {
+    return "";
+  }
+
+  const numeric = Number(digits) / 100;
+  return new Intl.NumberFormat("pt-BR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(numeric);
+}
+
+function handleCurrencyMask(event: ChangeEvent<HTMLInputElement>) {
+  event.target.value = formatCurrencyInputValue(event.target.value);
+}
+
+function handleIntegerMask(event: ChangeEvent<HTMLInputElement>) {
+  event.target.value = event.target.value.replace(/\D/g, "");
+}
+
 function copyClientToSnapshot(
   client: ClientOption,
   setValue: UseFormSetValue<PreSaleFormValues>,
@@ -470,11 +492,11 @@ export function PreSalesForm({
             <option value="false">Nao</option>
           </select>
         </div>
-        <TextField name="financed_amount" label="Valor da operacao / financiado" register={register} errors={errors} disabled={disabled} inputMode="decimal" placeholder="0,00" />
-        <TextField name="installment_amount" label="Valor da parcela" register={register} errors={errors} disabled={disabled} inputMode="decimal" placeholder="0,00" />
-        <TextField name="paid_installments" label="Parcelas pagas" register={register} errors={errors} disabled={disabled} inputMode="numeric" />
-        <TextField name="overdue_installments" label="Parcelas em atraso" register={register} errors={errors} disabled={disabled} inputMode="numeric" />
-        <TextField name="due_day" label="Dia do vencimento" register={register} errors={errors} disabled={disabled} inputMode="numeric" />
+        <TextField name="financed_amount" label="Valor da operacao / financiado" register={register} errors={errors} disabled={disabled} inputMode="decimal" placeholder="0,00" onChange={handleCurrencyMask} />
+        <TextField name="installment_amount" label="Valor da parcela" register={register} errors={errors} disabled={disabled} inputMode="decimal" placeholder="0,00" onChange={handleCurrencyMask} />
+        <TextField name="paid_installments" label="Parcelas pagas" register={register} errors={errors} disabled={disabled} inputMode="numeric" onChange={handleIntegerMask} />
+        <TextField name="overdue_installments" label="Parcelas em atraso" register={register} errors={errors} disabled={disabled} inputMode="numeric" onChange={handleIntegerMask} />
+        <TextField name="due_day" label="Dia do vencimento" register={register} errors={errors} disabled={disabled} inputMode="numeric" onChange={handleIntegerMask} />
         <TextField name="contract_number" label="Numero do contrato" register={register} errors={errors} disabled={disabled} />
       </FormSection>
 
@@ -485,7 +507,7 @@ export function PreSalesForm({
         >
           <TextField name="asset_brand_model" label="Veiculo / marca-modelo" register={register} errors={errors} disabled={disabled} required />
           <TextField name="asset_color" label="Cor" register={register} errors={errors} disabled={disabled} required />
-          <TextField name="asset_year" label="Ano" register={register} errors={errors} disabled={disabled} required inputMode="numeric" />
+          <TextField name="asset_year" label="Ano" register={register} errors={errors} disabled={disabled} required inputMode="numeric" onChange={handleIntegerMask} />
           <TextField name="asset_plate" label="Placa" register={register} errors={errors} disabled={disabled} required />
         </FormSection>
       ) : null}
@@ -494,7 +516,7 @@ export function PreSalesForm({
         title="Contratacao e negociacao"
         description="Registre valores, detalhes combinados e observacoes operacionais."
       >
-        <TextField name="contract_value" label="Valor do contrato" register={register} errors={errors} disabled={disabled} inputMode="decimal" placeholder="0,00" />
+        <TextField name="contract_value" label="Valor do contrato" register={register} errors={errors} disabled={disabled} inputMode="decimal" placeholder="0,00" onChange={handleCurrencyMask} />
         <div className="space-y-2 md:col-span-2">
           <label className="text-sm font-medium text-slate-700" htmlFor="negotiation_details">
             Descricao livre da contratacao / informe
@@ -553,7 +575,9 @@ export function PreSalesForm({
                 className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
                 disabled={disabled}
                 placeholder="Parcela"
-                {...register(`payments.${index}.installment_number`)}
+                {...register(`payments.${index}.installment_number`, {
+                  onChange: handleIntegerMask,
+                })}
               />
               <input
                 aria-label="Valor"
@@ -561,7 +585,9 @@ export function PreSalesForm({
                 className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
                 disabled={disabled}
                 placeholder="Valor"
-                {...register(`payments.${index}.amount`)}
+                {...register(`payments.${index}.amount`, {
+                  onChange: handleCurrencyMask,
+                })}
               />
               <input
                 aria-label="Forma"

@@ -9,6 +9,44 @@ import type {
 } from "@/types/pre-sale";
 import { isValidPhone, onlyDigits } from "@/lib/clients/masks";
 
+function parseBrazilianDecimalInput(value: string | number | null | undefined) {
+  if (value === null || value === undefined || value === "") {
+    return null;
+  }
+
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? value : Number.NaN;
+  }
+
+  const trimmed = String(value).trim();
+
+  if (!trimmed) {
+    return null;
+  }
+
+  const normalized = trimmed
+    .replace(/[R$\s]/g, "")
+    .replace(/\.(?=\d{3}(?:\D|$))/g, "")
+    .replace(",", ".")
+    .replace(/[^\d.-]/g, "");
+  const parsed = Number(normalized);
+
+  return Number.isFinite(parsed) ? parsed : Number.NaN;
+}
+
+function formatNumberForPtBrInput(value: number | string | null | undefined) {
+  const parsed = parseBrazilianDecimalInput(value);
+
+  if (parsed === null || Number.isNaN(parsed)) {
+    return "";
+  }
+
+  return new Intl.NumberFormat("pt-BR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(parsed);
+}
+
 const optionalText = z
   .union([z.string(), z.null(), z.undefined()])
   .transform((value) => (typeof value === "string" && value.trim() ? value.trim() : null));
@@ -45,15 +83,7 @@ const optionalPhone = optionalText
 
 const optionalNumber = z
   .union([z.string(), z.number(), z.null(), z.undefined()])
-  .transform((value) => {
-    if (value === null || value === undefined || value === "") {
-      return null;
-    }
-
-    const normalized = String(value).replace(/\./g, "").replace(",", ".");
-    const parsed = Number(normalized);
-    return Number.isFinite(parsed) ? parsed : Number.NaN;
-  })
+  .transform((value) => parseBrazilianDecimalInput(value))
   .refine((value) => value === null || !Number.isNaN(value), "Informe um valor valido.");
 
 const optionalInteger = z
@@ -265,9 +295,7 @@ export function preSaleToFormValues(
     media: preSale.media ?? "",
     service_type: preSale.service_type ?? "",
     contract_value:
-      preSale.contract_value === null
-        ? ""
-        : String(preSale.contract_value).replace(".", ","),
+      formatNumberForPtBrInput(preSale.contract_value),
     negotiation_details: preSale.negotiation_details ?? "",
     snapshot_full_name: snapshot?.full_name ?? "",
     snapshot_cpf: snapshot?.cpf ?? "",
@@ -310,15 +338,9 @@ export function preSaleToFormValues(
         ? ""
         : String(financialCase.has_financing_contract),
     financed_amount:
-      financialCase?.financed_amount === null ||
-      financialCase?.financed_amount === undefined
-        ? ""
-        : String(financialCase.financed_amount).replace(".", ","),
+      formatNumberForPtBrInput(financialCase?.financed_amount),
     installment_amount:
-      financialCase?.installment_amount === null ||
-      financialCase?.installment_amount === undefined
-        ? ""
-        : String(financialCase.installment_amount).replace(".", ","),
+      formatNumberForPtBrInput(financialCase?.installment_amount),
     paid_installments:
       financialCase?.paid_installments === null ||
       financialCase?.paid_installments === undefined
@@ -346,9 +368,7 @@ export function preSaleToFormValues(
               ? ""
               : String(payment.installment_number),
           amount:
-            payment.amount === null || payment.amount === undefined
-              ? ""
-              : String(payment.amount).replace(".", ","),
+            formatNumberForPtBrInput(payment.amount),
           payment_method: payment.payment_method ?? "",
           payment_date: payment.payment_date ?? "",
           status: payment.status ?? "previsto",
