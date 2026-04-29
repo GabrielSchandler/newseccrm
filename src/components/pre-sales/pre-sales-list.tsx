@@ -4,6 +4,7 @@ import { Edit, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { WhatsAppLink } from "@/components/clients/whatsapp-link";
+import { PreSaleDeleteButton } from "@/components/pre-sales/pre-sale-delete-button";
 import { displayCpf } from "@/lib/clients/formatters";
 import {
   formatCurrency,
@@ -16,9 +17,10 @@ import { PreSalesStatusBadge } from "./pre-sales-status-badge";
 
 type PreSalesListProps = {
   preSales: PreSaleWithRelations[];
+  canDelete?: boolean;
 };
 
-export function PreSalesList({ preSales }: PreSalesListProps) {
+export function PreSalesList({ preSales, canDelete = false }: PreSalesListProps) {
   const router = useRouter();
 
   if (!preSales.length) {
@@ -133,6 +135,9 @@ export function PreSalesList({ preSales }: PreSalesListProps) {
                       <Edit className="h-3.5 w-3.5" />
                       Editar
                     </Link>
+                    {canDelete ? (
+                      <PreSaleDeleteButton preSaleId={preSale.id} variant="inline" />
+                    ) : null}
                   </div>
                 </td>
               </tr>

@@ -479,5 +479,8 @@ export async function deletePreSaleAction(preSaleId: string): Promise<PreSaleAct
   }
 
   revalidatePath("/pre-vendas");
-  redirect("/pre-vendas?success=deleted");
+  return {
+    ok: true,
+    message: "Pre-venda excluida com sucesso.",
+  };
 }

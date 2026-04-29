@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { updatePreSaleAction } from "@/app/(authenticated)/pre-vendas/actions";
 import { PageHeader } from "@/components/layout/page-header";
+import { PreSaleDeleteButton } from "@/components/pre-sales/pre-sale-delete-button";
 import { PreSalesForm } from "@/components/pre-sales/pre-sales-form";
 import { getCurrentUserContext } from "@/lib/auth/current-user";
 import { formatDateTime } from "@/lib/clients/formatters";
@@ -82,6 +83,7 @@ export default async function EditarPreVendaPage({ params }: EditarPreVendaPageP
     role === "admin" ||
     role === "manager" ||
     preSale.consultant_user_id === userProfileId;
+  const canDelete = role === "admin" || role === "manager";
 
   if (!canEdit) {
     notFound();
@@ -93,7 +95,8 @@ export default async function EditarPreVendaPage({ params }: EditarPreVendaPageP
         title="Editar pre-venda"
         description="Atualize os dados e status da oportunidade."
       />
-      <div className="p-6">
+      <div className="space-y-4 p-6">
+        {canDelete ? <PreSaleDeleteButton preSaleId={preSale.id} /> : null}
         <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
           <PreSalesForm
             clients={(clientsData ?? []) as ClientOption[]}

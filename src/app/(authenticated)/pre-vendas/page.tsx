@@ -45,7 +45,8 @@ function attachRelations(
 
 export default async function PreVendasPage({ searchParams }: PreVendasPageProps) {
   const params = await searchParams;
-  const { supabase, companyId } = await getCurrentUserContext();
+  const { supabase, companyId, role } = await getCurrentUserContext();
+  const canDeletePreSales = role === "admin" || role === "manager";
   const search = params.q?.trim() ?? "";
   const cpfSearch = onlyDigits(search);
   const type = params.type as PreSaleType | undefined;
@@ -179,8 +180,8 @@ export default async function PreVendasPage({ searchParams }: PreVendasPageProps
           </div>
         ) : (
           <>
-            <PreSalesKanban preSales={preSales} />
-            <PreSalesList preSales={preSales} />
+            <PreSalesKanban preSales={preSales} canDelete={canDeletePreSales} />
+            <PreSalesList preSales={preSales} canDelete={canDeletePreSales} />
           </>
         )}
       </div>

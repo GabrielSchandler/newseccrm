@@ -7,6 +7,7 @@ import { WhatsAppLink } from "@/components/clients/whatsapp-link";
 import { ClientDocumentsSection } from "@/components/client-documents/client-documents-section";
 import { GenerateDocumentModal } from "@/components/documents/generate-document-modal";
 import { PageHeader } from "@/components/layout/page-header";
+import { PreSaleDeleteButton } from "@/components/pre-sales/pre-sale-delete-button";
 import { PreSalesStatusBadge } from "@/components/pre-sales/pre-sales-status-badge";
 import { PreSalesStatusSelect } from "@/components/pre-sales/pre-sales-status-select";
 import {
@@ -162,6 +163,7 @@ export default async function PreVendaPage({ params, searchParams }: PreVendaPag
     role === "admin" ||
     role === "manager" ||
     preSale.consultant_user_id === userProfileId;
+  const canDelete = role === "admin" || role === "manager";
   const successMessage =
     queryParams.success === "created"
       ? "Pre-venda cadastrada com sucesso."
@@ -187,6 +189,7 @@ export default async function PreVendaPage({ params, searchParams }: PreVendaPag
               Editar
             </Link>
           ) : null}
+          {canDelete ? <PreSaleDeleteButton preSaleId={preSale.id} /> : null}
           <Link
             href="/pre-vendas"
             className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"

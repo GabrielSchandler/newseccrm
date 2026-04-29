@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { WhatsAppLink } from "@/components/clients/whatsapp-link";
+import { PreSaleDeleteButton } from "@/components/pre-sales/pre-sale-delete-button";
 import {
   formatCurrency,
   formatPreSaleType,
@@ -14,9 +15,10 @@ import { PreSalesStatusBadge } from "./pre-sales-status-badge";
 
 type PreSalesKanbanProps = {
   preSales: PreSaleWithRelations[];
+  canDelete?: boolean;
 };
 
-export function PreSalesKanban({ preSales }: PreSalesKanbanProps) {
+export function PreSalesKanban({ preSales, canDelete = false }: PreSalesKanbanProps) {
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -105,6 +107,13 @@ export function PreSalesKanban({ preSales }: PreSalesKanbanProps) {
                       >
                         Editar
                       </Link>
+                      {canDelete ? (
+                        <PreSaleDeleteButton
+                          preSaleId={preSale.id}
+                          variant="inline"
+                          className="px-2.5 py-1.5 text-xs"
+                        />
+                      ) : null}
                     </div>
                   </article>
                 ))}
