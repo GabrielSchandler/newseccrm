@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { recordAuditLog } from "@/lib/audit/log";
 import { getCurrentUserContext } from "@/lib/auth/current-user";
 import { preSaleFormSchema, type PreSalePayload } from "@/lib/pre-sales/schema";
 import type { PreSaleStatus } from "@/types/pre-sale";
@@ -340,12 +341,27 @@ export async function createPreSaleAction(
       return friendlyError(error.message);
     }
 
-    preSaleId = (data as { id: string }).id;
-    await savePreSaleChildRecord("pre_sale_client_snapshot", preSaleId, snapshotValues, true);
-    await savePreSaleChildRecord("pre_sale_debt_holders", preSaleId, debtHolderValues, true);
-    await savePreSaleChildRecord("pre_sale_financial_cases", preSaleId, financialCaseValues, true);
-    await savePayments(preSaleId, payments);
-  } catch (error) {
+      preSaleId = (data as { id: string }).id;
+      await savePreSaleChildRecord("pre_sale_client_snapshot", preSaleId, snapshotValues, true);
+      await savePreSaleChildRecord("pre_sale_debt_holders", preSaleId, debtHolderValues, true);
+      await savePreSaleChildRecord("pre_sale_financial_cases", preSaleId, financialCaseValues, true);
+      await savePayments(preSaleId, payments);
+
+      await recordAuditLog({
+        supabase,
+        companyId,
+        userProfileId,
+        action: "pre_sale.created",
+        entityType: "pre_sale",
+        entityId: preSaleId,
+        entityLabel: parsed.data.snapshot_full_name,
+        details: {
+          status: parsed.data.status,
+          type: parsed.data.pre_sale_type,
+          client_id: parsed.data.client_id,
+        },
+      });
+    } catch (error) {
     return friendlyError(
       error instanceof Error ? error.message : "Nao foi possivel criar a pre-venda.",
     );
@@ -399,11 +415,26 @@ export async function updatePreSaleAction(
       return friendlyError(error.message);
     }
 
-    await savePreSaleChildRecord("pre_sale_client_snapshot", preSaleId, snapshotValues, true);
-    await savePreSaleChildRecord("pre_sale_debt_holders", preSaleId, debtHolderValues, true);
-    await savePreSaleChildRecord("pre_sale_financial_cases", preSaleId, financialCaseValues, true);
-    await savePayments(preSaleId, payments);
-  } catch (error) {
+      await savePreSaleChildRecord("pre_sale_client_snapshot", preSaleId, snapshotValues, true);
+      await savePreSaleChildRecord("pre_sale_debt_holders", preSaleId, debtHolderValues, true);
+      await savePreSaleChildRecord("pre_sale_financial_cases", preSaleId, financialCaseValues, true);
+      await savePayments(preSaleId, payments);
+
+      await recordAuditLog({
+        supabase,
+        companyId,
+        userProfileId,
+        action: "pre_sale.updated",
+        entityType: "pre_sale",
+        entityId: preSaleId,
+        entityLabel: parsed.data.snapshot_full_name,
+        details: {
+          status: parsed.data.status,
+          type: parsed.data.pre_sale_type,
+          client_id: parsed.data.client_id,
+        },
+      });
+    } catch (error) {
     return friendlyError(
       error instanceof Error ? error.message : "Nao foi possivel atualizar a pre-venda.",
     );
@@ -435,10 +466,23 @@ export async function updatePreSaleStatusAction(
       .eq("id", preSaleId)
       .eq("company_id", companyId);
 
-    if (error) {
-      return friendlyError(error.message);
-    }
-  } catch (error) {
+      if (error) {
+        return friendlyError(error.message);
+      }
+
+      await recordAuditLog({
+        supabase,
+        companyId,
+        userProfileId,
+        action: "pre_sale.status_updated",
+        entityType: "pre_sale",
+        entityId: preSaleId,
+        entityLabel: preSaleId,
+        details: {
+          status,
+        },
+      });
+    } catch (error) {
     return friendlyError(
       error instanceof Error ? error.message : "Nao foi possivel alterar o status.",
     );
@@ -457,7 +501,7 @@ export async function updatePreSaleStatusAction(
 
 export async function deletePreSaleAction(preSaleId: string): Promise<PreSaleActionState> {
   try {
-    const { supabase, companyId, role } = await getCurrentUserContext();
+      const { supabase, companyId, role, userProfileId } = await getCurrentUserContext();
 
     if (role !== "admin" && role !== "manager") {
       return friendlyError("Apenas admin ou manager podem excluir pre-vendas.");
@@ -469,10 +513,20 @@ export async function deletePreSaleAction(preSaleId: string): Promise<PreSaleAct
       .eq("id", preSaleId)
       .eq("company_id", companyId);
 
-    if (error) {
-      return friendlyError(error.message);
-    }
-  } catch (error) {
+      if (error) {
+        return friendlyError(error.message);
+      }
+
+      await recordAuditLog({
+        supabase,
+        companyId,
+        userProfileId,
+        action: "pre_sale.deleted",
+        entityType: "pre_sale",
+        entityId: preSaleId,
+        entityLabel: preSaleId,
+      });
+    } catch (error) {
     return friendlyError(
       error instanceof Error ? error.message : "Nao foi possivel excluir a pre-venda.",
     );

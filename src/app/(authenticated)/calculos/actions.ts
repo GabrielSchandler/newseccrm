@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { renderToBuffer } from "@react-pdf/renderer";
+import { recordAuditLog } from "@/lib/audit/log";
 import { getCurrentUserContext } from "@/lib/auth/current-user";
 import {
   calculateFinancingRevision,
@@ -172,6 +173,20 @@ export async function createFinancingCalculationAction(
       parsed.data.pre_sale_id,
     );
 
+    await recordAuditLog({
+      supabase,
+      companyId,
+      userProfileId,
+      action: "calculation.created",
+      entityType: "calculation",
+      entityId: calculationId,
+      entityLabel: parsed.data.client_name,
+      details: {
+        client_id: parsed.data.client_id,
+        pre_sale_id: parsed.data.pre_sale_id,
+      },
+    });
+
     return {
       ok: true,
       message: "Calculo salvo com sucesso.",
@@ -237,6 +252,20 @@ export async function updateFinancingCalculationAction(
       parsed.data.client_id ?? existing.client_id,
       parsed.data.pre_sale_id ?? existing.pre_sale_id,
     );
+
+    await recordAuditLog({
+      supabase,
+      companyId,
+      userProfileId,
+      action: "calculation.updated",
+      entityType: "calculation",
+      entityId: calculationId,
+      entityLabel: parsed.data.client_name,
+      details: {
+        client_id: parsed.data.client_id ?? existing.client_id,
+        pre_sale_id: parsed.data.pre_sale_id ?? existing.pre_sale_id,
+      },
+    });
 
     return {
       ok: true,
@@ -322,6 +351,19 @@ export async function generateCalculationPdfAction(
       calculation.client_id,
       calculation.pre_sale_id,
     );
+
+    await recordAuditLog({
+      supabase,
+      companyId,
+      userProfileId,
+      action: "calculation.pdf_generated",
+      entityType: "calculation",
+      entityId: calculationId,
+      entityLabel: calculation.client_name,
+      details: {
+        pdf_file_name: fileName,
+      },
+    });
 
     return {
       ok: true,

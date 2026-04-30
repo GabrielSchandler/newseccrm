@@ -1,0 +1,20 @@
+export type CompanyProfile = {
+  id: string;
+  legal_name: string | null;
+  trade_name: string | null;
+  cnpj: string | null;
+  email: string | null;
+  phone: string | null;
+  website: string | null;
+  zip_code: string | null;
+  street: string | null;
+  number: string | null;
+  district: string | null;
+  city: string | null;
+  state: string | null;
+  logo_path: string | null;
+  logo_file_name: string | null;
+  user_license_limit: number | null;
+  created_at: string | null;
+  updated_at: string | null;
+};

@@ -2,7 +2,9 @@
 
 import {
   BarChart3,
+  Building2,
   Calculator,
+  ClipboardList,
   FileSignature,
   FileText,
   Handshake,
@@ -23,8 +25,11 @@ export type SidebarNavigationItem = {
     | "documents"
     | "templates"
     | "contracts"
-    | "users";
+    | "users"
+    | "company"
+    | "logs";
   managerOnly?: boolean;
+  adminOnly?: boolean;
 };
 
 type SidebarNavProps = {
@@ -41,6 +46,8 @@ const icons = {
   templates: FileText,
   contracts: FileSignature,
   users: BarChart3,
+  company: Building2,
+  logs: ClipboardList,
 };
 
 function isActivePath(pathname: string, href: string) {

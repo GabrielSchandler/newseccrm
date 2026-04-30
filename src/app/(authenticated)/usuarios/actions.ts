@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { recordAuditLog } from "@/lib/audit/log";
 import { getCurrentUserContext } from "@/lib/auth/current-user";
 import {
   createCompanyUserSchema,
@@ -240,6 +241,20 @@ export async function createCompanyUserAction(
         `Usuario criado no Auth, mas falhou ao criar perfil da empresa: ${profileError.message}`,
       );
     }
+
+    await recordAuditLog({
+      supabase,
+      companyId,
+      userProfileId,
+      action: "user.created",
+      entityType: "user",
+      entityId: createdAuthUserId,
+      entityLabel: parsed.data.full_name,
+      details: {
+        email: parsed.data.email,
+        role: parsed.data.role,
+      },
+    });
   } catch (error) {
     if (createdAuthUserId) {
       try {
@@ -335,6 +350,20 @@ export async function updateCompanyUserAction(
     if (error) {
       return friendlyError(error.message);
     }
+
+    await recordAuditLog({
+      supabase,
+      companyId,
+      userProfileId,
+      action: "user.updated",
+      entityType: "user",
+      entityId: userId,
+      entityLabel: parsed.data.full_name,
+      details: {
+        role: parsed.data.role,
+        is_active: parsed.data.is_active,
+      },
+    });
   } catch (error) {
     return friendlyError(
       error instanceof Error ? error.message : "Nao foi possivel atualizar o usuario.",
@@ -384,6 +413,19 @@ export async function toggleCompanyUserStatusAction(
         return friendlyError(error.message);
       }
 
+      await recordAuditLog({
+        supabase,
+        companyId,
+        userProfileId,
+        action: "user.deactivated",
+        entityType: "user",
+        entityId: userId,
+        entityLabel: targetUser.full_name || targetUser.email || userId,
+        details: {
+          role: targetUser.role,
+        },
+      });
+
       await revalidateUserPages(userId);
       return {
         ok: true,
@@ -411,6 +453,19 @@ export async function toggleCompanyUserStatusAction(
     if (error) {
       return friendlyError(error.message);
     }
+
+    await recordAuditLog({
+      supabase,
+      companyId,
+      userProfileId,
+      action: "user.activated",
+      entityType: "user",
+      entityId: userId,
+      entityLabel: targetUser.full_name || targetUser.email || userId,
+      details: {
+        role: targetUser.role,
+      },
+    });
 
     await revalidateUserPages(userId);
 

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { recordAuditLog } from "@/lib/audit/log";
 import { getCurrentUserContext } from "@/lib/auth/current-user";
 import { formatCpf } from "@/lib/clients/masks";
 import { clientFormSchema, type ClientPayload } from "@/lib/clients/schema";
@@ -102,6 +103,19 @@ export async function createClientAction(
     }
 
     createdClientId = data.id;
+
+    await recordAuditLog({
+      supabase,
+      companyId,
+      userProfileId,
+      action: "client.created",
+      entityType: "client",
+      entityId: createdClientId,
+      entityLabel: parsed.data.full_name,
+      details: {
+        cpf: parsed.data.cpf,
+      },
+    });
   } catch (error) {
     return friendlyError(
       error instanceof Error ? error.message : "Nao foi possivel criar o cliente.",
@@ -125,7 +139,7 @@ export async function updateClientAction(
   let updated = false;
 
   try {
-    const { supabase, companyId } = await getCurrentUserContext();
+    const { supabase, companyId, userProfileId } = await getCurrentUserContext();
     const duplicatedCpf = await findClientByCpf(
       parsed.data.cpf,
       companyId,
@@ -155,6 +169,19 @@ export async function updateClientAction(
     }
 
     updated = true;
+
+    await recordAuditLog({
+      supabase,
+      companyId,
+      userProfileId,
+      action: "client.updated",
+      entityType: "client",
+      entityId: clientId,
+      entityLabel: parsed.data.full_name,
+      details: {
+        cpf: parsed.data.cpf,
+      },
+    });
   } catch (error) {
     return friendlyError(
       error instanceof Error ? error.message : "Nao foi possivel atualizar o cliente.",
@@ -189,6 +216,16 @@ export async function softDeleteClientAction(
     if (error) {
       return friendlyError(error.message);
     }
+
+    await recordAuditLog({
+      supabase,
+      companyId,
+      userProfileId,
+      action: "client.deleted",
+      entityType: "client",
+      entityId: clientId,
+      entityLabel: clientId,
+    });
   } catch (error) {
     return friendlyError(
       error instanceof Error ? error.message : "Nao foi possivel excluir o cliente.",
@@ -203,7 +240,7 @@ export async function reactivateClientAction(
   clientId: string,
 ): Promise<ClientActionState> {
   try {
-    const { supabase, companyId, role } = await getCurrentUserContext();
+    const { supabase, companyId, role, userProfileId } = await getCurrentUserContext();
 
     if (role !== "admin") {
       return friendlyError("Apenas usuarios administradores podem reativar clientes.");
@@ -248,6 +285,19 @@ export async function reactivateClientAction(
     if (error) {
       return friendlyError(error.message);
     }
+
+    await recordAuditLog({
+      supabase,
+      companyId,
+      userProfileId,
+      action: "client.reactivated",
+      entityType: "client",
+      entityId: clientId,
+      entityLabel: clientId,
+      details: {
+        cpf: client.cpf,
+      },
+    });
   } catch (error) {
     return friendlyError(
       error instanceof Error ? error.message : "Nao foi possivel reativar o cliente.",

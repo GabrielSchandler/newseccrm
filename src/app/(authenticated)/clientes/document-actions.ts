@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { recordAuditLog } from "@/lib/audit/log";
 import { getCurrentUserContext } from "@/lib/auth/current-user";
 import {
   assertClientBelongsToCompany,
@@ -132,6 +133,22 @@ export async function uploadClientDocumentAction(
       return friendlyError(insertError.message);
     }
 
+    await recordAuditLog({
+      supabase,
+      companyId,
+      userProfileId,
+      action: "client_document.uploaded",
+      entityType: "client_document",
+      entityId: documentId,
+      entityLabel: parsed.data.title || file.name,
+      details: {
+        client_id: clientId,
+        pre_sale_id: preSaleId,
+        document_type: parsed.data.document_type,
+        file_name: file.name,
+      },
+    });
+
     revalidatePath(`/clientes/${clientId}`);
 
     if (preSaleId) {
@@ -209,6 +226,20 @@ export async function softDeleteClientDocumentAction(
     if (error) {
       return friendlyError(error.message);
     }
+
+    await recordAuditLog({
+      supabase,
+      companyId,
+      userProfileId,
+      action: "client_document.deleted",
+      entityType: "client_document",
+      entityId: documentId,
+      entityLabel: document.title || document.file_name,
+      details: {
+        client_id: document.client_id,
+        pre_sale_id: document.pre_sale_id,
+      },
+    });
 
     revalidatePath(`/clientes/${document.client_id}`);
 

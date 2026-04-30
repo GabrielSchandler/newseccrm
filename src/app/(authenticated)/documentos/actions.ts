@@ -4,6 +4,7 @@ import mammoth from "mammoth";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import sanitizeHtml from "sanitize-html";
+import { recordAuditLog } from "@/lib/audit/log";
 import { getCurrentUserContext } from "@/lib/auth/current-user";
 import { analyzeDocxStructure } from "@/lib/documents/docx-analysis";
 import { renderOfficialDocxTemplate } from "@/lib/documents/docx-engine";
@@ -542,14 +543,27 @@ export async function createDocumentTemplateAction(
       return friendlyError(error.message);
     }
 
-    templateId = (data as { id: string }).id;
-    await ensureDefaultTemplateState(
-      companyId,
-      parsed.data.document_type,
-      templateId,
-      parsed.data.is_default,
-    );
-  } catch (error) {
+      templateId = (data as { id: string }).id;
+      await ensureDefaultTemplateState(
+        companyId,
+        parsed.data.document_type,
+        templateId,
+        parsed.data.is_default,
+      );
+
+      await recordAuditLog({
+        supabase,
+        companyId,
+        userProfileId,
+        action: "document_template.created",
+        entityType: "document_template",
+        entityId: templateId,
+        entityLabel: parsed.data.name,
+        details: {
+          document_type: parsed.data.document_type,
+        },
+      });
+    } catch (error) {
     return friendlyError(
       error instanceof Error ? error.message : "Nao foi possivel criar o template.",
     );
@@ -569,8 +583,8 @@ export async function updateDocumentTemplateAction(
     return friendlyError("Confira os campos do template.");
   }
 
-  try {
-    const { supabase, companyId, role } = await getCurrentUserContext();
+    try {
+      const { supabase, companyId, role, userProfileId } = await getCurrentUserContext();
 
     if (!canManageTemplates(role)) {
       return friendlyError("Apenas admin ou gerente podem editar templates.");
@@ -589,13 +603,28 @@ export async function updateDocumentTemplateAction(
       return friendlyError(error.message);
     }
 
-    await ensureDefaultTemplateState(
-      companyId,
-      parsed.data.document_type,
-      templateId,
-      parsed.data.is_default,
-    );
-  } catch (error) {
+      await ensureDefaultTemplateState(
+        companyId,
+        parsed.data.document_type,
+        templateId,
+        parsed.data.is_default,
+      );
+
+      await recordAuditLog({
+        supabase,
+        companyId,
+        userProfileId,
+        action: "document_template.updated",
+        entityType: "document_template",
+        entityId: templateId,
+        entityLabel: parsed.data.name,
+        details: {
+          document_type: parsed.data.document_type,
+          is_active: parsed.data.is_active,
+          is_default: parsed.data.is_default,
+        },
+      });
+    } catch (error) {
     return friendlyError(
       error instanceof Error ? error.message : "Nao foi possivel editar o template.",
     );
@@ -609,8 +638,8 @@ export async function toggleDocumentTemplateActiveAction(
   templateId: string,
   isActive: boolean,
 ): Promise<DocumentActionState> {
-  try {
-    const { supabase, companyId, role } = await getCurrentUserContext();
+    try {
+      const { supabase, companyId, role, userProfileId } = await getCurrentUserContext();
 
     if (!canManageTemplates(role)) {
       return friendlyError("Apenas admin ou gerente podem ativar templates.");
@@ -636,6 +665,18 @@ export async function toggleDocumentTemplateActiveAction(
     if (error) {
       return friendlyError(error.message);
     }
+
+    await recordAuditLog({
+      supabase,
+      companyId,
+      userProfileId,
+      action: isActive
+        ? "document_template.activated"
+        : "document_template.deactivated",
+      entityType: "document_template",
+      entityId: templateId,
+      entityLabel: templateId,
+    });
   } catch (error) {
     return friendlyError(
       error instanceof Error ? error.message : "Nao foi possivel atualizar o template.",
@@ -652,8 +693,8 @@ export async function toggleDocumentTemplateActiveAction(
 export async function setDefaultDocumentTemplateAction(
   templateId: string,
 ): Promise<DocumentActionState> {
-  try {
-    const { supabase, companyId, role } = await getCurrentUserContext();
+    try {
+      const { supabase, companyId, role, userProfileId } = await getCurrentUserContext();
 
     if (!canManageTemplates(role)) {
       return friendlyError("Apenas admin ou gerente podem definir template padrao.");
@@ -680,6 +721,19 @@ export async function setDefaultDocumentTemplateAction(
     if (error) {
       return friendlyError(error.message);
     }
+
+    await recordAuditLog({
+      supabase,
+      companyId,
+      userProfileId,
+      action: "document_template.default_set",
+      entityType: "document_template",
+      entityId: templateId,
+      entityLabel: template.name,
+      details: {
+        document_type: template.document_type,
+      },
+    });
   } catch (error) {
     return friendlyError(
       error instanceof Error ? error.message : "Nao foi possivel definir o padrao.",
@@ -709,7 +763,7 @@ export async function duplicateDocumentTemplateAction(
       return friendlyError("Template nao encontrado.");
     }
 
-    const { error } = await supabase.from("document_templates").insert({
+    const { data, error } = await supabase.from("document_templates").insert({
       company_id: companyId,
       name: `${template.name} (copia)`,
       document_type: template.document_type,
@@ -720,11 +774,24 @@ export async function duplicateDocumentTemplateAction(
       is_active: false,
       is_default: false,
       created_by: userProfileId,
-    });
+    }).select("id").single();
 
     if (error) {
       return friendlyError(error.message);
     }
+
+    await recordAuditLog({
+      supabase,
+      companyId,
+      userProfileId,
+      action: "document_template.duplicated",
+      entityType: "document_template",
+      entityId: (data as { id: string }).id,
+      entityLabel: `${template.name} (copia)`,
+      details: {
+        source_template_id: templateId,
+      },
+    });
   } catch (error) {
     return friendlyError(
       error instanceof Error ? error.message : "Nao foi possivel duplicar o template.",
@@ -741,8 +808,8 @@ export async function duplicateDocumentTemplateAction(
 export async function deleteDocumentTemplateAction(
   templateId: string,
 ): Promise<DocumentActionState> {
-  try {
-    const { supabase, companyId, role } = await getCurrentUserContext();
+    try {
+      const { supabase, companyId, role, userProfileId } = await getCurrentUserContext();
 
     if (!canManageTemplates(role)) {
       return friendlyError("Apenas admin ou gerente podem excluir templates.");
@@ -764,16 +831,26 @@ export async function deleteDocumentTemplateAction(
       );
     }
 
-    const { error } = await supabase
-      .from("document_templates")
-      .delete()
-      .eq("id", templateId)
-      .eq("company_id", companyId);
+      const { error } = await supabase
+        .from("document_templates")
+        .delete()
+        .eq("id", templateId)
+        .eq("company_id", companyId);
 
-    if (error) {
-      return friendlyError(error.message);
-    }
-  } catch (error) {
+      if (error) {
+        return friendlyError(error.message);
+      }
+
+      await recordAuditLog({
+        supabase,
+        companyId,
+        userProfileId,
+        action: "document_template.deleted",
+        entityType: "document_template",
+        entityId: templateId,
+        entityLabel: templateId,
+      });
+    } catch (error) {
     return friendlyError(
       error instanceof Error ? error.message : "Nao foi possivel excluir o template.",
     );
@@ -789,8 +866,8 @@ export async function deleteDocumentTemplateAction(
 export async function deleteGeneratedDocumentAction(
   documentId: string,
 ): Promise<DocumentActionState> {
-  try {
-    const { supabase, companyId, role } = await getCurrentUserContext();
+    try {
+      const { supabase, companyId, role, userProfileId } = await getCurrentUserContext();
 
     if (!canManageTemplates(role)) {
       return friendlyError("Apenas admin ou gerente podem excluir documentos gerados.");
@@ -819,17 +896,31 @@ export async function deleteGeneratedDocumentAction(
       }
     }
 
-    const { error } = await supabase
-      .from("generated_documents")
-      .delete()
-      .eq("id", documentId)
-      .eq("company_id", companyId);
+      const { error } = await supabase
+        .from("generated_documents")
+        .delete()
+        .eq("id", documentId)
+        .eq("company_id", companyId);
 
-    if (error) {
-      return friendlyError(error.message);
-    }
+      if (error) {
+        return friendlyError(error.message);
+      }
 
-    revalidatePath("/documentos");
+      await recordAuditLog({
+        supabase,
+        companyId,
+        userProfileId,
+        action: "generated_document.deleted",
+        entityType: "generated_document",
+        entityId: documentId,
+        entityLabel: document.title,
+        details: {
+          pre_sale_id: document.pre_sale_id,
+          template_id: document.template_id,
+        },
+      });
+
+      revalidatePath("/documentos");
     revalidatePath(`/documentos/gerados/${documentId}`);
     revalidatePath(`/pre-vendas/${document.pre_sale_id}`);
 
@@ -849,7 +940,7 @@ export async function uploadOfficialDocxTemplateAction(
   formData: FormData,
 ): Promise<DocumentActionState> {
   try {
-    const { supabase, companyId, role } = await getCurrentUserContext();
+    const { supabase, companyId, role, userProfileId } = await getCurrentUserContext();
 
     if (!canManageTemplates(role)) {
       return friendlyError("Apenas admin ou gerente podem substituir o DOCX oficial.");
@@ -914,10 +1005,10 @@ export async function uploadOfficialDocxTemplateAction(
       );
     }
 
-    const { error: updateError } = await supabase
-      .from("document_templates")
-      .update({
-        original_docx_path: path,
+      const { error: updateError } = await supabase
+        .from("document_templates")
+        .update({
+          original_docx_path: path,
         original_docx_filename: filename,
         original_docx_size: file.size,
         original_docx_uploaded_at: new Date().toISOString(),
@@ -926,11 +1017,25 @@ export async function uploadOfficialDocxTemplateAction(
       .eq("id", templateId)
       .eq("company_id", companyId);
 
-    if (updateError) {
-      return friendlyError(updateError.message);
-    }
+      if (updateError) {
+        return friendlyError(updateError.message);
+      }
 
-    revalidatePath("/documentos/templates");
+      await recordAuditLog({
+        supabase,
+        companyId,
+        userProfileId,
+        action: "document_template.docx_uploaded",
+        entityType: "document_template",
+        entityId: templateId,
+        entityLabel: template.name,
+        details: {
+          file_name: filename,
+          file_size: file.size,
+        },
+      });
+
+      revalidatePath("/documentos/templates");
     revalidatePath(`/documentos/templates/${templateId}`);
     revalidatePath(`/documentos/templates/${templateId}/editar`);
 
@@ -952,7 +1057,7 @@ export async function uploadOfficialPdfTemplateAction(
   formData: FormData,
 ): Promise<DocumentActionState> {
   try {
-    const { supabase, companyId, role } = await getCurrentUserContext();
+    const { supabase, companyId, role, userProfileId } = await getCurrentUserContext();
 
     if (!canManageTemplates(role)) {
       return friendlyError("Apenas admin ou gerente podem substituir o PDF oficial.");
@@ -1017,10 +1122,10 @@ export async function uploadOfficialPdfTemplateAction(
       );
     }
 
-    const { error: updateError } = await supabase
-      .from("document_templates")
-      .update({
-        original_pdf_path: path,
+      const { error: updateError } = await supabase
+        .from("document_templates")
+        .update({
+          original_pdf_path: path,
         original_pdf_filename: filename,
         original_pdf_size: file.size,
         original_pdf_uploaded_at: new Date().toISOString(),
@@ -1029,11 +1134,25 @@ export async function uploadOfficialPdfTemplateAction(
       .eq("id", templateId)
       .eq("company_id", companyId);
 
-    if (updateError) {
-      return friendlyError(updateError.message);
-    }
+      if (updateError) {
+        return friendlyError(updateError.message);
+      }
 
-    revalidatePath("/documentos/templates");
+      await recordAuditLog({
+        supabase,
+        companyId,
+        userProfileId,
+        action: "document_template.pdf_uploaded",
+        entityType: "document_template",
+        entityId: templateId,
+        entityLabel: template.name,
+        details: {
+          file_name: filename,
+          file_size: file.size,
+        },
+      });
+
+      revalidatePath("/documentos/templates");
     revalidatePath(`/documentos/templates/${templateId}`);
     revalidatePath(`/documentos/templates/${templateId}/editar`);
 
@@ -1326,6 +1445,23 @@ export async function generateOfficialDocumentAction(
       return friendlyError(error.message);
     }
 
+    const generatedDocumentId = (data as { id: string }).id;
+
+    await recordAuditLog({
+      supabase,
+      companyId,
+      userProfileId,
+      action: "generated_document.docx_created",
+      entityType: "generated_document",
+      entityId: generatedDocumentId,
+      entityLabel: title,
+      details: {
+        pre_sale_id: preSaleId,
+        template_id: templateId,
+        pdf_generated: Boolean(savedPdfPath),
+      },
+    });
+
     revalidatePath("/documentos");
     revalidatePath(`/pre-vendas/${preSaleId}`);
 
@@ -1336,7 +1472,7 @@ export async function generateOfficialDocumentAction(
         : "DOCX oficial gerado. PDF ficou pendente porque o conversor nao esta disponivel.",
       content: renderedHtml,
       variables,
-      documentId: (data as { id: string }).id,
+      documentId: generatedDocumentId,
     };
   } catch (error) {
     console.error("[documents] Official document generation failed", {
@@ -1463,6 +1599,23 @@ export async function generateOfficialPdfDocumentAction(
       return friendlyError(error.message);
     }
 
+    const generatedDocumentId = (data as { id: string }).id;
+
+    await recordAuditLog({
+      supabase,
+      companyId,
+      userProfileId,
+      action: "generated_document.pdf_created",
+      entityType: "generated_document",
+      entityId: generatedDocumentId,
+      entityLabel: title,
+      details: {
+        pre_sale_id: preSaleId,
+        template_id: templateId,
+        filled_fields: renderedPdf.filledFields.length,
+      },
+    });
+
     revalidatePath("/documentos");
     revalidatePath(`/pre-vendas/${preSaleId}`);
 
@@ -1471,7 +1624,7 @@ export async function generateOfficialPdfDocumentAction(
       message: `PDF oficial gerado com ${renderedPdf.filledFields.length} campos preenchidos.`,
       content: renderedHtml,
       variables,
-      documentId: (data as { id: string }).id,
+      documentId: generatedDocumentId,
     };
   } catch (error) {
     console.error("[documents] Official PDF document generation failed", {
@@ -1531,6 +1684,22 @@ export async function generateDocumentAction(
       return friendlyError(error.message);
     }
 
+    const generatedDocumentId = (data as { id: string }).id;
+
+    await recordAuditLog({
+      supabase,
+      companyId,
+      userProfileId,
+      action: "generated_document.html_created",
+      entityType: "generated_document",
+      entityId: generatedDocumentId,
+      entityLabel: buildDocumentTitle(template, rendered),
+      details: {
+        pre_sale_id: preSaleId,
+        template_id: templateId,
+      },
+    });
+
     revalidatePath("/documentos");
     revalidatePath(`/pre-vendas/${preSaleId}`);
     return {
@@ -1538,7 +1707,7 @@ export async function generateDocumentAction(
       message: "Documento gerado com sucesso.",
       content: rendered.content,
       variables: rendered.variables,
-      documentId: (data as { id: string }).id,
+      documentId: generatedDocumentId,
     };
   } catch (error) {
     return friendlyError(

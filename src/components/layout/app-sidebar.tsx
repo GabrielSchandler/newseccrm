@@ -20,6 +20,8 @@ const navigation: SidebarNavigationItem[] = [
   },
   { href: "/contratos", label: "Contratos", icon: "contracts" },
   { href: "/usuarios", label: "Usuarios", icon: "users" },
+  { href: "/empresa", label: "Empresa", icon: "company", adminOnly: true },
+  { href: "/logs", label: "Logs", icon: "logs", adminOnly: true },
 ];
 
 export async function AppSidebar() {
@@ -27,8 +29,10 @@ export async function AppSidebar() {
   const canManageTemplates = role === "admin" || role === "manager";
   const canAccessUsers = role === "admin" || role === "manager";
   const canAccessDashboard = role !== "seller";
+  const canAccessAdminOnly = role === "admin";
   const visibleNavigation = navigation.filter(
     (item) =>
+      (!item.adminOnly || canAccessAdminOnly) &&
       (item.href !== "/usuarios" || canAccessUsers) &&
       (item.href !== "/dashboard" || canAccessDashboard),
   );
