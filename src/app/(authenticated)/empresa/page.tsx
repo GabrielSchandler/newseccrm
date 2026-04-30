@@ -113,6 +113,12 @@ export default async function EmpresaPage({ searchParams }: EmpresaPageProps) {
                 <h3 className="text-base font-semibold text-slate-950">Resumo atual</h3>
                 <dl className="mt-4 space-y-3 text-sm">
                   <div className="flex items-start justify-between gap-4">
+                    <dt className="text-slate-500">ID da empresa</dt>
+                    <dd className="max-w-[220px] break-all text-right font-mono text-xs text-slate-900">
+                      {company.id}
+                    </dd>
+                  </div>
+                  <div className="flex items-start justify-between gap-4">
                     <dt className="text-slate-500">Licencas contratadas</dt>
                     <dd className="font-medium text-slate-900">
                       {company.user_license_limit ?? 0}
