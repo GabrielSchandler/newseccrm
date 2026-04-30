@@ -70,7 +70,7 @@ export default async function UsuariosPage({ searchParams }: UsuariosPageProps) 
       supabase
         .from("user_profiles")
         .select(
-          "id, auth_user_id, company_id, full_name, email, phone, role, is_active, invited_by, deactivated_at, deactivated_by, created_at, updated_at",
+          "id, auth_user_id, company_id, full_name, username, email, phone, role, is_active, invited_by, deactivated_at, deactivated_by, created_at, updated_at",
         )
         .eq("company_id", companyId)
         .order("is_active", { ascending: false })
@@ -177,7 +177,7 @@ export default async function UsuariosPage({ searchParams }: UsuariosPageProps) 
                 <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
                   <tr>
                     <th className="px-4 py-3 font-semibold">Nome</th>
-                    <th className="px-4 py-3 font-semibold">Email</th>
+                    <th className="px-4 py-3 font-semibold">Login</th>
                     <th className="px-4 py-3 font-semibold">Telefone</th>
                     <th className="px-4 py-3 font-semibold">Cargo</th>
                     <th className="px-4 py-3 font-semibold">Status</th>
@@ -192,7 +192,7 @@ export default async function UsuariosPage({ searchParams }: UsuariosPageProps) 
                         {displayValue(user.full_name)}
                       </td>
                       <td className="px-4 py-3 text-slate-700">
-                        {displayValue(user.email)}
+                        {displayValue(user.username)}
                       </td>
                       <td className="px-4 py-3 text-slate-700">
                         {displayValue(user.phone)}

@@ -4,6 +4,7 @@ import { DocumentsNav } from "@/components/documents/documents-nav";
 import { PageHeader } from "@/components/layout/page-header";
 import { getCurrentUserContext } from "@/lib/auth/current-user";
 import { displayValue, formatDateTime } from "@/lib/clients/formatters";
+import { resolveUserDisplayName } from "@/lib/users/account";
 import {
   documentStatusLabels,
   documentTemplateTypes,
@@ -83,7 +84,7 @@ export default async function DocumentosPage({ searchParams }: DocumentosPagePro
     creatorIds.length
       ? supabase
           .from("user_profiles")
-          .select("id, full_name, email, role")
+          .select("id, full_name, username, email, role")
           .eq("company_id", companyId)
           .in("id", creatorIds)
       : Promise.resolve({ data: [] }),
@@ -211,7 +212,7 @@ export default async function DocumentosPage({ searchParams }: DocumentosPagePro
                           {formatDateTime(document.created_at)}
                         </td>
                         <td className="px-4 py-3 text-slate-700">
-                          {creator?.full_name || creator?.email || "-"}
+                          {resolveUserDisplayName(creator)}
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex flex-wrap gap-2">

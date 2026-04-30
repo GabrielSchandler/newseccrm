@@ -14,6 +14,7 @@ export type CurrentUserProfile = {
   auth_user_id: string;
   company_id: string;
   role: CompanyUserRole | null;
+  username: string | null;
   email: string | null;
   full_name: string | null;
   phone: string | null;
@@ -33,7 +34,7 @@ export async function getCurrentUserContext() {
 
   const { data, error: profileError } = await supabase
     .from("user_profiles")
-    .select("id, auth_user_id, company_id, role, email, full_name, phone, is_active")
+    .select("id, auth_user_id, company_id, role, username, email, full_name, phone, is_active")
     .eq("auth_user_id", user.id)
     .maybeSingle();
   const profile = data as CurrentUserProfile | null;
@@ -67,6 +68,7 @@ export async function getCurrentUserContext() {
     userProfileId: profile.id,
     companyId: profile.company_id,
     role: profile.role,
+    username: profile.username,
     email: profile.email,
     fullName: profile.full_name,
     phone: profile.phone,

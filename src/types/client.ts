@@ -26,6 +26,7 @@ export type Client = {
 
 export type ClientAuditUser = {
   full_name: string | null;
+  username: string | null;
   email: string | null;
 };
 

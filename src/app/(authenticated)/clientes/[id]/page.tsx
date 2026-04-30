@@ -18,6 +18,7 @@ import {
   formatDateTime,
 } from "@/lib/clients/formatters";
 import { getCurrentUserContext } from "@/lib/auth/current-user";
+import { resolveUserDisplayName } from "@/lib/users/account";
 import type { Client, ClientAuditUser } from "@/types/client";
 import { isDeletedClient } from "@/lib/clients/status";
 
@@ -70,7 +71,7 @@ export default async function ClientePage({
 
   const { data: createdByProfileData } = await supabase
     .from("user_profiles")
-    .select("full_name, email")
+    .select("full_name, username, email")
     .eq("id", client.created_by)
     .maybeSingle();
   const createdByProfile = createdByProfileData as ClientAuditUser | null;
@@ -208,9 +209,7 @@ export default async function ClientePage({
                     Criado por
                   </p>
                   <p className="mt-1 text-sm font-medium text-slate-950">
-                    {displayValue(
-                      createdByProfile?.full_name ?? createdByProfile?.email ?? null,
-                    )}
+                    {displayValue(resolveUserDisplayName(createdByProfile, ""))}
                   </p>
                 </div>
                 <div>

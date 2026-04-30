@@ -114,13 +114,13 @@ export default async function PreVendaPage({ params, searchParams }: PreVendaPag
     preSale.consultant_user_id
       ? supabase
           .from("user_profiles")
-          .select("id, full_name, email, role")
+          .select("id, full_name, username, email, role")
           .eq("id", preSale.consultant_user_id)
           .maybeSingle()
       : Promise.resolve({ data: null }),
     supabase
       .from("user_profiles")
-      .select("id, full_name, email, role")
+      .select("id, full_name, username, email, role")
       .eq("id", preSale.created_by)
       .maybeSingle(),
     supabase

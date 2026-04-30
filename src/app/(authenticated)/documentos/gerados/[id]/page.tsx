@@ -6,6 +6,7 @@ import { DocumentsNav } from "@/components/documents/documents-nav";
 import { PageHeader } from "@/components/layout/page-header";
 import { getCurrentUserContext } from "@/lib/auth/current-user";
 import { displayValue, formatDateTime } from "@/lib/clients/formatters";
+import { resolveUserDisplayName } from "@/lib/users/account";
 import {
   documentStatusLabels,
   documentTemplateTypes,
@@ -57,7 +58,7 @@ export default async function DocumentoPage({ params }: DocumentoPageProps) {
       document.created_by
         ? supabase
             .from("user_profiles")
-            .select("id, full_name, email, role")
+            .select("id, full_name, username, email, role")
             .eq("id", document.created_by)
             .eq("company_id", companyId)
             .maybeSingle()
@@ -208,7 +209,7 @@ export default async function DocumentoPage({ params }: DocumentoPageProps) {
               Usuario
             </p>
             <p className="mt-1 text-sm font-medium text-slate-950">
-              {creator?.full_name || creator?.email || "-"}
+              {resolveUserDisplayName(creator)}
             </p>
           </div>
           <div>

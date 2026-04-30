@@ -6,6 +6,7 @@ import { PreSalesKanban } from "@/components/pre-sales/pre-sales-kanban";
 import { PreSalesList } from "@/components/pre-sales/pre-sales-list";
 import { getCurrentUserContext } from "@/lib/auth/current-user";
 import { onlyDigits } from "@/lib/clients/masks";
+import { resolveUserDisplayName } from "@/lib/users/account";
 import type {
   ClientOption,
   PreSale,
@@ -82,7 +83,7 @@ export default async function PreVendasPage({ searchParams }: PreVendasPageProps
       .eq("company_id", companyId),
     supabase
       .from("user_profiles")
-      .select("id, full_name, email, role")
+      .select("id, full_name, username, email, role")
       .eq("company_id", companyId),
   ]);
 
@@ -152,7 +153,7 @@ export default async function PreVendasPage({ searchParams }: PreVendasPageProps
               <option value="">Todos os consultores</option>
               {consultants.map((consultant) => (
                 <option key={consultant.id} value={consultant.id}>
-                  {consultant.full_name || consultant.email}
+                  {resolveUserDisplayName(consultant, "Sem nome")}
                 </option>
               ))}
             </select>

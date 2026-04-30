@@ -5,6 +5,11 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { recordAuditLog } from "@/lib/audit/log";
 import { getCurrentUserContext } from "@/lib/auth/current-user";
 import {
+  buildInternalAuthEmail,
+  normalizeUsername,
+  resolveUserDisplayName,
+} from "@/lib/users/account";
+import {
   createCompanyUserSchema,
   updateCompanyUserSchema,
   type CreateCompanyUserPayload,
@@ -108,7 +113,7 @@ async function getCompanyUser(userId: string, companyId: string) {
   const { data, error } = await supabase
     .from("user_profiles")
     .select(
-      "id, auth_user_id, company_id, full_name, email, phone, role, is_active, invited_by, deactivated_at, deactivated_by, created_at, updated_at",
+      "id, auth_user_id, company_id, full_name, username, email, phone, role, is_active, invited_by, deactivated_at, deactivated_by, created_at, updated_at",
     )
     .eq("id", userId)
     .eq("company_id", companyId)
@@ -170,6 +175,7 @@ export async function createCompanyUserAction(
   }
 
   let createdAuthUserId: string | null = null;
+  let internalAuthEmail: string | null = null;
 
   try {
     const { supabase, companyId, role, userProfileId } = await getCurrentUserContext();
@@ -190,11 +196,14 @@ export async function createCompanyUserAction(
       );
     }
 
-    const { data: duplicatedUser, error: duplicatedUserError } = await supabase
+    const adminClient = createAdminClient();
+    const normalizedUsername = normalizeUsername(parsed.data.username);
+    internalAuthEmail = buildInternalAuthEmail(normalizedUsername);
+
+    const { data: duplicatedUser, error: duplicatedUserError } = await adminClient
       .from("user_profiles")
       .select("id")
-      .eq("company_id", companyId)
-      .ilike("email", parsed.data.email)
+      .eq("username", normalizedUsername)
       .maybeSingle();
 
     if (duplicatedUserError) {
@@ -202,16 +211,16 @@ export async function createCompanyUserAction(
     }
 
     if (duplicatedUser) {
-      return friendlyError("Ja existe usuario cadastrado com este email na empresa.");
+      return friendlyError("Ja existe usuario cadastrado com este login.");
     }
 
-    const adminClient = createAdminClient();
     const { data: authData, error: authError } = await adminClient.auth.admin.createUser({
-      email: parsed.data.email,
+      email: internalAuthEmail,
       password: parsed.data.temporary_password,
       email_confirm: true,
       user_metadata: {
         full_name: parsed.data.full_name,
+        username: normalizedUsername,
       },
     });
 
@@ -225,7 +234,8 @@ export async function createCompanyUserAction(
       auth_user_id: createdAuthUserId,
       company_id: companyId,
       full_name: parsed.data.full_name,
-      email: parsed.data.email,
+      username: normalizedUsername,
+      email: internalAuthEmail,
       phone: parsed.data.phone,
       role: parsed.data.role,
       is_active: true,
@@ -251,7 +261,7 @@ export async function createCompanyUserAction(
       entityId: createdAuthUserId,
       entityLabel: parsed.data.full_name,
       details: {
-        email: parsed.data.email,
+        username: normalizedUsername,
         role: parsed.data.role,
       },
     });
@@ -306,6 +316,25 @@ export async function updateCompanyUserAction(
       return friendlyError("Voce nao pode definir este cargo para o usuario.");
     }
 
+    const adminClient = createAdminClient();
+    const normalizedUsername = normalizeUsername(parsed.data.username);
+    const nextInternalAuthEmail = buildInternalAuthEmail(normalizedUsername);
+
+    const { data: duplicateUsername, error: duplicateUsernameError } = await adminClient
+      .from("user_profiles")
+      .select("id")
+      .eq("username", normalizedUsername)
+      .neq("id", userId)
+      .maybeSingle();
+
+    if (duplicateUsernameError) {
+      return friendlyError(duplicateUsernameError.message);
+    }
+
+    if (duplicateUsername) {
+      return friendlyError("Ja existe outro usuario com este login.");
+    }
+
     await ensureNotLastActiveAdmin(
       companyId,
       targetUser,
@@ -321,8 +350,25 @@ export async function updateCompanyUserAction(
       }
     }
 
+    const { error: authUpdateError } = await adminClient.auth.admin.updateUserById(
+      targetUser.auth_user_id,
+      {
+        email: nextInternalAuthEmail,
+        user_metadata: {
+          full_name: parsed.data.full_name,
+          username: normalizedUsername,
+        },
+      },
+    );
+
+    if (authUpdateError) {
+      return friendlyError(authUpdateError.message);
+    }
+
     const nextValues = {
       full_name: parsed.data.full_name,
+      username: normalizedUsername,
+      email: nextInternalAuthEmail,
       phone: parsed.data.phone,
       role: parsed.data.role,
       is_active: parsed.data.is_active,
@@ -360,6 +406,7 @@ export async function updateCompanyUserAction(
       entityId: userId,
       entityLabel: parsed.data.full_name,
       details: {
+        username: normalizedUsername,
         role: parsed.data.role,
         is_active: parsed.data.is_active,
       },
@@ -420,7 +467,7 @@ export async function toggleCompanyUserStatusAction(
         action: "user.deactivated",
         entityType: "user",
         entityId: userId,
-        entityLabel: targetUser.full_name || targetUser.email || userId,
+        entityLabel: resolveUserDisplayName(targetUser, userId),
         details: {
           role: targetUser.role,
         },
@@ -461,7 +508,7 @@ export async function toggleCompanyUserStatusAction(
       action: "user.activated",
       entityType: "user",
       entityId: userId,
-      entityLabel: targetUser.full_name || targetUser.email || userId,
+      entityLabel: resolveUserDisplayName(targetUser, userId),
       details: {
         role: targetUser.role,
       },

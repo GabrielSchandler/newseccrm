@@ -167,18 +167,23 @@ function CreateUserForm({
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-medium text-slate-700" htmlFor="email">
-            Email <span className="text-red-600">*</span>
+          <label className="text-sm font-medium text-slate-700" htmlFor="username">
+            Login <span className="text-red-600">*</span>
           </label>
           <input
-            id="email"
-            type="email"
+            id="username"
             className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
             disabled={disabled}
-            {...register("email")}
+            placeholder="nome.sobrenome"
+            autoCapitalize="none"
+            autoCorrect="off"
+            {...register("username")}
           />
-          {errors.email?.message ? (
-            <p className="text-sm text-red-600">{String(errors.email.message)}</p>
+          <p className="text-xs text-slate-500">
+            Este sera o login usado no acesso ao CRM.
+          </p>
+          {errors.username?.message ? (
+            <p className="text-sm text-red-600">{String(errors.username.message)}</p>
           ) : null}
         </div>
 
@@ -222,6 +227,11 @@ function CreateUserForm({
           {errors.role?.message ? (
             <p className="text-sm text-red-600">{String(errors.role.message)}</p>
           ) : null}
+        </div>
+
+        <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600 md:col-span-2">
+          O sistema cria e gerencia automaticamente um email interno para o Supabase
+          Auth. No uso diario do CRM, o acesso e feito pelo login acima.
         </div>
       </div>
 
@@ -297,6 +307,26 @@ function EditUserForm({
           />
           {errors.phone?.message ? (
             <p className="text-sm text-red-600">{String(errors.phone.message)}</p>
+          ) : null}
+        </div>
+
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-slate-700" htmlFor="username">
+            Login <span className="text-red-600">*</span>
+          </label>
+          <input
+            id="username"
+            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
+            disabled={disabled}
+            autoCapitalize="none"
+            autoCorrect="off"
+            {...register("username")}
+          />
+          <p className="text-xs text-slate-500">
+            Este login substitui o uso de email na entrada do CRM.
+          </p>
+          {errors.username?.message ? (
+            <p className="text-sm text-red-600">{String(errors.username.message)}</p>
           ) : null}
         </div>
 

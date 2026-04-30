@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { isValidPhone, onlyDigits } from "@/lib/clients/masks";
+import { isUsernameLike, normalizeUsername } from "@/lib/users/account";
 import type { CompanyUserProfile } from "@/types/user";
 
 const optionalText = z
@@ -10,9 +11,19 @@ const optionalPhone = optionalText
   .refine((value) => isValidPhone(value), "Informe um telefone valido.")
   .transform((value) => (value ? onlyDigits(value) : null));
 
+const usernameSchema = z
+  .string()
+  .trim()
+  .min(3, "Informe um login com pelo menos 3 caracteres.")
+  .transform((value) => normalizeUsername(value))
+  .refine(
+    (value) => value.length >= 3 && isUsernameLike(value),
+    "Use apenas letras, numeros, ponto, hifen ou underscore no login.",
+  );
+
 export const createCompanyUserSchema = z.object({
   full_name: z.string().trim().min(1, "Informe o nome completo."),
-  email: z.string().trim().min(1, "Informe o email.").email("Informe um email valido."),
+  username: usernameSchema,
   phone: optionalPhone,
   role: z.enum(["admin", "manager", "seller"], {
     required_error: "Selecione o cargo.",
@@ -26,6 +37,7 @@ export const createCompanyUserSchema = z.object({
 
 export const updateCompanyUserSchema = z.object({
   full_name: z.string().trim().min(1, "Informe o nome completo."),
+  username: usernameSchema,
   phone: optionalPhone,
   role: z.enum(["admin", "manager", "seller"], {
     required_error: "Selecione o cargo.",
@@ -41,7 +53,7 @@ export type UpdateCompanyUserPayload = z.output<typeof updateCompanyUserSchema>;
 
 export const createCompanyUserDefaultValues: CreateCompanyUserFormValues = {
   full_name: "",
-  email: "",
+  username: "",
   phone: "",
   role: "seller",
   temporary_password: "",
@@ -52,6 +64,7 @@ export function companyUserToFormValues(
 ): UpdateCompanyUserFormValues {
   return {
     full_name: user.full_name ?? "",
+    username: user.username ?? "",
     phone: user.phone ?? "",
     role: user.role ?? "seller",
     is_active: user.is_active,

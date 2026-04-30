@@ -1,71 +1,56 @@
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
 import { Eye, LogIn } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { createClient } from "@/lib/supabase/browser";
+import { useActionState, useEffect, useState } from "react";
+import { signInWithLoginAction, type LoginActionState } from "@/app/actions/auth";
 
-const loginSchema = z.object({
-  email: z.string().email("Informe um email valido."),
-  password: z.string().min(1, "Informe sua senha."),
-});
-
-type LoginFormData = z.infer<typeof loginSchema>;
+const initialState: LoginActionState = {
+  ok: false,
+  message: "",
+};
 
 export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [authError, setAuthError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [state, formAction, isPending] = useActionState(
+    signInWithLoginAction,
+    initialState,
+  );
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors, isSubmitting },
-  } = useForm<LoginFormData>({
-    resolver: zodResolver(loginSchema),
-    defaultValues: {
-      email: "",
-      password: "",
-    },
-  });
-
-  async function onSubmit(values: LoginFormData) {
-    setAuthError(null);
-
-    const supabase = createClient();
-    const { error } = await supabase.auth.signInWithPassword(values);
-
-    if (error) {
-      setAuthError("Nao foi possivel entrar. Confira email e senha.");
-      return;
+  useEffect(() => {
+    if (state.ok && state.redirectTo) {
+      router.replace(state.redirectTo);
+      router.refresh();
     }
-
-    const redirectedFrom = searchParams.get("redirectedFrom");
-    router.replace(redirectedFrom || "/");
-    router.refresh();
-  }
+  }, [router, state]);
 
   return (
-    <form className="space-y-5" onSubmit={handleSubmit(onSubmit)}>
+    <form className="space-y-5" action={formAction}>
+      <input
+        type="hidden"
+        name="redirectedFrom"
+        value={searchParams.get("redirectedFrom") ?? "/"}
+      />
       <div className="space-y-2">
-        <label className="text-sm font-medium text-slate-700" htmlFor="email">
-          Email
+        <label className="text-sm font-medium text-slate-700" htmlFor="login">
+          Login
         </label>
         <input
-          id="email"
-          type="email"
-          autoComplete="email"
+          id="login"
+          name="login"
+          type="text"
+          autoComplete="username"
           className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
-          placeholder="voce@empresa.com"
-          {...register("email")}
+          placeholder="nome.sobrenome"
+          autoCapitalize="none"
+          autoCorrect="off"
+          required
         />
-        {errors.email ? (
-          <p className="text-sm text-red-600">{errors.email.message}</p>
-        ) : null}
+        <p className="text-xs text-slate-500">
+          Durante a transicao, o acesso antigo por email tambem continua funcionando.
+        </p>
       </div>
 
       <div className="space-y-2">
@@ -75,11 +60,12 @@ export function LoginForm() {
         <div className="relative">
           <input
             id="password"
+            name="password"
             type={showPassword ? "text" : "password"}
             autoComplete="current-password"
             className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 pr-11 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
             placeholder="Digite sua senha"
-            {...register("password")}
+            required
           />
           <button
             type="button"
@@ -90,24 +76,21 @@ export function LoginForm() {
             <Eye className="h-4 w-4" />
           </button>
         </div>
-        {errors.password ? (
-          <p className="text-sm text-red-600">{errors.password.message}</p>
-        ) : null}
       </div>
 
-      {authError ? (
+      {!state.ok && state.message ? (
         <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-          {authError}
+          {state.message}
         </div>
       ) : null}
 
       <button
         type="submit"
-        disabled={isSubmitting}
+        disabled={isPending}
         className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-70"
       >
         <LogIn className="h-4 w-4" />
-        {isSubmitting ? "Entrando..." : "Entrar"}
+        {isPending ? "Entrando..." : "Entrar"}
       </button>
     </form>
   );

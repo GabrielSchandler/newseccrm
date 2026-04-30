@@ -189,7 +189,7 @@ export const documentVariableCatalog = [
   },
   {
     group: "Consultor",
-    variables: ["consultor_nome", "consultor_email"],
+    variables: ["consultor_nome", "consultor_login", "consultor_email"],
   },
   {
     group: "Auxiliares",
@@ -752,10 +752,11 @@ export function buildDocumentVariables(context: DocumentTemplateContext) {
       stringFromUnknown(companyRecord.trade_name) ||
       stringFromUnknown(companyRecord.fantasy_name) ||
       stringFromUnknown(companyRecord.nome_fantasia),
-    empresa_cnpj: stringFromUnknown(companyRecord.cnpj),
-    consultor_nome: formatText(consultant?.full_name),
-    consultor_email: formatText(consultant?.email),
-    data_atual: new Intl.DateTimeFormat("pt-BR").format(now),
+      empresa_cnpj: stringFromUnknown(companyRecord.cnpj),
+      consultor_nome: formatText(consultant?.full_name ?? consultant?.username ?? consultant?.email),
+      consultor_login: formatText(consultant?.username ?? consultant?.email),
+      consultor_email: formatText(consultant?.username ?? consultant?.email),
+      data_atual: new Intl.DateTimeFormat("pt-BR").format(now),
     hora_atual: new Intl.DateTimeFormat("pt-BR", {
       hour: "2-digit",
       minute: "2-digit",

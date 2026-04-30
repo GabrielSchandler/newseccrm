@@ -12,7 +12,7 @@ export default function LoginPage() {
           Acesse sua conta
         </h1>
         <p className="mt-2 text-sm leading-6 text-slate-600">
-          Entre com o usuario criado no Supabase Auth para acessar o painel.
+          Entre com seu login da empresa para acessar o painel.
         </p>
       </div>
       <Suspense>

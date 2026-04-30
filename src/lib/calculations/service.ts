@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { getCurrentUserContext } from "@/lib/auth/current-user";
+import { resolveUserDisplayName } from "@/lib/users/account";
 import { formatPreSaleType } from "@/lib/pre-sales/formatters";
 import type {
   CalculationClientOption,
@@ -104,7 +105,7 @@ export async function listCalculationCreators(userIds: string[]) {
   const { supabase, companyId } = await getCurrentUserContext();
   const { data, error } = await supabase
     .from("user_profiles")
-    .select("id, full_name, email")
+    .select("id, full_name, username, email")
     .eq("company_id", companyId)
     .in("id", uniqueIds);
 
@@ -115,6 +116,7 @@ export async function listCalculationCreators(userIds: string[]) {
   return (data ?? []) as Array<{
     id: string;
     full_name: string | null;
+    username: string | null;
     email: string | null;
   }>;
 }
@@ -198,7 +200,7 @@ export async function listCalculationPreSales() {
       .in("pre_sale_id", preSaleIds),
     supabase
       .from("user_profiles")
-      .select("id, full_name")
+      .select("id, full_name, username")
       .eq("company_id", companyId),
   ]);
 
@@ -221,7 +223,10 @@ export async function listCalculationPreSales() {
     (financialCasesData ?? []).map((item) => [item.pre_sale_id, item]),
   );
   const consultantMap = new Map(
-    (consultantsData ?? []).map((user) => [user.id, user.full_name ?? null]),
+    (consultantsData ?? []).map((user) => [
+      user.id,
+      resolveUserDisplayName(user, ""),
+    ]),
   );
 
   return preSales.map((preSale) => {

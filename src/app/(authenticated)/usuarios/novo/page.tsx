@@ -34,7 +34,7 @@ export default async function NovoUsuarioPage() {
     <>
       <PageHeader
         title="Novo usuario"
-        description="Crie um acesso para a empresa respeitando o limite de licencas contratado."
+        description="Crie um acesso com login proprio para a empresa respeitando o limite de licencas contratado."
       />
       <div className="space-y-6 p-6">
         <div className="rounded-lg border border-slate-200 bg-white p-4 text-sm text-slate-700 shadow-sm">

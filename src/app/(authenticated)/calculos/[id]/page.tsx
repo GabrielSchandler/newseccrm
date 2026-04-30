@@ -15,6 +15,7 @@ import {
   formatCpfDigits,
 } from "@/lib/calculations/formatters";
 import { assertCalculationAccess, canManageCalculations } from "@/lib/calculations/service";
+import { resolveUserDisplayName } from "@/lib/users/account";
 
 type CalculoPageProps = {
   params: Promise<{ id: string }>;
@@ -78,16 +79,14 @@ export default async function CalculoPage({
   const { data: creatorData } = calculation.created_by
     ? await supabase
         .from("user_profiles")
-        .select("full_name, email")
+        .select("full_name, username, email")
         .eq("id", calculation.created_by)
         .maybeSingle()
     : { data: null };
-  const creatorName =
-    (creatorData as { full_name?: string | null; email?: string | null } | null)
-      ?.full_name ??
-    (creatorData as { full_name?: string | null; email?: string | null } | null)
-      ?.email ??
-    "Nao informado";
+  const creatorName = resolveUserDisplayName(
+    creatorData as { full_name?: string | null; username?: string | null; email?: string | null } | null,
+    "Nao informado",
+  );
   const successMessage =
     queryParams.success === "created"
       ? "Simulacao salva com sucesso."

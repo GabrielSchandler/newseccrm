@@ -3,6 +3,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { getCurrentUserContext } from "@/lib/auth/current-user";
 import { canAccessAuditLogs } from "@/lib/audit/log";
 import { displayValue, formatDateTime } from "@/lib/clients/formatters";
+import { resolveUserDisplayName } from "@/lib/users/account";
 import type { CompanyAuditLog } from "@/types/audit-log";
 
 type LogsPageProps = {
@@ -63,7 +64,7 @@ export default async function LogsPage({ searchParams }: LogsPageProps) {
   const { data: userProfiles } = userIds.length
     ? await supabase
         .from("user_profiles")
-        .select("id, full_name, email")
+        .select("id, full_name, username, email")
         .eq("company_id", companyId)
         .in("id", userIds)
     : { data: [] };
@@ -71,6 +72,7 @@ export default async function LogsPage({ searchParams }: LogsPageProps) {
   const users = (userProfiles ?? []) as Array<{
     id: string;
     full_name: string | null;
+    username: string | null;
     email: string | null;
   }>;
 
@@ -108,7 +110,7 @@ export default async function LogsPage({ searchParams }: LogsPageProps) {
             <option value="">Todos os usuarios</option>
             {users.map((user) => (
               <option key={user.id} value={user.id}>
-                {user.full_name || user.email || user.id}
+                {resolveUserDisplayName(user, user.id)}
               </option>
             ))}
           </select>
@@ -162,7 +164,7 @@ export default async function LogsPage({ searchParams }: LogsPageProps) {
                           {formatDateTime(log.created_at)}
                         </td>
                         <td className="px-4 py-3 text-slate-700">
-                          {user?.full_name || user?.email || "Sistema"}
+                          {resolveUserDisplayName(user, "Sistema")}
                         </td>
                         <td className="px-4 py-3 font-medium text-slate-900">
                           {log.action}

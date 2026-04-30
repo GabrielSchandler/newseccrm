@@ -446,12 +446,12 @@ async function getDocumentContext(preSaleId: string, companyId: string) {
       .eq("company_id", companyId)
       .maybeSingle(),
     preSale.consultant_user_id
-      ? supabase
-          .from("user_profiles")
-          .select("id, full_name, email, role")
-          .eq("id", preSale.consultant_user_id)
-          .eq("company_id", companyId)
-          .maybeSingle()
+        ? supabase
+            .from("user_profiles")
+            .select("id, full_name, username, email, role")
+            .eq("id", preSale.consultant_user_id)
+            .eq("company_id", companyId)
+            .maybeSingle()
       : Promise.resolve({ data: null }),
   ]);
 

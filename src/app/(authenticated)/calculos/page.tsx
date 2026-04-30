@@ -14,6 +14,7 @@ import {
   listCalculationCreators,
 } from "@/lib/calculations/service";
 import { onlyDigits } from "@/lib/clients/masks";
+import { resolveUserDisplayName } from "@/lib/users/account";
 import type { FinancingCalculation } from "@/types/calculation";
 
 type CalculosPageProps = {
@@ -89,7 +90,7 @@ export default async function CalculosPage({ searchParams }: CalculosPageProps) 
   const creatorMap = new Map(
     creators.map((creator) => [
       creator.id,
-      creator.full_name ?? creator.email ?? "Nao informado",
+      resolveUserDisplayName(creator, "Nao informado"),
     ]),
   );
   const bannerMessage = successMessage(params.success);

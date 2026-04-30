@@ -65,7 +65,7 @@ export default async function EditarPreVendaPage({ params }: EditarPreVendaPageP
         .order("full_name", { ascending: true }),
       supabase
         .from("user_profiles")
-        .select("id, full_name, email, role")
+        .select("id, full_name, username, email, role")
         .eq("company_id", companyId)
         .order("full_name", { ascending: true }),
     ]);

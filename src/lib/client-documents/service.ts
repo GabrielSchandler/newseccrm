@@ -168,7 +168,7 @@ export async function listUploaderProfiles(userIds: string[]) {
   const { supabase, companyId } = await getCurrentUserContext();
   const { data, error } = await supabase
     .from("user_profiles")
-    .select("id, full_name, email")
+    .select("id, full_name, username, email")
     .eq("company_id", companyId)
     .in("id", uniqueIds);
 
@@ -179,6 +179,7 @@ export async function listUploaderProfiles(userIds: string[]) {
   return (data ?? []) as Array<{
     id: string;
     full_name: string | null;
+    username: string | null;
     email: string | null;
   }>;
 }

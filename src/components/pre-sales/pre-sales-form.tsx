@@ -24,6 +24,7 @@ import {
   type PreSaleFormValues,
   type PreSalePayload,
 } from "@/lib/pre-sales/schema";
+import { resolveUserDisplayName } from "@/lib/users/account";
 import {
   preSaleStatuses,
   preSaleTypes,
@@ -348,7 +349,7 @@ export function PreSalesForm({
             <option value="">Sem consultor</option>
             {consultants.map((consultant) => (
               <option key={consultant.id} value={consultant.id}>
-                {consultant.full_name || consultant.email}
+                {resolveUserDisplayName(consultant, "Sem nome")}
               </option>
             ))}
           </select>

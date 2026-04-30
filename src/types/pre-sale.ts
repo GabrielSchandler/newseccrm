@@ -13,6 +13,7 @@ export type PreSaleType = "emprestimo" | "imovel" | "veiculo";
 export type UserProfileOption = {
   id: string;
   full_name: string | null;
+  username: string | null;
   email: string | null;
   role: string | null;
 };

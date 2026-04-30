@@ -7,6 +7,7 @@ import {
   listUploaderProfiles,
 } from "@/lib/client-documents/service";
 import { getCurrentUserContext } from "@/lib/auth/current-user";
+import { resolveUserDisplayName } from "@/lib/users/account";
 
 type ClientDocumentsSectionProps = {
   clientId: string;
@@ -27,7 +28,7 @@ export async function ClientDocumentsSection({
     : await listClientDocumentsByClient(clientId);
   const uploaders = await listUploaderProfiles(documents.map((document) => document.uploaded_by ?? ""));
   const uploaderMap = new Map(
-    uploaders.map((user) => [user.id, user.full_name ?? user.email ?? null]),
+    uploaders.map((user) => [user.id, resolveUserDisplayName(user, "") || null]),
   );
   const enrichedDocuments = documents.map((document) => ({
     ...document,

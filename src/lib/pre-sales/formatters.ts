@@ -1,4 +1,5 @@
 import { preSaleTypes, type PreSaleType } from "@/types/pre-sale";
+import { resolveUserDisplayName } from "@/lib/users/account";
 
 export function formatCurrency(value: number | string | null) {
   if (value === null || value === "") {
@@ -17,8 +18,10 @@ export function formatCurrency(value: number | string | null) {
   }).format(numericValue);
 }
 
-export function formatUserName(user: { full_name: string | null; email: string | null } | null) {
-  return user?.full_name || user?.email || "-";
+export function formatUserName(
+  user: { full_name: string | null; username?: string | null; email: string | null } | null,
+) {
+  return resolveUserDisplayName(user);
 }
 
 export function formatPreSaleType(type: PreSaleType | null | undefined) {
