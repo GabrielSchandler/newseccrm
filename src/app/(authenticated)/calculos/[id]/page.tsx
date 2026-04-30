@@ -2,6 +2,7 @@ import { Edit } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
+import { CalculationDeleteButton } from "@/components/calculations/calculation-delete-button";
 import { CalculationPdfActions } from "@/components/calculations/calculation-pdf-actions";
 import { CalculationStatusBadge } from "@/components/calculations/calculation-status-badge";
 import { ClientToast } from "@/components/clients/client-toast";
@@ -89,16 +90,16 @@ export default async function CalculoPage({
     "Nao informado";
   const successMessage =
     queryParams.success === "created"
-      ? "Calculo salvo com sucesso."
+      ? "Simulacao salva com sucesso."
       : queryParams.success === "updated"
-        ? "Calculo atualizado com sucesso."
+        ? "Simulacao atualizada com sucesso."
         : null;
 
   return (
     <>
       <PageHeader
         title={calculation.client_name}
-        description="Relatorio operacional do calculo revisional pronto para consulta, ajuste e emissao do PDF."
+        description="Relatorio operacional da simulacao revisional pronto para consulta, ajuste e emissao do PDF."
       />
       <div className="space-y-6 p-6">
         {successMessage ? <ClientToast message={successMessage} /> : null}
@@ -115,8 +116,9 @@ export default async function CalculoPage({
             href="/calculos"
             className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
           >
-            Voltar para calculos
+            Voltar para simulacoes
           </Link>
+          <CalculationDeleteButton calculationId={calculation.id} />
           {calculation.client_id ? (
             <Link
               href={`/clientes/${calculation.client_id}`}
@@ -135,7 +137,7 @@ export default async function CalculoPage({
           ) : null}
         </div>
 
-        <DetailSection title="Resumo do calculo">
+        <DetailSection title="Resumo da simulacao">
           <DetailItem label="Status" value={<CalculationStatusBadge status={calculation.status} />} />
           <DetailItem label="Financeira" value={calculation.financial_institution ?? "Nao informado"} />
           <DetailItem label="Criado por" value={creatorName} />
@@ -165,7 +167,7 @@ export default async function CalculoPage({
         </DetailSection>
 
         <DetailSection
-          title="Resultado do calculo"
+          title="Resultado da simulacao"
           description="Comparativo entre o cenario atual do financiamento e a revisao estimada pela metodologia da planilha."
         >
           <DetailItem
@@ -254,7 +256,7 @@ export default async function CalculoPage({
         <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
           <h2 className="text-base font-semibold text-slate-950">Observacao final</h2>
           <p className="mt-3 text-sm leading-6 text-slate-700">
-            Todos os valores informados neste calculo foram baseados em taxas
+            Todos os valores informados nesta simulacao foram baseados em taxas
             medias utilizadas pelo mercado na categoria de financiamentos
             bancarios. Os verdadeiros valores serao revogados e decididos
             posteriormente a prestacao de servicos.

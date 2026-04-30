@@ -14,17 +14,17 @@ export async function ClientCalculationsSection({ clientId }: { clientId: string
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-base font-semibold text-slate-950">
-            Calculos do cliente
+            Simulacoes do cliente
           </h2>
           <p className="mt-1 text-sm leading-6 text-slate-600">
-            Consulte os calculos revisionais vinculados a este cliente.
+            Consulte as simulacoes revisionais vinculadas a este cliente.
           </p>
         </div>
         <Link
           href={`/calculos/novo?clientId=${clientId}`}
           className="rounded-lg bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-800"
         >
-          Novo calculo
+          Nova simulacao
         </Link>
       </div>
 
@@ -71,7 +71,7 @@ export async function ClientCalculationsSection({ clientId }: { clientId: string
             {!calculations.length ? (
               <tr>
                 <td className="px-4 py-6 text-center text-slate-500" colSpan={6}>
-                  Nenhum calculo encontrado para este cliente.
+                  Nenhuma simulacao encontrada para este cliente.
                 </td>
               </tr>
             ) : null}

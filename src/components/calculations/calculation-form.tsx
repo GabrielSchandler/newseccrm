@@ -690,7 +690,7 @@ export function CalculationForm({
           disabled={disabled}
           className="rounded-lg bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-70"
         >
-          {disabled ? "Calculando..." : submitLabel}
+          {disabled ? "Salvando simulacao..." : submitLabel}
         </button>
         <button
           type="button"
@@ -703,7 +703,7 @@ export function CalculationForm({
           href="/calculos"
           className="rounded-lg px-4 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-slate-950"
         >
-          Lista de calculos
+          Lista de simulacoes
         </Link>
       </div>
     </form>

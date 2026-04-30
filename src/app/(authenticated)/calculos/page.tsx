@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { CalculationDeleteButton } from "@/components/calculations/calculation-delete-button";
 import { CalculationPdfActions } from "@/components/calculations/calculation-pdf-actions";
 import { CalculationStatusBadge } from "@/components/calculations/calculation-status-badge";
 import { PageHeader } from "@/components/layout/page-header";
@@ -27,11 +28,15 @@ type CalculosPageProps = {
 
 function successMessage(success?: string) {
   if (success === "created") {
-    return "Calculo criado com sucesso.";
+    return "Simulacao criada com sucesso.";
   }
 
   if (success === "updated") {
-    return "Calculo atualizado com sucesso.";
+    return "Simulacao atualizada com sucesso.";
+  }
+
+  if (success === "deleted") {
+    return "Simulacao excluida com sucesso.";
   }
 
   return null;
@@ -92,8 +97,8 @@ export default async function CalculosPage({ searchParams }: CalculosPageProps) 
   return (
     <>
       <PageHeader
-        title="Calculos"
-        description="Central de calculo revisional com historico, filtros e geracao de PDF para o cliente."
+        title="Simulacoes"
+        description="Central de simulacoes revisionais com historico, filtros e geracao de PDF para o cliente."
       />
       <div className="space-y-6 p-6">
         {bannerMessage ? (
@@ -172,11 +177,11 @@ export default async function CalculosPage({ searchParams }: CalculosPageProps) 
         </section>
 
         <div className="flex justify-end">
-          <Link
-            href="/calculos/novo"
-            className="rounded-lg bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-800"
-          >
-            Novo calculo
+            <Link
+              href="/calculos/novo"
+              className="rounded-lg bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-800"
+            >
+            Nova simulacao
           </Link>
         </div>
 
@@ -253,6 +258,10 @@ export default async function CalculosPage({ searchParams }: CalculosPageProps) 
                             >
                               Editar
                             </Link>
+                            <CalculationDeleteButton
+                              calculationId={calculation.id}
+                              variant="inline"
+                            />
                           </div>
                           <CalculationPdfActions
                             calculationId={calculation.id}
@@ -265,7 +274,7 @@ export default async function CalculosPage({ searchParams }: CalculosPageProps) 
                   {!calculations.length ? (
                     <tr>
                       <td className="px-4 py-6 text-center text-slate-500" colSpan={11}>
-                        Nenhum calculo encontrado.
+                        Nenhuma simulacao encontrada.
                       </td>
                     </tr>
                   ) : null}

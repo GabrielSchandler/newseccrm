@@ -98,19 +98,19 @@ export default async function NovoCalculoPage({
   return (
     <>
       <PageHeader
-        title="Novo calculo"
+        title="Nova simulacao"
         description="Preencha os dados operacionais, revise os numeros e gere uma analise sintetizada para o cliente."
       />
       <div className="space-y-6 p-6">
         {loadError ? (
           <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
             Nao foi possivel carregar as listas auxiliares de clientes e pre-vendas.
-            Voce ainda pode preencher o calculo manualmente. Detalhe: {loadError}
+            Voce ainda pode preencher a simulacao manualmente. Detalhe: {loadError}
           </div>
         ) : null}
         <CalculationForm
           mode="create"
-          submitLabel="Calcular e salvar"
+          submitLabel="Calcular e salvar simulacao"
           clients={clients}
           preSales={preSales}
           defaultValues={defaultValues}

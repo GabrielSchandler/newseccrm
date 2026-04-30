@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { updateFinancingCalculationAction } from "@/app/(authenticated)/calculos/actions";
+import { CalculationDeleteButton } from "@/components/calculations/calculation-delete-button";
 import { CalculationForm } from "@/components/calculations/calculation-form";
 import { PageHeader } from "@/components/layout/page-header";
 import { getCurrentUserContext } from "@/lib/auth/current-user";
@@ -46,19 +47,20 @@ export default async function EditarCalculoPage({
   return (
     <>
       <PageHeader
-        title="Editar calculo"
+        title="Editar simulacao"
         description="Atualize os dados do financiamento e recalcule os resultados preservando o historico do atendimento."
       />
       <div className="space-y-6 p-6">
+        <CalculationDeleteButton calculationId={id} />
         {loadError ? (
           <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
             Nao foi possivel carregar as listas auxiliares de clientes e pre-vendas.
-            Voce ainda pode editar o calculo manualmente. Detalhe: {loadError}
+            Voce ainda pode editar a simulacao manualmente. Detalhe: {loadError}
           </div>
         ) : null}
         <CalculationForm
           mode="edit"
-          submitLabel="Salvar recalculo"
+          submitLabel="Salvar simulacao"
           clients={clients}
           preSales={preSales}
           defaultValues={financingCalculationToFormValues(calculation)}

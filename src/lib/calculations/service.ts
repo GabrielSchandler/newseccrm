@@ -17,7 +17,7 @@ export async function assertCalculationAccess(calculationId: string) {
   const { supabase, companyId, role } = await getCurrentUserContext();
 
   if (!canManageCalculations(role)) {
-    throw new Error("Voce nao tem permissao para acessar calculos.");
+    throw new Error("Voce nao tem permissao para acessar simulacoes.");
   }
 
   const { data, error } = await supabase

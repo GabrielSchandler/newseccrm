@@ -96,6 +96,6 @@ export const financingCalculationStatuses: Array<{
   value: FinancingCalculationStatus;
   label: string;
 }> = [
-  { value: "calculado", label: "Calculado" },
+  { value: "calculado", label: "Simulada" },
   { value: "pdf_gerado", label: "PDF gerado" },
 ];

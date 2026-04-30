@@ -208,7 +208,7 @@ export default async function PreVendaPage({ params, searchParams }: PreVendaPag
             href={`/calculos/novo?preSaleId=${preSale.id}`}
             className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
           >
-            Criar calculo
+            Criar simulacao
           </Link>
           <GenerateDocumentModal preSaleId={preSale.id} templates={templates} />
           <WhatsAppLink phone={snapshot?.phone_mobile ?? client?.phone_mobile ?? null} />
