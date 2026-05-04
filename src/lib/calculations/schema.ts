@@ -1,5 +1,9 @@
 import { z } from "zod";
 import { formatCpf, formatPhone, isValidPhone, onlyDigits } from "@/lib/clients/masks";
+import {
+  formatNumberForPtBrInput,
+  parseBrazilianDecimalInput,
+} from "@/lib/calculations/currency";
 import type { FinancingCalculation } from "@/types/calculation";
 
 const optionalText = z
@@ -24,15 +28,7 @@ const optionalPhone = optionalText
 
 const optionalNumber = z
   .union([z.string(), z.number(), z.null(), z.undefined()])
-  .transform((value) => {
-    if (value === null || value === undefined || value === "") {
-      return null;
-    }
-
-    const normalized = String(value).replace(/\./g, "").replace(",", ".");
-    const parsed = Number(normalized);
-    return Number.isFinite(parsed) ? parsed : Number.NaN;
-  })
+  .transform((value) => parseBrazilianDecimalInput(value))
   .refine((value) => value === null || !Number.isNaN(value), "Informe um valor valido.")
   .refine((value) => value === null || value >= 0, "Informe um valor maior ou igual a zero.");
 
@@ -101,20 +97,7 @@ export const financingCalculationDefaultValues: FinancingCalculationFormValues =
 };
 
 function numberToInput(value: number | string | null | undefined) {
-  if (value === null || value === undefined || value === "") {
-    return "";
-  }
-
-  const parsed = Number(value);
-
-  if (!Number.isFinite(parsed)) {
-    return "";
-  }
-
-  return new Intl.NumberFormat("pt-BR", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(parsed);
+  return formatNumberForPtBrInput(value);
 }
 
 function integerToInput(value: number | string | null | undefined) {

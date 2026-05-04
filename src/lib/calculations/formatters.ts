@@ -1,4 +1,5 @@
 import { onlyDigits } from "@/lib/clients/masks";
+import { parseBrazilianDecimalInput } from "@/lib/calculations/currency";
 import {
   financingCalculationStatuses,
   type FinancingCalculationStatus,
@@ -15,9 +16,9 @@ export function formatCalculationCurrency(value: number | string | null | undefi
     return "Nao informado";
   }
 
-  const numeric = typeof value === "number" ? value : Number(value);
+  const numeric = parseBrazilianDecimalInput(value);
 
-  if (!Number.isFinite(numeric)) {
+  if (numeric === null || !Number.isFinite(numeric)) {
     return "Nao informado";
   }
 

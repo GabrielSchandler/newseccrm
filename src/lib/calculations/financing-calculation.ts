@@ -1,4 +1,5 @@
 import type { FinancingCalculationComputedValues } from "@/types/calculation";
+import { parseBrazilianDecimalInput } from "@/lib/calculations/currency";
 
 export const DEFAULT_INSTALLMENT_ADJUSTMENT_FACTOR = 0.7;
 
@@ -13,17 +14,9 @@ type CalculationInput = {
 };
 
 function toNumber(value: number | string | null | undefined) {
-  if (value === null || value === undefined || value === "") {
-    return 0;
-  }
+  const parsed = parseBrazilianDecimalInput(value);
 
-  const normalized =
-    typeof value === "string"
-      ? value.replace(/\./g, "").replace(",", ".").replace(/[^\d.-]/g, "")
-      : value;
-  const parsed = Number(normalized);
-
-  if (!Number.isFinite(parsed) || parsed < 0) {
+  if (parsed === null || !Number.isFinite(parsed) || parsed < 0) {
     return 0;
   }
 
