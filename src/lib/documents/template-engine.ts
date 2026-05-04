@@ -47,6 +47,15 @@ export type RenderedDocument = {
   variables: Record<string, string>;
 };
 
+function escapeHtml(value: string) {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
 const paymentDocumentVariables = Array.from({ length: 10 }, (_, index) => {
   const paymentIndex = index + 1;
 
@@ -774,7 +783,7 @@ export function renderDocumentTemplate(
   const variables = buildDocumentVariables(context);
   const renderedContent = content.replace(
     /{{\s*([\w_]+)\s*}}/g,
-    (_, key: string) => variables[key] ?? "",
+    (_, key: string) => escapeHtml(variables[key] ?? ""),
   );
 
   return {

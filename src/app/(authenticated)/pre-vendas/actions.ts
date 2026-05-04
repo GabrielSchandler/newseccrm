@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { recordAuditLog } from "@/lib/audit/log";
 import { getCurrentUserContext } from "@/lib/auth/current-user";
+import { assertPreSaleAccess, canManageAllPreSales } from "@/lib/pre-sales/access";
 import { preSaleFormSchema, type PreSalePayload } from "@/lib/pre-sales/schema";
 import type { PreSaleStatus } from "@/types/pre-sale";
 
@@ -66,31 +67,6 @@ async function assertUserBelongsToCompany(userProfileId: string, companyId: stri
   }
 
   return Boolean(data);
-}
-
-async function canEditPreSale(preSaleId: string, companyId: string, userProfileId: string, role: string | null) {
-  const { supabase } = await getCurrentUserContext();
-  const { data, error } = await supabase
-    .from("pre_sales")
-    .select("id, consultant_user_id")
-    .eq("id", preSaleId)
-    .eq("company_id", companyId)
-    .maybeSingle();
-  const preSale = data as { id: string; consultant_user_id: string | null } | null;
-
-  if (error) {
-    throw error;
-  }
-
-  if (!preSale) {
-    return false;
-  }
-
-  if (role === "admin" || role === "manager") {
-    return true;
-  }
-
-  return preSale.consultant_user_id === userProfileId;
 }
 
 function splitPreSalePayload(values: PreSalePayload) {
@@ -302,7 +278,7 @@ export async function createPreSaleAction(
   let preSaleId = "";
 
   try {
-    const { supabase, companyId, userProfileId } = await getCurrentUserContext();
+    const { supabase, companyId, userProfileId, role } = await getCurrentUserContext();
     const {
       preSaleValues,
       snapshotValues,
@@ -327,10 +303,26 @@ export async function createPreSaleAction(
       }
     }
 
+    if (
+      role === "seller" &&
+      parsed.data.consultant_user_id &&
+      parsed.data.consultant_user_id !== userProfileId
+    ) {
+      return friendlyError(
+        "Consultores so podem criar pre-vendas vinculadas ao proprio usuario.",
+      );
+    }
+
+    const consultantUserId =
+      role === "seller"
+        ? userProfileId
+        : parsed.data.consultant_user_id || null;
+
     const { data, error } = await supabase
       .from("pre_sales")
       .insert({
         ...preSaleValues,
+        consultant_user_id: consultantUserId,
         company_id: companyId,
         created_by: userProfileId,
       })
@@ -390,11 +382,7 @@ export async function updatePreSaleAction(
       financialCaseValues,
       payments,
     } = splitPreSalePayload(parsed.data);
-    const canEdit = await canEditPreSale(preSaleId, companyId, userProfileId, role);
-
-    if (!canEdit) {
-      return friendlyError("Voce nao tem permissao para editar esta pre-venda.");
-    }
+    await assertPreSaleAccess(preSaleId);
 
     const clientExists = await assertClientExistsInCompany(parsed.data.client_id, companyId);
 
@@ -402,10 +390,26 @@ export async function updatePreSaleAction(
       return friendlyError("Selecione um cliente da empresa.");
     }
 
+    if (
+      role === "seller" &&
+      parsed.data.consultant_user_id &&
+      parsed.data.consultant_user_id !== userProfileId
+    ) {
+      return friendlyError(
+        "Consultores so podem manter a pre-venda vinculada ao proprio usuario.",
+      );
+    }
+
+    const consultantUserId =
+      role === "seller"
+        ? userProfileId
+        : parsed.data.consultant_user_id || null;
+
     const { error } = await supabase
       .from("pre_sales")
       .update({
         ...preSaleValues,
+        consultant_user_id: consultantUserId,
         updated_at: new Date().toISOString(),
       })
       .eq("id", preSaleId)
@@ -450,12 +454,8 @@ export async function updatePreSaleStatusAction(
   status: PreSaleStatus,
 ): Promise<PreSaleActionState> {
   try {
-    const { supabase, companyId, userProfileId, role } = await getCurrentUserContext();
-    const canEdit = await canEditPreSale(preSaleId, companyId, userProfileId, role);
-
-    if (!canEdit) {
-      return friendlyError("Voce nao tem permissao para alterar esta pre-venda.");
-    }
+    const { supabase, companyId, userProfileId } = await getCurrentUserContext();
+    await assertPreSaleAccess(preSaleId);
 
     const { error } = await supabase
       .from("pre_sales")
@@ -503,7 +503,7 @@ export async function deletePreSaleAction(preSaleId: string): Promise<PreSaleAct
   try {
       const { supabase, companyId, role, userProfileId } = await getCurrentUserContext();
 
-    if (role !== "admin" && role !== "manager") {
+    if (!canManageAllPreSales(role)) {
       return friendlyError("Apenas admin ou manager podem excluir pre-vendas.");
     }
 

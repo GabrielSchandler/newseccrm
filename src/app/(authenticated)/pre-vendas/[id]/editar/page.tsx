@@ -5,6 +5,7 @@ import { PreSaleDeleteButton } from "@/components/pre-sales/pre-sale-delete-butt
 import { PreSalesForm } from "@/components/pre-sales/pre-sales-form";
 import { getCurrentUserContext } from "@/lib/auth/current-user";
 import { formatDateTime } from "@/lib/clients/formatters";
+import { canAccessPreSaleRecord, canManageAllPreSales } from "@/lib/pre-sales/access";
 import { preSaleToFormValues } from "@/lib/pre-sales/schema";
 import type {
   ClientOption,
@@ -79,15 +80,16 @@ export default async function EditarPreVendaPage({ params }: EditarPreVendaPageP
     notFound();
   }
 
-  const canEdit =
-    role === "admin" ||
-    role === "manager" ||
-    preSale.consultant_user_id === userProfileId;
+  const canEdit = canAccessPreSaleRecord(role, userProfileId, preSale);
   const canDelete = role === "admin" || role === "manager";
 
   if (!canEdit) {
     notFound();
   }
+
+  const consultants = ((consultantsData ?? []) as UserProfileOption[]).filter((consultant) =>
+    canManageAllPreSales(role) ? true : consultant.id === userProfileId,
+  );
 
   return (
     <>
@@ -100,7 +102,7 @@ export default async function EditarPreVendaPage({ params }: EditarPreVendaPageP
         <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
           <PreSalesForm
             clients={(clientsData ?? []) as ClientOption[]}
-            consultants={(consultantsData ?? []) as UserProfileOption[]}
+            consultants={consultants}
             submitLabel="Salvar alteracoes"
             openingDateLabel={formatDateTime(preSale.created_at)}
             defaultValues={preSaleToFormValues(

@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { DocumentPrintActions } from "@/components/documents/document-print-actions";
 import { DocumentRenderedContent } from "@/components/documents/document-rendered-content";
 import { getCurrentUserContext } from "@/lib/auth/current-user";
+import { assertGeneratedDocumentAccess } from "@/lib/documents/access";
 import type { GeneratedDocument } from "@/types/document";
 
 type PrintDocumentPageProps = {
@@ -15,16 +16,16 @@ export default async function PrintDocumentPage({
   searchParams,
 }: PrintDocumentPageProps) {
   const [{ id }, query] = await Promise.all([params, searchParams]);
-  const { supabase, companyId } = await getCurrentUserContext();
-  const { data, error } = await supabase
-    .from("generated_documents")
-    .select("*")
-    .eq("id", id)
-    .eq("company_id", companyId)
-    .maybeSingle();
-  const document = data as GeneratedDocument | null;
+  const { supabase } = await getCurrentUserContext();
+  let document: GeneratedDocument | null = null;
 
-  if (error || !document) {
+  try {
+    document = await assertGeneratedDocumentAccess(id);
+  } catch {
+    notFound();
+  }
+
+  if (!document) {
     notFound();
   }
 

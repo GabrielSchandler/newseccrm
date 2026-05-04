@@ -3,17 +3,19 @@
 import mammoth from "mammoth";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import sanitizeHtml from "sanitize-html";
 import { recordAuditLog } from "@/lib/audit/log";
 import { getCurrentUserContext } from "@/lib/auth/current-user";
+import { assertGeneratedDocumentAccess } from "@/lib/documents/access";
 import { analyzeDocxStructure } from "@/lib/documents/docx-analysis";
 import { renderOfficialDocxTemplate } from "@/lib/documents/docx-engine";
+import { sanitizeTemplateHtmlContent } from "@/lib/documents/html";
 import { convertDocxToPdf } from "@/lib/documents/pdf-converter";
 import { renderOfficialPdfFormTemplate } from "@/lib/documents/pdf-form-engine";
 import {
   defaultDocumentTemplateContentHtml,
   documentTemplateSchema,
 } from "@/lib/documents/schema";
+import { assertPreSaleAccess } from "@/lib/pre-sales/access";
 import {
   buildDocumentVariables,
   renderDocumentTemplate,
@@ -120,55 +122,6 @@ function storagePath(parts: string[]) {
   return parts.map((part) => part.replace(/^\/+|\/+$/g, "")).join("/");
 }
 
-function normalizeDocxPlaceholders(html: string) {
-  return html.replace(/\{\{([\s\S]{0,160}?)\}\}/g, (match, rawInner: string) => {
-    const inner = rawInner
-      .replace(/<[^>]+>/g, "")
-      .replace(/&nbsp;/g, " ")
-      .replace(/\s+/g, "")
-      .trim();
-
-    if (/^[a-zA-Z0-9_]+$/.test(inner)) {
-      return `{{${inner}}}`;
-    }
-
-    return match;
-  });
-}
-
-function protectPlaceholders(html: string) {
-  const placeholders: string[] = [];
-  const htmlWithTokens = html.replace(
-    /\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g,
-    (match: string) => {
-      const token = `DOCX_PLACEHOLDER_${placeholders.length}_TOKEN`;
-      placeholders.push(match.replace(/\s+/g, ""));
-      return token;
-    },
-  );
-
-  return { htmlWithTokens, placeholders };
-}
-
-function restorePlaceholders(html: string, placeholders: string[]) {
-  return placeholders.reduce(
-    (content, placeholder, index) =>
-      content.replaceAll(`DOCX_PLACEHOLDER_${index}_TOKEN`, placeholder),
-    html,
-  );
-}
-
-function normalizeHtmlSpacing(html: string) {
-  return html
-    .replace(/\r\n/g, "\n")
-    .replace(/&nbsp;/g, " ")
-    .replace(/[ \t]{2,}/g, " ")
-    .replace(/>\s+</g, "><")
-    .replace(/(<br\s*\/?>\s*){3,}/gi, "<br><br>")
-    .replace(/(<\/(?:p|h[1-6]|li|tr|table|ul|ol)>)\s*(<(?:p|h[1-6]|ul|ol|table))/gi, "$1\n$2")
-    .trim();
-}
-
 function extractPlainText(html: string) {
   return html
     .replace(/<[^>]*>/g, " ")
@@ -178,59 +131,7 @@ function extractPlainText(html: string) {
 }
 
 function cleanImportedDocxHtml(html: string) {
-  const normalizedPlaceholders = normalizeDocxPlaceholders(html);
-  const { htmlWithTokens, placeholders } = protectPlaceholders(normalizedPlaceholders);
-  const sanitized = sanitizeHtml(htmlWithTokens, {
-    allowedTags: [
-      "p",
-      "br",
-      "strong",
-      "b",
-      "em",
-      "i",
-      "u",
-      "s",
-      "ul",
-      "ol",
-      "li",
-      "table",
-      "thead",
-      "tbody",
-      "tr",
-      "th",
-      "td",
-      "h1",
-      "h2",
-      "h3",
-      "h4",
-      "h5",
-      "h6",
-      "blockquote",
-      "a",
-      "img",
-    ],
-    allowedAttributes: {
-      a: ["href", "target", "rel"],
-      img: ["src", "alt", "title", "width", "height"],
-      td: ["colspan", "rowspan"],
-      th: ["colspan", "rowspan"],
-    },
-    allowedSchemes: ["http", "https", "mailto", "tel", "data"],
-    allowedSchemesByTag: {
-      img: ["http", "https", "data"],
-    },
-    transformTags: {
-      b: "strong",
-      i: "em",
-      img: sanitizeHtml.simpleTransform("img", {
-        loading: "lazy",
-      }),
-      a: sanitizeHtml.simpleTransform("a", { rel: "noopener noreferrer" }),
-    },
-    disallowedTagsMode: "discard",
-  });
-
-  return normalizeHtmlSpacing(restorePlaceholders(sanitized, placeholders));
+  return sanitizeTemplateHtmlContent(html);
 }
 
 const officialTemplateColumns = [
@@ -390,6 +291,7 @@ async function getGeneratedDocument(documentId: string, companyId: string) {
 }
 
 async function getDocumentContext(preSaleId: string, companyId: string) {
+  await assertPreSaleAccess(preSaleId);
   const { supabase } = await getCurrentUserContext();
   const [
     { data: preSaleData, error: preSaleError },
@@ -477,6 +379,12 @@ function buildDocumentTitle(
   return `${template.name} - ${clientName} - ${date}`;
 }
 
+function getSafeTemplateHtml(template: DocumentTemplate) {
+  return sanitizeTemplateHtmlContent(
+    template.content_html?.trim() || defaultDocumentTemplateContentHtml,
+  );
+}
+
 async function ensureDefaultTemplateState(
   companyId: string,
   templateType: DocumentTemplateType,
@@ -501,7 +409,9 @@ async function ensureDefaultTemplateState(
 }
 
 function buildTemplateWritePayload(values: DocumentTemplatePayload) {
-  const contentHtml = values.content_html?.trim() || defaultDocumentTemplateContentHtml;
+  const contentHtml = sanitizeTemplateHtmlContent(
+    values.content_html?.trim() || defaultDocumentTemplateContentHtml,
+  );
 
   return {
     ...values,
@@ -1252,7 +1162,7 @@ export async function previewDocumentAction(
       return friendlyError("Template ativo nao encontrado.");
     }
 
-    const rendered = renderDocumentTemplate(template.content_html, context);
+    const rendered = renderDocumentTemplate(getSafeTemplateHtml(template), context);
     return {
       ok: true,
       message: "Preview gerado.",
@@ -1282,7 +1192,10 @@ export async function previewTemplateContentAction(
     }
 
     const context = await getDocumentContext(preSaleId, companyId);
-    const rendered = renderDocumentTemplate(contentHtml, context);
+    const rendered = renderDocumentTemplate(
+      sanitizeTemplateHtmlContent(contentHtml),
+      context,
+    );
 
     return {
       ok: true,
@@ -1366,8 +1279,9 @@ export async function generateOfficialDocumentAction(
       Buffer.from(await storedDocx.arrayBuffer()),
       variables,
     );
+    const safeTemplateHtml = getSafeTemplateHtml(template);
     const renderedHtml = template.content_html
-      ? renderDocumentTemplate(template.content_html, context).content
+      ? renderDocumentTemplate(safeTemplateHtml, context).content
       : "";
     const title = buildDocumentTitle(template, {
       content: renderedHtml,
@@ -1547,8 +1461,9 @@ export async function generateOfficialPdfDocumentAction(
       );
     }
 
+    const safeTemplateHtml = getSafeTemplateHtml(template);
     const renderedHtml = template.content_html
-      ? renderDocumentTemplate(template.content_html, context).content
+      ? renderDocumentTemplate(safeTemplateHtml, context).content
       : "";
     const title = buildDocumentTitle(template, {
       content: renderedHtml,
@@ -1662,7 +1577,7 @@ export async function generateDocumentAction(
       );
     }
 
-    const rendered = renderDocumentTemplate(template.content_html, context);
+    const rendered = renderDocumentTemplate(getSafeTemplateHtml(template), context);
     const { data, error } = await supabase
       .from("generated_documents")
       .insert({
@@ -1728,12 +1643,8 @@ export async function createGeneratedDocumentFileUrlAction(
       return bucketError;
     }
 
-    const { supabase, companyId } = await getCurrentUserContext();
-    const document = await getGeneratedDocument(documentId, companyId);
-
-    if (!document) {
-      return friendlyError("Documento gerado nao encontrado.");
-    }
+    const { supabase } = await getCurrentUserContext();
+    const document = await assertGeneratedDocumentAccess(documentId);
 
     const filePath =
       fileType === "pdf" ? document.generated_pdf_path : document.generated_docx_path;

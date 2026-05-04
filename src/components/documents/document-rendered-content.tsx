@@ -1,3 +1,5 @@
+import { sanitizeTemplateHtmlContent } from "@/lib/documents/html";
+
 type DocumentRenderedContentProps = {
   html: string;
   variant?: "screen" | "print";
@@ -7,6 +9,8 @@ export function DocumentRenderedContent({
   html,
   variant = "screen",
 }: DocumentRenderedContentProps) {
+  const safeHtml = sanitizeTemplateHtmlContent(html);
+
   return (
     <div
       className={
@@ -102,7 +106,7 @@ export function DocumentRenderedContent({
           }
         `}
       </style>
-      <div dangerouslySetInnerHTML={{ __html: html }} />
+      <div dangerouslySetInnerHTML={{ __html: safeHtml }} />
     </div>
   );
 }

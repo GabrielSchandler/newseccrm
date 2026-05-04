@@ -24,6 +24,7 @@ import {
   formatPreSaleType,
   formatUserName,
 } from "@/lib/pre-sales/formatters";
+import { canAccessPreSaleRecord } from "@/lib/pre-sales/access";
 import type { DocumentTemplate } from "@/types/document";
 import type {
   ClientOption,
@@ -95,6 +96,10 @@ export default async function PreVendaPage({ params, searchParams }: PreVendaPag
     notFound();
   }
 
+  if (!canAccessPreSaleRecord(role, userProfileId, preSale)) {
+    notFound();
+  }
+
   const [
     { data: clientData },
     { data: consultantData },
@@ -159,10 +164,7 @@ export default async function PreVendaPage({ params, searchParams }: PreVendaPag
   const financialCase = financialCaseData as PreSaleFinancialCase | null;
   const payments = (paymentsData ?? []) as PreSalePayment[];
   const templates = (templatesData ?? []) as DocumentTemplate[];
-  const canEdit =
-    role === "admin" ||
-    role === "manager" ||
-    preSale.consultant_user_id === userProfileId;
+  const canEdit = canAccessPreSaleRecord(role, userProfileId, preSale);
   const canDelete = role === "admin" || role === "manager";
   const successMessage =
     queryParams.success === "created"

@@ -14,6 +14,7 @@ import {
   listCalculationCreators,
 } from "@/lib/calculations/service";
 import { onlyDigits } from "@/lib/clients/masks";
+import { listAccessiblePreSaleIdsForCurrentUser } from "@/lib/pre-sales/access";
 import { resolveUserDisplayName } from "@/lib/users/account";
 import type { FinancingCalculation } from "@/types/calculation";
 
@@ -45,7 +46,7 @@ function successMessage(success?: string) {
 
 export default async function CalculosPage({ searchParams }: CalculosPageProps) {
   const params = await searchParams;
-  const { supabase, companyId, role } = await getCurrentUserContext();
+  const { supabase, companyId, role, userProfileId } = await getCurrentUserContext();
 
   if (!canManageCalculations(role)) {
     redirect(role === "seller" ? "/pre-vendas" : "/dashboard");
@@ -83,7 +84,20 @@ export default async function CalculosPage({ searchParams }: CalculosPageProps) 
   }
 
   const { data, error } = await query;
-  const calculations = (data ?? []) as FinancingCalculation[];
+  let calculations = (data ?? []) as FinancingCalculation[];
+
+  if (role === "seller") {
+    const accessiblePreSaleIds = new Set(
+      (await listAccessiblePreSaleIdsForCurrentUser()) ?? [],
+    );
+    calculations = calculations.filter(
+      (calculation) =>
+        calculation.created_by === userProfileId ||
+        (calculation.pre_sale_id
+          ? accessiblePreSaleIds.has(calculation.pre_sale_id)
+          : false),
+    );
+  }
   const creators = await listCalculationCreators(
     calculations.map((item) => item.created_by ?? ""),
   );

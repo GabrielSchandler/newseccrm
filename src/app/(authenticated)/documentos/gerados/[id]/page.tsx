@@ -6,6 +6,7 @@ import { DocumentsNav } from "@/components/documents/documents-nav";
 import { PageHeader } from "@/components/layout/page-header";
 import { getCurrentUserContext } from "@/lib/auth/current-user";
 import { displayValue, formatDateTime } from "@/lib/clients/formatters";
+import { assertGeneratedDocumentAccess } from "@/lib/documents/access";
 import { resolveUserDisplayName } from "@/lib/users/account";
 import {
   documentStatusLabels,
@@ -28,15 +29,15 @@ export default async function DocumentoPage({ params }: DocumentoPageProps) {
   const { id } = await params;
   const { supabase, companyId, role } = await getCurrentUserContext();
   const canDeleteDocuments = role === "admin" || role === "manager";
-  const { data, error } = await supabase
-    .from("generated_documents")
-    .select("*")
-    .eq("id", id)
-    .eq("company_id", companyId)
-    .maybeSingle();
-  const document = data as GeneratedDocument | null;
+  let document: GeneratedDocument | null = null;
 
-  if (error || !document) {
+  try {
+    document = await assertGeneratedDocumentAccess(id);
+  } catch {
+    notFound();
+  }
+
+  if (!document) {
     notFound();
   }
 

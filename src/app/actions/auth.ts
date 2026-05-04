@@ -48,7 +48,7 @@ export async function signInWithLoginAction(
       if (data.is_active === false) {
         return {
           ok: false,
-          message: "Este usuario esta inativo.",
+          message: "Nao foi possivel entrar. Confira login e senha.",
         };
       }
 

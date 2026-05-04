@@ -4,6 +4,7 @@ import { DocumentsNav } from "@/components/documents/documents-nav";
 import { PageHeader } from "@/components/layout/page-header";
 import { getCurrentUserContext } from "@/lib/auth/current-user";
 import { displayValue, formatDateTime } from "@/lib/clients/formatters";
+import { listAccessiblePreSaleIdsForCurrentUser } from "@/lib/pre-sales/access";
 import { resolveUserDisplayName } from "@/lib/users/account";
 import {
   documentStatusLabels,
@@ -30,7 +31,7 @@ function formatTemplateType(type: DocumentTemplateType | null | undefined) {
 
 export default async function DocumentosPage({ searchParams }: DocumentosPageProps) {
   const params = await searchParams;
-  const { supabase, companyId, role } = await getCurrentUserContext();
+  const { supabase, companyId, role, userProfileId } = await getCurrentUserContext();
   const canDeleteDocuments = role === "admin" || role === "manager";
   const type = params.type as DocumentTemplateType | undefined;
   let query = supabase
@@ -56,7 +57,18 @@ export default async function DocumentosPage({ searchParams }: DocumentosPagePro
   }
 
   const { data, error } = await query;
-  const documents = (data ?? []) as GeneratedDocument[];
+  let documents = (data ?? []) as GeneratedDocument[];
+
+  if (role === "seller") {
+    const accessiblePreSaleIds = new Set(
+      (await listAccessiblePreSaleIdsForCurrentUser()) ?? [],
+    );
+    documents = documents.filter(
+      (document) =>
+        document.created_by === userProfileId ||
+        (document.pre_sale_id ? accessiblePreSaleIds.has(document.pre_sale_id) : false),
+    );
+  }
   const templateIds = Array.from(new Set(documents.map((document) => document.template_id)));
   const clientIds = Array.from(
     new Set(documents.map((document) => document.client_id).filter(Boolean)),

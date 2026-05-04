@@ -1,5 +1,9 @@
 import { randomUUID } from "node:crypto";
 import { getCurrentUserContext } from "@/lib/auth/current-user";
+import {
+  assertPreSaleAccess,
+  listAccessiblePreSaleIdsForCurrentUser,
+} from "@/lib/pre-sales/access";
 import { resolveUserDisplayName } from "@/lib/users/account";
 import { formatPreSaleType } from "@/lib/pre-sales/formatters";
 import type {
@@ -15,7 +19,7 @@ export function canManageCalculations(role: string | null) {
 }
 
 export async function assertCalculationAccess(calculationId: string) {
-  const { supabase, companyId, role } = await getCurrentUserContext();
+  const { supabase, companyId, role, userProfileId } = await getCurrentUserContext();
 
   if (!canManageCalculations(role)) {
     throw new Error("Voce nao tem permissao para acessar simulacoes.");
@@ -32,7 +36,22 @@ export async function assertCalculationAccess(calculationId: string) {
     throw new Error(error.message);
   }
 
-  return data as FinancingCalculation;
+  const calculation = data as FinancingCalculation;
+
+  if (role === "seller") {
+    if (calculation.created_by === userProfileId) {
+      return calculation;
+    }
+
+    if (calculation.pre_sale_id) {
+      await assertPreSaleAccess(calculation.pre_sale_id);
+      return calculation;
+    }
+
+    throw new Error("Voce nao tem permissao para acessar esta simulacao.");
+  }
+
+  return calculation;
 }
 
 export async function assertClientBelongsToCompany(clientId: string, companyId: string) {
@@ -58,24 +77,13 @@ export async function assertPreSaleBelongsToCompany(
   companyId: string,
   clientId?: string | null,
 ) {
-  const { supabase } = await getCurrentUserContext();
-  let query = supabase
-    .from("pre_sales")
-    .select("id, client_id")
-    .eq("id", preSaleId)
-    .eq("company_id", companyId);
+  const preSale = await assertPreSaleAccess(preSaleId);
 
-  if (clientId) {
-    query = query.eq("client_id", clientId);
+  if (preSale.company_id !== companyId) {
+    throw new Error("Pre-venda nao encontrada para esta empresa.");
   }
 
-  const { data, error } = await query.maybeSingle();
-
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  if (!data) {
+  if (clientId && preSale.client_id !== clientId) {
     throw new Error("Pre-venda nao encontrada para esta empresa.");
   }
 }
@@ -122,7 +130,7 @@ export async function listCalculationCreators(userIds: string[]) {
 }
 
 export async function listClientCalculations(clientId: string) {
-  const { supabase, companyId, role } = await getCurrentUserContext();
+  const { supabase, companyId, role, userProfileId } = await getCurrentUserContext();
 
   if (!canManageCalculations(role)) {
     return [];
@@ -139,7 +147,21 @@ export async function listClientCalculations(clientId: string) {
     throw new Error(error.message);
   }
 
-  return (data ?? []) as FinancingCalculation[];
+  const calculations = (data ?? []) as FinancingCalculation[];
+
+  if (role !== "seller") {
+    return calculations;
+  }
+
+  const accessiblePreSaleIds = new Set(
+    (await listAccessiblePreSaleIdsForCurrentUser()) ?? [],
+  );
+
+  return calculations.filter(
+    (calculation) =>
+      calculation.created_by === userProfileId ||
+      (calculation.pre_sale_id ? accessiblePreSaleIds.has(calculation.pre_sale_id) : false),
+  );
 }
 
 export async function listCalculationClients() {
@@ -159,12 +181,20 @@ export async function listCalculationClients() {
 }
 
 export async function listCalculationPreSales() {
-  const { supabase, companyId } = await getCurrentUserContext();
-  const { data: preSalesData, error: preSalesError } = await supabase
+  const { supabase, companyId, role, userProfileId } = await getCurrentUserContext();
+  let query = supabase
     .from("pre_sales")
     .select("id, client_id, consultant_user_id, pre_sale_type, created_at")
     .eq("company_id", companyId)
     .order("created_at", { ascending: false });
+
+  if (role === "seller") {
+    query = query.or(
+      `consultant_user_id.eq.${userProfileId},created_by.eq.${userProfileId}`,
+    );
+  }
+
+  const { data: preSalesData, error: preSalesError } = await query;
 
   if (preSalesError) {
     throw new Error(preSalesError.message);
