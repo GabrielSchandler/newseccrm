@@ -24,12 +24,40 @@ const navigation: SidebarNavigationItem[] = [
   { href: "/logs", label: "Logs", icon: "logs", adminOnly: true },
 ];
 
+function resolveCompanyDisplayName(company: {
+  trade_name?: string | null;
+  legal_name?: string | null;
+} | null) {
+  return company?.trade_name?.trim() || company?.legal_name?.trim() || "CRM SaaS";
+}
+
 export async function AppSidebar() {
-  const { role } = await getCurrentUserContext();
+  const { role, supabase, companyId } = await getCurrentUserContext();
   const canManageTemplates = role === "admin" || role === "manager";
   const canAccessUsers = role === "admin" || role === "manager";
   const canAccessDashboard = role !== "seller";
   const canAccessAdminOnly = role === "admin";
+  const { data: companyData } = await supabase
+    .from("companies")
+    .select("trade_name, legal_name, logo_path")
+    .eq("id", companyId)
+    .maybeSingle();
+  const company = (companyData ?? null) as {
+    trade_name?: string | null;
+    legal_name?: string | null;
+    logo_path?: string | null;
+  } | null;
+  const companyName = resolveCompanyDisplayName(company);
+  let companyLogoUrl: string | null = null;
+
+  if (company?.logo_path) {
+    const { data: signedData } = await supabase.storage
+      .from("documents")
+      .createSignedUrl(company.logo_path, 60 * 10);
+
+    companyLogoUrl = signedData?.signedUrl ?? null;
+  }
+
   const visibleNavigation = navigation.filter(
     (item) =>
       (!item.adminOnly || canAccessAdminOnly) &&
@@ -42,11 +70,24 @@ export async function AppSidebar() {
       <div className="border-b border-slate-200 bg-white px-4 py-3 md:hidden">
         <details className="group">
           <summary className="flex cursor-pointer list-none items-center justify-between rounded-lg px-2 py-2 text-sm font-semibold text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600">
-            <span>
-              <span className="block text-xs uppercase tracking-wide text-teal-700">
-                CRM SaaS
+            <span className="flex min-w-0 items-center gap-3">
+              {companyLogoUrl ? (
+                <img
+                  src={companyLogoUrl}
+                  alt={`Logo da empresa ${companyName}`}
+                  className="h-10 w-10 rounded-md object-contain"
+                />
+              ) : (
+                <span className="flex h-10 w-10 items-center justify-center rounded-md bg-slate-100 px-2 text-center text-[11px] font-bold uppercase tracking-wide text-slate-700">
+                  {companyName.slice(0, 2)}
+                </span>
+              )}
+              <span className="min-w-0">
+                <span className="block text-xs uppercase tracking-wide text-teal-700">
+                  CRM SaaS
+                </span>
+                <span className="block truncate">{companyName}</span>
               </span>
-              Painel multiempresa
             </span>
             <span className="text-xs text-slate-500 group-open:hidden">Menu</span>
             <span className="hidden text-xs text-slate-500 group-open:inline">
@@ -73,12 +114,27 @@ export async function AppSidebar() {
 
       <aside className="hidden min-h-screen w-72 flex-col border-r border-slate-200 bg-white px-4 py-5 md:flex">
         <div className="px-2">
-          <p className="text-xs font-semibold uppercase tracking-wide text-teal-700">
-            CRM SaaS
-          </p>
-          <h1 className="mt-1 text-xl font-semibold text-slate-950">
-            Painel multiempresa
-          </h1>
+          <div className="flex items-center gap-3">
+            {companyLogoUrl ? (
+              <img
+                src={companyLogoUrl}
+                alt={`Logo da empresa ${companyName}`}
+                className="h-14 w-14 rounded-md object-contain"
+              />
+            ) : (
+              <div className="flex h-14 w-14 items-center justify-center rounded-md bg-slate-100 px-2 text-center text-sm font-bold uppercase tracking-wide text-slate-700">
+                {companyName.slice(0, 2)}
+              </div>
+            )}
+            <div className="min-w-0">
+              <p className="text-xs font-semibold uppercase tracking-wide text-teal-700">
+                CRM SaaS
+              </p>
+              <h1 className="mt-1 truncate text-xl font-semibold text-slate-950">
+                {companyName}
+              </h1>
+            </div>
+          </div>
         </div>
 
         <div className="mt-8 flex flex-1">
