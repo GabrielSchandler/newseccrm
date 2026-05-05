@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
+import { FormFieldLabel } from "@/components/form-field-label";
 import {
   updateCompanyProfileAction,
   type CompanyActionState,
@@ -65,109 +66,109 @@ export function CompanyProfileForm({ defaultValues }: CompanyProfileFormProps) {
       }}
     >
       <section className="grid gap-4 md:grid-cols-2">
-        <label className="space-y-2 text-sm text-slate-700">
-          <span className="font-medium text-slate-900">Razao social</span>
+        <div className="space-y-2 text-sm text-slate-700">
+          <FormFieldLabel label="Razao social" requirement="optional" />
           <input
             name="legal_name"
             defaultValue={defaultValues.legal_name}
             className="w-full rounded-lg border border-slate-300 px-3 py-2.5 outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
           />
-        </label>
-        <label className="space-y-2 text-sm text-slate-700">
-          <span className="font-medium text-slate-900">Nome fantasia</span>
+        </div>
+        <div className="space-y-2 text-sm text-slate-700">
+          <FormFieldLabel label="Nome fantasia" requirement="optional" />
           <input
             name="trade_name"
             defaultValue={defaultValues.trade_name}
             className="w-full rounded-lg border border-slate-300 px-3 py-2.5 outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
           />
-        </label>
-        <label className="space-y-2 text-sm text-slate-700">
-          <span className="font-medium text-slate-900">CNPJ</span>
+        </div>
+        <div className="space-y-2 text-sm text-slate-700">
+          <FormFieldLabel label="CNPJ" requirement="optional" />
           <input
             name="cnpj"
             defaultValue={defaultValues.cnpj}
             placeholder="Somente numeros ou formatado"
             className="w-full rounded-lg border border-slate-300 px-3 py-2.5 outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
           />
-        </label>
-        <label className="space-y-2 text-sm text-slate-700">
-          <span className="font-medium text-slate-900">Telefone</span>
+        </div>
+        <div className="space-y-2 text-sm text-slate-700">
+          <FormFieldLabel label="Telefone" requirement="optional" />
           <input
             name="phone"
             defaultValue={defaultValues.phone}
             className="w-full rounded-lg border border-slate-300 px-3 py-2.5 outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
           />
-        </label>
-        <label className="space-y-2 text-sm text-slate-700">
-          <span className="font-medium text-slate-900">E-mail</span>
+        </div>
+        <div className="space-y-2 text-sm text-slate-700">
+          <FormFieldLabel label="E-mail" requirement="optional" />
           <input
             name="email"
             type="email"
             defaultValue={defaultValues.email}
             className="w-full rounded-lg border border-slate-300 px-3 py-2.5 outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
           />
-        </label>
-        <label className="space-y-2 text-sm text-slate-700">
-          <span className="font-medium text-slate-900">Site</span>
+        </div>
+        <div className="space-y-2 text-sm text-slate-700">
+          <FormFieldLabel label="Site" requirement="optional" />
           <input
             name="website"
             defaultValue={defaultValues.website}
             placeholder="https://..."
             className="w-full rounded-lg border border-slate-300 px-3 py-2.5 outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
           />
-        </label>
+        </div>
       </section>
 
       <section className="grid gap-4 md:grid-cols-[180px_minmax(0,1fr)_140px]">
-        <label className="space-y-2 text-sm text-slate-700">
-          <span className="font-medium text-slate-900">CEP</span>
+        <div className="space-y-2 text-sm text-slate-700">
+          <FormFieldLabel label="CEP" requirement="optional" />
           <input
             name="zip_code"
             defaultValue={defaultValues.zip_code}
             className="w-full rounded-lg border border-slate-300 px-3 py-2.5 outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
           />
-        </label>
-        <label className="space-y-2 text-sm text-slate-700">
-          <span className="font-medium text-slate-900">Rua</span>
+        </div>
+        <div className="space-y-2 text-sm text-slate-700">
+          <FormFieldLabel label="Rua" requirement="optional" />
           <input
             name="street"
             defaultValue={defaultValues.street}
             className="w-full rounded-lg border border-slate-300 px-3 py-2.5 outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
           />
-        </label>
-        <label className="space-y-2 text-sm text-slate-700">
-          <span className="font-medium text-slate-900">Numero</span>
+        </div>
+        <div className="space-y-2 text-sm text-slate-700">
+          <FormFieldLabel label="Numero" requirement="optional" />
           <input
             name="number"
             defaultValue={defaultValues.number}
             className="w-full rounded-lg border border-slate-300 px-3 py-2.5 outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
           />
-        </label>
-        <label className="space-y-2 text-sm text-slate-700">
-          <span className="font-medium text-slate-900">Bairro</span>
+        </div>
+        <div className="space-y-2 text-sm text-slate-700">
+          <FormFieldLabel label="Bairro" requirement="optional" />
           <input
             name="district"
             defaultValue={defaultValues.district}
             className="w-full rounded-lg border border-slate-300 px-3 py-2.5 outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
           />
-        </label>
-        <label className="space-y-2 text-sm text-slate-700">
-          <span className="font-medium text-slate-900">Cidade</span>
+        </div>
+        <div className="space-y-2 text-sm text-slate-700">
+          <FormFieldLabel label="Cidade" requirement="optional" />
           <input
             name="city"
             defaultValue={defaultValues.city}
             className="w-full rounded-lg border border-slate-300 px-3 py-2.5 outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
           />
-        </label>
-        <label className="space-y-2 text-sm text-slate-700">
-          <span className="font-medium text-slate-900">Estado</span>
+        </div>
+        <div className="space-y-2 text-sm text-slate-700">
+          <FormFieldLabel label="Estado" requirement="optional" />
           <input
             name="state"
             maxLength={2}
             defaultValue={defaultValues.state}
             className="w-full rounded-lg border border-slate-300 px-3 py-2.5 uppercase outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
           />
-        </label>
+        </div>
       </section>
 
       {state ? (

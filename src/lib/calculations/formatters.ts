@@ -38,7 +38,7 @@ export function formatCpfDigits(value: string | null | undefined) {
   const digits = onlyDigits(value ?? "");
 
   if (digits.length !== 11) {
-    return value ?? "Nao informado";
+    return "Nao informado";
   }
 
   return digits.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");

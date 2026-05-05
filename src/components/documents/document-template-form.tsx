@@ -11,6 +11,7 @@ import {
   uploadOfficialPdfTemplateAction,
   type DocumentActionState,
 } from "@/app/(authenticated)/documentos/actions";
+import { FormFieldLabel } from "@/components/form-field-label";
 import { documentVariableCatalog } from "@/lib/documents/template-engine";
 import {
   defaultDocumentTemplateContentHtml,
@@ -258,9 +259,11 @@ export function DocumentTemplateForm({
         <main className="space-y-5 rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
           <div className="grid gap-5 md:grid-cols-2">
             <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700" htmlFor="name">
-                Nome do template <span className="text-red-600">*</span>
-              </label>
+              <FormFieldLabel
+                htmlFor="name"
+                label="Nome do template"
+                requirement="required"
+              />
               <input
                 id="name"
                 className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
@@ -273,12 +276,11 @@ export function DocumentTemplateForm({
             </div>
 
             <div className="space-y-2">
-              <label
-                className="text-sm font-medium text-slate-700"
+              <FormFieldLabel
                 htmlFor="document_type"
-              >
-                Tipo <span className="text-red-600">*</span>
-              </label>
+                label="Tipo"
+                requirement="required"
+              />
               <select
                 id="document_type"
                 className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
@@ -300,12 +302,11 @@ export function DocumentTemplateForm({
           </div>
 
           <div className="space-y-2">
-            <label
-              className="text-sm font-medium text-slate-700"
+            <FormFieldLabel
               htmlFor="description"
-            >
-              Descricao
-            </label>
+              label="Descricao"
+              requirement="optional"
+            />
             <input
               id="description"
               className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"

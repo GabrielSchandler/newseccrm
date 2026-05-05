@@ -13,6 +13,7 @@ import {
   type ClientPayload,
 } from "@/lib/clients/schema";
 import { formatCpf, formatPhone, formatZipCode, onlyDigits } from "@/lib/clients/masks";
+import { FormFieldLabel } from "@/components/form-field-label";
 import { ReactivateClientButton } from "./reactivate-client-button";
 import type { ClientActionState } from "@/app/(authenticated)/clientes/actions";
 
@@ -186,15 +187,11 @@ export function ClientForm({
       <div className="grid gap-5 md:grid-cols-2">
         {fields.map((field) => (
           <div className="space-y-2" key={field.name}>
-            <label
-              className="text-sm font-medium text-slate-700"
+            <FormFieldLabel
               htmlFor={field.name}
-            >
-              {field.label}
-              {"required" in field && field.required ? (
-                <span className="text-red-600"> *</span>
-              ) : null}
-            </label>
+              label={field.label}
+              requirement={"required" in field && field.required ? "required" : "optional"}
+            />
             {field.type === "select" ? (
               <select
                 id={field.name}
@@ -241,9 +238,7 @@ export function ClientForm({
         ))}
 
         <div className="space-y-2 md:col-span-2">
-          <label className="text-sm font-medium text-slate-700" htmlFor="notes">
-            Observacoes
-          </label>
+          <FormFieldLabel htmlFor="notes" label="Observacoes" requirement="optional" />
           <textarea
             id="notes"
             rows={5}

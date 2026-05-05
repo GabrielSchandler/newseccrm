@@ -9,6 +9,8 @@ import type {
 } from "@/types/pre-sale";
 import { isValidPhone, onlyDigits } from "@/lib/clients/masks";
 
+const leadMediaValues = ["Soul", "Growper", "Prosperity"] as const;
+
 function parseBrazilianDecimalInput(value: string | number | null | undefined) {
   if (value === null || value === undefined || value === "") {
     return null;
@@ -47,9 +49,28 @@ function formatNumberForPtBrInput(value: number | string | null | undefined) {
   }).format(parsed);
 }
 
+function sanitizeLeadMedia(
+  value: string | null | undefined,
+): "" | (typeof leadMediaValues)[number] {
+  if (value === "Soul" || value === "Growper" || value === "Prosperity") {
+    return value;
+  }
+
+  return "";
+}
+
 const optionalText = z
   .union([z.string(), z.null(), z.undefined()])
   .transform((value) => (typeof value === "string" && value.trim() ? value.trim() : null));
+
+const optionalLeadMedia = z
+  .union([
+    z.enum(leadMediaValues),
+    z.literal(""),
+    z.null(),
+    z.undefined(),
+  ])
+  .transform((value) => (typeof value === "string" && value.trim() ? value : null));
 
 const optionalEmail = z
   .union([z.string(), z.null(), z.undefined()])
@@ -116,7 +137,7 @@ export const preSaleFormSchema = z.object({
     "aprovado",
     "perdido",
   ]),
-  media: optionalText,
+  media: optionalLeadMedia,
   service_type: optionalText,
   contract_value: optionalNumber,
   negotiation_details: optionalText,
@@ -292,7 +313,7 @@ export function preSaleToFormValues(
     consultant_user_id: preSale.consultant_user_id ?? "",
     pre_sale_type: preSale.pre_sale_type ?? "emprestimo",
     status: preSale.status as PreSaleStatus,
-    media: preSale.media ?? "",
+    media: sanitizeLeadMedia(preSale.media),
     service_type: preSale.service_type ?? "",
     contract_value:
       formatNumberForPtBrInput(preSale.contract_value),

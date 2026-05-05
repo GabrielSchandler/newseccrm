@@ -9,6 +9,7 @@ export type PreSaleStatus =
   | "perdido";
 
 export type PreSaleType = "emprestimo" | "imovel" | "veiculo";
+export type LeadMedia = "Soul" | "Growper" | "Prosperity";
 
 export type UserProfileOption = {
   id: string;
@@ -136,4 +137,13 @@ export const preSaleTypes: Array<{
   { value: "emprestimo", label: "Emprestimo" },
   { value: "imovel", label: "Imovel" },
   { value: "veiculo", label: "Veiculo" },
+];
+
+export const leadMediaOptions: Array<{
+  value: LeadMedia;
+  label: string;
+}> = [
+  { value: "Soul", label: "Soul" },
+  { value: "Growper", label: "Growper" },
+  { value: "Prosperity", label: "Prosperity" },
 ];

@@ -12,6 +12,7 @@ import type {
   UseFormSetValue,
 } from "react-hook-form";
 import type { PreSaleActionState } from "@/app/(authenticated)/pre-vendas/actions";
+import { FormFieldLabel } from "@/components/form-field-label";
 import { displayCpf, displayPhone } from "@/lib/clients/formatters";
 import {
   formatCpf,
@@ -26,6 +27,7 @@ import {
 } from "@/lib/pre-sales/schema";
 import { resolveUserDisplayName } from "@/lib/users/account";
 import {
+  leadMediaOptions,
   preSaleStatuses,
   preSaleTypes,
   type ClientOption,
@@ -55,9 +57,10 @@ type TextFieldProps = {
   disabled: boolean;
   type?: string;
   inputMode?: "numeric" | "decimal";
-  required?: boolean;
+  requirement?: "required" | "optional" | "conditional";
   placeholder?: string;
   className?: string;
+  hint?: string;
   onChange?: (event: ChangeEvent<HTMLInputElement>) => void;
 };
 
@@ -96,19 +99,22 @@ function TextField({
   disabled,
   type = "text",
   inputMode,
-  required = false,
+  requirement = "optional",
   placeholder,
   className = "",
+  hint,
   onChange,
 }: TextFieldProps) {
   const message = getErrorMessage(errors, name);
 
   return (
     <div className={`space-y-2 ${className}`}>
-      <label className="text-sm font-medium text-slate-700" htmlFor={name}>
-        {label}
-        {required ? <span className="text-red-600"> *</span> : null}
-      </label>
+      <FormFieldLabel
+        htmlFor={String(name)}
+        label={label}
+        requirement={requirement}
+        hint={hint}
+      />
       <input
         id={name}
         type={type}
@@ -305,9 +311,11 @@ export function PreSalesForm({
         description="Identifique a operacao, origem comercial e responsavel pelo atendimento."
       >
         <div className="space-y-2 md:col-span-2">
-          <label className="text-sm font-medium text-slate-700" htmlFor="client_id">
-            Cliente <span className="text-red-600">*</span>
-          </label>
+          <FormFieldLabel
+            htmlFor="client_id"
+            label="Cliente"
+            requirement="required"
+          />
           <select
             id="client_id"
             className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
@@ -328,18 +336,18 @@ export function PreSalesForm({
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-medium text-slate-700">
-            Data de abertura
-          </label>
+          <FormFieldLabel label="Data de abertura" requirement="optional" />
           <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-medium text-slate-700">
             {openingDateLabel}
           </div>
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-medium text-slate-700" htmlFor="consultant_user_id">
-            Consultor
-          </label>
+          <FormFieldLabel
+            htmlFor="consultant_user_id"
+            label="Consultor"
+            requirement="optional"
+          />
           <select
             id="consultant_user_id"
             className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
@@ -355,19 +363,37 @@ export function PreSalesForm({
           </select>
         </div>
 
-        <TextField
-          name="media"
-          label="Midia"
-          register={register}
-          errors={errors}
-          disabled={disabled}
-          placeholder="Instagram, indicacao, trafego pago..."
-        />
+        <div className="space-y-2">
+          <FormFieldLabel
+            htmlFor="media"
+            label="Midia"
+            requirement="optional"
+            hint="Selecione a origem principal do lead."
+          />
+          <select
+            id="media"
+            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
+            disabled={disabled}
+            {...register("media")}
+          >
+            <option value="">Nao informado</option>
+            {leadMediaOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+          {errors.media?.message ? (
+            <p className="text-sm text-red-600">{errors.media.message}</p>
+          ) : null}
+        </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-medium text-slate-700" htmlFor="pre_sale_type">
-            Tipo de pre-venda <span className="text-red-600">*</span>
-          </label>
+          <FormFieldLabel
+            htmlFor="pre_sale_type"
+            label="Tipo de pre-venda"
+            requirement="required"
+          />
           <select
             id="pre_sale_type"
             className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
@@ -386,9 +412,7 @@ export function PreSalesForm({
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-medium text-slate-700" htmlFor="status">
-            Status <span className="text-red-600">*</span>
-          </label>
+          <FormFieldLabel htmlFor="status" label="Status" requirement="required" />
           <select
             id="status"
             className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
@@ -409,6 +433,7 @@ export function PreSalesForm({
           register={register}
           errors={errors}
           disabled={disabled}
+          requirement="optional"
         />
       </FormSection>
 
@@ -416,21 +441,21 @@ export function PreSalesForm({
         title="Contratante"
         description="Snapshot usado futuramente por contrato e ordem de servico, sem alterar o cadastro mestre do cliente."
       >
-        <TextField name="snapshot_full_name" label="Nome" register={register} errors={errors} disabled={disabled} required />
-        <TextField name="snapshot_cpf" label="CPF" register={register} errors={errors} disabled={disabled} required inputMode="numeric" onChange={maskCpf} />
-        <TextField name="snapshot_rg" label="RG" register={register} errors={errors} disabled={disabled} />
-        <TextField name="snapshot_birth_date" label="Data de nascimento" register={register} errors={errors} disabled={disabled} type="date" />
-        <TextField name="snapshot_marital_status" label="Estado civil" register={register} errors={errors} disabled={disabled} />
-        <TextField name="snapshot_profession" label="Profissao" register={register} errors={errors} disabled={disabled} />
-        <TextField name="snapshot_email" label="Email" register={register} errors={errors} disabled={disabled} type="email" />
-        <TextField name="snapshot_phone_mobile" label="Celular" register={register} errors={errors} disabled={disabled} required inputMode="numeric" onChange={maskPhone} />
-        <TextField name="snapshot_phone_secondary" label="Telefone secundario" register={register} errors={errors} disabled={disabled} inputMode="numeric" onChange={maskPhone} />
-        <TextField name="snapshot_zip_code" label="CEP" register={register} errors={errors} disabled={disabled} inputMode="numeric" onChange={maskZipCode} />
-        <TextField name="snapshot_street" label="Rua" register={register} errors={errors} disabled={disabled} />
-        <TextField name="snapshot_number" label="Numero" register={register} errors={errors} disabled={disabled} />
-        <TextField name="snapshot_district" label="Bairro" register={register} errors={errors} disabled={disabled} />
-        <TextField name="snapshot_city" label="Cidade" register={register} errors={errors} disabled={disabled} />
-        <TextField name="snapshot_state" label="Estado" register={register} errors={errors} disabled={disabled} />
+        <TextField name="snapshot_full_name" label="Nome" register={register} errors={errors} disabled={disabled} requirement="required" />
+        <TextField name="snapshot_cpf" label="CPF" register={register} errors={errors} disabled={disabled} requirement="required" inputMode="numeric" onChange={maskCpf} />
+        <TextField name="snapshot_rg" label="RG" register={register} errors={errors} disabled={disabled} requirement="optional" />
+        <TextField name="snapshot_birth_date" label="Data de nascimento" register={register} errors={errors} disabled={disabled} type="date" requirement="optional" />
+        <TextField name="snapshot_marital_status" label="Estado civil" register={register} errors={errors} disabled={disabled} requirement="optional" />
+        <TextField name="snapshot_profession" label="Profissao" register={register} errors={errors} disabled={disabled} requirement="optional" />
+        <TextField name="snapshot_email" label="Email" register={register} errors={errors} disabled={disabled} type="email" requirement="optional" />
+        <TextField name="snapshot_phone_mobile" label="Celular" register={register} errors={errors} disabled={disabled} requirement="required" inputMode="numeric" onChange={maskPhone} />
+        <TextField name="snapshot_phone_secondary" label="Telefone secundario" register={register} errors={errors} disabled={disabled} requirement="optional" inputMode="numeric" onChange={maskPhone} />
+        <TextField name="snapshot_zip_code" label="CEP" register={register} errors={errors} disabled={disabled} requirement="optional" inputMode="numeric" onChange={maskZipCode} />
+        <TextField name="snapshot_street" label="Rua" register={register} errors={errors} disabled={disabled} requirement="optional" />
+        <TextField name="snapshot_number" label="Numero" register={register} errors={errors} disabled={disabled} requirement="optional" />
+        <TextField name="snapshot_district" label="Bairro" register={register} errors={errors} disabled={disabled} requirement="optional" />
+        <TextField name="snapshot_city" label="Cidade" register={register} errors={errors} disabled={disabled} requirement="optional" />
+        <TextField name="snapshot_state" label="Estado" register={register} errors={errors} disabled={disabled} requirement="optional" />
       </FormSection>
 
       <FormSection
@@ -452,36 +477,38 @@ export function PreSalesForm({
             </span>
           </span>
         </label>
-        <TextField name="debt_holder_full_name" label="Nome" register={register} errors={errors} disabled={disabled} />
-        <TextField name="debt_holder_cpf" label="CPF" register={register} errors={errors} disabled={disabled} inputMode="numeric" onChange={maskCpf} />
-        <TextField name="debt_holder_rg" label="RG" register={register} errors={errors} disabled={disabled} />
-        <TextField name="debt_holder_birth_date" label="Data de nascimento" register={register} errors={errors} disabled={disabled} type="date" />
-        <TextField name="debt_holder_marital_status" label="Estado civil" register={register} errors={errors} disabled={disabled} />
-        <TextField name="debt_holder_profession" label="Profissao" register={register} errors={errors} disabled={disabled} />
-        <TextField name="debt_holder_nationality" label="Nacionalidade" register={register} errors={errors} disabled={disabled} />
-        <TextField name="debt_holder_issuer_agency" label="Orgao emissor" register={register} errors={errors} disabled={disabled} />
-        <TextField name="debt_holder_father_name" label="Pai" register={register} errors={errors} disabled={disabled} />
-        <TextField name="debt_holder_mother_name" label="Mae" register={register} errors={errors} disabled={disabled} />
-        <TextField name="debt_holder_phone_mobile" label="Celular" register={register} errors={errors} disabled={disabled} inputMode="numeric" onChange={maskPhone} />
-        <TextField name="debt_holder_phone_secondary" label="Telefone secundario" register={register} errors={errors} disabled={disabled} inputMode="numeric" onChange={maskPhone} />
-        <TextField name="debt_holder_email" label="Email" register={register} errors={errors} disabled={disabled} type="email" />
-        <TextField name="debt_holder_zip_code" label="CEP" register={register} errors={errors} disabled={disabled} inputMode="numeric" onChange={maskZipCode} />
-        <TextField name="debt_holder_street" label="Rua" register={register} errors={errors} disabled={disabled} />
-        <TextField name="debt_holder_number" label="Numero" register={register} errors={errors} disabled={disabled} />
-        <TextField name="debt_holder_district" label="Bairro" register={register} errors={errors} disabled={disabled} />
-        <TextField name="debt_holder_city" label="Cidade" register={register} errors={errors} disabled={disabled} />
-        <TextField name="debt_holder_state" label="Estado" register={register} errors={errors} disabled={disabled} />
+        <TextField name="debt_holder_full_name" label="Nome" register={register} errors={errors} disabled={disabled} requirement="optional" />
+        <TextField name="debt_holder_cpf" label="CPF" register={register} errors={errors} disabled={disabled} requirement="optional" inputMode="numeric" onChange={maskCpf} />
+        <TextField name="debt_holder_rg" label="RG" register={register} errors={errors} disabled={disabled} requirement="optional" />
+        <TextField name="debt_holder_birth_date" label="Data de nascimento" register={register} errors={errors} disabled={disabled} type="date" requirement="optional" />
+        <TextField name="debt_holder_marital_status" label="Estado civil" register={register} errors={errors} disabled={disabled} requirement="optional" />
+        <TextField name="debt_holder_profession" label="Profissao" register={register} errors={errors} disabled={disabled} requirement="optional" />
+        <TextField name="debt_holder_nationality" label="Nacionalidade" register={register} errors={errors} disabled={disabled} requirement="optional" />
+        <TextField name="debt_holder_issuer_agency" label="Orgao emissor" register={register} errors={errors} disabled={disabled} requirement="optional" />
+        <TextField name="debt_holder_father_name" label="Pai" register={register} errors={errors} disabled={disabled} requirement="optional" />
+        <TextField name="debt_holder_mother_name" label="Mae" register={register} errors={errors} disabled={disabled} requirement="optional" />
+        <TextField name="debt_holder_phone_mobile" label="Celular" register={register} errors={errors} disabled={disabled} requirement="optional" inputMode="numeric" onChange={maskPhone} />
+        <TextField name="debt_holder_phone_secondary" label="Telefone secundario" register={register} errors={errors} disabled={disabled} requirement="optional" inputMode="numeric" onChange={maskPhone} />
+        <TextField name="debt_holder_email" label="Email" register={register} errors={errors} disabled={disabled} type="email" requirement="optional" />
+        <TextField name="debt_holder_zip_code" label="CEP" register={register} errors={errors} disabled={disabled} requirement="optional" inputMode="numeric" onChange={maskZipCode} />
+        <TextField name="debt_holder_street" label="Rua" register={register} errors={errors} disabled={disabled} requirement="optional" />
+        <TextField name="debt_holder_number" label="Numero" register={register} errors={errors} disabled={disabled} requirement="optional" />
+        <TextField name="debt_holder_district" label="Bairro" register={register} errors={errors} disabled={disabled} requirement="optional" />
+        <TextField name="debt_holder_city" label="Cidade" register={register} errors={errors} disabled={disabled} requirement="optional" />
+        <TextField name="debt_holder_state" label="Estado" register={register} errors={errors} disabled={disabled} requirement="optional" />
       </FormSection>
 
       <FormSection
         title="Dados financeiros"
         description="Dados da operacao, financiamento e contrato existente."
       >
-        <TextField name="financer_name" label="Financeira" register={register} errors={errors} disabled={disabled} />
+        <TextField name="financer_name" label="Financeira" register={register} errors={errors} disabled={disabled} requirement="optional" />
         <div className="space-y-2">
-          <label className="text-sm font-medium text-slate-700" htmlFor="has_financing_contract">
-            Possui contrato de financiamento?
-          </label>
+          <FormFieldLabel
+            htmlFor="has_financing_contract"
+            label="Possui contrato de financiamento?"
+            requirement="optional"
+          />
           <select
             id="has_financing_contract"
             className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
@@ -493,12 +520,12 @@ export function PreSalesForm({
             <option value="false">Nao</option>
           </select>
         </div>
-        <TextField name="financed_amount" label="Valor da operacao / financiado" register={register} errors={errors} disabled={disabled} inputMode="decimal" placeholder="0,00" onChange={handleCurrencyMask} />
-        <TextField name="installment_amount" label="Valor da parcela" register={register} errors={errors} disabled={disabled} inputMode="decimal" placeholder="0,00" onChange={handleCurrencyMask} />
-        <TextField name="paid_installments" label="Parcelas pagas" register={register} errors={errors} disabled={disabled} inputMode="numeric" onChange={handleIntegerMask} />
-        <TextField name="overdue_installments" label="Parcelas em atraso" register={register} errors={errors} disabled={disabled} inputMode="numeric" onChange={handleIntegerMask} />
-        <TextField name="due_day" label="Dia do vencimento" register={register} errors={errors} disabled={disabled} inputMode="numeric" onChange={handleIntegerMask} />
-        <TextField name="contract_number" label="Numero do contrato" register={register} errors={errors} disabled={disabled} />
+        <TextField name="financed_amount" label="Valor da operacao / financiado" register={register} errors={errors} disabled={disabled} requirement="optional" inputMode="decimal" placeholder="0,00" onChange={handleCurrencyMask} />
+        <TextField name="installment_amount" label="Valor da parcela" register={register} errors={errors} disabled={disabled} requirement="optional" inputMode="decimal" placeholder="0,00" onChange={handleCurrencyMask} />
+        <TextField name="paid_installments" label="Parcelas pagas" register={register} errors={errors} disabled={disabled} requirement="optional" inputMode="numeric" onChange={handleIntegerMask} />
+        <TextField name="overdue_installments" label="Parcelas em atraso" register={register} errors={errors} disabled={disabled} requirement="optional" inputMode="numeric" onChange={handleIntegerMask} />
+        <TextField name="due_day" label="Dia do vencimento" register={register} errors={errors} disabled={disabled} requirement="optional" inputMode="numeric" onChange={handleIntegerMask} />
+        <TextField name="contract_number" label="Numero do contrato" register={register} errors={errors} disabled={disabled} requirement="optional" />
       </FormSection>
 
       {selectedPreSaleType === "veiculo" ? (
@@ -506,10 +533,10 @@ export function PreSalesForm({
           title="Dados do veiculo"
           description="Campos obrigatorios somente para operacoes de veiculo."
         >
-          <TextField name="asset_brand_model" label="Veiculo / marca-modelo" register={register} errors={errors} disabled={disabled} required />
-          <TextField name="asset_color" label="Cor" register={register} errors={errors} disabled={disabled} required />
-          <TextField name="asset_year" label="Ano" register={register} errors={errors} disabled={disabled} required inputMode="numeric" onChange={handleIntegerMask} />
-          <TextField name="asset_plate" label="Placa" register={register} errors={errors} disabled={disabled} required />
+          <TextField name="asset_brand_model" label="Veiculo / marca-modelo" register={register} errors={errors} disabled={disabled} requirement="conditional" hint="Obrigatorio quando o tipo da pre-venda for Veiculo." />
+          <TextField name="asset_color" label="Cor" register={register} errors={errors} disabled={disabled} requirement="conditional" hint="Obrigatorio quando o tipo da pre-venda for Veiculo." />
+          <TextField name="asset_year" label="Ano" register={register} errors={errors} disabled={disabled} requirement="conditional" hint="Obrigatorio quando o tipo da pre-venda for Veiculo." inputMode="numeric" onChange={handleIntegerMask} />
+          <TextField name="asset_plate" label="Placa" register={register} errors={errors} disabled={disabled} requirement="conditional" hint="Obrigatorio quando o tipo da pre-venda for Veiculo." />
         </FormSection>
       ) : null}
 
@@ -517,11 +544,13 @@ export function PreSalesForm({
         title="Contratacao e negociacao"
         description="Registre valores, detalhes combinados e observacoes operacionais."
       >
-        <TextField name="contract_value" label="Valor do contrato" register={register} errors={errors} disabled={disabled} inputMode="decimal" placeholder="0,00" onChange={handleCurrencyMask} />
+        <TextField name="contract_value" label="Valor do contrato" register={register} errors={errors} disabled={disabled} requirement="conditional" hint="Obrigatorio quando a pre-venda for usada para contrato, recibo ou documento com valor." inputMode="decimal" placeholder="0,00" onChange={handleCurrencyMask} />
         <div className="space-y-2 md:col-span-2">
-          <label className="text-sm font-medium text-slate-700" htmlFor="negotiation_details">
-            Descricao livre da contratacao / informe
-          </label>
+          <FormFieldLabel
+            htmlFor="negotiation_details"
+            label="Descricao livre da contratacao / informe"
+            requirement="optional"
+          />
           <textarea
             id="negotiation_details"
             rows={6}
@@ -565,6 +594,14 @@ export function PreSalesForm({
           </button>
         </div>
         <div className="space-y-3">
+          <div className="grid gap-2 text-xs text-slate-500 md:grid-cols-[90px_1fr_1fr_1fr_1fr_auto]">
+            <span>Parcela (Opcional)</span>
+            <span>Valor (Obrigatorio para recibo)</span>
+            <span>Forma (Obrigatorio para recibo)</span>
+            <span>Data (Opcional)</span>
+            <span>Status (Opcional)</span>
+            <span />
+          </div>
           {fields.map((field, index) => (
             <div
               key={field.id}

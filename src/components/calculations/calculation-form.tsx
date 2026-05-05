@@ -14,6 +14,7 @@ import {
   parseBrazilianDecimalInput,
 } from "@/lib/calculations/currency";
 import { formatCpf, formatPhone, onlyDigits } from "@/lib/clients/masks";
+import { FormFieldLabel } from "@/components/form-field-label";
 import {
   financingCalculationDefaultValues,
   financingCalculationFormSchema,
@@ -236,9 +237,11 @@ export function CalculationForm({
     <form className="space-y-8" onSubmit={handleSubmit(onValidSubmit)}>
       <section className="grid gap-5 rounded-lg border border-slate-200 bg-white p-5 shadow-sm md:grid-cols-2">
         <div className="space-y-2">
-          <label className="text-sm font-medium text-slate-700" htmlFor="client_id">
-            Cliente vinculado
-          </label>
+          <FormFieldLabel
+            htmlFor="client_id"
+            label="Cliente vinculado"
+            requirement="optional"
+          />
           <select
             id="client_id"
             disabled={disabled}
@@ -264,9 +267,11 @@ export function CalculationForm({
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-medium text-slate-700" htmlFor="pre_sale_id">
-            Pre-venda vinculada
-          </label>
+          <FormFieldLabel
+            htmlFor="pre_sale_id"
+            label="Pre-venda vinculada"
+            requirement="optional"
+          />
           <select
             id="pre_sale_id"
             disabled={disabled}
@@ -305,9 +310,12 @@ export function CalculationForm({
         </div>
         <div className="grid gap-5 md:grid-cols-2">
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700" htmlFor="client_name">
-              Nome do cliente <span className="text-red-600">*</span>
-            </label>
+            <FormFieldLabel
+              htmlFor="client_name"
+              label="Nome do cliente"
+              requirement="optional"
+              hint="Se nao informar, o documento e a simulacao exibem Nao informado."
+            />
             <input
               id="client_name"
               disabled={disabled}
@@ -320,9 +328,12 @@ export function CalculationForm({
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700" htmlFor="client_cpf">
-              CPF <span className="text-red-600">*</span>
-            </label>
+            <FormFieldLabel
+              htmlFor="client_cpf"
+              label="CPF"
+              requirement="optional"
+              hint="Se nao informar, o documento e a simulacao exibem Nao informado."
+            />
             <input
               id="client_cpf"
               disabled={disabled}
@@ -341,9 +352,7 @@ export function CalculationForm({
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700" htmlFor="client_phone">
-              Telefone
-            </label>
+            <FormFieldLabel htmlFor="client_phone" label="Telefone" requirement="optional" />
             <input
               id="client_phone"
               disabled={disabled}
@@ -369,9 +378,11 @@ export function CalculationForm({
         </div>
         <div className="grid gap-5 md:grid-cols-2">
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700" htmlFor="financial_institution">
-              Financeira
-            </label>
+            <FormFieldLabel
+              htmlFor="financial_institution"
+              label="Financeira"
+              requirement="optional"
+            />
             <input
               id="financial_institution"
               disabled={disabled}
@@ -380,9 +391,11 @@ export function CalculationForm({
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700" htmlFor="specialist_name">
-              Especialista
-            </label>
+            <FormFieldLabel
+              htmlFor="specialist_name"
+              label="Especialista"
+              requirement="optional"
+            />
             <input
               id="specialist_name"
               disabled={disabled}
@@ -391,9 +404,7 @@ export function CalculationForm({
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700" htmlFor="situation">
-              Situacao
-            </label>
+            <FormFieldLabel htmlFor="situation" label="Situacao" requirement="optional" />
             <input
               id="situation"
               disabled={disabled}
@@ -402,9 +413,7 @@ export function CalculationForm({
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700" htmlFor="expires_in">
-              Expira em
-            </label>
+            <FormFieldLabel htmlFor="expires_in" label="Expira em" requirement="optional" />
             <input
               id="expires_in"
               type="date"
@@ -414,9 +423,11 @@ export function CalculationForm({
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700" htmlFor="attendance_date">
-              Data de atendimento
-            </label>
+            <FormFieldLabel
+              htmlFor="attendance_date"
+              label="Data de atendimento"
+              requirement="optional"
+            />
             <input
               id="attendance_date"
               type="date"
@@ -434,9 +445,7 @@ export function CalculationForm({
         </div>
         <div className="grid gap-5 md:grid-cols-2">
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700" htmlFor="vehicle_year">
-              Ano
-            </label>
+            <FormFieldLabel htmlFor="vehicle_year" label="Ano" requirement="optional" />
             <input
               id="vehicle_year"
               disabled={disabled}
@@ -445,9 +454,7 @@ export function CalculationForm({
             />
           </div>
           <div className="space-y-2 md:col-span-2">
-            <label className="text-sm font-medium text-slate-700" htmlFor="notes">
-              Observacoes
-            </label>
+            <FormFieldLabel htmlFor="notes" label="Observacoes" requirement="optional" />
             <textarea
               id="notes"
               rows={4}
@@ -473,9 +480,11 @@ export function CalculationForm({
         </div>
         <div className="grid gap-5 md:grid-cols-2">
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700" htmlFor="cash_value">
-              Valor a vista
-            </label>
+            <FormFieldLabel
+              htmlFor="cash_value"
+              label="Valor a vista"
+              requirement="optional"
+            />
             <input
               id="cash_value"
               disabled={disabled}
@@ -491,9 +500,11 @@ export function CalculationForm({
             ) : null}
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700" htmlFor="down_payment">
-              Entrada
-            </label>
+            <FormFieldLabel
+              htmlFor="down_payment"
+              label="Entrada"
+              requirement="optional"
+            />
             <input
               id="down_payment"
               disabled={disabled}
@@ -511,9 +522,11 @@ export function CalculationForm({
             ) : null}
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700" htmlFor="financed_value">
-              Valor financiado
-            </label>
+            <FormFieldLabel
+              htmlFor="financed_value"
+              label="Valor financiado"
+              requirement="optional"
+            />
             <input
               id="financed_value"
               disabled={disabled}
@@ -532,12 +545,11 @@ export function CalculationForm({
             ) : null}
           </div>
           <div className="space-y-2">
-            <label
-              className="text-sm font-medium text-slate-700"
+            <FormFieldLabel
               htmlFor="current_installment_value"
-            >
-              Valor atual da parcela
-            </label>
+              label="Valor atual da parcela"
+              requirement="optional"
+            />
             <input
               id="current_installment_value"
               disabled={disabled}
@@ -555,12 +567,11 @@ export function CalculationForm({
             ) : null}
           </div>
           <div className="space-y-2">
-            <label
-              className="text-sm font-medium text-slate-700"
+            <FormFieldLabel
               htmlFor="installment_count"
-            >
-              Quantidade de parcelas
-            </label>
+              label="Quantidade de parcelas"
+              requirement="optional"
+            />
             <input
               id="installment_count"
               disabled={disabled}
@@ -575,12 +586,11 @@ export function CalculationForm({
             ) : null}
           </div>
           <div className="space-y-2">
-            <label
-              className="text-sm font-medium text-slate-700"
+            <FormFieldLabel
               htmlFor="paid_installments"
-            >
-              Parcelas pagas
-            </label>
+              label="Parcelas pagas"
+              requirement="optional"
+            />
             <input
               id="paid_installments"
               disabled={disabled}
@@ -595,12 +605,11 @@ export function CalculationForm({
             ) : null}
           </div>
           <div className="space-y-2">
-            <label
-              className="text-sm font-medium text-slate-700"
+            <FormFieldLabel
               htmlFor="remaining_installments"
-            >
-              Parcelas a pagar
-            </label>
+              label="Parcelas a pagar"
+              requirement="optional"
+            />
             <input
               id="remaining_installments"
               disabled={disabled}

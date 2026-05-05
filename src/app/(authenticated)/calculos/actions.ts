@@ -85,6 +85,10 @@ function stringFromUnknown(value: unknown) {
   return "";
 }
 
+function resolveCalculationClientLabel(value: string | null | undefined) {
+  return value?.trim() || "Nao informado";
+}
+
 function resolveCompanyDisplayName(companyRecord: Record<string, unknown> | null) {
   if (!companyRecord) {
     return "GRS CRM";
@@ -180,7 +184,7 @@ export async function createFinancingCalculationAction(
       action: "calculation.created",
       entityType: "calculation",
       entityId: calculationId,
-      entityLabel: parsed.data.client_name,
+      entityLabel: resolveCalculationClientLabel(parsed.data.client_name),
       details: {
         client_id: parsed.data.client_id,
         pre_sale_id: parsed.data.pre_sale_id,
@@ -260,7 +264,7 @@ export async function updateFinancingCalculationAction(
       action: "calculation.updated",
       entityType: "calculation",
       entityId: calculationId,
-      entityLabel: parsed.data.client_name,
+      entityLabel: resolveCalculationClientLabel(parsed.data.client_name),
       details: {
         client_id: parsed.data.client_id ?? existing.client_id,
         pre_sale_id: parsed.data.pre_sale_id ?? existing.pre_sale_id,
@@ -323,7 +327,7 @@ export async function deleteFinancingCalculationAction(
       action: "calculation.deleted",
       entityType: "calculation",
       entityId: calculationId,
-      entityLabel: calculation.client_name,
+      entityLabel: resolveCalculationClientLabel(calculation.client_name),
       details: {
         client_id: calculation.client_id,
         pre_sale_id: calculation.pre_sale_id,
@@ -388,7 +392,8 @@ export async function generateCalculationPdfAction(
       }),
     );
     const fileName =
-      calculation.pdf_file_name ?? createCalculationPdfFileName(calculation.client_name);
+      calculation.pdf_file_name ??
+      createCalculationPdfFileName(resolveCalculationClientLabel(calculation.client_name));
     const { error: uploadError } = await supabase.storage
       .from(calculationReportsBucket)
       .upload(filePath, pdfBuffer, {
@@ -429,7 +434,7 @@ export async function generateCalculationPdfAction(
       action: "calculation.pdf_generated",
       entityType: "calculation",
       entityId: calculationId,
-      entityLabel: calculation.client_name,
+      entityLabel: resolveCalculationClientLabel(calculation.client_name),
       details: {
         pdf_file_name: fileName,
       },

@@ -7,6 +7,7 @@ import type { ChangeEvent } from "react";
 import { useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import type { UserManagementActionState } from "@/app/(authenticated)/usuarios/actions";
+import { FormFieldLabel } from "@/components/form-field-label";
 import { formatPhone } from "@/lib/clients/masks";
 import {
   companyUserToFormValues,
@@ -135,9 +136,11 @@ function CreateUserForm({
     <form className="space-y-8" onSubmit={handleSubmit(onValidSubmit)}>
       <div className="grid gap-5 rounded-lg border border-slate-200 bg-white p-5 shadow-sm md:grid-cols-2">
         <div className="space-y-2">
-          <label className="text-sm font-medium text-slate-700" htmlFor="full_name">
-            Nome completo <span className="text-red-600">*</span>
-          </label>
+          <FormFieldLabel
+            htmlFor="full_name"
+            label="Nome completo"
+            requirement="required"
+          />
           <input
             id="full_name"
             className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
@@ -150,9 +153,7 @@ function CreateUserForm({
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-medium text-slate-700" htmlFor="phone">
-            Telefone
-          </label>
+          <FormFieldLabel htmlFor="phone" label="Telefone" requirement="optional" />
           <input
             id="phone"
             inputMode="numeric"
@@ -167,9 +168,11 @@ function CreateUserForm({
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-medium text-slate-700" htmlFor="username">
-            Login <span className="text-red-600">*</span>
-          </label>
+          <FormFieldLabel
+            htmlFor="username"
+            label="Login"
+            requirement="required"
+          />
           <input
             id="username"
             className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
@@ -188,12 +191,11 @@ function CreateUserForm({
         </div>
 
         <div className="space-y-2">
-          <label
-            className="text-sm font-medium text-slate-700"
+          <FormFieldLabel
             htmlFor="temporary_password"
-          >
-            Senha provisoria <span className="text-red-600">*</span>
-          </label>
+            label="Senha provisoria"
+            requirement="required"
+          />
           <input
             id="temporary_password"
             type="password"
@@ -209,9 +211,7 @@ function CreateUserForm({
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-medium text-slate-700" htmlFor="role">
-            Cargo <span className="text-red-600">*</span>
-          </label>
+          <FormFieldLabel htmlFor="role" label="Cargo" requirement="required" />
           <select
             id="role"
             className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
@@ -279,9 +279,11 @@ function EditUserForm({
     <form className="space-y-8" onSubmit={handleSubmit(onValidSubmit)}>
       <div className="grid gap-5 rounded-lg border border-slate-200 bg-white p-5 shadow-sm md:grid-cols-2">
         <div className="space-y-2">
-          <label className="text-sm font-medium text-slate-700" htmlFor="full_name">
-            Nome completo <span className="text-red-600">*</span>
-          </label>
+          <FormFieldLabel
+            htmlFor="full_name"
+            label="Nome completo"
+            requirement="required"
+          />
           <input
             id="full_name"
             className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
@@ -294,9 +296,7 @@ function EditUserForm({
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-medium text-slate-700" htmlFor="phone">
-            Telefone
-          </label>
+          <FormFieldLabel htmlFor="phone" label="Telefone" requirement="optional" />
           <input
             id="phone"
             inputMode="numeric"
@@ -311,9 +311,11 @@ function EditUserForm({
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-medium text-slate-700" htmlFor="username">
-            Login <span className="text-red-600">*</span>
-          </label>
+          <FormFieldLabel
+            htmlFor="username"
+            label="Login"
+            requirement="required"
+          />
           <input
             id="username"
             className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
@@ -331,9 +333,7 @@ function EditUserForm({
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-medium text-slate-700" htmlFor="role">
-            Cargo <span className="text-red-600">*</span>
-          </label>
+          <FormFieldLabel htmlFor="role" label="Cargo" requirement="required" />
           <select
             id="role"
             className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"

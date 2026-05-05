@@ -4,6 +4,7 @@ import { Eye, LogIn } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useActionState, useEffect, useState } from "react";
 import { signInWithLoginAction, type LoginActionState } from "@/app/actions/auth";
+import { FormFieldLabel } from "@/components/form-field-label";
 
 const initialState: LoginActionState = {
   ok: false,
@@ -34,9 +35,7 @@ export function LoginForm() {
         value={searchParams.get("redirectedFrom") ?? "/"}
       />
       <div className="space-y-2">
-        <label className="text-sm font-medium text-slate-700" htmlFor="login">
-          Login
-        </label>
+        <FormFieldLabel htmlFor="login" label="Login" requirement="required" />
         <input
           id="login"
           name="login"
@@ -54,9 +53,7 @@ export function LoginForm() {
       </div>
 
       <div className="space-y-2">
-        <label className="text-sm font-medium text-slate-700" htmlFor="password">
-          Senha
-        </label>
+        <FormFieldLabel htmlFor="password" label="Senha" requirement="required" />
         <div className="relative">
           <input
             id="password"

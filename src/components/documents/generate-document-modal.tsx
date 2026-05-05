@@ -9,6 +9,7 @@ import {
   generateOfficialPdfDocumentAction,
   type DocumentActionState,
 } from "@/app/(authenticated)/documentos/actions";
+import { FormFieldLabel } from "@/components/form-field-label";
 import { documentTemplateTypes, type DocumentTemplate } from "@/types/document";
 
 type GenerateDocumentModalProps = {
@@ -158,12 +159,11 @@ export function GenerateDocumentModal({
                 <>
                     <div className="grid gap-4 md:grid-cols-[1fr_auto_auto] md:items-end">
                     <div className="space-y-2">
-                      <label
-                        className="text-sm font-medium text-slate-700"
+                      <FormFieldLabel
                         htmlFor="document-template"
-                      >
-                        Template
-                      </label>
+                        label="Template"
+                        requirement="required"
+                      />
                       <select
                         id="document-template"
                         value={selectedTemplateId}

@@ -6,6 +6,7 @@ import {
   uploadClientDocumentAction,
   type ClientDocumentActionState,
 } from "@/app/(authenticated)/clientes/document-actions";
+import { FormFieldLabel } from "@/components/form-field-label";
 import { clientDocumentTypes } from "@/types/client-document";
 
 type ClientDocumentUploadProps = {
@@ -95,9 +96,11 @@ export function ClientDocumentUpload({
 
       <div className="grid gap-4 md:grid-cols-2">
         <div className="space-y-2">
-          <label className="text-sm font-medium text-slate-700" htmlFor="document_type">
-            Tipo do documento
-          </label>
+          <FormFieldLabel
+            htmlFor="document_type"
+            label="Tipo do documento"
+            requirement="required"
+          />
           <select
             id="document_type"
             value={documentType}
@@ -116,9 +119,11 @@ export function ClientDocumentUpload({
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-medium text-slate-700" htmlFor="document_file">
-            Arquivo
-          </label>
+          <FormFieldLabel
+            htmlFor={`client-document-file-${preSaleId ?? "client"}`}
+            label="Arquivo"
+            requirement="required"
+          />
           <input
             id={`client-document-file-${preSaleId ?? "client"}`}
             type="file"
@@ -130,9 +135,7 @@ export function ClientDocumentUpload({
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-medium text-slate-700" htmlFor="title">
-            Titulo
-          </label>
+          <FormFieldLabel htmlFor="title" label="Titulo" requirement="optional" />
           <input
             id="title"
             value={title}
@@ -144,9 +147,11 @@ export function ClientDocumentUpload({
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-medium text-slate-700" htmlFor="description">
-            Descricao
-          </label>
+          <FormFieldLabel
+            htmlFor="description"
+            label="Descricao"
+            requirement="optional"
+          />
           <input
             id="description"
             value={description}

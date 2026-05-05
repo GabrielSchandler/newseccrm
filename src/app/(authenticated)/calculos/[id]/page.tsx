@@ -97,7 +97,7 @@ export default async function CalculoPage({
   return (
     <>
       <PageHeader
-        title={calculation.client_name}
+        title={calculation.client_name || "Nao informado"}
         description="Relatorio operacional da simulacao revisional pronto para consulta, ajuste e emissao do PDF."
       />
       <div className="space-y-6 p-6">
@@ -146,7 +146,7 @@ export default async function CalculoPage({
         </DetailSection>
 
         <DetailSection title="Dados do cliente">
-          <DetailItem label="Nome" value={calculation.client_name} />
+          <DetailItem label="Nome" value={calculation.client_name || "Nao informado"} />
           <DetailItem label="CPF" value={formatCpfDigits(calculation.client_cpf)} />
           <DetailItem label="Telefone" value={calculation.client_phone ?? "Nao informado"} />
           <DetailItem label="Especialista" value={calculation.specialist_name ?? "Nao informado"} />

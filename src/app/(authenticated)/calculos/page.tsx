@@ -8,6 +8,7 @@ import { getCurrentUserContext } from "@/lib/auth/current-user";
 import {
   formatCalculationCurrency,
   formatCalculationDateTime,
+  formatCpfDigits,
 } from "@/lib/calculations/formatters";
 import {
   canManageCalculations,
@@ -227,10 +228,10 @@ export default async function CalculosPage({ searchParams }: CalculosPageProps) 
                   {calculations.map((calculation) => (
                     <tr key={calculation.id} className="align-top transition hover:bg-slate-50">
                       <td className="px-4 py-3 font-medium text-slate-950">
-                        {calculation.client_name}
+                        {calculation.client_name || "Nao informado"}
                       </td>
                       <td className="px-4 py-3 text-slate-700">
-                        {calculation.client_cpf}
+                        {formatCpfDigits(calculation.client_cpf)}
                       </td>
                       <td className="px-4 py-3 text-slate-700">
                         {calculation.financial_institution ?? "Nao informado"}

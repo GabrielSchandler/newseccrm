@@ -10,17 +10,26 @@ const optionalText = z
   .union([z.string(), z.null(), z.undefined()])
   .transform((value) => (typeof value === "string" && value.trim() ? value.trim() : null));
 
+const optionalDisplayText = z
+  .union([z.string(), z.null(), z.undefined()])
+  .transform((value) => (typeof value === "string" ? value.trim() : ""));
+
 const optionalUuid = z
   .union([z.string(), z.null(), z.undefined()])
   .transform((value) => (typeof value === "string" && value.trim() ? value.trim() : null))
   .pipe(z.string().uuid("Selecione um registro valido.").nullable());
 
-const requiredCpf = z
-  .string()
-  .trim()
-  .min(1, "Informe o CPF.")
-  .refine((value) => onlyDigits(value).length === 11, "Informe um CPF com 11 digitos.")
-  .transform(onlyDigits);
+const optionalCpf = z
+  .union([z.string(), z.null(), z.undefined()])
+  .transform((value) => (typeof value === "string" ? value.trim() : ""))
+  .refine(
+    (value) => !value || onlyDigits(value).length === 11,
+    "Informe um CPF com 11 digitos.",
+  )
+  .transform((value) => {
+    const digits = onlyDigits(value);
+    return digits || "";
+  });
 
 const optionalPhone = optionalText
   .refine((value) => isValidPhone(value), "Informe um telefone valido.")
@@ -48,8 +57,8 @@ const optionalInteger = z
 export const financingCalculationFormSchema = z.object({
   client_id: optionalUuid,
   pre_sale_id: optionalUuid,
-  client_name: z.string().trim().min(1, "Informe o nome do cliente."),
-  client_cpf: requiredCpf,
+  client_name: optionalDisplayText,
+  client_cpf: optionalCpf,
   client_phone: optionalPhone,
   financial_institution: optionalText,
   specialist_name: optionalText,
@@ -123,8 +132,8 @@ export function financingCalculationToFormValues(
   return {
     client_id: calculation.client_id ?? "",
     pre_sale_id: calculation.pre_sale_id ?? "",
-    client_name: calculation.client_name,
-    client_cpf: formatCpf(calculation.client_cpf),
+    client_name: calculation.client_name ?? "",
+    client_cpf: formatCpf(calculation.client_cpf ?? ""),
     client_phone: formatPhone(calculation.client_phone ?? ""),
     financial_institution: calculation.financial_institution ?? "",
     specialist_name: calculation.specialist_name ?? "",
