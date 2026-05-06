@@ -6,6 +6,7 @@ import { getCurrentUserContext } from "@/lib/auth/current-user";
 import { displayValue, formatDateTime } from "@/lib/clients/formatters";
 import { formatPhone, formatZipCode } from "@/lib/clients/masks";
 import { companyProfileToFormValues } from "@/lib/company/schema";
+import { getHomeForRole } from "@/lib/workspace";
 import type { CompanyProfile } from "@/types/company";
 
 type EmpresaPageProps = {
@@ -38,10 +39,10 @@ function isMissingColumnError(error: { code?: string; message?: string } | null)
 
 export default async function EmpresaPage({ searchParams }: EmpresaPageProps) {
   const params = await searchParams;
-  const { supabase, companyId, role } = await getCurrentUserContext();
+  const { supabase, companyId, role, businessArea } = await getCurrentUserContext();
 
   if (!canManageCompany(role)) {
-    redirect(role === "seller" ? "/pre-vendas" : "/dashboard");
+    redirect(getHomeForRole(role, businessArea));
   }
 
   const success = successMessage(params.success);

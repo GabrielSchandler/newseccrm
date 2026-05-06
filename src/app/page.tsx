@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getCurrentUserContext } from "@/lib/auth/current-user";
 import { createClient } from "@/lib/supabase/server";
+import { getHomeForRole } from "@/lib/workspace";
 
 export default async function HomePage() {
   const supabase = await createClient();
@@ -12,7 +13,7 @@ export default async function HomePage() {
     redirect("/login");
   }
 
-  const { role } = await getCurrentUserContext();
+  const { role, businessArea } = await getCurrentUserContext();
 
-  redirect(role === "seller" ? "/pre-vendas" : "/dashboard");
+  redirect(getHomeForRole(role, businessArea));
 }

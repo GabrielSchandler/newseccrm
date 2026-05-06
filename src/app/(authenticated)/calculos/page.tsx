@@ -17,6 +17,7 @@ import {
 import { onlyDigits } from "@/lib/clients/masks";
 import { listAccessiblePreSaleIdsForCurrentUser } from "@/lib/pre-sales/access";
 import { resolveUserDisplayName } from "@/lib/users/account";
+import { getHomeForRole } from "@/lib/workspace";
 import type { FinancingCalculation } from "@/types/calculation";
 
 type CalculosPageProps = {
@@ -47,10 +48,11 @@ function successMessage(success?: string) {
 
 export default async function CalculosPage({ searchParams }: CalculosPageProps) {
   const params = await searchParams;
-  const { supabase, companyId, role, userProfileId } = await getCurrentUserContext();
+  const { supabase, companyId, role, userProfileId, businessArea } =
+    await getCurrentUserContext();
 
   if (!canManageCalculations(role)) {
-    redirect(role === "seller" ? "/pre-vendas" : "/dashboard");
+    redirect(getHomeForRole(role, businessArea));
   }
 
   let query = supabase

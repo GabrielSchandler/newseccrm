@@ -1,9 +1,17 @@
+import Link from "next/link";
 import {
   LogOut,
 } from "lucide-react";
+import { cookies } from "next/headers";
 import packageJson from "../../../package.json";
 import { signOut } from "@/app/actions/auth";
 import { getCurrentUserContext } from "@/lib/auth/current-user";
+import {
+  formatBusinessAreaLabel,
+  resolveCurrentWorkspace,
+  WORKSPACE_COOKIE_NAME,
+  workspaceOptions,
+} from "@/lib/workspace";
 import { SidebarNav, type SidebarNavigationItem } from "./sidebar-nav";
 
 const navigation: SidebarNavigationItem[] = [
@@ -22,6 +30,7 @@ const navigation: SidebarNavigationItem[] = [
   { href: "/usuarios", label: "Usuarios", icon: "users" },
   { href: "/empresa", label: "Empresa", icon: "company", adminOnly: true },
   { href: "/logs", label: "Logs", icon: "logs", adminOnly: true },
+  { href: "/juridico", label: "Juridico", icon: "legal" },
 ];
 
 function resolveCompanyDisplayName(company: {
@@ -32,11 +41,17 @@ function resolveCompanyDisplayName(company: {
 }
 
 export async function AppSidebar() {
-  const { role, supabase, companyId } = await getCurrentUserContext();
+  const { role, supabase, companyId, businessArea } = await getCurrentUserContext();
+  const cookieStore = await cookies();
   const canManageTemplates = role === "admin" || role === "manager";
   const canAccessUsers = role === "admin" || role === "manager";
   const canAccessDashboard = role !== "seller";
   const canAccessAdminOnly = role === "admin";
+  const currentWorkspace = resolveCurrentWorkspace(
+    role,
+    businessArea,
+    cookieStore.get(WORKSPACE_COOKIE_NAME)?.value ?? null,
+  );
   const { data: companyData } = await supabase
     .from("companies")
     .select("trade_name, legal_name, logo_path")
@@ -62,7 +77,14 @@ export async function AppSidebar() {
     (item) =>
       (!item.adminOnly || canAccessAdminOnly) &&
       (item.href !== "/usuarios" || canAccessUsers) &&
-      (item.href !== "/dashboard" || canAccessDashboard),
+      (item.href !== "/dashboard" || canAccessDashboard) &&
+      ((currentWorkspace === "management" &&
+        ["/dashboard", "/documentos/templates", "/usuarios", "/empresa", "/logs"].includes(item.href)) ||
+        (currentWorkspace === "commercial" &&
+          ["/clientes", "/pre-vendas", "/calculos", "/documentos", "/contratos"].includes(
+            item.href,
+          )) ||
+        (currentWorkspace === "legal" && item.href === "/juridico")),
   );
 
   return (
@@ -84,7 +106,11 @@ export async function AppSidebar() {
               )}
               <span className="min-w-0">
                 <span className="block text-xs uppercase tracking-wide text-teal-700">
-                  CRM SaaS
+                  {currentWorkspace === "management"
+                    ? "Gestao"
+                    : currentWorkspace === "legal"
+                      ? "Juridico"
+                      : "Comercial"}
                 </span>
                 <span className="block truncate">{companyName}</span>
               </span>
@@ -95,6 +121,31 @@ export async function AppSidebar() {
             </span>
           </summary>
           <div className="mt-3 space-y-3 pb-2">
+            {role !== "seller" ? (
+              <div className="grid gap-2">
+                {workspaceOptions.map((workspace) => {
+                  const active = workspace.value === currentWorkspace;
+
+                  return (
+                    <Link
+                      key={workspace.value}
+                      href={`/areas/select?workspace=${workspace.value}`}
+                      className={`rounded-lg border px-3 py-2 text-sm font-semibold transition ${
+                        active
+                          ? "border-teal-700 bg-teal-700 text-white"
+                          : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                      }`}
+                    >
+                      {workspace.label}
+                    </Link>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+                Area do usuario: {formatBusinessAreaLabel(businessArea)}
+              </div>
+            )}
             <SidebarNav
               items={visibleNavigation}
               canManageTemplates={canManageTemplates}
@@ -128,7 +179,11 @@ export async function AppSidebar() {
             )}
             <div className="min-w-0">
               <p className="text-xs font-semibold uppercase tracking-wide text-teal-700">
-                CRM SaaS
+                {currentWorkspace === "management"
+                  ? "Gestao"
+                  : currentWorkspace === "legal"
+                    ? "Juridico"
+                    : "Comercial"}
               </p>
               <h1 className="mt-1 truncate text-xl font-semibold text-slate-950">
                 {companyName}
@@ -138,10 +193,40 @@ export async function AppSidebar() {
         </div>
 
         <div className="mt-8 flex flex-1">
-          <SidebarNav
-            items={visibleNavigation}
-            canManageTemplates={canManageTemplates}
-          />
+          <div className="flex flex-1 flex-col gap-4">
+            {role !== "seller" ? (
+              <div className="grid gap-2 px-2">
+                {workspaceOptions.map((workspace) => {
+                  const active = workspace.value === currentWorkspace;
+
+                  return (
+                    <Link
+                      key={workspace.value}
+                      href={`/areas/select?workspace=${workspace.value}`}
+                      className={`rounded-lg border px-3 py-2 text-sm font-semibold transition ${
+                        active
+                          ? "border-teal-700 bg-teal-700 text-white"
+                          : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                      }`}
+                    >
+                      <span className="block">{workspace.label}</span>
+                      <span className={`mt-1 block text-xs ${active ? "text-teal-50" : "text-slate-500"}`}>
+                        {workspace.description}
+                      </span>
+                    </Link>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="mx-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+                Area do usuario: {formatBusinessAreaLabel(businessArea)}
+              </div>
+            )}
+            <SidebarNav
+              items={visibleNavigation}
+              canManageTemplates={canManageTemplates}
+            />
+          </div>
         </div>
 
         <div className="px-3 pb-3 text-xs text-slate-400">

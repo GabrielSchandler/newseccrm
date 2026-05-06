@@ -9,6 +9,7 @@ import {
   listCalculationClients,
   listCalculationPreSales,
 } from "@/lib/calculations/service";
+import { getHomeForRole } from "@/lib/workspace";
 import {
   financingCalculationDefaultValues,
   type FinancingCalculationFormValues,
@@ -29,11 +30,11 @@ function numberToInput(value: number | null | undefined) {
 export default async function NovoCalculoPage({
   searchParams,
 }: NovoCalculoPageProps) {
-  const { role } = await getCurrentUserContext();
+  const { role, businessArea } = await getCurrentUserContext();
   const params = await searchParams;
 
   if (!canManageCalculations(role)) {
-    redirect(role === "seller" ? "/pre-vendas" : "/dashboard");
+    redirect(getHomeForRole(role, businessArea));
   }
 
   let loadError: string | null = null;

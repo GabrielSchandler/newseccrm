@@ -19,7 +19,11 @@ import {
   type UpdateCompanyUserFormValues,
   type UpdateCompanyUserPayload,
 } from "@/lib/users/schema";
-import { companyUserRoles, type CompanyUserProfile } from "@/types/user";
+import {
+  companyBusinessAreas,
+  companyUserRoles,
+  type CompanyUserProfile,
+} from "@/types/user";
 
 type CreateUserFormProps = {
   submitLabel: string;
@@ -211,6 +215,32 @@ function CreateUserForm({
         </div>
 
         <div className="space-y-2">
+          <FormFieldLabel
+            htmlFor="business_area"
+            label="Area principal"
+            requirement="required"
+          />
+          <select
+            id="business_area"
+            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
+            disabled={disabled}
+            {...register("business_area")}
+          >
+            {companyBusinessAreas.map((item) => (
+              <option key={item.value} value={item.value}>
+                {item.label}
+              </option>
+            ))}
+          </select>
+          <p className="text-xs text-slate-500">
+            Para consultores, isso define se o acesso vai direto para Comercial ou Juridico.
+          </p>
+          {errors.business_area?.message ? (
+            <p className="text-sm text-red-600">{String(errors.business_area.message)}</p>
+          ) : null}
+        </div>
+
+        <div className="space-y-2">
           <FormFieldLabel htmlFor="role" label="Cargo" requirement="required" />
           <select
             id="role"
@@ -329,6 +359,32 @@ function EditUserForm({
           </p>
           {errors.username?.message ? (
             <p className="text-sm text-red-600">{String(errors.username.message)}</p>
+          ) : null}
+        </div>
+
+        <div className="space-y-2">
+          <FormFieldLabel
+            htmlFor="business_area"
+            label="Area principal"
+            requirement="required"
+          />
+          <select
+            id="business_area"
+            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
+            disabled={disabled}
+            {...register("business_area")}
+          >
+            {companyBusinessAreas.map((item) => (
+              <option key={item.value} value={item.value}>
+                {item.label}
+              </option>
+            ))}
+          </select>
+          <p className="text-xs text-slate-500">
+            Admins e gerentes podem trocar de area na entrada do CRM. Para consultores, isso define o modulo inicial.
+          </p>
+          {errors.business_area?.message ? (
+            <p className="text-sm text-red-600">{String(errors.business_area.message)}</p>
           ) : null}
         </div>
 

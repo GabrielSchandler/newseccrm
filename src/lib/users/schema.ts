@@ -25,6 +25,10 @@ export const createCompanyUserSchema = z.object({
   full_name: z.string().trim().min(1, "Informe o nome completo."),
   username: usernameSchema,
   phone: optionalPhone,
+  business_area: z.enum(["commercial", "legal"], {
+    required_error: "Selecione a area principal.",
+    invalid_type_error: "Selecione a area principal.",
+  }),
   role: z.enum(["admin", "manager", "seller"], {
     required_error: "Selecione o cargo.",
     invalid_type_error: "Selecione o cargo.",
@@ -39,6 +43,10 @@ export const updateCompanyUserSchema = z.object({
   full_name: z.string().trim().min(1, "Informe o nome completo."),
   username: usernameSchema,
   phone: optionalPhone,
+  business_area: z.enum(["commercial", "legal"], {
+    required_error: "Selecione a area principal.",
+    invalid_type_error: "Selecione a area principal.",
+  }),
   role: z.enum(["admin", "manager", "seller"], {
     required_error: "Selecione o cargo.",
     invalid_type_error: "Selecione o cargo.",
@@ -55,6 +63,7 @@ export const createCompanyUserDefaultValues: CreateCompanyUserFormValues = {
   full_name: "",
   username: "",
   phone: "",
+  business_area: "commercial",
   role: "seller",
   temporary_password: "",
 };
@@ -66,6 +75,7 @@ export function companyUserToFormValues(
     full_name: user.full_name ?? "",
     username: user.username ?? "",
     phone: user.phone ?? "",
+    business_area: user.business_area ?? "commercial",
     role: user.role ?? "seller",
     is_active: user.is_active,
   };

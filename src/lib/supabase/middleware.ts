@@ -1,6 +1,12 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import type { CookieOptions } from "@supabase/ssr";
+import {
+  classifyWorkspacePath,
+  getHomeForRole,
+  normalizeBusinessArea,
+  WORKSPACE_COOKIE_NAME,
+} from "@/lib/workspace";
 
 type CookieToSet = {
   name: string;
@@ -18,6 +24,8 @@ const protectedRoutes = [
   "/empresa",
   "/logs",
   "/usuarios",
+  "/areas",
+  "/juridico",
 ];
 
 export async function updateSession(request: NextRequest) {
@@ -67,29 +75,92 @@ export async function updateSession(request: NextRequest) {
   }
 
   let profileRole: string | null = null;
+  let profileBusinessArea: string | null = null;
 
   if (user && (isLoginRoute || isDashboardRoute)) {
     const { data: profile } = await supabase
       .from("user_profiles")
-      .select("role")
+      .select("role, business_area")
       .eq("auth_user_id", user.id)
       .maybeSingle();
 
     profileRole = (profile as { role?: string | null } | null)?.role ?? null;
+    profileBusinessArea =
+      (profile as { business_area?: string | null } | null)?.business_area ?? null;
   }
 
   if (user && isLoginRoute) {
     const url = request.nextUrl.clone();
-    url.pathname = profileRole === "seller" ? "/pre-vendas" : "/dashboard";
+    url.pathname = getHomeForRole(
+      profileRole,
+      normalizeBusinessArea(profileBusinessArea),
+    );
     url.search = "";
     return NextResponse.redirect(url);
   }
 
+  const routeWorkspace = classifyWorkspacePath(request.nextUrl.pathname);
+
+  if (user && routeWorkspace) {
+    if (profileRole === null || profileBusinessArea === null) {
+      const { data: profile } = await supabase
+        .from("user_profiles")
+        .select("role, business_area")
+        .eq("auth_user_id", user.id)
+        .maybeSingle();
+
+      profileRole = (profile as { role?: string | null } | null)?.role ?? null;
+      profileBusinessArea =
+        (profile as { business_area?: string | null } | null)?.business_area ?? null;
+    }
+  }
+
+  if (user && routeWorkspace && profileRole === "seller") {
+    const sellerArea = normalizeBusinessArea(profileBusinessArea);
+
+    if (routeWorkspace === "management" || routeWorkspace !== sellerArea) {
+      const url = request.nextUrl.clone();
+      url.pathname = getHomeForRole(profileRole, sellerArea);
+      url.search = "";
+      return NextResponse.redirect(url);
+    }
+  }
+
   if (user && isDashboardRoute && profileRole === "seller") {
     const url = request.nextUrl.clone();
-    url.pathname = "/pre-vendas";
+    url.pathname = getHomeForRole(
+      profileRole,
+      normalizeBusinessArea(profileBusinessArea),
+    );
     url.search = "";
     return NextResponse.redirect(url);
+  }
+
+  if (user && request.nextUrl.pathname === "/areas") {
+    const cookieWorkspace = request.cookies.get(WORKSPACE_COOKIE_NAME)?.value ?? null;
+
+    if (profileRole === "seller") {
+      const url = request.nextUrl.clone();
+      url.pathname = getHomeForRole(
+        profileRole,
+        normalizeBusinessArea(profileBusinessArea),
+      );
+      url.search = "";
+      return NextResponse.redirect(url);
+    }
+
+    if (!cookieWorkspace && profileRole && profileRole !== "seller") {
+      return supabaseResponse;
+    }
+  }
+
+  if (user && routeWorkspace && profileRole && profileRole !== "seller") {
+    supabaseResponse.cookies.set(WORKSPACE_COOKIE_NAME, routeWorkspace, {
+      path: "/",
+      httpOnly: false,
+      sameSite: "lax",
+      maxAge: 60 * 60 * 24 * 30,
+    });
   }
 
   return supabaseResponse;

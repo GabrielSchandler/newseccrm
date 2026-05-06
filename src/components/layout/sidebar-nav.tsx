@@ -27,7 +27,8 @@ export type SidebarNavigationItem = {
     | "contracts"
     | "users"
     | "company"
-    | "logs";
+    | "logs"
+    | "legal";
   managerOnly?: boolean;
   adminOnly?: boolean;
 };
@@ -48,6 +49,7 @@ const icons = {
   users: BarChart3,
   company: Building2,
   logs: ClipboardList,
+  legal: FileText,
 };
 
 function isActivePath(pathname: string, href: string) {

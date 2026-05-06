@@ -113,7 +113,7 @@ async function getCompanyUser(userId: string, companyId: string) {
   const { data, error } = await supabase
     .from("user_profiles")
     .select(
-      "id, auth_user_id, company_id, full_name, username, email, phone, role, is_active, invited_by, deactivated_at, deactivated_by, created_at, updated_at",
+      "id, auth_user_id, company_id, full_name, username, email, phone, role, business_area, is_active, invited_by, deactivated_at, deactivated_by, created_at, updated_at",
     )
     .eq("id", userId)
     .eq("company_id", companyId)
@@ -238,6 +238,7 @@ export async function createCompanyUserAction(
       email: internalAuthEmail,
       phone: parsed.data.phone,
       role: parsed.data.role,
+      business_area: parsed.data.business_area,
       is_active: true,
       invited_by: userProfileId,
       deactivated_at: null,
@@ -263,6 +264,7 @@ export async function createCompanyUserAction(
       details: {
         username: normalizedUsername,
         role: parsed.data.role,
+        business_area: parsed.data.business_area,
       },
     });
   } catch (error) {
@@ -371,6 +373,7 @@ export async function updateCompanyUserAction(
       email: nextInternalAuthEmail,
       phone: parsed.data.phone,
       role: parsed.data.role,
+      business_area: parsed.data.business_area,
       is_active: parsed.data.is_active,
       deactivated_at: parsed.data.is_active ? null : new Date().toISOString(),
       deactivated_by: parsed.data.is_active ? null : userProfileId,
@@ -408,6 +411,7 @@ export async function updateCompanyUserAction(
       details: {
         username: normalizedUsername,
         role: parsed.data.role,
+        business_area: parsed.data.business_area,
         is_active: parsed.data.is_active,
       },
     });

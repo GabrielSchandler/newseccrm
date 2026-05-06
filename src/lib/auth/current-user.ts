@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import type { CompanyUserRole } from "@/types/user";
+import { normalizeBusinessArea, type CompanyBusinessArea } from "@/lib/workspace";
 
 export class UserProfileContextError extends Error {
   constructor(message: string) {
@@ -14,6 +15,7 @@ export type CurrentUserProfile = {
   auth_user_id: string;
   company_id: string;
   role: CompanyUserRole | null;
+  business_area: CompanyBusinessArea | null;
   username: string | null;
   email: string | null;
   full_name: string | null;
@@ -34,7 +36,7 @@ export async function getCurrentUserContext() {
 
   const { data, error: profileError } = await supabase
     .from("user_profiles")
-    .select("id, auth_user_id, company_id, role, username, email, full_name, phone, is_active")
+    .select("id, auth_user_id, company_id, role, business_area, username, email, full_name, phone, is_active")
     .eq("auth_user_id", user.id)
     .maybeSingle();
   const profile = data as CurrentUserProfile | null;
@@ -68,6 +70,7 @@ export async function getCurrentUserContext() {
     userProfileId: profile.id,
     companyId: profile.company_id,
     role: profile.role,
+    businessArea: normalizeBusinessArea(profile.business_area),
     username: profile.username,
     email: profile.email,
     fullName: profile.full_name,

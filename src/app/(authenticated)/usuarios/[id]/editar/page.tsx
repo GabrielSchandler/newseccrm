@@ -3,6 +3,7 @@ import { updateCompanyUserAction } from "@/app/(authenticated)/usuarios/actions"
 import { PageHeader } from "@/components/layout/page-header";
 import { UserForm } from "@/components/users/user-form";
 import { getCurrentUserContext } from "@/lib/auth/current-user";
+import { getHomeForRole } from "@/lib/workspace";
 import type { CompanyUserProfile } from "@/types/user";
 
 type EditarUsuarioPageProps = {
@@ -25,16 +26,16 @@ export default async function EditarUsuarioPage({
   params,
 }: EditarUsuarioPageProps) {
   const { id } = await params;
-  const { supabase, companyId, role } = await getCurrentUserContext();
+  const { supabase, companyId, role, businessArea } = await getCurrentUserContext();
 
   if (role !== "admin" && role !== "manager") {
-    redirect(role === "seller" ? "/pre-vendas" : "/dashboard");
+    redirect(getHomeForRole(role, businessArea));
   }
 
   const { data, error } = await supabase
     .from("user_profiles")
     .select(
-      "id, auth_user_id, company_id, full_name, username, email, phone, role, is_active, invited_by, deactivated_at, deactivated_by, created_at, updated_at",
+      "id, auth_user_id, company_id, full_name, username, email, phone, role, business_area, is_active, invited_by, deactivated_at, deactivated_by, created_at, updated_at",
     )
     .eq("id", id)
     .eq("company_id", companyId)

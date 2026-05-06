@@ -6,7 +6,11 @@ import { UserStatusBadge } from "@/components/users/user-status-badge";
 import { UserToggleStatusButton } from "@/components/users/user-toggle-status-button";
 import { getCurrentUserContext } from "@/lib/auth/current-user";
 import { displayValue, formatDateTime } from "@/lib/clients/formatters";
-import type { CompanyUserProfile } from "@/types/user";
+import {
+  formatCompanyBusinessArea,
+  type CompanyUserProfile,
+} from "@/types/user";
+import { getHomeForRole } from "@/lib/workspace";
 
 type UsuariosPageProps = {
   searchParams: Promise<{ success?: string; error?: string }>;
@@ -54,10 +58,10 @@ function errorMessage(error?: string) {
 
 export default async function UsuariosPage({ searchParams }: UsuariosPageProps) {
   const params = await searchParams;
-  const { supabase, companyId, role } = await getCurrentUserContext();
+  const { supabase, companyId, role, businessArea } = await getCurrentUserContext();
 
   if (!canAccessUserManagement(role)) {
-    redirect(role === "seller" ? "/pre-vendas" : "/dashboard");
+    redirect(getHomeForRole(role, businessArea));
   }
 
   const [{ data: companyData, error: companyError }, { data, error }] =
@@ -70,7 +74,7 @@ export default async function UsuariosPage({ searchParams }: UsuariosPageProps) 
       supabase
         .from("user_profiles")
         .select(
-          "id, auth_user_id, company_id, full_name, username, email, phone, role, is_active, invited_by, deactivated_at, deactivated_by, created_at, updated_at",
+          "id, auth_user_id, company_id, full_name, username, email, phone, role, business_area, is_active, invited_by, deactivated_at, deactivated_by, created_at, updated_at",
         )
         .eq("company_id", companyId)
         .order("is_active", { ascending: false })
@@ -179,6 +183,7 @@ export default async function UsuariosPage({ searchParams }: UsuariosPageProps) 
                     <th className="px-4 py-3 font-semibold">Nome</th>
                     <th className="px-4 py-3 font-semibold">Login</th>
                     <th className="px-4 py-3 font-semibold">Telefone</th>
+                    <th className="px-4 py-3 font-semibold">Area</th>
                     <th className="px-4 py-3 font-semibold">Cargo</th>
                     <th className="px-4 py-3 font-semibold">Status</th>
                     <th className="px-4 py-3 font-semibold">Criado em</th>
@@ -196,6 +201,9 @@ export default async function UsuariosPage({ searchParams }: UsuariosPageProps) 
                       </td>
                       <td className="px-4 py-3 text-slate-700">
                         {displayValue(user.phone)}
+                      </td>
+                      <td className="px-4 py-3 text-slate-700">
+                        {formatCompanyBusinessArea(user.business_area)}
                       </td>
                       <td className="px-4 py-3">
                         <UserRoleBadge role={user.role} />
@@ -232,7 +240,7 @@ export default async function UsuariosPage({ searchParams }: UsuariosPageProps) 
                   ))}
                   {!users.length ? (
                     <tr>
-                      <td className="px-4 py-6 text-center text-slate-500" colSpan={7}>
+                      <td className="px-4 py-6 text-center text-slate-500" colSpan={8}>
                         Nenhum usuario encontrado.
                       </td>
                     </tr>

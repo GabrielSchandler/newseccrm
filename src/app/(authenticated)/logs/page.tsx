@@ -4,6 +4,7 @@ import { getCurrentUserContext } from "@/lib/auth/current-user";
 import { canAccessAuditLogs } from "@/lib/audit/log";
 import { displayValue, formatDateTime } from "@/lib/clients/formatters";
 import { resolveUserDisplayName } from "@/lib/users/account";
+import { getHomeForRole } from "@/lib/workspace";
 import type { CompanyAuditLog } from "@/types/audit-log";
 
 type LogsPageProps = {
@@ -22,10 +23,10 @@ function isMissingTableError(error: { code?: string; message?: string } | null) 
 
 export default async function LogsPage({ searchParams }: LogsPageProps) {
   const params = await searchParams;
-  const { supabase, companyId, role } = await getCurrentUserContext();
+  const { supabase, companyId, role, businessArea } = await getCurrentUserContext();
 
   if (!canAccessAuditLogs(role)) {
-    redirect(role === "seller" ? "/pre-vendas" : "/dashboard");
+    redirect(getHomeForRole(role, businessArea));
   }
 
   let query = supabase
