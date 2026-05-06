@@ -27,19 +27,19 @@ type ClientFormProps = {
 const fields = [
   { name: "full_name", label: "Nome completo", type: "text", required: true },
   { name: "cpf", label: "CPF", type: "text", required: true },
-  { name: "phone_mobile", label: "Celular", type: "text", required: true },
-  { name: "rg", label: "RG", type: "text" },
-  { name: "birth_date", label: "Data de nascimento", type: "date" },
-  { name: "marital_status", label: "Estado civil", type: "select" },
+  { name: "phone_mobile", label: "Celular", type: "text" },
+  { name: "rg", label: "RG", type: "text", required: true },
+  { name: "birth_date", label: "Data de nascimento", type: "date", required: true },
+  { name: "marital_status", label: "Estado civil", type: "select", required: true },
   { name: "profession", label: "Profissao", type: "text" },
-  { name: "email", label: "Email", type: "email" },
+  { name: "email", label: "Email", type: "email", required: true },
   { name: "phone_secondary", label: "Telefone secundario", type: "text" },
-  { name: "zip_code", label: "CEP", type: "text" },
-  { name: "street", label: "Rua", type: "text" },
-  { name: "number", label: "Numero", type: "text" },
-  { name: "district", label: "Bairro", type: "text" },
-  { name: "city", label: "Cidade", type: "text" },
-  { name: "state", label: "Estado", type: "text" },
+  { name: "zip_code", label: "CEP", type: "text", required: true },
+  { name: "street", label: "Rua", type: "text", required: true },
+  { name: "number", label: "Numero", type: "text", required: true },
+  { name: "district", label: "Bairro", type: "text", required: true },
+  { name: "city", label: "Cidade", type: "text", required: true },
+  { name: "state", label: "Estado", type: "text", required: true },
 ] as const;
 
 const maritalStatusOptions = [
@@ -184,6 +184,10 @@ export function ClientForm({
 
   return (
     <form className="space-y-8" onSubmit={handleSubmit(onValidSubmit)}>
+      <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+        Obrigatoriedade alinhada com os contratos e recibos atuais. Os campos marcados como obrigatorios
+        sao os que entram diretamente nesses documentos.
+      </div>
       <div className="grid gap-5 md:grid-cols-2">
         {fields.map((field) => (
           <div className="space-y-2" key={field.name}>

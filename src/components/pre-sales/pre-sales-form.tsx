@@ -306,6 +306,10 @@ export function PreSalesForm({
 
   return (
     <form className="space-y-6" onSubmit={handleSubmit(onValidSubmit)}>
+      <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+        Obrigatoriedade alinhada com os contratos e recibos atuais enviados. Campos marcados como obrigatorios
+        sao usados diretamente nos documentos; os condicionais dependem do tipo da operacao ou do bloco preenchido.
+      </div>
       <FormSection
         title="Cabecalho da pre-venda"
         description="Identifique a operacao, origem comercial e responsavel pelo atendimento."
@@ -448,7 +452,7 @@ export function PreSalesForm({
         <TextField name="snapshot_marital_status" label="Estado civil" register={register} errors={errors} disabled={disabled} requirement="optional" />
         <TextField name="snapshot_profession" label="Profissao" register={register} errors={errors} disabled={disabled} requirement="optional" />
         <TextField name="snapshot_email" label="Email" register={register} errors={errors} disabled={disabled} type="email" requirement="optional" />
-        <TextField name="snapshot_phone_mobile" label="Celular" register={register} errors={errors} disabled={disabled} requirement="required" inputMode="numeric" onChange={maskPhone} />
+        <TextField name="snapshot_phone_mobile" label="Celular" register={register} errors={errors} disabled={disabled} requirement="optional" inputMode="numeric" onChange={maskPhone} />
         <TextField name="snapshot_phone_secondary" label="Telefone secundario" register={register} errors={errors} disabled={disabled} requirement="optional" inputMode="numeric" onChange={maskPhone} />
         <TextField name="snapshot_zip_code" label="CEP" register={register} errors={errors} disabled={disabled} requirement="optional" inputMode="numeric" onChange={maskZipCode} />
         <TextField name="snapshot_street" label="Rua" register={register} errors={errors} disabled={disabled} requirement="optional" />
@@ -484,7 +488,7 @@ export function PreSalesForm({
         <TextField name="debt_holder_marital_status" label="Estado civil" register={register} errors={errors} disabled={disabled} requirement="optional" />
         <TextField name="debt_holder_profession" label="Profissao" register={register} errors={errors} disabled={disabled} requirement="optional" />
         <TextField name="debt_holder_nationality" label="Nacionalidade" register={register} errors={errors} disabled={disabled} requirement="optional" />
-        <TextField name="debt_holder_issuer_agency" label="Orgao emissor" register={register} errors={errors} disabled={disabled} requirement="optional" />
+        <TextField name="debt_holder_issuer_agency" label="Orgao emissor" register={register} errors={errors} disabled={disabled} requirement="conditional" hint="Obrigatorio quando houver titular da divida preenchido e o contrato usar a tag {{titular_orgao_emissor}}." />
         <TextField name="debt_holder_father_name" label="Pai" register={register} errors={errors} disabled={disabled} requirement="optional" />
         <TextField name="debt_holder_mother_name" label="Mae" register={register} errors={errors} disabled={disabled} requirement="optional" />
         <TextField name="debt_holder_phone_mobile" label="Celular" register={register} errors={errors} disabled={disabled} requirement="optional" inputMode="numeric" onChange={maskPhone} />
@@ -502,7 +506,7 @@ export function PreSalesForm({
         title="Dados financeiros"
         description="Dados da operacao, financiamento e contrato existente."
       >
-        <TextField name="financer_name" label="Financeira" register={register} errors={errors} disabled={disabled} requirement="optional" />
+        <TextField name="financer_name" label="Financeira" register={register} errors={errors} disabled={disabled} requirement="required" hint="Usado diretamente no contrato atual." />
         <div className="space-y-2">
           <FormFieldLabel
             htmlFor="has_financing_contract"
@@ -544,13 +548,13 @@ export function PreSalesForm({
         title="Contratacao e negociacao"
         description="Registre valores, detalhes combinados e observacoes operacionais."
       >
-        <TextField name="contract_value" label="Valor do contrato" register={register} errors={errors} disabled={disabled} requirement="conditional" hint="Obrigatorio quando a pre-venda for usada para contrato, recibo ou documento com valor." inputMode="decimal" placeholder="0,00" onChange={handleCurrencyMask} />
+        <TextField name="contract_value" label="Valor do contrato" register={register} errors={errors} disabled={disabled} requirement="required" hint="Usado no contrato e no recibo para gerar o valor total no documento." inputMode="decimal" placeholder="0,00" onChange={handleCurrencyMask} />
         <div className="space-y-2 md:col-span-2">
           <FormFieldLabel
             htmlFor="payment_description"
             label="Descricao de contrato"
-            requirement="optional"
-            hint="Use para descrever como o cliente acordou de pagar. A tag do template e {{descricao_pagamento}}."
+            requirement="required"
+            hint="Usado diretamente em contrato e recibo pela tag {{descricao_pagamento}}."
           />
           <textarea
             id="payment_description"

@@ -63,6 +63,12 @@ const optionalText = z
   .union([z.string(), z.null(), z.undefined()])
   .transform((value) => (typeof value === "string" && value.trim() ? value.trim() : null));
 
+const requiredText = z
+  .string()
+  .trim()
+  .min(1, "Preencha este campo.")
+  .transform((value) => value.trim());
+
 const optionalLeadMedia = z
   .union([
     z.enum(leadMediaValues),
@@ -91,13 +97,6 @@ const optionalCpf = optionalText
   )
   .transform((value) => (value ? onlyDigits(value) : null));
 
-const requiredPhone = z
-  .string()
-  .trim()
-  .min(1, "Informe o celular.")
-  .refine((value) => isValidPhone(value, true), "Informe um telefone valido.")
-  .transform(onlyDigits);
-
 const optionalPhone = optionalText
   .refine((value) => isValidPhone(value), "Informe um telefone valido.")
   .transform((value) => (value ? onlyDigits(value) : null));
@@ -106,6 +105,12 @@ const optionalNumber = z
   .union([z.string(), z.number(), z.null(), z.undefined()])
   .transform((value) => parseBrazilianDecimalInput(value))
   .refine((value) => value === null || !Number.isNaN(value), "Informe um valor valido.");
+
+const requiredNumber = z
+  .union([z.string(), z.number(), z.null(), z.undefined()])
+  .transform((value) => parseBrazilianDecimalInput(value))
+  .refine((value) => value !== null && !Number.isNaN(value), "Informe um valor valido.")
+  .transform((value) => value as number);
 
 const optionalInteger = z
   .union([z.string(), z.number(), z.null(), z.undefined()])
@@ -139,8 +144,8 @@ export const preSaleFormSchema = z.object({
   ]),
   media: optionalLeadMedia,
   service_type: optionalText,
-  contract_value: optionalNumber,
-  payment_description: optionalText,
+  contract_value: requiredNumber,
+  payment_description: requiredText,
   negotiation_details: optionalText,
   snapshot_full_name: z.string().trim().min(1, "Informe o nome do contratante."),
   snapshot_cpf: requiredCpf,
@@ -149,7 +154,7 @@ export const preSaleFormSchema = z.object({
   snapshot_marital_status: optionalText,
   snapshot_profession: optionalText,
   snapshot_email: optionalEmail,
-  snapshot_phone_mobile: requiredPhone,
+  snapshot_phone_mobile: optionalPhone,
   snapshot_phone_secondary: optionalPhone,
   snapshot_zip_code: optionalText,
   snapshot_street: optionalText,
@@ -176,7 +181,7 @@ export const preSaleFormSchema = z.object({
   debt_holder_district: optionalText,
   debt_holder_city: optionalText,
   debt_holder_state: optionalText,
-  financer_name: optionalText,
+  financer_name: requiredText,
   has_financing_contract: z
     .union([z.boolean(), z.string(), z.null(), z.undefined()])
     .transform((value) => {
@@ -215,6 +220,16 @@ export const preSaleFormSchema = z.object({
     )
     .max(12, "Informe no maximo 12 pagamentos previstos."),
 }).superRefine((values, context) => {
+  if (values.debt_holder_full_name || values.debt_holder_cpf) {
+    if (!values.debt_holder_issuer_agency) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["debt_holder_issuer_agency"],
+        message: "Informe o orgao emissor quando houver titular da divida.",
+      });
+    }
+  }
+
   if (values.pre_sale_type !== "veiculo") {
     return;
   }
