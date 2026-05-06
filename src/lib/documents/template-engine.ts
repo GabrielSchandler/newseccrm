@@ -179,7 +179,7 @@ export const documentVariableCatalog = [
   },
   {
     group: "Contratacao",
-    variables: ["valor_contrato", "data_contrato"],
+    variables: ["valor_contrato", "descricao_pagamento", "data_contrato"],
   },
   {
     group: "Pagamentos",
@@ -752,6 +752,7 @@ export function buildDocumentVariables(context: DocumentTemplateContext) {
     ),
     veiculo_placa: formatText(financialCase?.asset_plate),
     valor_contrato: formatCurrencyWithWords(preSale.contract_value),
+    descricao_pagamento: formatText(preSale.payment_description),
     data_contrato: formatLongDatePtBr(now),
     empresa_razao_social:
       stringFromUnknown(companyRecord.legal_name) ||

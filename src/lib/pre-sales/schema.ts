@@ -140,6 +140,7 @@ export const preSaleFormSchema = z.object({
   media: optionalLeadMedia,
   service_type: optionalText,
   contract_value: optionalNumber,
+  payment_description: optionalText,
   negotiation_details: optionalText,
   snapshot_full_name: z.string().trim().min(1, "Informe o nome do contratante."),
   snapshot_cpf: requiredCpf,
@@ -247,6 +248,7 @@ export const preSaleDefaultValues: PreSaleFormValues = {
   media: "",
   service_type: "",
   contract_value: "",
+  payment_description: "",
   negotiation_details: "",
   snapshot_full_name: "",
   snapshot_cpf: "",
@@ -317,6 +319,7 @@ export function preSaleToFormValues(
     service_type: preSale.service_type ?? "",
     contract_value:
       formatNumberForPtBrInput(preSale.contract_value),
+    payment_description: preSale.payment_description ?? "",
     negotiation_details: preSale.negotiation_details ?? "",
     snapshot_full_name: snapshot?.full_name ?? "",
     snapshot_cpf: snapshot?.cpf ?? "",

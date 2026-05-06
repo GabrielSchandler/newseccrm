@@ -311,6 +311,15 @@ export default async function PreVendaPage({ params, searchParams }: PreVendaPag
         <DetailSection title="Contratacao e negociacao">
           <DetailItem label="Valor do contrato" value={formatCurrency(preSale.contract_value)} />
           <DetailItem
+            label="Descricao de contrato"
+            className="md:col-span-2"
+            value={
+              <p className="whitespace-pre-line">
+                {displayValue(preSale.payment_description)}
+              </p>
+            }
+          />
+          <DetailItem
             label="Descricao livre da contratacao / informe"
             className="md:col-span-2"
             value={

@@ -71,6 +71,7 @@ export type PreSale = {
   service_type: string | null;
   media: string | null;
   contract_value: number | string | null;
+  payment_description: string | null;
   negotiation_details: string | null;
   created_by: string;
   created_at: string;

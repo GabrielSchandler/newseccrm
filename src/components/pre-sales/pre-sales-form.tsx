@@ -547,6 +547,27 @@ export function PreSalesForm({
         <TextField name="contract_value" label="Valor do contrato" register={register} errors={errors} disabled={disabled} requirement="conditional" hint="Obrigatorio quando a pre-venda for usada para contrato, recibo ou documento com valor." inputMode="decimal" placeholder="0,00" onChange={handleCurrencyMask} />
         <div className="space-y-2 md:col-span-2">
           <FormFieldLabel
+            htmlFor="payment_description"
+            label="Descricao de contrato"
+            requirement="optional"
+            hint="Use para descrever como o cliente acordou de pagar. A tag do template e {{descricao_pagamento}}."
+          />
+          <textarea
+            id="payment_description"
+            rows={4}
+            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
+            disabled={disabled}
+            placeholder="Ex.: R$ 800,00 no credito a vista e R$ 1.000,00 no PIX."
+            {...register("payment_description")}
+          />
+          {errors.payment_description?.message ? (
+            <p className="text-sm text-red-600">
+              {errors.payment_description.message}
+            </p>
+          ) : null}
+        </div>
+        <div className="space-y-2 md:col-span-2">
+          <FormFieldLabel
             htmlFor="negotiation_details"
             label="Descricao livre da contratacao / informe"
             requirement="optional"
