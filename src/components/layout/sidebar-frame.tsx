@@ -1,0 +1,175 @@
+"use client";
+
+import Link from "next/link";
+import { House } from "lucide-react";
+import { usePathname } from "next/navigation";
+import {
+  classifyWorkspacePath,
+  type CompanyBusinessArea,
+} from "@/lib/workspace";
+import { SidebarNav, type SidebarNavigationItem } from "./sidebar-nav";
+
+type SidebarFrameProps = {
+  role: string | null;
+  businessArea: CompanyBusinessArea;
+  companyName: string;
+  companyLogoUrl: string | null;
+  canManageTemplates: boolean;
+  canAccessUsers: boolean;
+  canAccessDashboard: boolean;
+  canAccessAdminOnly: boolean;
+  homeHref: string;
+  footer: React.ReactNode;
+  logoutNode: React.ReactNode;
+  navigation: SidebarNavigationItem[];
+};
+
+function fallbackWorkspace(role: string | null, businessArea: CompanyBusinessArea) {
+  if (role === "seller") {
+    return businessArea;
+  }
+
+  return "management";
+}
+
+export function SidebarFrame({
+  role,
+  businessArea,
+  companyName,
+  companyLogoUrl,
+  canManageTemplates,
+  canAccessUsers,
+  canAccessDashboard,
+  canAccessAdminOnly,
+  homeHref,
+  footer,
+  logoutNode,
+  navigation,
+}: SidebarFrameProps) {
+  const pathname = usePathname();
+  const currentWorkspace =
+    classifyWorkspacePath(pathname) ?? fallbackWorkspace(role, businessArea);
+
+  const visibleNavigation = navigation.filter(
+    (item) =>
+      (!item.adminOnly || canAccessAdminOnly) &&
+      (item.href !== "/usuarios" || canAccessUsers) &&
+      (item.href !== "/dashboard" || canAccessDashboard) &&
+      ((currentWorkspace === "management" &&
+        [
+          "/dashboard",
+          "/documentos",
+          "/documentos/templates",
+          "/contratos",
+          "/usuarios",
+          "/empresa",
+          "/logs",
+        ].includes(item.href)) ||
+        (currentWorkspace === "commercial" &&
+          ["/clientes", "/pre-vendas", "/calculos"].includes(item.href)) ||
+        (currentWorkspace === "legal" && item.href === "/juridico")),
+  );
+
+  const workspaceLabel =
+    currentWorkspace === "management"
+      ? "Gestao"
+      : currentWorkspace === "legal"
+        ? "Juridico"
+        : "Comercial";
+
+  return (
+    <>
+      <div className="border-b border-slate-200 bg-white px-4 py-3 md:hidden">
+        <details className="group">
+          <summary className="flex cursor-pointer list-none items-center justify-between rounded-lg px-2 py-2 text-sm font-semibold text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600">
+            <span className="flex min-w-0 items-center gap-3">
+              {companyLogoUrl ? (
+                <img
+                  src={companyLogoUrl}
+                  alt={`Logo da empresa ${companyName}`}
+                  className="h-10 w-10 rounded-md object-contain"
+                />
+              ) : (
+                <span className="flex h-10 w-10 items-center justify-center rounded-md bg-slate-100 px-2 text-center text-[11px] font-bold uppercase tracking-wide text-slate-700">
+                  {companyName.slice(0, 2)}
+                </span>
+              )}
+              <span className="min-w-0">
+                <span className="block text-xs uppercase tracking-wide text-teal-700">
+                  {workspaceLabel}
+                </span>
+                <span className="block truncate">{companyName}</span>
+              </span>
+            </span>
+            <span className="text-xs text-slate-500 group-open:hidden">Menu</span>
+            <span className="hidden text-xs text-slate-500 group-open:inline">
+              Fechar
+            </span>
+          </summary>
+          <div className="mt-3 space-y-3 pb-2">
+            <Link
+              href={homeHref}
+              className="inline-flex w-full items-center gap-3 rounded-lg bg-teal-700 px-3 py-3 text-sm font-semibold text-white transition hover:bg-teal-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600 focus-visible:ring-offset-2"
+            >
+              <House aria-hidden="true" className="h-4 w-4" />
+              Tela inicial
+            </Link>
+            <SidebarNav
+              items={visibleNavigation}
+              canManageTemplates={canManageTemplates}
+            />
+            {logoutNode}
+          </div>
+        </details>
+      </div>
+
+      <aside className="hidden min-h-screen w-72 flex-col border-r border-slate-200 bg-white px-4 py-5 md:flex">
+        <div className="px-2">
+          <div className="flex items-center gap-3">
+            {companyLogoUrl ? (
+              <img
+                src={companyLogoUrl}
+                alt={`Logo da empresa ${companyName}`}
+                className="h-14 w-14 rounded-md object-contain"
+              />
+            ) : (
+              <div className="flex h-14 w-14 items-center justify-center rounded-md bg-slate-100 px-2 text-center text-sm font-bold uppercase tracking-wide text-slate-700">
+                {companyName.slice(0, 2)}
+              </div>
+            )}
+            <div className="min-w-0">
+              <p className="text-xs font-semibold uppercase tracking-wide text-teal-700">
+                {workspaceLabel}
+              </p>
+              <h1 className="mt-1 truncate text-xl font-semibold text-slate-950">
+                {companyName}
+              </h1>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-8 flex flex-1">
+          <div className="flex flex-1 flex-col gap-4">
+            <div className="px-2">
+              <Link
+                href={homeHref}
+                className="inline-flex w-full items-center gap-3 rounded-lg bg-teal-700 px-3 py-3 text-sm font-semibold text-white transition hover:bg-teal-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600 focus-visible:ring-offset-2"
+              >
+                <House aria-hidden="true" className="h-4 w-4" />
+                Tela inicial
+              </Link>
+            </div>
+            <SidebarNav
+              items={visibleNavigation}
+              canManageTemplates={canManageTemplates}
+            />
+          </div>
+        </div>
+
+        <div className="px-3 pb-3 text-xs text-slate-400">{footer}</div>
+
+        {logoutNode}
+      </aside>
+    </>
+  );
+}
