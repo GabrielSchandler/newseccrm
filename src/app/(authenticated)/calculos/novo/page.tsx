@@ -99,7 +99,7 @@ export default async function NovoCalculoPage({
     <>
       <PageHeader
         title="Nova simulacao"
-        description="Preencha os dados operacionais, revise os numeros e gere uma analise sintetizada para o cliente."
+        description="Preencha os dados operacionais, revise os numeros e gere a simulacao de analise de correcao de juros para o cliente."
       />
       <div className="space-y-6 p-6">
         {loadError ? (

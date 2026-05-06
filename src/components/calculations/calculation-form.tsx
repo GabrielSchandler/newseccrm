@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import type { ChangeEvent, FocusEvent } from "react";
+import type { ChangeEvent, FocusEvent, KeyboardEvent } from "react";
 import { useEffect, useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import type { CalculationActionState } from "@/app/(authenticated)/calculos/actions";
@@ -60,6 +60,70 @@ function handleIntegerMask(event: ChangeEvent<HTMLInputElement>) {
 
 function handleCurrencyBlur(event: FocusEvent<HTMLInputElement>) {
   event.target.value = normalizeCurrencyInputValue(event.target.value);
+}
+
+function handleEnterAsNextField(event: KeyboardEvent<HTMLFormElement>) {
+  if (
+    event.key !== "Enter" ||
+    event.shiftKey ||
+    event.altKey ||
+    event.ctrlKey ||
+    event.metaKey ||
+    event.nativeEvent.isComposing
+  ) {
+    return;
+  }
+
+  const target = event.target;
+
+  if (!(target instanceof HTMLElement)) {
+    return;
+  }
+
+  const tagName = target.tagName.toLowerCase();
+
+  if (tagName === "textarea") {
+    return;
+  }
+
+  if (tagName !== "input" && tagName !== "select") {
+    return;
+  }
+
+  if (target instanceof HTMLInputElement) {
+    const blockedTypes = new Set([
+      "submit",
+      "button",
+      "checkbox",
+      "radio",
+      "file",
+      "hidden",
+    ]);
+
+    if (blockedTypes.has(target.type)) {
+      return;
+    }
+  }
+
+  const form = event.currentTarget;
+  const focusableElements = Array.from(
+    form.querySelectorAll<HTMLElement>(
+      'input:not([type="hidden"]):not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled]), [tabindex]:not([tabindex="-1"])',
+    ),
+  ).filter((element) => element.offsetParent !== null);
+  const currentIndex = focusableElements.indexOf(target);
+  const nextElement = currentIndex >= 0 ? focusableElements[currentIndex + 1] : null;
+
+  if (!nextElement) {
+    return;
+  }
+
+  event.preventDefault();
+  nextElement.focus();
+
+  if (nextElement instanceof HTMLInputElement && nextElement.select) {
+    nextElement.select();
+  }
 }
 
 function CalculationActionMessage({
@@ -234,7 +298,11 @@ export function CalculationForm({
   }
 
   return (
-    <form className="space-y-8" onSubmit={handleSubmit(onValidSubmit)}>
+    <form
+      className="space-y-8"
+      onSubmit={handleSubmit(onValidSubmit)}
+      onKeyDownCapture={handleEnterAsNextField}
+    >
       <section className="grid gap-5 rounded-lg border border-slate-200 bg-white p-5 shadow-sm md:grid-cols-2">
         <div className="space-y-2">
           <FormFieldLabel
@@ -527,14 +595,14 @@ export function CalculationForm({
               label="Valor financiado"
               requirement="optional"
             />
-            <input
+            <input type="hidden" {...register("financed_value")} />
+            <div
               id="financed_value"
-              disabled={disabled}
-              readOnly
-              inputMode="decimal"
-              className="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
-              {...register("financed_value")}
-            />
+              aria-live="polite"
+              className="min-h-[42px] rounded-lg border border-slate-400 bg-slate-200 px-3 py-2.5 text-sm font-semibold text-slate-800"
+            >
+              {financedValue || "Nao informado"}
+            </div>
             <p className="text-xs text-slate-500">
               Calculado automaticamente: valor a vista menos entrada.
             </p>
@@ -610,14 +678,14 @@ export function CalculationForm({
               label="Parcelas a pagar"
               requirement="optional"
             />
-            <input
+            <input type="hidden" {...register("remaining_installments")} />
+            <div
               id="remaining_installments"
-              disabled={disabled}
-              readOnly
-              inputMode="numeric"
-              className="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
-              {...register("remaining_installments", { onChange: handleIntegerMask })}
-            />
+              aria-live="polite"
+              className="min-h-[42px] rounded-lg border border-slate-400 bg-slate-200 px-3 py-2.5 text-sm font-semibold text-slate-800"
+            >
+              {remainingInstallments || "Nao informado"}
+            </div>
             <p className="text-xs text-slate-500">
               Calculado automaticamente: total de parcelas menos parcelas pagas.
             </p>

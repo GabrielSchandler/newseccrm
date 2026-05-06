@@ -241,7 +241,7 @@ export default async function CalculoPage({
         <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
           <h2 className="text-base font-semibold text-slate-950">PDF do cliente</h2>
           <p className="mt-1 text-sm leading-6 text-slate-600">
-            Gere a analise sintetizada no bucket privado e baixe por signed URL
+            Gere a simulacao de analise de correcao de juros no bucket privado e baixe por signed URL
             temporaria.
           </p>
           <div className="mt-5">

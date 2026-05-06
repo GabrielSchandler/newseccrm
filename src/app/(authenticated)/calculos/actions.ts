@@ -477,7 +477,8 @@ export async function createSignedCalculationPdfUrlAction(
         mode === "download"
           ? {
               download:
-                calculation.pdf_file_name ?? "analise-sintetizada.pdf",
+                calculation.pdf_file_name ??
+                "simulacao-analise-de-correcao-de-juros.pdf",
             }
           : undefined,
       );

@@ -89,7 +89,7 @@ export async function assertPreSaleBelongsToCompany(
 }
 
 export function buildCalculationReportPath(companyId: string, calculationId: string) {
-  return `${companyId}/calculations/${calculationId}/analise-sintetizada.pdf`;
+  return `${companyId}/calculations/${calculationId}/simulacao-analise-de-correcao-de-juros.pdf`;
 }
 
 export function createCalculationPdfFileName(clientName: string) {
@@ -100,7 +100,7 @@ export function createCalculationPdfFileName(clientName: string) {
     .replace(/^-+|-+$/g, "")
     .toLowerCase();
 
-  return `analise-sintetizada-${safeName || randomUUID()}.pdf`;
+  return `simulacao-analise-de-correcao-de-juros-${safeName || randomUUID()}.pdf`;
 }
 
 export async function listCalculationCreators(userIds: string[]) {
