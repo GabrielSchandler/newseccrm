@@ -5,7 +5,10 @@ import { PreSaleDeleteButton } from "@/components/pre-sales/pre-sale-delete-butt
 import { PreSalesForm } from "@/components/pre-sales/pre-sales-form";
 import { getCurrentUserContext } from "@/lib/auth/current-user";
 import { formatDateTime } from "@/lib/clients/formatters";
-import { canAccessPreSaleRecord, canManageAllPreSales } from "@/lib/pre-sales/access";
+import {
+  canAccessAllPreSales,
+  canEditPreSaleRecord,
+} from "@/lib/pre-sales/access";
 import { preSaleToFormValues } from "@/lib/pre-sales/schema";
 import type {
   ClientOption,
@@ -26,7 +29,8 @@ const clientOptionSelect =
 
 export default async function EditarPreVendaPage({ params }: EditarPreVendaPageProps) {
   const { id } = await params;
-  const { supabase, companyId, userProfileId, role } = await getCurrentUserContext();
+  const { supabase, companyId, userProfileId, role, businessArea } =
+    await getCurrentUserContext();
 
   const [
     { data, error },
@@ -80,7 +84,7 @@ export default async function EditarPreVendaPage({ params }: EditarPreVendaPageP
     notFound();
   }
 
-  const canEdit = canAccessPreSaleRecord(role, userProfileId, preSale);
+  const canEdit = canEditPreSaleRecord(role, businessArea, userProfileId, preSale);
   const canDelete = role === "admin" || role === "manager";
 
   if (!canEdit) {
@@ -88,7 +92,7 @@ export default async function EditarPreVendaPage({ params }: EditarPreVendaPageP
   }
 
   const consultants = ((consultantsData ?? []) as UserProfileOption[]).filter((consultant) =>
-    canManageAllPreSales(role) ? true : consultant.id === userProfileId,
+    canAccessAllPreSales(role, businessArea) ? true : consultant.id === userProfileId,
   );
 
   return (

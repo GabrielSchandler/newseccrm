@@ -18,7 +18,7 @@ export const businessAreaOptions: Array<{
   {
     value: "legal",
     label: "Juridico",
-    description: "Fluxos juridicos, acompanhamentos e operacoes da equipe legal.",
+    description: "Clientes, pre-vendas e documentos da frente juridica da empresa.",
   },
 ];
 
@@ -43,7 +43,7 @@ export const workspaceOptions: Array<{
   {
     value: "legal",
     label: "Juridico",
-    description: "Area preparada para o modulo juridico da operacao.",
+    description: "Clientes, pre-vendas e documentos gerados da operacao juridica.",
     href: "/juridico",
   },
 ];
@@ -104,12 +104,9 @@ const managementPrefixes = [
 
 const legalPrefixes = ["/juridico"];
 
-const commercialPrefixes = [
-  "/clientes",
-  "/pre-vendas",
-  "/calculos",
-  "/documentos",
-];
+const commercialPrefixes = ["/calculos"];
+
+const sharedOperationalPrefixes = ["/clientes", "/pre-vendas", "/documentos"];
 
 export function classifyWorkspacePath(pathname: string): WorkspaceView | null {
   if (managementPrefixes.some((prefix) => pathname.startsWith(prefix))) {
@@ -125,4 +122,8 @@ export function classifyWorkspacePath(pathname: string): WorkspaceView | null {
   }
 
   return null;
+}
+
+export function isSharedOperationalPath(pathname: string) {
+  return sharedOperationalPrefixes.some((prefix) => pathname.startsWith(prefix));
 }

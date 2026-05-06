@@ -31,7 +31,8 @@ function formatTemplateType(type: DocumentTemplateType | null | undefined) {
 
 export default async function DocumentosPage({ searchParams }: DocumentosPageProps) {
   const params = await searchParams;
-  const { supabase, companyId, role, userProfileId } = await getCurrentUserContext();
+  const { supabase, companyId, role, businessArea, userProfileId } =
+    await getCurrentUserContext();
   const canDeleteDocuments = role === "admin" || role === "manager";
   const type = params.type as DocumentTemplateType | undefined;
   let query = supabase
@@ -59,7 +60,7 @@ export default async function DocumentosPage({ searchParams }: DocumentosPagePro
   const { data, error } = await query;
   let documents = (data ?? []) as GeneratedDocument[];
 
-  if (role === "seller") {
+  if (role === "seller" && businessArea !== "legal") {
     const accessiblePreSaleIds = new Set(
       (await listAccessiblePreSaleIdsForCurrentUser()) ?? [],
     );

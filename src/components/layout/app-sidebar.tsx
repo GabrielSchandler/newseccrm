@@ -1,10 +1,15 @@
 import {
   LogOut,
 } from "lucide-react";
+import { cookies } from "next/headers";
 import packageJson from "../../../package.json";
 import { signOut } from "@/app/actions/auth";
 import { getCurrentUserContext } from "@/lib/auth/current-user";
-import { getHomeForRole } from "@/lib/workspace";
+import {
+  getHomeForRole,
+  resolveCurrentWorkspace,
+  WORKSPACE_COOKIE_NAME,
+} from "@/lib/workspace";
 import { SidebarFrame } from "./sidebar-frame";
 import { type SidebarNavigationItem } from "./sidebar-nav";
 
@@ -36,11 +41,14 @@ function resolveCompanyDisplayName(company: {
 
 export async function AppSidebar() {
   const { role, supabase, companyId, businessArea } = await getCurrentUserContext();
+  const cookieStore = await cookies();
+  const workspaceCookie = cookieStore.get(WORKSPACE_COOKIE_NAME)?.value ?? null;
   const canManageTemplates = role === "admin" || role === "manager";
   const canAccessUsers = role === "admin" || role === "manager";
   const canAccessDashboard = role !== "seller";
   const canAccessAdminOnly = role === "admin";
   const homeHref = getHomeForRole(role, businessArea);
+  const resolvedWorkspace = resolveCurrentWorkspace(role, businessArea, workspaceCookie);
   const { data: companyData } = await supabase
     .from("companies")
     .select("trade_name, legal_name, logo_path")
@@ -64,8 +72,6 @@ export async function AppSidebar() {
 
   return (
     <SidebarFrame
-      role={role}
-      businessArea={businessArea}
       companyName={companyName}
       companyLogoUrl={companyLogoUrl}
       canManageTemplates={canManageTemplates}
@@ -73,6 +79,7 @@ export async function AppSidebar() {
       canAccessDashboard={canAccessDashboard}
       canAccessAdminOnly={canAccessAdminOnly}
       homeHref={homeHref}
+      resolvedWorkspace={resolvedWorkspace}
       footer={<>Versao {packageJson.version}</>}
       navigation={navigation}
       logoutNode={

@@ -24,7 +24,7 @@ import {
   formatPreSaleType,
   formatUserName,
 } from "@/lib/pre-sales/formatters";
-import { canAccessPreSaleRecord } from "@/lib/pre-sales/access";
+import { canAccessPreSaleRecord, canEditPreSaleRecord } from "@/lib/pre-sales/access";
 import type { DocumentTemplate } from "@/types/document";
 import type {
   ClientOption,
@@ -82,7 +82,8 @@ function DetailItem({
 
 export default async function PreVendaPage({ params, searchParams }: PreVendaPageProps) {
   const [{ id }, queryParams] = await Promise.all([params, searchParams]);
-  const { supabase, companyId, userProfileId, role } = await getCurrentUserContext();
+  const { supabase, companyId, userProfileId, role, businessArea } =
+    await getCurrentUserContext();
 
   const { data, error } = await supabase
     .from("pre_sales")
@@ -96,7 +97,7 @@ export default async function PreVendaPage({ params, searchParams }: PreVendaPag
     notFound();
   }
 
-  if (!canAccessPreSaleRecord(role, userProfileId, preSale)) {
+  if (!canAccessPreSaleRecord(role, businessArea, userProfileId, preSale)) {
     notFound();
   }
 
@@ -164,7 +165,7 @@ export default async function PreVendaPage({ params, searchParams }: PreVendaPag
   const financialCase = financialCaseData as PreSaleFinancialCase | null;
   const payments = (paymentsData ?? []) as PreSalePayment[];
   const templates = (templatesData ?? []) as DocumentTemplate[];
-  const canEdit = canAccessPreSaleRecord(role, userProfileId, preSale);
+  const canEdit = canEditPreSaleRecord(role, businessArea, userProfileId, preSale);
   const canDelete = role === "admin" || role === "manager";
   const successMessage =
     queryParams.success === "created"

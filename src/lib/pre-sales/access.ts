@@ -1,4 +1,5 @@
 import { getCurrentUserContext } from "@/lib/auth/current-user";
+import type { CompanyBusinessArea } from "@/lib/workspace";
 import type { PreSale } from "@/types/pre-sale";
 
 type PreSaleAccessRecord = Pick<
@@ -6,16 +7,33 @@ type PreSaleAccessRecord = Pick<
   "id" | "company_id" | "client_id" | "consultant_user_id" | "created_by"
 >;
 
-export function canManageAllPreSales(role: string | null) {
+export function canManageAllPreSales(
+  role: string | null,
+) {
   return role === "admin" || role === "manager";
+}
+
+export function canAccessAllPreSales(
+  role: string | null,
+  businessArea?: CompanyBusinessArea,
+) {
+  return canManageAllPreSales(role) || (role === "seller" && businessArea === "legal");
+}
+
+export function canCreatePreSales(
+  role: string | null,
+  businessArea: CompanyBusinessArea,
+) {
+  return role === "admin" || role === "manager" || (role === "seller" && businessArea === "commercial");
 }
 
 export function canAccessPreSaleRecord(
   role: string | null,
+  businessArea: CompanyBusinessArea,
   userProfileId: string,
   preSale: Pick<PreSaleAccessRecord, "consultant_user_id" | "created_by">,
 ) {
-  if (canManageAllPreSales(role)) {
+  if (canAccessAllPreSales(role, businessArea)) {
     return true;
   }
 
@@ -28,8 +46,28 @@ export function canAccessPreSaleRecord(
   );
 }
 
+export function canEditPreSaleRecord(
+  role: string | null,
+  businessArea: CompanyBusinessArea,
+  userProfileId: string,
+  preSale: Pick<PreSaleAccessRecord, "consultant_user_id" | "created_by">,
+) {
+  if (canManageAllPreSales(role)) {
+    return true;
+  }
+
+  if (role !== "seller" || businessArea !== "commercial") {
+    return false;
+  }
+
+  return (
+    preSale.consultant_user_id === userProfileId || preSale.created_by === userProfileId
+  );
+}
+
 export async function assertPreSaleAccess(preSaleId: string) {
-  const { supabase, companyId, role, userProfileId } = await getCurrentUserContext();
+  const { supabase, companyId, role, businessArea, userProfileId } =
+    await getCurrentUserContext();
   const { data, error } = await supabase
     .from("pre_sales")
     .select("id, company_id, client_id, consultant_user_id, created_by")
@@ -47,7 +85,7 @@ export async function assertPreSaleAccess(preSaleId: string) {
 
   const preSale = data as PreSaleAccessRecord;
 
-  if (!canAccessPreSaleRecord(role, userProfileId, preSale)) {
+  if (!canAccessPreSaleRecord(role, businessArea, userProfileId, preSale)) {
     throw new Error("Voce nao tem permissao para acessar esta pre-venda.");
   }
 
@@ -55,9 +93,10 @@ export async function assertPreSaleAccess(preSaleId: string) {
 }
 
 export async function listAccessiblePreSaleIdsForCurrentUser() {
-  const { supabase, companyId, role, userProfileId } = await getCurrentUserContext();
+  const { supabase, companyId, role, businessArea, userProfileId } =
+    await getCurrentUserContext();
 
-  if (canManageAllPreSales(role)) {
+  if (canAccessAllPreSales(role, businessArea)) {
     return null;
   }
 

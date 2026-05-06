@@ -5,13 +5,11 @@ import { House } from "lucide-react";
 import { usePathname } from "next/navigation";
 import {
   classifyWorkspacePath,
-  type CompanyBusinessArea,
+  type WorkspaceView,
 } from "@/lib/workspace";
 import { SidebarNav, type SidebarNavigationItem } from "./sidebar-nav";
 
 type SidebarFrameProps = {
-  role: string | null;
-  businessArea: CompanyBusinessArea;
   companyName: string;
   companyLogoUrl: string | null;
   canManageTemplates: boolean;
@@ -19,22 +17,13 @@ type SidebarFrameProps = {
   canAccessDashboard: boolean;
   canAccessAdminOnly: boolean;
   homeHref: string;
+  resolvedWorkspace: WorkspaceView;
   footer: React.ReactNode;
   logoutNode: React.ReactNode;
   navigation: SidebarNavigationItem[];
 };
 
-function fallbackWorkspace(role: string | null, businessArea: CompanyBusinessArea) {
-  if (role === "seller") {
-    return businessArea;
-  }
-
-  return "management";
-}
-
 export function SidebarFrame({
-  role,
-  businessArea,
   companyName,
   companyLogoUrl,
   canManageTemplates,
@@ -42,13 +31,13 @@ export function SidebarFrame({
   canAccessDashboard,
   canAccessAdminOnly,
   homeHref,
+  resolvedWorkspace,
   footer,
   logoutNode,
   navigation,
 }: SidebarFrameProps) {
   const pathname = usePathname();
-  const currentWorkspace =
-    classifyWorkspacePath(pathname) ?? fallbackWorkspace(role, businessArea);
+  const currentWorkspace = classifyWorkspacePath(pathname) ?? resolvedWorkspace;
 
   const visibleNavigation = navigation.filter(
     (item) =>
@@ -66,7 +55,8 @@ export function SidebarFrame({
         ].includes(item.href)) ||
         (currentWorkspace === "commercial" &&
           ["/clientes", "/pre-vendas", "/calculos", "/documentos"].includes(item.href)) ||
-        (currentWorkspace === "legal" && item.href === "/juridico")),
+        (currentWorkspace === "legal" &&
+          ["/juridico", "/clientes", "/pre-vendas", "/documentos"].includes(item.href))),
   );
 
   const workspaceLabel =

@@ -4,7 +4,12 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { recordAuditLog } from "@/lib/audit/log";
 import { getCurrentUserContext } from "@/lib/auth/current-user";
-import { assertPreSaleAccess, canManageAllPreSales } from "@/lib/pre-sales/access";
+import {
+  assertPreSaleAccess,
+  canCreatePreSales,
+  canEditPreSaleRecord,
+  canManageAllPreSales,
+} from "@/lib/pre-sales/access";
 import { preSaleFormSchema, type PreSalePayload } from "@/lib/pre-sales/schema";
 import type { PreSaleStatus } from "@/types/pre-sale";
 
@@ -278,7 +283,8 @@ export async function createPreSaleAction(
   let preSaleId = "";
 
   try {
-    const { supabase, companyId, userProfileId, role } = await getCurrentUserContext();
+    const { supabase, companyId, userProfileId, role, businessArea } =
+      await getCurrentUserContext();
     const {
       preSaleValues,
       snapshotValues,
@@ -303,8 +309,13 @@ export async function createPreSaleAction(
       }
     }
 
+    if (!canCreatePreSales(role, businessArea)) {
+      return friendlyError("O usuario atual nao pode criar pre-vendas nesta area.");
+    }
+
     if (
       role === "seller" &&
+      businessArea === "commercial" &&
       parsed.data.consultant_user_id &&
       parsed.data.consultant_user_id !== userProfileId
     ) {
@@ -314,7 +325,7 @@ export async function createPreSaleAction(
     }
 
     const consultantUserId =
-      role === "seller"
+      role === "seller" && businessArea === "commercial"
         ? userProfileId
         : parsed.data.consultant_user_id || null;
 
@@ -374,7 +385,8 @@ export async function updatePreSaleAction(
   }
 
   try {
-    const { supabase, companyId, userProfileId, role } = await getCurrentUserContext();
+    const { supabase, companyId, userProfileId, role, businessArea } =
+      await getCurrentUserContext();
     const {
       preSaleValues,
       snapshotValues,
@@ -382,7 +394,11 @@ export async function updatePreSaleAction(
       financialCaseValues,
       payments,
     } = splitPreSalePayload(parsed.data);
-    await assertPreSaleAccess(preSaleId);
+    const accessiblePreSale = await assertPreSaleAccess(preSaleId);
+
+    if (!canEditPreSaleRecord(role, businessArea, userProfileId, accessiblePreSale)) {
+      return friendlyError("O usuario atual nao pode editar esta pre-venda.");
+    }
 
     const clientExists = await assertClientExistsInCompany(parsed.data.client_id, companyId);
 
@@ -392,6 +408,7 @@ export async function updatePreSaleAction(
 
     if (
       role === "seller" &&
+      businessArea === "commercial" &&
       parsed.data.consultant_user_id &&
       parsed.data.consultant_user_id !== userProfileId
     ) {
@@ -401,7 +418,7 @@ export async function updatePreSaleAction(
     }
 
     const consultantUserId =
-      role === "seller"
+      role === "seller" && businessArea === "commercial"
         ? userProfileId
         : parsed.data.consultant_user_id || null;
 
@@ -454,8 +471,13 @@ export async function updatePreSaleStatusAction(
   status: PreSaleStatus,
 ): Promise<PreSaleActionState> {
   try {
-    const { supabase, companyId, userProfileId } = await getCurrentUserContext();
-    await assertPreSaleAccess(preSaleId);
+    const { supabase, companyId, userProfileId, role, businessArea } =
+      await getCurrentUserContext();
+    const accessiblePreSale = await assertPreSaleAccess(preSaleId);
+
+    if (!canEditPreSaleRecord(role, businessArea, userProfileId, accessiblePreSale)) {
+      return friendlyError("O usuario atual nao pode alterar o status desta pre-venda.");
+    }
 
     const { error } = await supabase
       .from("pre_sales")

@@ -4,6 +4,7 @@ import type { CookieOptions } from "@supabase/ssr";
 import {
   classifyWorkspacePath,
   getHomeForRole,
+  isSharedOperationalPath,
   normalizeBusinessArea,
   WORKSPACE_COOKIE_NAME,
 } from "@/lib/workspace";
@@ -119,6 +120,18 @@ export async function updateSession(request: NextRequest) {
     const sellerArea = normalizeBusinessArea(profileBusinessArea);
 
     if (routeWorkspace === "management" || routeWorkspace !== sellerArea) {
+      const url = request.nextUrl.clone();
+      url.pathname = getHomeForRole(profileRole, sellerArea);
+      url.search = "";
+      return NextResponse.redirect(url);
+    }
+  }
+
+  if (user && !routeWorkspace && profileRole === "seller") {
+    const sellerArea = normalizeBusinessArea(profileBusinessArea);
+    const isSharedPath = isSharedOperationalPath(request.nextUrl.pathname);
+
+    if (!isSharedPath) {
       const url = request.nextUrl.clone();
       url.pathname = getHomeForRole(profileRole, sellerArea);
       url.search = "";

@@ -6,7 +6,7 @@ import { PreSalesKanban } from "@/components/pre-sales/pre-sales-kanban";
 import { PreSalesList } from "@/components/pre-sales/pre-sales-list";
 import { getCurrentUserContext } from "@/lib/auth/current-user";
 import { onlyDigits } from "@/lib/clients/masks";
-import { canManageAllPreSales } from "@/lib/pre-sales/access";
+import { canAccessAllPreSales, canCreatePreSales } from "@/lib/pre-sales/access";
 import { resolveUserDisplayName } from "@/lib/users/account";
 import type {
   ClientOption,
@@ -47,8 +47,10 @@ function attachRelations(
 
 export default async function PreVendasPage({ searchParams }: PreVendasPageProps) {
   const params = await searchParams;
-  const { supabase, companyId, role, userProfileId } = await getCurrentUserContext();
+  const { supabase, companyId, role, businessArea, userProfileId } =
+    await getCurrentUserContext();
   const canDeletePreSales = role === "admin" || role === "manager";
+  const canCreatePreSale = canCreatePreSales(role, businessArea);
   const search = params.q?.trim() ?? "";
   const cpfSearch = onlyDigits(search);
   const type = params.type as PreSaleType | undefined;
@@ -60,7 +62,7 @@ export default async function PreVendasPage({ searchParams }: PreVendasPageProps
     .eq("company_id", companyId)
     .order("created_at", { ascending: false });
 
-  if (!canManageAllPreSales(role)) {
+  if (!canAccessAllPreSales(role, businessArea)) {
     preSalesQuery = preSalesQuery.or(
       `consultant_user_id.eq.${userProfileId},created_by.eq.${userProfileId}`,
     );
@@ -96,7 +98,7 @@ export default async function PreVendasPage({ searchParams }: PreVendasPageProps
 
   const clients = (clientsData ?? []) as ClientOption[];
   const consultants = ((consultantsData ?? []) as UserProfileOption[]).filter((consultant) =>
-    canManageAllPreSales(role) ? true : consultant.id === userProfileId,
+    canAccessAllPreSales(role, businessArea) ? true : consultant.id === userProfileId,
   );
   let preSales = attachRelations((preSalesData ?? []) as PreSale[], clients, consultants);
 
@@ -173,15 +175,17 @@ export default async function PreVendasPage({ searchParams }: PreVendasPageProps
               Filtrar
             </button>
           </form>
-          <div>
-            <Link
-              href="/pre-vendas/novo"
-              className="inline-flex items-center justify-center gap-2 rounded-lg bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-800"
-            >
-              <Plus className="h-4 w-4" />
-              Nova pre-venda
-            </Link>
-          </div>
+          {canCreatePreSale ? (
+            <div>
+              <Link
+                href="/pre-vendas/novo"
+                className="inline-flex items-center justify-center gap-2 rounded-lg bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-800"
+              >
+                <Plus className="h-4 w-4" />
+                Nova pre-venda
+              </Link>
+            </div>
+          ) : null}
         </div>
 
         {error ? (

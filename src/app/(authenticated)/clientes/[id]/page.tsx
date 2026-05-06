@@ -67,7 +67,7 @@ export default async function ClientePage({
   searchParams,
 }: ClientePageProps) {
   const [{ id }, queryParams] = await Promise.all([params, searchParams]);
-  const { supabase, companyId, role } = await getCurrentUserContext();
+  const { supabase, companyId, role, businessArea } = await getCurrentUserContext();
 
   const { data, error } = await supabase
     .from("clients")
@@ -98,7 +98,7 @@ export default async function ClientePage({
     .order("created_at", { ascending: false });
   let generatedDocuments = (generatedDocumentsData ?? []) as GeneratedDocument[];
 
-  if (role === "seller") {
+  if (role === "seller" && businessArea !== "legal") {
     const accessiblePreSaleIds = new Set(
       (await listAccessiblePreSaleIdsForCurrentUser()) ?? [],
     );

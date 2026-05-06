@@ -3,7 +3,8 @@ import { assertPreSaleAccess } from "@/lib/pre-sales/access";
 import type { GeneratedDocument } from "@/types/document";
 
 export async function assertGeneratedDocumentAccess(documentId: string) {
-  const { supabase, companyId, role, userProfileId } = await getCurrentUserContext();
+  const { supabase, companyId, role, businessArea, userProfileId } =
+    await getCurrentUserContext();
   const { data, error } = await supabase
     .from("generated_documents")
     .select("*")
@@ -22,6 +23,10 @@ export async function assertGeneratedDocumentAccess(documentId: string) {
   const document = data as GeneratedDocument;
 
   if (role === "seller") {
+    if (businessArea === "legal") {
+      return document;
+    }
+
     if (document.created_by === userProfileId) {
       return document;
     }
