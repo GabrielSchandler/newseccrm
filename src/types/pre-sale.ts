@@ -1,4 +1,5 @@
 import type { Client } from "@/types/client";
+import type { LegalWorkflowStage } from "@/lib/legal/workflow";
 
 export type PreSaleStatus =
   | "lead"
@@ -73,6 +74,8 @@ export type PreSale = {
   contract_value: number | string | null;
   payment_description: string | null;
   negotiation_details: string | null;
+  legal_stage: LegalWorkflowStage | null;
+  legal_stage_updated_at: string | null;
   created_by: string;
   created_at: string;
   updated_at: string | null;

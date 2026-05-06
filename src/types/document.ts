@@ -1,3 +1,5 @@
+import type { LegalWorkflowStage } from "@/lib/legal/workflow";
+
 export type DocumentTemplateType =
   | "ordem_servico"
   | "contrato"
@@ -11,6 +13,7 @@ export type DocumentTemplate = {
   company_id: string;
   name: string;
   document_type: DocumentTemplateType;
+  legal_stage: LegalWorkflowStage | null;
   description: string | null;
   content_html: string;
   original_docx_path: string | null;

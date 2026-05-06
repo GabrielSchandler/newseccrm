@@ -13,6 +13,7 @@ import {
 } from "@/app/(authenticated)/documentos/actions";
 import { FormFieldLabel } from "@/components/form-field-label";
 import { documentVariableCatalog } from "@/lib/documents/template-engine";
+import { legalWorkflowStages } from "@/lib/legal/workflow";
 import {
   defaultDocumentTemplateContentHtml,
   documentTemplateSchema,
@@ -72,6 +73,7 @@ export function DocumentTemplateForm({
     defaultValues: {
       name: defaultValues?.name ?? "",
       document_type: defaultValues?.document_type ?? "contrato",
+      legal_stage: defaultValues?.legal_stage ?? null,
       description: defaultValues?.description ?? "",
       content_html: defaultValues?.content_html ?? defaultDocumentTemplateContentHtml,
       is_active: defaultValues?.is_active ?? true,
@@ -299,6 +301,33 @@ export function DocumentTemplateForm({
                 </p>
               ) : null}
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <FormFieldLabel
+              htmlFor="legal_stage"
+              label="Etapa juridica"
+              requirement="conditional"
+              hint="Use este campo para os documentos da esteira do Juridico. Templates sem etapa continuam disponiveis fora da esteira."
+            />
+            <select
+              id="legal_stage"
+              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
+              disabled={disabled}
+              {...register("legal_stage", {
+                setValueAs: (value) => value || null,
+              })}
+            >
+              <option value="">Sem etapa juridica</option>
+              {legalWorkflowStages.map((stage) => (
+                <option key={stage.value} value={stage.value}>
+                  {stage.label}
+                </option>
+              ))}
+            </select>
+            {errors.legal_stage?.message ? (
+              <p className="text-sm text-red-600">{errors.legal_stage.message}</p>
+            ) : null}
           </div>
 
           <div className="space-y-2">

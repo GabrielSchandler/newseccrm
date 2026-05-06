@@ -6,6 +6,7 @@ import { DocumentsNav } from "@/components/documents/documents-nav";
 import { PageHeader } from "@/components/layout/page-header";
 import { getCurrentUserContext } from "@/lib/auth/current-user";
 import { displayValue, formatDateTime } from "@/lib/clients/formatters";
+import { getLegalWorkflowStage } from "@/lib/legal/workflow";
 import {
   documentTemplateTypes,
   type DocumentTemplate,
@@ -155,6 +156,16 @@ export default async function TemplatePage({
             </p>
             <p className="mt-1 text-sm font-medium text-slate-950">
               {displayValue(template.original_pdf_filename)}
+            </p>
+          </div>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Etapa juridica
+            </p>
+            <p className="mt-1 text-sm font-medium text-slate-950">
+              {template.legal_stage
+                ? getLegalWorkflowStage(template.legal_stage).label
+                : "Nao vinculada"}
             </p>
           </div>
           <div className="md:col-span-4">

@@ -29,7 +29,7 @@ const navigation: SidebarNavigationItem[] = [
   { href: "/usuarios", label: "Usuarios", icon: "users" },
   { href: "/empresa", label: "Empresa", icon: "company", adminOnly: true },
   { href: "/logs", label: "Logs", icon: "logs", adminOnly: true },
-  { href: "/juridico", label: "Juridico", icon: "legal" },
+  { href: "/juridico", label: "Esteira", icon: "legal" },
 ];
 
 function resolveCompanyDisplayName(company: {
