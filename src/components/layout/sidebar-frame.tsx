@@ -58,7 +58,6 @@ export function SidebarFrame({
       ((currentWorkspace === "management" &&
         [
           "/dashboard",
-          "/documentos",
           "/documentos/templates",
           "/contratos",
           "/usuarios",
@@ -66,7 +65,7 @@ export function SidebarFrame({
           "/logs",
         ].includes(item.href)) ||
         (currentWorkspace === "commercial" &&
-          ["/clientes", "/pre-vendas", "/calculos"].includes(item.href)) ||
+          ["/clientes", "/pre-vendas", "/calculos", "/documentos"].includes(item.href)) ||
         (currentWorkspace === "legal" && item.href === "/juridico")),
   );
 

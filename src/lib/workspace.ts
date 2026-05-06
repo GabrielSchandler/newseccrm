@@ -31,13 +31,13 @@ export const workspaceOptions: Array<{
   {
     value: "management",
     label: "Gestao",
-    description: "Dashboard, usuarios, empresa, templates, documentos, contratos e configuracoes.",
+    description: "Dashboard, usuarios, empresa, templates, contratos e configuracoes.",
     href: "/dashboard",
   },
   {
     value: "commercial",
     label: "Comercial",
-    description: "Clientes, pre-vendas e simulacoes da operacao comercial.",
+    description: "Clientes, pre-vendas, simulacoes e documentos da operacao comercial.",
     href: "/pre-vendas",
   },
   {
@@ -97,7 +97,6 @@ const managementPrefixes = [
   "/usuarios",
   "/empresa",
   "/logs",
-  "/documentos",
   "/contratos",
   "/documentos/templates",
   "/areas",
@@ -109,6 +108,7 @@ const commercialPrefixes = [
   "/clientes",
   "/pre-vendas",
   "/calculos",
+  "/documentos",
 ];
 
 export function classifyWorkspacePath(pathname: string): WorkspaceView | null {
