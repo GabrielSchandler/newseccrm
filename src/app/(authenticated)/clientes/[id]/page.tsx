@@ -88,14 +88,17 @@ export default async function ClientePage({
     .maybeSingle();
   const createdByProfile = createdByProfileData as ClientAuditUser | null;
 
-  const { data: generatedDocumentsData, error: generatedDocumentsError } = await supabase
-    .from("generated_documents")
-    .select(
-      "id, title, document_type, template_id, status, render_source, created_at, pre_sale_id, client_id, pdf_error_message, created_by, company_id",
-    )
-    .eq("company_id", companyId)
-    .eq("client_id", client.id)
-    .order("created_at", { ascending: false });
+  const { data: generatedDocumentsData, error: generatedDocumentsError } =
+    role === "seller"
+      ? { data: [], error: null }
+      : await supabase
+          .from("generated_documents")
+          .select(
+            "id, title, document_type, template_id, status, render_source, created_at, pre_sale_id, client_id, pdf_error_message, created_by, company_id",
+          )
+          .eq("company_id", companyId)
+          .eq("client_id", client.id)
+          .order("created_at", { ascending: false });
   let generatedDocuments = (generatedDocumentsData ?? []) as GeneratedDocument[];
 
   if (role === "seller") {
@@ -297,107 +300,109 @@ export default async function ClientePage({
           description="Anexe e consulte documentos vinculados a este cliente usando links temporarios e bucket privado."
         />
 
-        <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
-          <div className="border-b border-slate-200 px-6 py-4">
-            <h2 className="text-base font-semibold text-slate-950">
-              Documentos gerados deste cliente
-            </h2>
-            <p className="mt-1 text-sm text-slate-600">
-              Contratos, recibos e outros documentos emitidos a partir das pre-vendas
-              vinculadas a este cliente.
-            </p>
-          </div>
-
-          {generatedDocumentsError ? (
-            <div className="px-6 py-4 text-sm text-red-700">
-              {generatedDocumentsError.message}
+        {role !== "seller" ? (
+          <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+            <div className="border-b border-slate-200 px-6 py-4">
+              <h2 className="text-base font-semibold text-slate-950">
+                Documentos gerados deste cliente
+              </h2>
+              <p className="mt-1 text-sm text-slate-600">
+                Contratos, recibos e outros documentos emitidos a partir das pre-vendas
+                vinculadas a este cliente.
+              </p>
             </div>
-          ) : generatedDocuments.length ? (
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[860px] border-collapse text-left text-sm">
-                <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
-                  <tr>
-                    <th className="px-6 py-3 font-semibold">Documento</th>
-                    <th className="px-6 py-3 font-semibold">Tipo</th>
-                    <th className="px-6 py-3 font-semibold">Template</th>
-                    <th className="px-6 py-3 font-semibold">Pre-venda</th>
-                    <th className="px-6 py-3 font-semibold">Status</th>
-                    <th className="px-6 py-3 font-semibold">Data</th>
-                    <th className="px-6 py-3 font-semibold">Acoes</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {generatedDocuments.map((document) => {
-                    const template = templates.find((item) => item.id === document.template_id);
-                    const preSale = preSales.find((item) => item.id === document.pre_sale_id);
 
-                    return (
-                      <tr key={document.id} className="transition hover:bg-slate-50">
-                        <td className="px-6 py-4 font-medium text-slate-950">
-                          {displayValue(document.title)}
-                        </td>
-                        <td className="px-6 py-4 text-slate-700">
-                          {formatTemplateType(document.document_type)}
-                        </td>
-                        <td className="px-6 py-4 text-slate-700">
-                          {displayValue(template?.name ?? null)}
-                        </td>
-                        <td className="px-6 py-4 text-slate-700">
-                          {document.pre_sale_id ? (
-                            <Link
-                              href={`/pre-vendas/${document.pre_sale_id}`}
-                              className="font-semibold text-teal-700 transition hover:text-teal-800"
-                            >
-                              Ver pre-venda
-                            </Link>
-                          ) : (
-                            "Nao vinculada"
-                          )}
-                          {preSale?.status ? (
-                            <p className="mt-1 text-xs text-slate-500">
-                              Status: {preSale.status}
-                            </p>
-                          ) : null}
-                        </td>
-                        <td className="px-6 py-4 text-slate-700">
-                          {document.pdf_error_message
-                            ? "DOCX gerado, PDF pendente"
-                            : documentStatusLabels[document.status] ?? document.status}
-                        </td>
-                        <td className="px-6 py-4 text-slate-700">
-                          {formatDateTime(document.created_at)}
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex flex-wrap gap-2">
-                            <Link
-                              href={`/documentos/gerados/${document.id}`}
-                              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-                            >
-                              Visualizar
-                            </Link>
-                            {document.render_source === "html" ? (
+            {generatedDocumentsError ? (
+              <div className="px-6 py-4 text-sm text-red-700">
+                {generatedDocumentsError.message}
+              </div>
+            ) : generatedDocuments.length ? (
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[860px] border-collapse text-left text-sm">
+                  <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+                    <tr>
+                      <th className="px-6 py-3 font-semibold">Documento</th>
+                      <th className="px-6 py-3 font-semibold">Tipo</th>
+                      <th className="px-6 py-3 font-semibold">Template</th>
+                      <th className="px-6 py-3 font-semibold">Pre-venda</th>
+                      <th className="px-6 py-3 font-semibold">Status</th>
+                      <th className="px-6 py-3 font-semibold">Data</th>
+                      <th className="px-6 py-3 font-semibold">Acoes</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {generatedDocuments.map((document) => {
+                      const template = templates.find((item) => item.id === document.template_id);
+                      const preSale = preSales.find((item) => item.id === document.pre_sale_id);
+
+                      return (
+                        <tr key={document.id} className="transition hover:bg-slate-50">
+                          <td className="px-6 py-4 font-medium text-slate-950">
+                            {displayValue(document.title)}
+                          </td>
+                          <td className="px-6 py-4 text-slate-700">
+                            {formatTemplateType(document.document_type)}
+                          </td>
+                          <td className="px-6 py-4 text-slate-700">
+                            {displayValue(template?.name ?? null)}
+                          </td>
+                          <td className="px-6 py-4 text-slate-700">
+                            {document.pre_sale_id ? (
                               <Link
-                                href={`/documentos/gerados/${document.id}/imprimir?print=1`}
-                                target="_blank"
-                                className="rounded-lg border border-teal-300 bg-teal-50 px-3 py-2 text-sm font-semibold text-teal-800 transition hover:bg-teal-100"
+                                href={`/pre-vendas/${document.pre_sale_id}`}
+                                className="font-semibold text-teal-700 transition hover:text-teal-800"
                               >
-                                PDF HTML
+                                Ver pre-venda
                               </Link>
+                            ) : (
+                              "Nao vinculada"
+                            )}
+                            {preSale?.status ? (
+                              <p className="mt-1 text-xs text-slate-500">
+                                Status: {preSale.status}
+                              </p>
                             ) : null}
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <div className="px-6 py-6 text-sm text-slate-500">
-              Nenhum documento gerado encontrado para este cliente.
-            </div>
-          )}
-        </section>
+                          </td>
+                          <td className="px-6 py-4 text-slate-700">
+                            {document.pdf_error_message
+                              ? "DOCX gerado, PDF pendente"
+                              : documentStatusLabels[document.status] ?? document.status}
+                          </td>
+                          <td className="px-6 py-4 text-slate-700">
+                            {formatDateTime(document.created_at)}
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex flex-wrap gap-2">
+                              <Link
+                                href={`/documentos/gerados/${document.id}`}
+                                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                              >
+                                Visualizar
+                              </Link>
+                              {document.render_source === "html" ? (
+                                <Link
+                                  href={`/documentos/gerados/${document.id}/imprimir?print=1`}
+                                  target="_blank"
+                                  className="rounded-lg border border-teal-300 bg-teal-50 px-3 py-2 text-sm font-semibold text-teal-800 transition hover:bg-teal-100"
+                                >
+                                  PDF HTML
+                                </Link>
+                              ) : null}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="px-6 py-6 text-sm text-slate-500">
+                Nenhum documento gerado encontrado para este cliente.
+              </div>
+            )}
+          </section>
+        ) : null}
 
         <ClientCalculationsSection clientId={client.id} />
       </div>

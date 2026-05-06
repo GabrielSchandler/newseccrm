@@ -80,11 +80,17 @@ export async function AppSidebar() {
       (item.href !== "/usuarios" || canAccessUsers) &&
       (item.href !== "/dashboard" || canAccessDashboard) &&
       ((currentWorkspace === "management" &&
-        ["/dashboard", "/documentos/templates", "/usuarios", "/empresa", "/logs"].includes(item.href)) ||
+        [
+          "/dashboard",
+          "/documentos",
+          "/documentos/templates",
+          "/contratos",
+          "/usuarios",
+          "/empresa",
+          "/logs",
+        ].includes(item.href)) ||
         (currentWorkspace === "commercial" &&
-          ["/clientes", "/pre-vendas", "/calculos", "/documentos", "/contratos"].includes(
-            item.href,
-          )) ||
+          ["/clientes", "/pre-vendas", "/calculos"].includes(item.href)) ||
         (currentWorkspace === "legal" && item.href === "/juridico")),
   );
 
