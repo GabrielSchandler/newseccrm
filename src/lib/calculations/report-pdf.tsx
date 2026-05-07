@@ -729,7 +729,7 @@ export function CalculationReportPdf({
                 value={displayText(calculation.situation)}
               />
               <InfoItem
-                label="Condição estimativa válida por"
+                label="Proposta valida até:"
                 value={expiresIn}
               />
               <InfoItem
