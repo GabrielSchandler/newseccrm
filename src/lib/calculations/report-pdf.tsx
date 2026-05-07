@@ -23,6 +23,13 @@ const COLORS = {
   borderStrong: "#111111",
   accent: "#b91c1c",
   accentSoft: "#fef2f2",
+  positive: "#047857",
+  positiveStrong: "#065f46",
+  positiveSoft: "#ecfdf5",
+  positiveBorder: "#a7f3d0",
+  negative: "#b42318",
+  negativeSoft: "#fff1f2",
+  negativeBorder: "#fecdd3",
   white: "#ffffff",
 };
 
@@ -109,8 +116,8 @@ const styles = StyleSheet.create({
   impactCard: {
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: COLORS.borderStrong,
-    backgroundColor: COLORS.accentSoft,
+    borderColor: COLORS.positiveBorder,
+    backgroundColor: COLORS.positiveSoft,
     padding: 16,
     marginBottom: 16,
   },
@@ -118,13 +125,13 @@ const styles = StyleSheet.create({
     fontSize: 8,
     fontWeight: 700,
     textTransform: "uppercase",
-    color: COLORS.accent,
+    color: COLORS.positive,
     marginBottom: 6,
   },
   impactValue: {
     fontSize: 28,
     fontWeight: 700,
-    color: COLORS.text,
+    color: COLORS.positiveStrong,
   },
   impactText: {
     marginTop: 7,
@@ -145,8 +152,17 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
     padding: 12,
   },
+  comparisonCardNegative: {
+    borderColor: COLORS.negativeBorder,
+    backgroundColor: COLORS.negativeSoft,
+  },
+  comparisonCardPositive: {
+    borderColor: COLORS.positiveBorder,
+    backgroundColor: COLORS.positiveSoft,
+  },
   comparisonCardAccent: {
-    borderColor: COLORS.accent,
+    borderColor: COLORS.positiveBorder,
+    backgroundColor: COLORS.positiveSoft,
   },
   comparisonLabel: {
     fontSize: 8,
@@ -159,8 +175,14 @@ const styles = StyleSheet.create({
     fontWeight: 700,
     color: COLORS.text,
   },
+  comparisonValueNegative: {
+    color: COLORS.negative,
+  },
+  comparisonValuePositive: {
+    color: COLORS.positiveStrong,
+  },
   comparisonValueAccent: {
-    color: COLORS.accent,
+    color: COLORS.positiveStrong,
   },
   comparisonHint: {
     fontSize: 8,
@@ -262,11 +284,18 @@ const styles = StyleSheet.create({
   opportunityFirstRow: {
     borderTopWidth: 0,
   },
+  opportunityRowPositive: {
+    backgroundColor: COLORS.positiveSoft,
+  },
   opportunityLabel: {
     flex: 1,
     fontSize: 8.8,
     color: "#3f3f46",
     lineHeight: 1.45,
+  },
+  opportunityLabelPositive: {
+    color: COLORS.positiveStrong,
+    fontWeight: 600,
   },
   opportunityValue: {
     width: 124,
@@ -274,6 +303,9 @@ const styles = StyleSheet.create({
     fontWeight: 700,
     color: COLORS.text,
     textAlign: "right",
+  },
+  opportunityValuePositive: {
+    color: COLORS.positiveStrong,
   },
   scenarioBox: {
     borderRadius: 10,
@@ -440,26 +472,48 @@ function DataTable({
   );
 }
 
+type OpportunityTone = "default" | "positive";
+
 function OpportunityTable({
   rows,
 }: {
-  rows: Array<{ label: string; value: string }>;
+  rows: Array<{ label: string; value: string; tone?: OpportunityTone }>;
 }) {
   return (
     <View style={styles.opportunityCard}>
-      {rows.map((row, index) => (
+      {rows.map((row, index) => {
+        const tone = row.tone ?? "default";
+        const rowStyles =
+          tone === "positive"
+            ? index === 0
+              ? [
+                  styles.opportunityRow,
+                  styles.opportunityFirstRow,
+                  styles.opportunityRowPositive,
+                ]
+              : [styles.opportunityRow, styles.opportunityRowPositive]
+            : index === 0
+              ? [styles.opportunityRow, styles.opportunityFirstRow]
+              : [styles.opportunityRow];
+        const labelStyles =
+          tone === "positive"
+            ? [styles.opportunityLabel, styles.opportunityLabelPositive]
+            : [styles.opportunityLabel];
+        const valueStyles =
+          tone === "positive"
+            ? [styles.opportunityValue, styles.opportunityValuePositive]
+            : [styles.opportunityValue];
+
+        return (
         <View
           key={row.label}
-          style={
-            index === 0
-              ? [styles.opportunityRow, styles.opportunityFirstRow]
-              : styles.opportunityRow
-          }
+          style={rowStyles}
         >
-          <Text style={styles.opportunityLabel}>{row.label}</Text>
-          <Text style={styles.opportunityValue}>{row.value}</Text>
+          <Text style={labelStyles}>{row.label}</Text>
+          <Text style={valueStyles}>{row.value}</Text>
         </View>
-      ))}
+        );
+      })}
     </View>
   );
 }
@@ -517,14 +571,17 @@ export function CalculationReportPdf({
     {
       label: "Potencial de economia identificado",
       value: displayCurrency(calculation.estimated_savings),
+      tone: "positive" as const,
     },
     {
       label: "Redução estimada por parcela",
       value: displayCurrency(calculation.abusive_interest_per_installment),
+      tone: "positive" as const,
     },
     {
       label: "Parcela estimada sobre o saldo remanescente",
       value: displayCurrency(calculation.installment_reduction_remaining),
+      tone: "positive" as const,
     },
     {
       label: "Total pago até o momento",
@@ -533,6 +590,7 @@ export function CalculationReportPdf({
     {
       label: "Encargos estimados já pagos",
       value: displayCurrency(calculation.abusive_interest_paid),
+      tone: "positive" as const,
     },
     {
       label: "Saldo atual estimado",
@@ -588,9 +646,9 @@ export function CalculationReportPdf({
         </View>
 
         <View style={styles.comparisonRow}>
-          <View style={styles.comparisonCard}>
+          <View style={[styles.comparisonCard, styles.comparisonCardNegative]}>
             <Text style={styles.comparisonLabel}>Parcela atual</Text>
-            <Text style={styles.comparisonValue}>
+            <Text style={[styles.comparisonValue, styles.comparisonValueNegative]}>
               {displayCurrency(calculation.current_installment_value)}
             </Text>
           </View>
@@ -600,9 +658,11 @@ export function CalculationReportPdf({
               {displayCurrency(calculation.corrected_installment_value)}
             </Text>
           </View>
-          <View style={styles.comparisonCard}>
+          <View style={[styles.comparisonCard, styles.comparisonCardPositive]}>
             <Text style={styles.comparisonLabel}>Redução estimada mensal</Text>
-            <Text style={styles.comparisonValue}>{monthlyReduction}</Text>
+            <Text style={[styles.comparisonValue, styles.comparisonValuePositive]}>
+              {monthlyReduction}
+            </Text>
             <Text style={styles.comparisonHint}>
               Estimativa inicial com base no cenário informado.
             </Text>
