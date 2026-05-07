@@ -347,6 +347,39 @@ const styles = StyleSheet.create({
     padding: 14,
     marginTop: 2,
   },
+  guaranteeBox: {
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    backgroundColor: COLORS.subtle,
+    padding: 14,
+    marginTop: 12,
+  },
+  guaranteeTitle: {
+    fontSize: 10.2,
+    fontWeight: 700,
+    color: COLORS.text,
+    marginBottom: 6,
+  },
+  guaranteeLead: {
+    fontSize: 9.1,
+    fontWeight: 600,
+    color: "#3f3f46",
+    lineHeight: 1.55,
+    marginBottom: 7,
+  },
+  guaranteeClauseLabel: {
+    fontSize: 8.2,
+    fontWeight: 700,
+    color: COLORS.accent,
+    textTransform: "uppercase",
+    marginBottom: 4,
+  },
+  guaranteeClause: {
+    fontSize: 8.5,
+    color: "#52525b",
+    lineHeight: 1.55,
+  },
   nextStepTitle: {
     fontSize: 10.5,
     fontWeight: 700,
@@ -738,6 +771,24 @@ export function CalculationReportPdf({
           <Text style={styles.cta}>
             Fale com seu consultor para validar os documentos e avançar para a
             próxima etapa.
+          </Text>
+        </View>
+
+        <View style={styles.guaranteeBox}>
+          <Text style={styles.guaranteeTitle}>Segurança contratual</Text>
+          <Text style={styles.guaranteeLead}>
+            Nossa prestação de serviço conta com proteção contratual específica,
+            com previsão de devolução integral do valor investido nas hipóteses
+            previstas em contrato.
+          </Text>
+          <Text style={styles.guaranteeClauseLabel}>Cláusula 3.6 do contrato</Text>
+          <Text style={styles.guaranteeClause}>
+            3.6 – A CONTRATADA garante a plena execução dos serviços
+            contratados, comprometendo-se a promover, conforme o caso, a redução
+            das parcelas, a quitação do débito, a restituição de encargos
+            eventualmente cobrados de forma indevida, ou, não sendo apresentada
+            qualquer uma das opções mencionadas, a devolução integral do valor
+            investido pela CONTRATANTE a título de contratação dos serviços.
           </Text>
         </View>
 
