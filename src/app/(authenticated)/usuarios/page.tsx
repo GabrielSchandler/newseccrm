@@ -73,9 +73,7 @@ export default async function UsuariosPage({ searchParams }: UsuariosPageProps) 
         .single(),
       supabase
         .from("user_profiles")
-        .select(
-          "id, auth_user_id, company_id, full_name, nickname, username, email, phone, role, business_area, is_active, invited_by, deactivated_at, deactivated_by, created_at, updated_at",
-        )
+        .select("*")
         .eq("company_id", companyId)
         .order("is_active", { ascending: false })
         .order("full_name", { ascending: true, nullsFirst: false }),

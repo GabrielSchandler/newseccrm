@@ -37,7 +37,7 @@ export async function getCurrentUserContext() {
 
   const { data, error: profileError } = await supabase
     .from("user_profiles")
-    .select("id, auth_user_id, company_id, role, business_area, nickname, username, email, full_name, phone, is_active")
+    .select("*")
     .eq("auth_user_id", user.id)
     .maybeSingle();
   const profile = data as CurrentUserProfile | null;

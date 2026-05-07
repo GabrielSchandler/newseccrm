@@ -34,9 +34,7 @@ export default async function EditarUsuarioPage({
 
   const { data, error } = await supabase
     .from("user_profiles")
-    .select(
-      "id, auth_user_id, company_id, full_name, nickname, username, email, phone, role, business_area, is_active, invited_by, deactivated_at, deactivated_by, created_at, updated_at",
-    )
+    .select("*")
     .eq("id", id)
     .eq("company_id", companyId)
     .single();
