@@ -574,7 +574,7 @@ export function CalculationReportPdf({
       value: displayCurrency(calculation.corrected_total_financing),
     },
     {
-      label: "Potencial de economia identificado",
+      label: "Economia total",
       value: displayCurrency(calculation.estimated_savings),
       tone: "positive" as const,
     },
@@ -635,7 +635,7 @@ export function CalculationReportPdf({
         </View>
 
         <View style={styles.impactCard}>
-          <Text style={styles.impactLabel}>POTENCIAL DE ECONOMIA IDENTIFICADO</Text>
+          <Text style={styles.impactLabel}>ECONOMIA TOTAL</Text>
           <Text style={styles.impactValue}>
             {displayCurrency(calculation.estimated_savings)}
           </Text>
