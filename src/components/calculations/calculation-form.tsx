@@ -3,9 +3,9 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import type { ChangeEvent, FocusEvent, KeyboardEvent } from "react";
+import type { ChangeEvent, KeyboardEvent } from "react";
 import { useEffect, useState, useTransition } from "react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import type { CalculationActionState } from "@/app/(authenticated)/calculos/actions";
 import {
   formatCurrencyInputValueFromDigits,
@@ -50,16 +50,16 @@ type EditFormProps = BaseFormProps & {
 
 type CalculationFormProps = CreateFormProps | EditFormProps;
 
-function handleCurrencyMask(event: ChangeEvent<HTMLInputElement>) {
-  event.target.value = formatCurrencyInputValueFromDigits(event.target.value);
-}
-
 function handleIntegerMask(event: ChangeEvent<HTMLInputElement>) {
   event.target.value = event.target.value.replace(/\D/g, "");
 }
 
-function handleCurrencyBlur(event: FocusEvent<HTMLInputElement>) {
-  event.target.value = normalizeCurrencyInputValue(event.target.value);
+function getCurrencyInputDisplayValue(value: string | number | null | undefined) {
+  if (typeof value === "string") {
+    return value;
+  }
+
+  return formatNumberForPtBrInput(value);
 }
 
 function getComputedFinancedDisplayValue(
@@ -176,6 +176,7 @@ export function CalculationForm({
   const [isPending, startTransition] = useTransition();
   const [actionState, setActionState] = useState<CalculationActionState | null>(null);
   const {
+    control,
     register,
     handleSubmit,
     setValue,
@@ -539,15 +540,33 @@ export function CalculationForm({
               label="Valor a vista"
               requirement="optional"
             />
-            <input
-              id="cash_value"
-              disabled={disabled}
-              inputMode="decimal"
-              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
-              {...register("cash_value", {
-                onChange: handleCurrencyMask,
-                onBlur: handleCurrencyBlur,
-              })}
+            <Controller
+              control={control}
+              name="cash_value"
+              render={({ field }) => (
+                <input
+                  id="cash_value"
+                  disabled={disabled}
+                  inputMode="decimal"
+                  value={getCurrencyInputDisplayValue(field.value)}
+                  onChange={(event) => {
+                    const nextValue = formatCurrencyInputValueFromDigits(
+                      event.target.value,
+                    );
+                    field.onChange(nextValue);
+                  }}
+                  onBlur={(event) => {
+                    const nextValue = normalizeCurrencyInputValue(
+                      event.target.value,
+                    );
+                    field.onChange(nextValue);
+                    field.onBlur();
+                  }}
+                  ref={field.ref}
+                  name={field.name}
+                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
+                />
+              )}
             />
             {errors.cash_value?.message ? (
               <p className="text-sm text-red-600">{String(errors.cash_value.message)}</p>
@@ -559,15 +578,33 @@ export function CalculationForm({
               label="Entrada"
               requirement="optional"
             />
-            <input
-              id="down_payment"
-              disabled={disabled}
-              inputMode="decimal"
-              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
-              {...register("down_payment", {
-                onChange: handleCurrencyMask,
-                onBlur: handleCurrencyBlur,
-              })}
+            <Controller
+              control={control}
+              name="down_payment"
+              render={({ field }) => (
+                <input
+                  id="down_payment"
+                  disabled={disabled}
+                  inputMode="decimal"
+                  value={getCurrencyInputDisplayValue(field.value)}
+                  onChange={(event) => {
+                    const nextValue = formatCurrencyInputValueFromDigits(
+                      event.target.value,
+                    );
+                    field.onChange(nextValue);
+                  }}
+                  onBlur={(event) => {
+                    const nextValue = normalizeCurrencyInputValue(
+                      event.target.value,
+                    );
+                    field.onChange(nextValue);
+                    field.onBlur();
+                  }}
+                  ref={field.ref}
+                  name={field.name}
+                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
+                />
+              )}
             />
             {errors.down_payment?.message ? (
               <p className="text-sm text-red-600">
@@ -604,15 +641,33 @@ export function CalculationForm({
               label="Valor atual da parcela"
               requirement="optional"
             />
-            <input
-              id="current_installment_value"
-              disabled={disabled}
-              inputMode="decimal"
-              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
-              {...register("current_installment_value", {
-                onChange: handleCurrencyMask,
-                onBlur: handleCurrencyBlur,
-              })}
+            <Controller
+              control={control}
+              name="current_installment_value"
+              render={({ field }) => (
+                <input
+                  id="current_installment_value"
+                  disabled={disabled}
+                  inputMode="decimal"
+                  value={getCurrencyInputDisplayValue(field.value)}
+                  onChange={(event) => {
+                    const nextValue = formatCurrencyInputValueFromDigits(
+                      event.target.value,
+                    );
+                    field.onChange(nextValue);
+                  }}
+                  onBlur={(event) => {
+                    const nextValue = normalizeCurrencyInputValue(
+                      event.target.value,
+                    );
+                    field.onChange(nextValue);
+                    field.onBlur();
+                  }}
+                  ref={field.ref}
+                  name={field.name}
+                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
+                />
+              )}
             />
             {errors.current_installment_value?.message ? (
               <p className="text-sm text-red-600">
