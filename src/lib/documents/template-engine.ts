@@ -29,6 +29,14 @@ export type DocumentCompany = {
   fantasy_name?: string | null;
   nome_fantasia?: string | null;
   cnpj?: string | null;
+  zip_code?: string | null;
+  street?: string | null;
+  number?: string | null;
+  district?: string | null;
+  city?: string | null;
+  state?: string | null;
+  email?: string | null;
+  phone?: string | null;
 };
 
 export type DocumentTemplateContext = {
@@ -196,7 +204,16 @@ export const documentVariableCatalog = [
   },
   {
     group: "Empresa",
-    variables: ["empresa_razao_social", "empresa_nome_fantasia", "empresa_cnpj"],
+    variables: [
+      "empresa_razao_social",
+      "empresa_nome_fantasia",
+      "empresa_cnpj",
+      "empresa_email",
+      "empresa_telefone",
+      "empresa_cidade",
+      "empresa_estado",
+      "empresa_endereco_completo",
+    ],
   },
   {
     group: "Consultor",
@@ -487,6 +504,7 @@ function buildAddress(
         "street" | "number" | "district" | "city" | "state" | "zip_code"
       >
     | Pick<PreSaleDebtHolder, "street" | "number" | "district" | "city" | "state" | "zip_code">
+    | Pick<DocumentCompany, "street" | "number" | "district" | "city" | "state" | "zip_code">
     | null,
 ) {
   if (!source) {
@@ -767,11 +785,16 @@ export function buildDocumentVariables(context: DocumentTemplateContext) {
       stringFromUnknown(companyRecord.trade_name) ||
       stringFromUnknown(companyRecord.fantasy_name) ||
       stringFromUnknown(companyRecord.nome_fantasia),
-      empresa_cnpj: stringFromUnknown(companyRecord.cnpj),
-      consultor_nome: formatText(consultant?.full_name ?? consultant?.username ?? consultant?.email),
-      consultor_login: formatText(consultant?.username ?? consultant?.email),
-      consultor_email: formatText(consultant?.username ?? consultant?.email),
-      data_atual: new Intl.DateTimeFormat("pt-BR").format(now),
+    empresa_cnpj: stringFromUnknown(companyRecord.cnpj),
+    empresa_email: stringFromUnknown(companyRecord.email),
+    empresa_telefone: stringFromUnknown(companyRecord.phone),
+    empresa_cidade: stringFromUnknown(companyRecord.city),
+    empresa_estado: stringFromUnknown(companyRecord.state),
+    empresa_endereco_completo: buildAddress(company),
+    consultor_nome: formatText(consultant?.full_name ?? consultant?.username ?? consultant?.email),
+    consultor_login: formatText(consultant?.username ?? consultant?.email),
+    consultor_email: formatText(consultant?.username ?? consultant?.email),
+    data_atual: new Intl.DateTimeFormat("pt-BR").format(now),
     hora_atual: new Intl.DateTimeFormat("pt-BR", {
       hour: "2-digit",
       minute: "2-digit",
