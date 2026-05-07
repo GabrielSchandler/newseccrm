@@ -561,16 +561,16 @@ export function CalculationReportPdf({
 
   const opportunityRows = [
     {
-      label: "Redução estimada por parcela",
+      label: "Economia mensal",
       value: displayCurrency(calculation.abusive_interest_per_installment),
       tone: "positive" as const,
     },
     {
-      label: "Total projetado no cenário atual",
+      label: "Total da dívida atual",
       value: displayCurrency(calculation.current_total_financing),
     },
     {
-      label: "Total projetado com estratégia revisional",
+      label: "Total da dívida após revisão",
       value: displayCurrency(calculation.corrected_total_financing),
     },
     {
@@ -579,12 +579,12 @@ export function CalculationReportPdf({
       tone: "positive" as const,
     },
     {
-      label: "Encargos estimados já pagos",
+      label: "Juros abusivos já pagos",
       value: displayCurrency(calculation.abusive_interest_paid),
       tone: "positive" as const,
     },
     {
-      label: "Parcela estimada sobre o saldo remanescente",
+      label: "Parcela com abatimento de juros abusivos já pagos",
       value: displayCurrency(calculation.installment_reduction_remaining),
       tone: "positive" as const,
     },
@@ -593,11 +593,11 @@ export function CalculationReportPdf({
       value: displayCurrency(calculation.paid_amount_until_now),
     },
     {
-      label: "Saldo atual estimado",
+      label: "Saldo devedor sem correção",
       value: displayCurrency(calculation.remaining_amount_to_pay),
     },
     {
-      label: "Saldo real projetado",
+      label: "Saldo devedor pós correção",
       value: displayCurrency(calculation.real_debt),
     },
   ];
@@ -653,13 +653,13 @@ export function CalculationReportPdf({
             </Text>
           </View>
           <View style={[styles.comparisonCard, styles.comparisonCardAccent]}>
-            <Text style={styles.comparisonLabel}>Parcela projetada</Text>
+            <Text style={styles.comparisonLabel}>Parcela corrigida</Text>
             <Text style={[styles.comparisonValue, styles.comparisonValueAccent]}>
               {displayCurrency(calculation.corrected_installment_value)}
             </Text>
           </View>
           <View style={[styles.comparisonCard, styles.comparisonCardPositive]}>
-            <Text style={styles.comparisonLabel}>Redução estimada mensal</Text>
+            <Text style={styles.comparisonLabel}>Economia mensal</Text>
             <Text style={[styles.comparisonValue, styles.comparisonValuePositive]}>
               {monthlyReduction}
             </Text>
