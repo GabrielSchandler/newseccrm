@@ -561,7 +561,11 @@ export function CalculationReportPdf({
   companyDocument?: string | null;
 }): React.ReactElement<DocumentProps> {
   const issueDate = displayDate(new Date().toISOString().slice(0, 10));
-  const specialist = displayText(calculation.specialist_name);
+  const specialist = displayText(calculation.specialist_name || "A definir");
+  const attendanceDate = displayDate(
+    calculation.attendance_date ?? new Date().toISOString().slice(0, 10),
+  );
+  const situation = displayText(calculation.situation || "Aprovado");
   const expiresIn = displayDate(calculation.expires_in);
   const monthlyReduction = displayCurrency(
     calculation.abusive_interest_per_installment,
@@ -716,18 +720,18 @@ export function CalculationReportPdf({
                 label="Financeira"
                 value={displayText(calculation.financial_institution)}
               />
-              <InfoItem
-                label="Especialista responsável"
-                value={specialist}
-              />
-              <InfoItem
-                label="Data do atendimento"
-                value={displayDate(calculation.attendance_date)}
-              />
-              <InfoItem
-                label="Situação"
-                value={displayText(calculation.situation)}
-              />
+                <InfoItem
+                  label="Especialista responsável"
+                  value={specialist}
+                />
+                <InfoItem
+                  label="Data do atendimento"
+                  value={attendanceDate}
+                />
+                <InfoItem
+                  label="Situação"
+                  value={situation}
+                />
               <InfoItem
                 label="Proposta valida até:"
                 value={expiresIn}

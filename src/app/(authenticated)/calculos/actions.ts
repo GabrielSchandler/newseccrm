@@ -73,6 +73,26 @@ function buildCalculationRecord(values: FinancingCalculationPayload) {
   };
 }
 
+function todayIsoDate() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function resolveSpecialistName(fullName: string | null, username: string | null) {
+  const normalizedFullName = fullName?.trim();
+
+  if (normalizedFullName) {
+    return normalizedFullName;
+  }
+
+  const normalizedUsername = username?.trim();
+
+  if (normalizedUsername) {
+    return normalizedUsername;
+  }
+
+  return "Nao informado";
+}
+
 function stringFromUnknown(value: unknown) {
   if (typeof value === "string") {
     return value.trim();
@@ -131,7 +151,14 @@ export async function createFinancingCalculationAction(
   }
 
   try {
-    const { supabase, companyId, userProfileId, role } = await getCurrentUserContext();
+    const {
+      supabase,
+      companyId,
+      userProfileId,
+      role,
+      fullName,
+      username,
+    } = await getCurrentUserContext();
 
     if (!canManageCalculations(role)) {
       return friendlyError("Voce nao tem permissao para criar simulacoes.");
@@ -149,7 +176,12 @@ export async function createFinancingCalculationAction(
       );
     }
 
-    const record = buildCalculationRecord(parsed.data);
+    const record = buildCalculationRecord({
+      ...parsed.data,
+      specialist_name: resolveSpecialistName(fullName, username),
+      situation: "Aprovado",
+      attendance_date: todayIsoDate(),
+    });
     const { data, error } = await supabase
       .from("financing_calculations")
       .insert({
@@ -216,7 +248,14 @@ export async function updateFinancingCalculationAction(
   }
 
   try {
-    const { supabase, companyId, userProfileId, role } = await getCurrentUserContext();
+    const {
+      supabase,
+      companyId,
+      userProfileId,
+      role,
+      fullName,
+      username,
+    } = await getCurrentUserContext();
 
     if (!canManageCalculations(role)) {
       return friendlyError("Voce nao tem permissao para editar simulacoes.");
@@ -236,7 +275,12 @@ export async function updateFinancingCalculationAction(
       );
     }
 
-    const record = buildCalculationRecord(parsed.data);
+    const record = buildCalculationRecord({
+      ...parsed.data,
+      specialist_name: resolveSpecialistName(fullName, username),
+      situation: "Aprovado",
+      attendance_date: todayIsoDate(),
+    });
     const { error } = await supabase
       .from("financing_calculations")
       .update({

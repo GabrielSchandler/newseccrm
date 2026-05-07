@@ -244,9 +244,6 @@ export function CalculationForm({
     setValue("financial_institution", preSale.financial_institution ?? "", {
       shouldDirty: true,
     });
-    setValue("specialist_name", preSale.specialist_name ?? "", {
-      shouldDirty: true,
-    });
     setValue("vehicle_year", preSale.vehicle_year ?? "", { shouldDirty: true });
     setValue(
       "financed_value",
@@ -303,6 +300,10 @@ export function CalculationForm({
       onSubmit={handleSubmit(onValidSubmit)}
       onKeyDownCapture={handleEnterAsNextField}
     >
+      <input type="hidden" {...register("specialist_name")} />
+      <input type="hidden" {...register("situation")} />
+      <input type="hidden" {...register("attendance_date")} />
+
       <section className="grid gap-5 rounded-lg border border-slate-200 bg-white p-5 shadow-sm md:grid-cols-2">
         <div className="space-y-2">
           <FormFieldLabel
@@ -443,6 +444,10 @@ export function CalculationForm({
       <section className="space-y-4 rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
         <div>
           <h2 className="text-base font-semibold text-slate-950">Dados da operacao</h2>
+          <p className="mt-1 text-sm text-slate-600">
+            O especialista responsavel, a situacao aprovada e a data do atendimento
+            sao preenchidos automaticamente na simulacao.
+          </p>
         </div>
         <div className="grid gap-5 md:grid-cols-2">
           <div className="space-y-2">
@@ -459,28 +464,6 @@ export function CalculationForm({
             />
           </div>
           <div className="space-y-2">
-            <FormFieldLabel
-              htmlFor="specialist_name"
-              label="Especialista"
-              requirement="optional"
-            />
-            <input
-              id="specialist_name"
-              disabled={disabled}
-              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
-              {...register("specialist_name")}
-            />
-          </div>
-          <div className="space-y-2">
-            <FormFieldLabel htmlFor="situation" label="Situacao" requirement="optional" />
-            <input
-              id="situation"
-              disabled={disabled}
-              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
-              {...register("situation")}
-            />
-          </div>
-          <div className="space-y-2">
             <FormFieldLabel htmlFor="expires_in" label="Expira em" requirement="optional" />
             <input
               id="expires_in"
@@ -488,20 +471,6 @@ export function CalculationForm({
               disabled={disabled}
               className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
               {...register("expires_in")}
-            />
-          </div>
-          <div className="space-y-2">
-            <FormFieldLabel
-              htmlFor="attendance_date"
-              label="Data de atendimento"
-              requirement="optional"
-            />
-            <input
-              id="attendance_date"
-              type="date"
-              disabled={disabled}
-              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
-              {...register("attendance_date")}
             />
           </div>
         </div>
