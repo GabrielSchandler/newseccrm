@@ -561,6 +561,11 @@ export function CalculationReportPdf({
 
   const opportunityRows = [
     {
+      label: "Redução estimada por parcela",
+      value: displayCurrency(calculation.abusive_interest_per_installment),
+      tone: "positive" as const,
+    },
+    {
       label: "Total projetado no cenário atual",
       value: displayCurrency(calculation.current_total_financing),
     },
@@ -574,8 +579,8 @@ export function CalculationReportPdf({
       tone: "positive" as const,
     },
     {
-      label: "Redução estimada por parcela",
-      value: displayCurrency(calculation.abusive_interest_per_installment),
+      label: "Encargos estimados já pagos",
+      value: displayCurrency(calculation.abusive_interest_paid),
       tone: "positive" as const,
     },
     {
@@ -586,11 +591,6 @@ export function CalculationReportPdf({
     {
       label: "Total pago até o momento",
       value: displayCurrency(calculation.paid_amount_until_now),
-    },
-    {
-      label: "Encargos estimados já pagos",
-      value: displayCurrency(calculation.abusive_interest_paid),
-      tone: "positive" as const,
     },
     {
       label: "Saldo atual estimado",
