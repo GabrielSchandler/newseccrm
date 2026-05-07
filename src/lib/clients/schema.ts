@@ -15,6 +15,7 @@ export const clientFormSchema = z.object({
     .refine((value) => onlyDigits(value).length === 11, "Informe um CPF com 11 digitos.")
     .transform(onlyDigits),
   rg: z.string().trim().min(1, "Informe o RG.").transform((value) => value.trim()),
+  nationality: optionalText,
   birth_date: z
     .string()
     .trim()
@@ -58,6 +59,7 @@ export const clientDefaultValues: ClientFormValues = {
   full_name: "",
   cpf: "",
   rg: "",
+  nationality: "",
   birth_date: "",
   marital_status: "",
   profession: "",
@@ -78,6 +80,7 @@ export function clientToFormValues(client: Client): ClientFormValues {
     full_name: client.full_name,
     cpf: formatCpf(client.cpf),
     rg: client.rg ?? "",
+    nationality: client.nationality ?? "",
     birth_date: client.birth_date ?? "",
     marital_status: client.marital_status ?? "",
     profession: client.profession ?? "",

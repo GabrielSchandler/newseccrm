@@ -4,6 +4,7 @@ export type Client = {
   full_name: string;
   cpf: string;
   rg: string | null;
+  nationality: string | null;
   birth_date: string | null;
   marital_status: string | null;
   profession: string | null;

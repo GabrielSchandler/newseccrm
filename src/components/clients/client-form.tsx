@@ -29,6 +29,7 @@ const fields = [
   { name: "cpf", label: "CPF", type: "text", required: true },
   { name: "phone_mobile", label: "Celular", type: "text" },
   { name: "rg", label: "RG", type: "text", required: true },
+  { name: "nationality", label: "Nacionalidade", type: "text", requirement: "legal" },
   { name: "birth_date", label: "Data de nascimento", type: "date", required: true },
   { name: "marital_status", label: "Estado civil", type: "select", required: true },
   { name: "profession", label: "Profissao", type: "text" },
@@ -188,13 +189,23 @@ export function ClientForm({
         Obrigatoriedade alinhada com os contratos e recibos atuais. Os campos marcados como obrigatorios
         sao os que entram diretamente nesses documentos.
       </div>
+      <div className="rounded-lg border border-violet-200 bg-violet-50 px-4 py-3 text-sm text-violet-800">
+        Os campos marcados como Juridico sao usados em documentos da esteira juridica, como procuracoes
+        e declaracoes.
+      </div>
       <div className="grid gap-5 md:grid-cols-2">
         {fields.map((field) => (
           <div className="space-y-2" key={field.name}>
             <FormFieldLabel
               htmlFor={field.name}
               label={field.label}
-              requirement={"required" in field && field.required ? "required" : "optional"}
+              requirement={
+                "requirement" in field
+                  ? field.requirement
+                  : "required" in field && field.required
+                    ? "required"
+                    : "optional"
+              }
             />
             {field.type === "select" ? (
               <select

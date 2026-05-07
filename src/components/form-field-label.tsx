@@ -1,6 +1,6 @@
 "use client";
 
-type FormFieldRequirement = "required" | "optional" | "conditional";
+type FormFieldRequirement = "required" | "optional" | "conditional" | "legal";
 
 type FormFieldLabelProps = {
   htmlFor?: string;
@@ -24,6 +24,10 @@ const requirementMeta: Record<
   conditional: {
     text: "Condicional",
     className: "border-amber-200 bg-amber-50 text-amber-700",
+  },
+  legal: {
+    text: "Juridico",
+    className: "border-violet-200 bg-violet-50 text-violet-700",
   },
 };
 

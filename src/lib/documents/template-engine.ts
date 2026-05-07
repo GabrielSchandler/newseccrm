@@ -81,6 +81,7 @@ export const documentVariableCatalog = [
       "cliente_nome",
       "cliente_cpf",
       "cliente_rg",
+      "cliente_nacionalidade",
       "cliente_data_nascimento",
       "cliente_estado_civil",
       "cliente_profissao",
@@ -93,6 +94,7 @@ export const documentVariableCatalog = [
       "cliente_bairro",
       "cliente_cidade",
       "cliente_estado",
+      "cliente_endereco_completo",
     ],
   },
   {
@@ -479,6 +481,7 @@ function formatInstallmentCount(value: number | string | null | undefined) {
 
 function buildAddress(
   source:
+    | Pick<Client, "street" | "number" | "district" | "city" | "state" | "zip_code">
     | Pick<
         PreSaleClientSnapshot,
         "street" | "number" | "district" | "city" | "state" | "zip_code"
@@ -662,6 +665,7 @@ export function buildDocumentVariables(context: DocumentTemplateContext) {
     cliente_nome: formatText(client?.full_name),
     cliente_cpf: formatCpfValue(client?.cpf),
     cliente_rg: formatText(client?.rg),
+    cliente_nacionalidade: formatText(client?.nationality),
     cliente_data_nascimento: formatDateValue(client?.birth_date),
     cliente_estado_civil: formatText(client?.marital_status),
     cliente_profissao: formatText(client?.profession),
@@ -674,6 +678,7 @@ export function buildDocumentVariables(context: DocumentTemplateContext) {
     cliente_bairro: formatText(client?.district),
     cliente_cidade: formatText(client?.city),
     cliente_estado: formatText(client?.state),
+    cliente_endereco_completo: buildAddress(client),
     contratante_nome: formatText(snapshot?.full_name),
     contratante_cpf: formatCpfValue(snapshot?.cpf),
     contratante_rg: formatText(snapshot?.rg),

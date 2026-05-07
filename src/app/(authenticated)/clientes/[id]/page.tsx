@@ -38,6 +38,7 @@ type ClientePageProps = {
 const personalDetails = [
   ["CPF", "cpf"],
   ["RG", "rg"],
+  ["Nacionalidade", "nationality"],
   ["Nascimento", "birth_date"],
   ["Estado civil", "marital_status"],
   ["Profissao", "profession"],
