@@ -35,7 +35,7 @@ export default async function EditarUsuarioPage({
   const { data, error } = await supabase
     .from("user_profiles")
     .select(
-      "id, auth_user_id, company_id, full_name, username, email, phone, role, business_area, is_active, invited_by, deactivated_at, deactivated_by, created_at, updated_at",
+      "id, auth_user_id, company_id, full_name, nickname, username, email, phone, role, business_area, is_active, invited_by, deactivated_at, deactivated_by, created_at, updated_at",
     )
     .eq("id", id)
     .eq("company_id", companyId)
@@ -56,7 +56,7 @@ export default async function EditarUsuarioPage({
       />
       <div className="space-y-6 p-6">
         <div className="rounded-lg border border-slate-200 bg-white p-4 text-sm text-slate-700 shadow-sm">
-          Login do acesso: {user.username ?? "-"}
+          Login do acesso: {user.username ?? "-"}{user.nickname ? ` • Apelido: ${user.nickname}` : ""}
         </div>
         <UserForm
           mode="edit"

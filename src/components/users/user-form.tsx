@@ -157,6 +157,23 @@ function CreateUserForm({
         </div>
 
         <div className="space-y-2">
+          <FormFieldLabel htmlFor="nickname" label="Apelido" requirement="optional" />
+          <input
+            id="nickname"
+            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
+            disabled={disabled}
+            placeholder="Nome que vai aparecer na simulacao"
+            {...register("nickname")}
+          />
+          <p className="text-xs text-slate-500">
+            Se informado, este nome aparece no PDF da simulacao no lugar do nome completo.
+          </p>
+          {errors.nickname?.message ? (
+            <p className="text-sm text-red-600">{String(errors.nickname.message)}</p>
+          ) : null}
+        </div>
+
+        <div className="space-y-2">
           <FormFieldLabel htmlFor="phone" label="Telefone" requirement="optional" />
           <input
             id="phone"
@@ -322,6 +339,23 @@ function EditUserForm({
           />
           {errors.full_name?.message ? (
             <p className="text-sm text-red-600">{String(errors.full_name.message)}</p>
+          ) : null}
+        </div>
+
+        <div className="space-y-2">
+          <FormFieldLabel htmlFor="nickname" label="Apelido" requirement="optional" />
+          <input
+            id="nickname"
+            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
+            disabled={disabled}
+            placeholder="Nome que vai aparecer na simulacao"
+            {...register("nickname")}
+          />
+          <p className="text-xs text-slate-500">
+            Se informado, este nome aparece no PDF da simulacao no lugar do nome completo.
+          </p>
+          {errors.nickname?.message ? (
+            <p className="text-sm text-red-600">{String(errors.nickname.message)}</p>
           ) : null}
         </div>
 

@@ -24,6 +24,7 @@ export function resolveUserDisplayName(
   user:
     | {
         full_name?: string | null;
+        nickname?: string | null;
         username?: string | null;
         email?: string | null;
       }
@@ -31,6 +32,10 @@ export function resolveUserDisplayName(
     | undefined,
   fallback = "-",
 ) {
+  if (user?.nickname) {
+    return user.nickname;
+  }
+
   if (user?.full_name) {
     return user.full_name;
   }

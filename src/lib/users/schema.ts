@@ -23,6 +23,7 @@ const usernameSchema = z
 
 export const createCompanyUserSchema = z.object({
   full_name: z.string().trim().min(1, "Informe o nome completo."),
+  nickname: optionalText,
   username: usernameSchema,
   phone: optionalPhone,
   business_area: z.enum(["commercial", "legal"], {
@@ -41,6 +42,7 @@ export const createCompanyUserSchema = z.object({
 
 export const updateCompanyUserSchema = z.object({
   full_name: z.string().trim().min(1, "Informe o nome completo."),
+  nickname: optionalText,
   username: usernameSchema,
   phone: optionalPhone,
   business_area: z.enum(["commercial", "legal"], {
@@ -61,6 +63,7 @@ export type UpdateCompanyUserPayload = z.output<typeof updateCompanyUserSchema>;
 
 export const createCompanyUserDefaultValues: CreateCompanyUserFormValues = {
   full_name: "",
+  nickname: "",
   username: "",
   phone: "",
   business_area: "commercial",
@@ -73,6 +76,7 @@ export function companyUserToFormValues(
 ): UpdateCompanyUserFormValues {
   return {
     full_name: user.full_name ?? "",
+    nickname: user.nickname ?? "",
     username: user.username ?? "",
     phone: user.phone ?? "",
     business_area: user.business_area ?? "commercial",

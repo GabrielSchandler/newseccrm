@@ -113,7 +113,7 @@ export async function listCalculationCreators(userIds: string[]) {
   const { supabase, companyId } = await getCurrentUserContext();
   const { data, error } = await supabase
     .from("user_profiles")
-    .select("id, full_name, username, email")
+    .select("id, full_name, nickname, username, email")
     .eq("company_id", companyId)
     .in("id", uniqueIds);
 
@@ -124,6 +124,7 @@ export async function listCalculationCreators(userIds: string[]) {
   return (data ?? []) as Array<{
     id: string;
     full_name: string | null;
+    nickname: string | null;
     username: string | null;
     email: string | null;
   }>;
@@ -229,8 +230,8 @@ export async function listCalculationPreSales() {
       )
       .in("pre_sale_id", preSaleIds),
     supabase
-      .from("user_profiles")
-      .select("id, full_name, username")
+    .from("user_profiles")
+      .select("id, full_name, nickname, username")
       .eq("company_id", companyId),
   ]);
 

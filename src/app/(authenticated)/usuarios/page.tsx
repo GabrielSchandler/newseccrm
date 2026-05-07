@@ -74,7 +74,7 @@ export default async function UsuariosPage({ searchParams }: UsuariosPageProps) 
       supabase
         .from("user_profiles")
         .select(
-          "id, auth_user_id, company_id, full_name, username, email, phone, role, business_area, is_active, invited_by, deactivated_at, deactivated_by, created_at, updated_at",
+          "id, auth_user_id, company_id, full_name, nickname, username, email, phone, role, business_area, is_active, invited_by, deactivated_at, deactivated_by, created_at, updated_at",
         )
         .eq("company_id", companyId)
         .order("is_active", { ascending: false })
@@ -177,10 +177,11 @@ export default async function UsuariosPage({ searchParams }: UsuariosPageProps) 
         ) : (
           <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[980px] border-collapse text-left text-sm">
+              <table className="w-full min-w-[1080px] border-collapse text-left text-sm">
                 <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
                   <tr>
                     <th className="px-4 py-3 font-semibold">Nome</th>
+                    <th className="px-4 py-3 font-semibold">Apelido</th>
                     <th className="px-4 py-3 font-semibold">Login</th>
                     <th className="px-4 py-3 font-semibold">Telefone</th>
                     <th className="px-4 py-3 font-semibold">Area</th>
@@ -195,6 +196,9 @@ export default async function UsuariosPage({ searchParams }: UsuariosPageProps) 
                     <tr key={user.id} className="transition hover:bg-slate-50">
                       <td className="px-4 py-3 font-medium text-slate-950">
                         {displayValue(user.full_name)}
+                      </td>
+                      <td className="px-4 py-3 text-slate-700">
+                        {displayValue(user.nickname)}
                       </td>
                       <td className="px-4 py-3 text-slate-700">
                         {displayValue(user.username)}
@@ -240,7 +244,7 @@ export default async function UsuariosPage({ searchParams }: UsuariosPageProps) 
                   ))}
                   {!users.length ? (
                     <tr>
-                      <td className="px-4 py-6 text-center text-slate-500" colSpan={8}>
+                      <td className="px-4 py-6 text-center text-slate-500" colSpan={9}>
                         Nenhum usuario encontrado.
                       </td>
                     </tr>

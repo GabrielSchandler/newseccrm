@@ -7,6 +7,7 @@ import { getCurrentUserContext } from "@/lib/auth/current-user";
 import {
   calculateFinancingRevision,
 } from "@/lib/calculations/financing-calculation";
+import { parseBrazilianDecimalInput } from "@/lib/calculations/currency";
 import { CalculationReportPdf } from "@/lib/calculations/report-pdf";
 import {
   financingCalculationFormSchema,
@@ -63,11 +64,55 @@ async function ensureCalculationReportsBucketAvailable() {
   return null;
 }
 
-function buildCalculationRecord(values: FinancingCalculationPayload) {
-  const computed = calculateFinancingRevision(values);
+function resolveFinancedValue(
+  values: FinancingCalculationPayload,
+  fallbackValue?: number | string | null,
+) {
+  const cashValue = parseBrazilianDecimalInput(values.cash_value);
+  const downPayment = parseBrazilianDecimalInput(values.down_payment);
+  const providedFinancedValue = parseBrazilianDecimalInput(
+    values.financed_value ?? fallbackValue ?? null,
+  );
+
+  if (cashValue !== null && Number.isFinite(cashValue)) {
+    return Math.max(cashValue - Math.max(downPayment ?? 0, 0), 0);
+  }
+
+  if (providedFinancedValue !== null && Number.isFinite(providedFinancedValue)) {
+    return Math.max(providedFinancedValue, 0);
+  }
+
+  return null;
+}
+
+function resolveRemainingInstallments(values: FinancingCalculationPayload) {
+  const rawInstallmentCount = String(values.installment_count ?? "").trim();
+  const rawPaidInstallments = String(values.paid_installments ?? "").trim();
+
+  if (!rawInstallmentCount && !rawPaidInstallments) {
+    return null;
+  }
+
+  const installmentCount = Number(String(values.installment_count ?? "").replace(/\D/g, "")) || 0;
+  const paidInstallments = Number(String(values.paid_installments ?? "").replace(/\D/g, "")) || 0;
+  return Math.max(installmentCount - paidInstallments, 0);
+}
+
+function buildCalculationRecord(
+  values: FinancingCalculationPayload,
+  existingValues?: {
+    financed_value?: number | string | null;
+  },
+) {
+  const normalizedValues = {
+    ...values,
+    financed_value: resolveFinancedValue(values, existingValues?.financed_value),
+    remaining_installments: resolveRemainingInstallments(values),
+  };
+  const computed = calculateFinancingRevision(normalizedValues);
 
   return {
-    ...values,
+    ...normalizedValues,
     ...computed,
     status: "calculado" as const,
   };
@@ -77,7 +122,17 @@ function todayIsoDate() {
   return new Date().toISOString().slice(0, 10);
 }
 
-function resolveSpecialistName(fullName: string | null, username: string | null) {
+function resolveSpecialistName(
+  nickname: string | null,
+  fullName: string | null,
+  username: string | null,
+) {
+  const normalizedNickname = nickname?.trim();
+
+  if (normalizedNickname) {
+    return normalizedNickname;
+  }
+
   const normalizedFullName = fullName?.trim();
 
   if (normalizedFullName) {
@@ -156,6 +211,7 @@ export async function createFinancingCalculationAction(
       companyId,
       userProfileId,
       role,
+      nickname,
       fullName,
       username,
     } = await getCurrentUserContext();
@@ -178,7 +234,7 @@ export async function createFinancingCalculationAction(
 
     const record = buildCalculationRecord({
       ...parsed.data,
-      specialist_name: resolveSpecialistName(fullName, username),
+      specialist_name: resolveSpecialistName(nickname, fullName, username),
       situation: "Aprovado",
       attendance_date: todayIsoDate(),
     });
@@ -253,6 +309,7 @@ export async function updateFinancingCalculationAction(
       companyId,
       userProfileId,
       role,
+      nickname,
       fullName,
       username,
     } = await getCurrentUserContext();
@@ -277,9 +334,11 @@ export async function updateFinancingCalculationAction(
 
     const record = buildCalculationRecord({
       ...parsed.data,
-      specialist_name: resolveSpecialistName(fullName, username),
+      specialist_name: resolveSpecialistName(nickname, fullName, username),
       situation: "Aprovado",
       attendance_date: todayIsoDate(),
+    }, {
+      financed_value: existing.financed_value,
     });
     const { error } = await supabase
       .from("financing_calculations")

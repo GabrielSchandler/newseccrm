@@ -113,7 +113,7 @@ async function getCompanyUser(userId: string, companyId: string) {
   const { data, error } = await supabase
     .from("user_profiles")
     .select(
-      "id, auth_user_id, company_id, full_name, username, email, phone, role, business_area, is_active, invited_by, deactivated_at, deactivated_by, created_at, updated_at",
+      "id, auth_user_id, company_id, full_name, nickname, username, email, phone, role, business_area, is_active, invited_by, deactivated_at, deactivated_by, created_at, updated_at",
     )
     .eq("id", userId)
     .eq("company_id", companyId)
@@ -220,6 +220,7 @@ export async function createCompanyUserAction(
       email_confirm: true,
       user_metadata: {
         full_name: parsed.data.full_name,
+        nickname: parsed.data.nickname,
         username: normalizedUsername,
       },
     });
@@ -234,6 +235,7 @@ export async function createCompanyUserAction(
       auth_user_id: createdAuthUserId,
       company_id: companyId,
       full_name: parsed.data.full_name,
+      nickname: parsed.data.nickname,
       username: normalizedUsername,
       email: internalAuthEmail,
       phone: parsed.data.phone,
@@ -263,6 +265,7 @@ export async function createCompanyUserAction(
       entityLabel: parsed.data.full_name,
       details: {
         username: normalizedUsername,
+        nickname: parsed.data.nickname,
         role: parsed.data.role,
         business_area: parsed.data.business_area,
       },
@@ -358,6 +361,7 @@ export async function updateCompanyUserAction(
         email: nextInternalAuthEmail,
         user_metadata: {
           full_name: parsed.data.full_name,
+          nickname: parsed.data.nickname,
           username: normalizedUsername,
         },
       },
@@ -369,6 +373,7 @@ export async function updateCompanyUserAction(
 
     const nextValues = {
       full_name: parsed.data.full_name,
+      nickname: parsed.data.nickname,
       username: normalizedUsername,
       email: nextInternalAuthEmail,
       phone: parsed.data.phone,
@@ -410,6 +415,7 @@ export async function updateCompanyUserAction(
       entityLabel: parsed.data.full_name,
       details: {
         username: normalizedUsername,
+        nickname: parsed.data.nickname,
         role: parsed.data.role,
         business_area: parsed.data.business_area,
         is_active: parsed.data.is_active,

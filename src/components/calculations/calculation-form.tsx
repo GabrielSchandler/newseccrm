@@ -62,6 +62,23 @@ function handleCurrencyBlur(event: FocusEvent<HTMLInputElement>) {
   event.target.value = normalizeCurrencyInputValue(event.target.value);
 }
 
+function getComputedFinancedDisplayValue(
+  cashValue: string | number | null | undefined,
+  downPayment: string | number | null | undefined,
+  fallbackValue: string | number | null | undefined,
+) {
+  const parsedCashValue = parseBrazilianDecimalInput(cashValue);
+  const parsedDownPayment = parseBrazilianDecimalInput(downPayment);
+
+  if (parsedCashValue !== null && Number.isFinite(parsedCashValue)) {
+    return formatNumberForPtBrInput(
+      Math.max(parsedCashValue - Math.max(parsedDownPayment ?? 0, 0), 0),
+    );
+  }
+
+  return formatNumberForPtBrInput(fallbackValue);
+}
+
 function handleEnterAsNextField(event: KeyboardEvent<HTMLFormElement>) {
   if (
     event.key !== "Enter" ||
@@ -181,14 +198,14 @@ export function CalculationForm({
   const remainingInstallments = watch("remaining_installments");
   const disabled = isPending || isSubmitting;
   const selectedPreSale = preSales.find((preSale) => preSale.id === selectedPreSaleId);
+  const computedFinancedValue = getComputedFinancedDisplayValue(
+    cashValue,
+    downPayment,
+    financedValue,
+  );
 
   useEffect(() => {
-    const nextFinancedValue = Math.max(
-      (parseBrazilianDecimalInput(cashValue ?? "") ?? 0) -
-        (parseBrazilianDecimalInput(downPayment ?? "") ?? 0),
-      0,
-    );
-    const formatted = formatNumberForPtBrInput(nextFinancedValue);
+    const formatted = computedFinancedValue;
 
     if ((financedValue ?? "") !== formatted) {
       setValue("financed_value", formatted, {
@@ -196,7 +213,7 @@ export function CalculationForm({
         shouldValidate: true,
       });
     }
-  }, [cashValue, downPayment, financedValue, setValue]);
+  }, [computedFinancedValue, financedValue, setValue]);
 
   useEffect(() => {
     const totalInstallments = Number(String(installmentCount ?? "").replace(/\D/g, "")) || 0;
@@ -570,7 +587,7 @@ export function CalculationForm({
               aria-live="polite"
               className="min-h-[42px] rounded-lg border border-slate-400 bg-slate-200 px-3 py-2.5 text-sm font-semibold text-slate-800"
             >
-              {financedValue || "Nao informado"}
+              {computedFinancedValue || "Nao informado"}
             </div>
             <p className="text-xs text-slate-500">
               Calculado automaticamente: valor a vista menos entrada.

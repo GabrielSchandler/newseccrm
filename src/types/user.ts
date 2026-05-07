@@ -6,6 +6,7 @@ export type CompanyUserProfile = {
   auth_user_id: string;
   company_id: string;
   full_name: string | null;
+  nickname: string | null;
   username: string | null;
   email: string | null;
   phone: string | null;
