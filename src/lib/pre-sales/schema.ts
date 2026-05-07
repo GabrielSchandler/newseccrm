@@ -8,46 +8,12 @@ import type {
   PreSaleStatus,
 } from "@/types/pre-sale";
 import { isValidPhone, onlyDigits } from "@/lib/clients/masks";
+import {
+  formatNumberForPtBrInput,
+  parseBrazilianDecimalInput,
+} from "@/lib/calculations/currency";
 
 const leadMediaValues = ["Soul", "Growper", "Prosperity"] as const;
-
-function parseBrazilianDecimalInput(value: string | number | null | undefined) {
-  if (value === null || value === undefined || value === "") {
-    return null;
-  }
-
-  if (typeof value === "number") {
-    return Number.isFinite(value) ? value : Number.NaN;
-  }
-
-  const trimmed = String(value).trim();
-
-  if (!trimmed) {
-    return null;
-  }
-
-  const normalized = trimmed
-    .replace(/[R$\s]/g, "")
-    .replace(/\.(?=\d{3}(?:\D|$))/g, "")
-    .replace(",", ".")
-    .replace(/[^\d.-]/g, "");
-  const parsed = Number(normalized);
-
-  return Number.isFinite(parsed) ? parsed : Number.NaN;
-}
-
-function formatNumberForPtBrInput(value: number | string | null | undefined) {
-  const parsed = parseBrazilianDecimalInput(value);
-
-  if (parsed === null || Number.isNaN(parsed)) {
-    return "";
-  }
-
-  return new Intl.NumberFormat("pt-BR", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(parsed);
-}
 
 function sanitizeLeadMedia(
   value: string | null | undefined,

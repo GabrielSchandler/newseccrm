@@ -9,6 +9,7 @@ import {
   listCalculationClients,
   listCalculationPreSales,
 } from "@/lib/calculations/service";
+import { formatNumberForPtBrInput } from "@/lib/calculations/currency";
 import { getHomeForRole } from "@/lib/workspace";
 import {
   financingCalculationDefaultValues,
@@ -18,14 +19,6 @@ import {
 type NovoCalculoPageProps = {
   searchParams: Promise<{ preSaleId?: string; clientId?: string }>;
 };
-
-function numberToInput(value: number | null | undefined) {
-  if (value === null || value === undefined) {
-    return "";
-  }
-
-  return String(value).replace(".", ",");
-}
 
 export default async function NovoCalculoPage({
   searchParams,
@@ -72,9 +65,9 @@ export default async function NovoCalculoPage({
       financial_institution: selectedPreSale.financial_institution ?? "",
       specialist_name: selectedPreSale.specialist_name ?? "",
       vehicle_year: selectedPreSale.vehicle_year ?? "",
-      financed_value: numberToInput(selectedPreSale.financed_value),
-      down_payment: numberToInput(selectedPreSale.down_payment),
-      current_installment_value: numberToInput(
+      financed_value: formatNumberForPtBrInput(selectedPreSale.financed_value),
+      down_payment: formatNumberForPtBrInput(selectedPreSale.down_payment),
+      current_installment_value: formatNumberForPtBrInput(
         selectedPreSale.current_installment_value,
       ),
       paid_installments:

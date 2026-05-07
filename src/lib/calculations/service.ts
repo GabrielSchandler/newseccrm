@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { getCurrentUserContext } from "@/lib/auth/current-user";
+import { parseBrazilianDecimalInput } from "@/lib/calculations/currency";
 import {
   assertPreSaleAccess,
   listAccessiblePreSaleIdsForCurrentUser,
@@ -13,6 +14,16 @@ import type {
 } from "@/types/calculation";
 
 export const calculationReportsBucket = "calculation-reports";
+
+function normalizeNullableMoney(value: number | string | null | undefined) {
+  const parsed = parseBrazilianDecimalInput(value);
+
+  if (parsed === null || !Number.isFinite(parsed)) {
+    return null;
+  }
+
+  return parsed;
+}
 
 export function canManageCalculations(role: string | null) {
   return role === "admin" || role === "manager" || role === "seller";
@@ -296,9 +307,9 @@ export async function listCalculationPreSales() {
         financial?.asset_year === null || financial?.asset_year === undefined
           ? null
           : String(financial.asset_year),
-      financed_value: financial?.financed_amount ?? null,
+      financed_value: normalizeNullableMoney(financial?.financed_amount),
       down_payment: null,
-      current_installment_value: financial?.installment_amount ?? null,
+      current_installment_value: normalizeNullableMoney(financial?.installment_amount),
       paid_installments: paidInstallments || null,
       remaining_installments: null,
     } satisfies CalculationPreSaleOption;

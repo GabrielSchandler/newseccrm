@@ -98,16 +98,42 @@ function resolveRemainingInstallments(values: FinancingCalculationPayload) {
   return Math.max(installmentCount - paidInstallments, 0);
 }
 
+function normalizeCalculationPayload(values: FinancingCalculationPayload) {
+  return {
+    ...values,
+    cash_value: parseBrazilianDecimalInput(values.cash_value),
+    down_payment: parseBrazilianDecimalInput(values.down_payment),
+    financed_value: parseBrazilianDecimalInput(values.financed_value),
+    current_installment_value: parseBrazilianDecimalInput(
+      values.current_installment_value,
+    ),
+    installment_count:
+      values.installment_count === null || values.installment_count === undefined
+        ? null
+        : Number(String(values.installment_count).replace(/\D/g, "")) || null,
+    paid_installments:
+      values.paid_installments === null || values.paid_installments === undefined
+        ? null
+        : Number(String(values.paid_installments).replace(/\D/g, "")) || null,
+    remaining_installments:
+      values.remaining_installments === null ||
+      values.remaining_installments === undefined
+        ? null
+        : Number(String(values.remaining_installments).replace(/\D/g, "")) || null,
+  };
+}
+
 function buildCalculationRecord(
   values: FinancingCalculationPayload,
   existingValues?: {
     financed_value?: number | string | null;
   },
 ) {
+  const baseValues = normalizeCalculationPayload(values);
   const normalizedValues = {
-    ...values,
-    financed_value: resolveFinancedValue(values, existingValues?.financed_value),
-    remaining_installments: resolveRemainingInstallments(values),
+    ...baseValues,
+    financed_value: resolveFinancedValue(baseValues, existingValues?.financed_value),
+    remaining_installments: resolveRemainingInstallments(baseValues),
   };
   const computed = calculateFinancingRevision(normalizedValues);
 
