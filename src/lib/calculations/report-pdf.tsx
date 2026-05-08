@@ -1,6 +1,7 @@
 import React from "react";
 import {
   Document,
+  Image,
   Page,
   StyleSheet,
   Text,
@@ -12,7 +13,7 @@ import {
   formatCalculationDate,
   formatCpfDigits,
 } from "@/lib/calculations/formatters";
-import { formatPhone } from "@/lib/clients/masks";
+import { formatCnpj, formatPhone } from "@/lib/clients/masks";
 import type { FinancingCalculation } from "@/types/calculation";
 
 const COLORS = {
@@ -48,6 +49,15 @@ const styles = StyleSheet.create({
     borderBottomColor: COLORS.border,
     paddingBottom: 12,
     marginBottom: 16,
+  },
+  logoWrap: {
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  logo: {
+    width: 84,
+    height: 84,
+    objectFit: "contain",
   },
   headerTop: {
     flexDirection: "row",
@@ -89,6 +99,9 @@ const styles = StyleSheet.create({
   badgeAccent: {
     borderColor: COLORS.accent,
     color: COLORS.accent,
+  },
+  protocolLine: {
+    marginTop: 6,
   },
   title: {
     fontSize: 21,
@@ -453,6 +466,11 @@ function displayInt(value: number | string | null | undefined) {
   return String(value);
 }
 
+function displayCompanyCnpj(value: string | null | undefined) {
+  const formatted = formatCnpj(value);
+  return formatted || "Nao informado";
+}
+
 function PdfBadge({
   label,
   accent = false,
@@ -555,10 +573,14 @@ export function CalculationReportPdf({
   calculation,
   companyName,
   companyDocument,
+  companyLogoSrc,
+  protocolNumber,
 }: {
   calculation: FinancingCalculation;
   companyName: string;
   companyDocument?: string | null;
+  companyLogoSrc?: string | null;
+  protocolNumber?: string | null;
 }): React.ReactElement<DocumentProps> {
   const issueDate = displayDate(new Date().toISOString().slice(0, 10));
   const specialist = displayText(calculation.specialist_name || "A definir");
@@ -643,15 +665,19 @@ export function CalculationReportPdf({
     <Document>
       <Page size="A4" style={styles.page}>
         <View style={styles.header}>
+          {companyLogoSrc ? (
+            <View style={styles.logoWrap}>
+              <Image src={companyLogoSrc} style={styles.logo} />
+            </View>
+          ) : null}
           <View style={styles.headerTop}>
             <View style={styles.brandBlock}>
               <Text style={styles.companyName}>{displayText(companyName, "GRS")}</Text>
-              <Text style={styles.companyMeta}>
-                {companyDocument
-                  ? `Documento/empresa: ${companyDocument}`
-                  : "Documento/empresa: Não informado"}
-              </Text>
+              <Text style={styles.companyMeta}>{`CNPJ: ${displayCompanyCnpj(companyDocument)}`}</Text>
               <Text style={styles.companyMeta}>Data de emissão: {issueDate}</Text>
+              <Text style={[styles.companyMeta, styles.protocolLine]}>
+                {`Protocolo: ${displayText(protocolNumber, "Nao informado")}`}
+              </Text>
             </View>
             <View style={styles.badgeStack}>
               <PdfBadge label="SIMULAÇÃO GRATUITA" accent />

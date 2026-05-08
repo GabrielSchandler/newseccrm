@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { renderToBuffer } from "@react-pdf/renderer";
 import { recordAuditLog } from "@/lib/audit/log";
 import { getCurrentUserContext } from "@/lib/auth/current-user";
+import { createAdminClient } from "@/lib/supabase/admin";
 import {
   calculateFinancingRevision,
 } from "@/lib/calculations/financing-calculation";
@@ -29,6 +30,8 @@ export type CalculationActionState = {
   redirectTo?: string;
   url?: string;
 };
+
+const documentsBucket = "documents";
 
 function friendlyError(message: string): CalculationActionState {
   return {
@@ -202,6 +205,156 @@ function resolveCompanyDisplayName(companyRecord: Record<string, unknown> | null
     stringFromUnknown(companyRecord.razao_social) ||
     "GRS CRM"
   );
+}
+
+function isMissingProtocolColumnError(error: { code?: string; message?: string } | null) {
+  const message = error?.message?.toLowerCase() ?? "";
+  return error?.code === "42703" || message.includes("protocol_number");
+}
+
+function inferImageMimeType(filePath: string) {
+  const normalizedPath = filePath.toLowerCase();
+
+  if (normalizedPath.endsWith(".png")) {
+    return "image/png";
+  }
+
+  if (normalizedPath.endsWith(".webp")) {
+    return "image/webp";
+  }
+
+  if (normalizedPath.endsWith(".jpg") || normalizedPath.endsWith(".jpeg")) {
+    return "image/jpeg";
+  }
+
+  return "image/png";
+}
+
+function getSaoPauloDateKey(date = new Date()) {
+  const formatter = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+
+  return formatter.format(date).replace(/-/g, "");
+}
+
+async function resolveCompanyLogoDataUrl(logoPath: string | null | undefined) {
+  if (!logoPath) {
+    return null;
+  }
+
+  const adminClient = createAdminClient();
+  const { data, error } = await adminClient.storage.from(documentsBucket).download(logoPath);
+
+  if (error || !data) {
+    return null;
+  }
+
+  const buffer = Buffer.from(await data.arrayBuffer());
+  return `data:${inferImageMimeType(logoPath)};base64,${buffer.toString("base64")}`;
+}
+
+async function buildFallbackProtocolNumber(companyId: string, supabase: Awaited<ReturnType<typeof getCurrentUserContext>>["supabase"]) {
+  const dateKey = getSaoPauloDateKey();
+  const { count } = await supabase
+    .from("financing_calculations")
+    .select("id", { count: "exact", head: true })
+    .eq("company_id", companyId)
+    .not("pdf_storage_path", "is", null)
+    .gte("updated_at", `${dateKey.slice(0, 4)}-${dateKey.slice(4, 6)}-${dateKey.slice(6, 8)}T00:00:00`)
+    .lt("updated_at", `${dateKey.slice(0, 4)}-${dateKey.slice(4, 6)}-${dateKey.slice(6, 8)}T23:59:59.999`);
+
+  return `${dateKey}${(count ?? 0) + 1}`;
+}
+
+async function ensureCalculationProtocolNumber(
+  calculationId: string,
+  companyId: string,
+  existingProtocolNumber: string | null | undefined,
+  supabase: Awaited<ReturnType<typeof getCurrentUserContext>>["supabase"],
+) {
+  if (existingProtocolNumber?.trim()) {
+    return existingProtocolNumber.trim();
+  }
+
+  const dateKey = getSaoPauloDateKey();
+
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const { count, error: countError } = await supabase
+      .from("financing_calculations")
+      .select("id", { count: "exact", head: true })
+      .eq("company_id", companyId)
+      .like("protocol_number", `${dateKey}%`);
+
+    if (countError) {
+      if (isMissingProtocolColumnError(countError)) {
+        return buildFallbackProtocolNumber(companyId, supabase);
+      }
+
+      throw new Error(countError.message);
+    }
+
+    const candidate = `${dateKey}${(count ?? 0) + 1 + attempt}`;
+    const { data, error: updateError } = await supabase
+      .from("financing_calculations")
+      .update({
+        protocol_number: candidate,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", calculationId)
+      .eq("company_id", companyId)
+      .is("protocol_number", null)
+      .select("protocol_number")
+      .maybeSingle();
+
+    if (!updateError) {
+      const persisted = stringFromUnknown((data as { protocol_number?: string | null } | null)?.protocol_number);
+
+      if (persisted) {
+        return persisted;
+      }
+
+      const { data: existingData, error: existingError } = await supabase
+        .from("financing_calculations")
+        .select("protocol_number")
+        .eq("id", calculationId)
+        .eq("company_id", companyId)
+        .maybeSingle();
+
+      if (existingError) {
+        if (isMissingProtocolColumnError(existingError)) {
+          return buildFallbackProtocolNumber(companyId, supabase);
+        }
+
+        throw new Error(existingError.message);
+      }
+
+      const existingProtocol = stringFromUnknown(
+        (existingData as { protocol_number?: string | null } | null)?.protocol_number,
+      );
+
+      if (existingProtocol) {
+        return existingProtocol;
+      }
+
+      continue;
+    }
+
+    if (isMissingProtocolColumnError(updateError)) {
+      return buildFallbackProtocolNumber(companyId, supabase);
+    }
+
+    if (updateError.code === "23505") {
+      continue;
+    }
+
+    throw new Error(updateError.message);
+  }
+
+  return buildFallbackProtocolNumber(companyId, supabase);
 }
 
 async function revalidateCalculationPages(
@@ -512,12 +665,23 @@ export async function generateCalculationPdfAction(
     }
 
     const companyRecord = (companyData ?? null) as Record<string, unknown> | null;
+    const protocolNumber = await ensureCalculationProtocolNumber(
+      calculationId,
+      companyId,
+      calculation.protocol_number,
+      supabase,
+    );
+    const companyLogoSrc = await resolveCompanyLogoDataUrl(
+      stringFromUnknown(companyRecord?.logo_path) || null,
+    );
     const filePath = buildCalculationReportPath(companyId, calculationId);
     const pdfBuffer = await renderToBuffer(
       CalculationReportPdf({
         calculation,
         companyName: resolveCompanyDisplayName(companyRecord),
         companyDocument: stringFromUnknown(companyRecord?.cnpj) || null,
+        companyLogoSrc,
+        protocolNumber,
       }),
     );
     const fileName =

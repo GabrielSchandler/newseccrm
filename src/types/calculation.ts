@@ -39,6 +39,7 @@ export type FinancingCalculation = {
   example_50_discount_15x: number | string | null;
   example_50_discount_10x: number | string | null;
   example_50_discount_5x: number | string | null;
+  protocol_number: string | null;
   pdf_storage_path: string | null;
   pdf_file_name: string | null;
   status: FinancingCalculationStatus;
