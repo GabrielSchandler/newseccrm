@@ -11,6 +11,7 @@ import { renderOfficialDocxTemplate } from "@/lib/documents/docx-engine";
 import { sanitizeTemplateHtmlContent } from "@/lib/documents/html";
 import { convertDocxToPdf } from "@/lib/documents/pdf-converter";
 import { renderOfficialPdfFormTemplate } from "@/lib/documents/pdf-form-engine";
+import { createAdminClient } from "@/lib/supabase/admin";
 import {
   defaultDocumentTemplateContentHtml,
   documentTemplateSchema,
@@ -201,8 +202,10 @@ async function ensureOfficialDocumentSchema(
 }
 
 async function ensureDocumentsBucketAvailable() {
-  const { supabase } = await getCurrentUserContext();
-  const { error } = await supabase.storage.from(documentsBucket).list("", { limit: 1 });
+  const adminSupabase = createAdminClient();
+  const { error } = await adminSupabase.storage
+    .from(documentsBucket)
+    .list("", { limit: 1 });
 
   if (!error) {
     return null;
@@ -1211,7 +1214,9 @@ export async function previewTemplateContentAction(
 }
 
 async function uploadGeneratedFile(
-  supabase: Awaited<ReturnType<typeof getCurrentUserContext>>["supabase"],
+  supabase:
+    | Awaited<ReturnType<typeof getCurrentUserContext>>["supabase"]
+    | ReturnType<typeof createAdminClient>,
   path: string,
   buffer: Buffer,
   contentType: string,
@@ -1247,6 +1252,7 @@ export async function generateOfficialDocumentAction(
     }
 
     const { supabase, companyId, userProfileId } = await getCurrentUserContext();
+    const storageAdmin = createAdminClient();
     const [template, context] = await Promise.all([
       getTemplate(templateId, companyId, true),
       getDocumentContext(preSaleId, companyId),
@@ -1262,7 +1268,7 @@ export async function generateOfficialDocumentAction(
       );
     }
 
-    const { data: storedDocx, error: downloadError } = await supabase.storage
+    const { data: storedDocx, error: downloadError } = await storageAdmin.storage
       .from(documentsBucket)
       .download(template.original_docx_path);
 
@@ -1301,7 +1307,7 @@ export async function generateOfficialDocumentAction(
     const generatedPdfPath = storagePath([documentFolder, generatedPdfFilename]);
 
     await uploadGeneratedFile(
-      supabase,
+      storageAdmin,
       generatedDocxPath,
       officialDocx.buffer,
       "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -1314,7 +1320,7 @@ export async function generateOfficialDocumentAction(
 
     if (pdfResult.ok) {
       await uploadGeneratedFile(
-        supabase,
+        storageAdmin,
         generatedPdfPath,
         pdfResult.pdfBuffer,
         "application/pdf",
@@ -1424,6 +1430,7 @@ export async function generateOfficialPdfDocumentAction(
     }
 
     const { supabase, companyId, userProfileId } = await getCurrentUserContext();
+    const storageAdmin = createAdminClient();
     const [template, context] = await Promise.all([
       getTemplate(templateId, companyId, true),
       getDocumentContext(preSaleId, companyId),
@@ -1437,7 +1444,7 @@ export async function generateOfficialPdfDocumentAction(
       return friendlyError("Este template ainda nao possui PDF oficial.");
     }
 
-    const { data: storedPdf, error: downloadError } = await supabase.storage
+    const { data: storedPdf, error: downloadError } = await storageAdmin.storage
       .from(documentsBucket)
       .download(template.original_pdf_path);
 
@@ -1481,7 +1488,7 @@ export async function generateOfficialPdfDocumentAction(
     const generatedPdfPath = storagePath([documentFolder, generatedPdfFilename]);
 
     await uploadGeneratedFile(
-      supabase,
+      storageAdmin,
       generatedPdfPath,
       renderedPdf.buffer,
       "application/pdf",
@@ -1643,8 +1650,9 @@ export async function createGeneratedDocumentFileUrlAction(
       return bucketError;
     }
 
-    const { supabase } = await getCurrentUserContext();
+    await getCurrentUserContext();
     const document = await assertGeneratedDocumentAccess(documentId);
+    const storageAdmin = createAdminClient();
 
     const filePath =
       fileType === "pdf" ? document.generated_pdf_path : document.generated_docx_path;
@@ -1661,7 +1669,7 @@ export async function createGeneratedDocumentFileUrlAction(
       );
     }
 
-    const { data, error } = await supabase.storage
+    const { data, error } = await storageAdmin.storage
       .from(documentsBucket)
       .createSignedUrl(
         filePath,

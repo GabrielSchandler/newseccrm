@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { getCurrentUserContext } from "@/lib/auth/current-user";
 import { displayValue, formatDateTime } from "@/lib/clients/formatters";
 import { assertGeneratedDocumentAccess } from "@/lib/documents/access";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { resolveUserDisplayName } from "@/lib/users/account";
 import {
   documentStatusLabels,
@@ -28,6 +29,7 @@ function formatTemplateType(type: GeneratedDocument["document_type"]) {
 export default async function DocumentoPage({ params }: DocumentoPageProps) {
   const { id } = await params;
   const { supabase, companyId, role } = await getCurrentUserContext();
+  const storageAdmin = createAdminClient();
   const canDeleteDocuments = role === "admin" || role === "manager";
   let document: GeneratedDocument | null = null;
 
@@ -75,22 +77,22 @@ export default async function DocumentoPage({ params }: DocumentoPageProps) {
     { data: pdfDownloadSignedUrl },
   ] = await Promise.all([
     document.generated_docx_path
-      ? supabase.storage
+      ? storageAdmin.storage
           .from("documents")
           .createSignedUrl(document.generated_docx_path, 60 * 10)
       : Promise.resolve({ data: null }),
     document.generated_docx_path
-      ? supabase.storage.from("documents").createSignedUrl(document.generated_docx_path, 60 * 10, {
+      ? storageAdmin.storage.from("documents").createSignedUrl(document.generated_docx_path, 60 * 10, {
           download: document.generated_docx_filename ?? "documento.docx",
         })
       : Promise.resolve({ data: null }),
     document.generated_pdf_path
-      ? supabase.storage
+      ? storageAdmin.storage
           .from("documents")
           .createSignedUrl(document.generated_pdf_path, 60 * 10)
       : Promise.resolve({ data: null }),
     document.generated_pdf_path
-      ? supabase.storage.from("documents").createSignedUrl(document.generated_pdf_path, 60 * 10, {
+      ? storageAdmin.storage.from("documents").createSignedUrl(document.generated_pdf_path, 60 * 10, {
           download: document.generated_pdf_filename ?? "documento.pdf",
         })
       : Promise.resolve({ data: null }),
