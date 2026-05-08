@@ -435,6 +435,18 @@ const styles = StyleSheet.create({
   footerContacts: {
     marginTop: 8,
     gap: 3,
+    alignItems: "center",
+  },
+  footerContactText: {
+    fontSize: 7.8,
+    color: COLORS.muted,
+    textAlign: "center",
+  },
+  footerAddressText: {
+    fontSize: 7.8,
+    color: COLORS.muted,
+    textAlign: "center",
+    fontWeight: 700,
   },
 });
 
@@ -857,14 +869,14 @@ export function CalculationReportPdf({
             <Text style={styles.footerText}>{displayText(companyName, "GRS")}</Text>
           </View>
           <View style={styles.footerContacts}>
-            <Text style={styles.footerText}>
-              {`Endereco: ${displayText(companyAddress, "Nao informado")}`}
+            <Text style={styles.footerAddressText}>
+              {displayText(companyAddress, "Nao informado")}
             </Text>
-            <Text style={styles.footerText}>
-              {`Site: ${displayWebsite(companyWebsite)}`}
+            <Text style={styles.footerContactText}>
+              {displayPhone(companyPhone)}
             </Text>
-            <Text style={styles.footerText}>
-              {`Telefone: ${displayPhone(companyPhone)}`}
+            <Text style={styles.footerContactText}>
+              {displayWebsite(companyWebsite)}
             </Text>
           </View>
         </View>
