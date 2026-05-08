@@ -51,7 +51,32 @@ function getStageTemplates(
   templates: DocumentTemplate[],
   stage: LegalWorkflowStage,
 ) {
-  return templates.filter((template) => template.legal_stage === stage);
+  const explicitMatches = templates.filter((template) => template.legal_stage === stage);
+
+  if (explicitMatches.length) {
+    return explicitMatches;
+  }
+
+  const normalize = (value: string | null | undefined) =>
+    (value ?? "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase();
+
+  const stageKeywords: Record<LegalWorkflowStage, string[]> = {
+    termo_pagamento_servico: ["recibo", "termo de pagamento", "prestacao de servico"],
+    lgpd_hipossuficiencia_procuracao: ["lgpd", "hipossuficiencia", "procuracao"],
+    diligencia_cobranca: ["notificacao", "protocolo", "designacao de perito", "perito"],
+    pagamento_laudo: ["pagamento de laudo", "laudo"],
+    pos_laudo_ciencia: ["ciencia e responsabilidade", "termo de ciencia", "concordancia"],
+  };
+
+  const keywords = stageKeywords[stage];
+
+  return templates.filter((template) => {
+    const haystack = `${normalize(template.name)} ${normalize(template.description)}`;
+    return keywords.some((keyword) => haystack.includes(normalize(keyword)));
+  });
 }
 
 function getPreSaleStageDocuments(

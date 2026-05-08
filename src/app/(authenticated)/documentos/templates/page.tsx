@@ -6,6 +6,7 @@ import { DocumentsNav } from "@/components/documents/documents-nav";
 import { PageHeader } from "@/components/layout/page-header";
 import { getCurrentUserContext } from "@/lib/auth/current-user";
 import { displayValue, formatDateTime } from "@/lib/clients/formatters";
+import { getLegalWorkflowStage } from "@/lib/legal/workflow";
 import {
   documentTemplateTypes,
   type DocumentTemplate,
@@ -131,6 +132,7 @@ export default async function TemplatesPage({ searchParams }: TemplatesPageProps
                   <tr>
                     <th className="px-4 py-3 font-semibold">Nome</th>
                     <th className="px-4 py-3 font-semibold">Tipo</th>
+                    <th className="px-4 py-3 font-semibold">Etapa juridica</th>
                     <th className="px-4 py-3 font-semibold">DOCX oficial</th>
                     <th className="px-4 py-3 font-semibold">Ativo</th>
                     <th className="px-4 py-3 font-semibold">Padrao</th>
@@ -153,6 +155,11 @@ export default async function TemplatesPage({ searchParams }: TemplatesPageProps
                       </td>
                       <td className="px-4 py-3 text-slate-700">
                         {formatTemplateType(template.document_type)}
+                      </td>
+                      <td className="px-4 py-3 text-slate-700">
+                        {template.legal_stage
+                          ? getLegalWorkflowStage(template.legal_stage).shortLabel
+                          : "-"}
                       </td>
                       <td className="px-4 py-3">
                         <span
@@ -221,7 +228,7 @@ export default async function TemplatesPage({ searchParams }: TemplatesPageProps
                   ))}
                   {!templates.length ? (
                     <tr>
-                      <td className="px-4 py-6 text-center text-slate-500" colSpan={7}>
+                      <td className="px-4 py-6 text-center text-slate-500" colSpan={8}>
                         Nenhum template encontrado.
                       </td>
                     </tr>
