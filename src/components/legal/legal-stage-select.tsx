@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import {
   updateLegalWorkflowStageAction,
@@ -16,6 +17,7 @@ export function LegalStageSelect({
   preSaleId,
   currentStage,
 }: LegalStageSelectProps) {
+  const router = useRouter();
   const [selectedStage, setSelectedStage] = useState<LegalWorkflowStage>(currentStage);
   const [message, setMessage] = useState<JuridicoActionState | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -44,7 +46,10 @@ export function LegalStageSelect({
 
             if (!result.ok) {
               setSelectedStage(currentStage);
+              return;
             }
+
+            router.refresh();
           });
         }}
       >

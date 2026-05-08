@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { WhatsAppLink } from "@/components/clients/whatsapp-link";
 import { PreSaleDeleteButton } from "@/components/pre-sales/pre-sale-delete-button";
@@ -19,8 +20,11 @@ type PreSalesKanbanProps = {
 };
 
 export function PreSalesKanban({ preSales, canDelete = false }: PreSalesKanbanProps) {
+  const router = useRouter();
   const [draggedId, setDraggedId] = useState<string | null>(null);
+  const [dropTarget, setDropTarget] = useState<PreSaleStatus | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [messageTone, setMessageTone] = useState<"success" | "error">("success");
   const [isPending, startTransition] = useTransition();
 
   function handleDrop(status: PreSaleStatus) {
@@ -33,12 +37,16 @@ export function PreSalesKanban({ preSales, canDelete = false }: PreSalesKanbanPr
       const result = await updatePreSaleStatusAction(draggedId, status);
 
       if (!result.ok) {
+        setMessageTone("error");
         setMessage(result.message);
       } else {
+        setMessageTone("success");
         setMessage(result.message);
+        router.refresh();
       }
     });
     setDraggedId(null);
+    setDropTarget(null);
   }
 
   return (
@@ -48,7 +56,13 @@ export function PreSalesKanban({ preSales, canDelete = false }: PreSalesKanbanPr
         {isPending ? <p className="text-sm text-slate-500">Atualizando...</p> : null}
       </div>
       {message ? (
-        <div className="rounded-lg border border-teal-200 bg-teal-50 px-4 py-3 text-sm text-teal-800">
+        <div
+          className={`rounded-lg border px-4 py-3 text-sm ${
+            messageTone === "success"
+              ? "border-teal-200 bg-teal-50 text-teal-800"
+              : "border-red-200 bg-red-50 text-red-700"
+          }`}
+        >
           {message}
         </div>
       ) : null}
@@ -59,9 +73,23 @@ export function PreSalesKanban({ preSales, canDelete = false }: PreSalesKanbanPr
           return (
             <div
               key={status.value}
-              onDragOver={(event) => event.preventDefault()}
+              onDragOver={(event) => {
+                event.preventDefault();
+                if (draggedId) {
+                  setDropTarget(status.value);
+                }
+              }}
+              onDragLeave={() => {
+                if (dropTarget === status.value) {
+                  setDropTarget(null);
+                }
+              }}
               onDrop={() => handleDrop(status.value)}
-              className="min-h-56 rounded-lg border border-slate-200 bg-slate-50 p-3"
+              className={`min-h-56 rounded-lg border p-3 transition ${
+                dropTarget === status.value
+                  ? "border-teal-400 bg-teal-50/60 ring-2 ring-teal-200"
+                  : "border-slate-200 bg-slate-50"
+              }`}
             >
               <div className="mb-3 flex items-center justify-between">
                 <PreSalesStatusBadge status={status.value} />
@@ -75,7 +103,15 @@ export function PreSalesKanban({ preSales, canDelete = false }: PreSalesKanbanPr
                     key={preSale.id}
                     draggable
                     onDragStart={() => setDraggedId(preSale.id)}
-                    className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm"
+                    onDragEnd={() => {
+                      setDraggedId(null);
+                      setDropTarget(null);
+                    }}
+                    className={`rounded-lg border bg-white p-3 shadow-sm transition ${
+                      draggedId === preSale.id
+                        ? "cursor-grabbing border-teal-300 opacity-70"
+                        : "cursor-grab border-slate-200"
+                    }`}
                   >
                     <Link
                       href={`/pre-vendas/${preSale.id}`}
