@@ -207,6 +207,26 @@ function resolveCompanyDisplayName(companyRecord: Record<string, unknown> | null
   );
 }
 
+function resolveCompanyFooterAddress(companyRecord: Record<string, unknown> | null) {
+  if (!companyRecord) {
+    return null;
+  }
+
+  const street = stringFromUnknown(companyRecord.street);
+  const number = stringFromUnknown(companyRecord.number);
+  const district = stringFromUnknown(companyRecord.district);
+  const city = stringFromUnknown(companyRecord.city);
+  const state = stringFromUnknown(companyRecord.state);
+
+  const segments = [
+    [street, number].filter(Boolean).join(", "),
+    district,
+    [city, state].filter(Boolean).join("/"),
+  ].filter(Boolean);
+
+  return segments.length ? segments.join(" • ") : null;
+}
+
 function isMissingProtocolColumnError(error: { code?: string; message?: string } | null) {
   const message = error?.message?.toLowerCase() ?? "";
   return error?.code === "42703" || message.includes("protocol_number");
@@ -682,6 +702,9 @@ export async function generateCalculationPdfAction(
         companyDocument: stringFromUnknown(companyRecord?.cnpj) || null,
         companyLogoSrc,
         protocolNumber,
+        companyPhone: stringFromUnknown(companyRecord?.phone) || null,
+        companyWebsite: stringFromUnknown(companyRecord?.website) || null,
+        companyAddress: resolveCompanyFooterAddress(companyRecord),
       }),
     );
     const fileName =

@@ -432,6 +432,10 @@ const styles = StyleSheet.create({
     fontSize: 7.8,
     color: COLORS.muted,
   },
+  footerContacts: {
+    marginTop: 8,
+    gap: 3,
+  },
 });
 
 function displayText(value: string | null | undefined, fallback = "Não informado") {
@@ -470,6 +474,18 @@ function displayCompanyCnpj(value: string | null | undefined) {
   const formatted = formatCnpj(value);
   return formatted || "Nao informado";
 }
+
+function displayWebsite(value: string | null | undefined) {
+  if (!value?.trim()) {
+    return "Nao informado";
+  }
+
+  return value
+    .trim()
+    .replace(/^https?:\/\//i, "")
+    .replace(/\/+$/g, "");
+}
+
 
 function PdfBadge({
   label,
@@ -575,12 +591,18 @@ export function CalculationReportPdf({
   companyDocument,
   companyLogoSrc,
   protocolNumber,
+  companyPhone,
+  companyWebsite,
+  companyAddress,
 }: {
   calculation: FinancingCalculation;
   companyName: string;
   companyDocument?: string | null;
   companyLogoSrc?: string | null;
   protocolNumber?: string | null;
+  companyPhone?: string | null;
+  companyWebsite?: string | null;
+  companyAddress?: string | null;
 }): React.ReactElement<DocumentProps> {
   const issueDate = displayDate(new Date().toISOString().slice(0, 10));
   const specialist = displayText(calculation.specialist_name || "A definir");
@@ -833,6 +855,17 @@ export function CalculationReportPdf({
           <View style={styles.footerMeta}>
             <Text style={styles.footerText}>Emitido em {issueDate}</Text>
             <Text style={styles.footerText}>{displayText(companyName, "GRS")}</Text>
+          </View>
+          <View style={styles.footerContacts}>
+            <Text style={styles.footerText}>
+              {`Endereco: ${displayText(companyAddress, "Nao informado")}`}
+            </Text>
+            <Text style={styles.footerText}>
+              {`Site: ${displayWebsite(companyWebsite)}`}
+            </Text>
+            <Text style={styles.footerText}>
+              {`Telefone: ${displayPhone(companyPhone)}`}
+            </Text>
           </View>
         </View>
       </Page>
