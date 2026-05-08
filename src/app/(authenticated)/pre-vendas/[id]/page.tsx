@@ -2,6 +2,7 @@ import { Edit } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
+import { CopyButton } from "@/components/clients/copy-button";
 import { ClientToast } from "@/components/clients/client-toast";
 import { WhatsAppLink } from "@/components/clients/whatsapp-link";
 import { ClientDocumentsSection } from "@/components/client-documents/client-documents-section";
@@ -65,19 +66,35 @@ function DetailItem({
   label,
   value,
   className = "",
+  copyValue,
 }: {
   label: string;
   value: ReactNode;
   className?: string;
+  copyValue?: string | null;
 }) {
   return (
     <div className={className}>
       <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
         {label}
       </p>
-      <div className="mt-1 text-sm font-medium text-slate-950">{value}</div>
+      <div className="mt-1 flex flex-wrap items-start gap-2 text-sm font-medium text-slate-950">
+        <div>{value}</div>
+        {copyValue ? (
+          <CopyButton
+            value={copyValue}
+            label="Copiar"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-700 transition hover:bg-slate-50"
+          />
+        ) : null}
+      </div>
     </div>
   );
+}
+
+function copyableValue(value: string | null | undefined) {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : null;
 }
 
 export default async function PreVendaPage({ params, searchParams }: PreVendaPageProps) {
@@ -231,15 +248,40 @@ export default async function PreVendaPage({ params, searchParams }: PreVendaPag
               </div>
             }
           />
-          <DetailItem label="Tipo" value={formatPreSaleType(preSale.pre_sale_type)} />
-          <DetailItem label="Servico" value={displayValue(preSale.service_type)} />
-          <DetailItem label="Midia" value={displayValue(preSale.media)} />
-          <DetailItem label="Consultor" value={formatUserName(consultant)} />
-          <DetailItem label="Criado por" value={formatUserName(creator)} />
-          <DetailItem label="Data de abertura" value={formatDateTime(preSale.created_at)} />
+          <DetailItem
+            label="Tipo"
+            value={formatPreSaleType(preSale.pre_sale_type)}
+            copyValue={formatPreSaleType(preSale.pre_sale_type)}
+          />
+          <DetailItem
+            label="Servico"
+            value={displayValue(preSale.service_type)}
+            copyValue={copyableValue(preSale.service_type)}
+          />
+          <DetailItem
+            label="Midia"
+            value={displayValue(preSale.media)}
+            copyValue={copyableValue(preSale.media)}
+          />
+          <DetailItem
+            label="Consultor"
+            value={formatUserName(consultant)}
+            copyValue={copyableValue(formatUserName(consultant))}
+          />
+          <DetailItem
+            label="Criado por"
+            value={formatUserName(creator)}
+            copyValue={copyableValue(formatUserName(creator))}
+          />
+          <DetailItem
+            label="Data de abertura"
+            value={formatDateTime(preSale.created_at)}
+            copyValue={copyableValue(formatDateTime(preSale.created_at))}
+          />
           <DetailItem
             label="Ultima atualizacao"
             value={formatDateTime(preSale.updated_at)}
+            copyValue={copyableValue(formatDateTime(preSale.updated_at))}
           />
         </DetailSection>
 
@@ -247,70 +289,70 @@ export default async function PreVendaPage({ params, searchParams }: PreVendaPag
           title="Contratante"
           description="Snapshot preservado para contrato e ordem de servico."
         >
-          <DetailItem label="Nome" value={displayValue(snapshot?.full_name ?? null)} />
-          <DetailItem label="CPF" value={displayCpf(snapshot?.cpf ?? null)} />
-          <DetailItem label="RG" value={displayValue(snapshot?.rg ?? null)} />
-          <DetailItem label="Nascimento" value={formatDate(snapshot?.birth_date ?? null)} />
-          <DetailItem label="Estado civil" value={displayValue(snapshot?.marital_status ?? null)} />
-          <DetailItem label="Profissao" value={displayValue(snapshot?.profession ?? null)} />
-          <DetailItem label="Email" value={displayValue(snapshot?.email ?? null)} />
-          <DetailItem label="Celular" value={displayPhone(snapshot?.phone_mobile ?? null)} />
-          <DetailItem label="Telefone secundario" value={displayPhone(snapshot?.phone_secondary ?? null)} />
-          <DetailItem label="CEP" value={displayValue(snapshot?.zip_code ?? null)} />
-          <DetailItem label="Rua" value={displayValue(snapshot?.street ?? null)} />
-          <DetailItem label="Numero" value={displayValue(snapshot?.number ?? null)} />
-          <DetailItem label="Bairro" value={displayValue(snapshot?.district ?? null)} />
-          <DetailItem label="Cidade" value={displayValue(snapshot?.city ?? null)} />
-          <DetailItem label="Estado" value={displayValue(snapshot?.state ?? null)} />
+          <DetailItem label="Nome" value={displayValue(snapshot?.full_name ?? null)} copyValue={copyableValue(snapshot?.full_name ?? null)} />
+          <DetailItem label="CPF" value={displayCpf(snapshot?.cpf ?? null)} copyValue={copyableValue(displayCpf(snapshot?.cpf ?? null))} />
+          <DetailItem label="RG" value={displayValue(snapshot?.rg ?? null)} copyValue={copyableValue(snapshot?.rg ?? null)} />
+          <DetailItem label="Nascimento" value={formatDate(snapshot?.birth_date ?? null)} copyValue={copyableValue(formatDate(snapshot?.birth_date ?? null))} />
+          <DetailItem label="Estado civil" value={displayValue(snapshot?.marital_status ?? null)} copyValue={copyableValue(snapshot?.marital_status ?? null)} />
+          <DetailItem label="Profissao" value={displayValue(snapshot?.profession ?? null)} copyValue={copyableValue(snapshot?.profession ?? null)} />
+          <DetailItem label="Email" value={displayValue(snapshot?.email ?? null)} copyValue={copyableValue(snapshot?.email ?? null)} />
+          <DetailItem label="Celular" value={displayPhone(snapshot?.phone_mobile ?? null)} copyValue={copyableValue(displayPhone(snapshot?.phone_mobile ?? null))} />
+          <DetailItem label="Telefone secundario" value={displayPhone(snapshot?.phone_secondary ?? null)} copyValue={copyableValue(displayPhone(snapshot?.phone_secondary ?? null))} />
+          <DetailItem label="CEP" value={displayValue(snapshot?.zip_code ?? null)} copyValue={copyableValue(snapshot?.zip_code ?? null)} />
+          <DetailItem label="Rua" value={displayValue(snapshot?.street ?? null)} copyValue={copyableValue(snapshot?.street ?? null)} />
+          <DetailItem label="Numero" value={displayValue(snapshot?.number ?? null)} copyValue={copyableValue(snapshot?.number ?? null)} />
+          <DetailItem label="Bairro" value={displayValue(snapshot?.district ?? null)} copyValue={copyableValue(snapshot?.district ?? null)} />
+          <DetailItem label="Cidade" value={displayValue(snapshot?.city ?? null)} copyValue={copyableValue(snapshot?.city ?? null)} />
+          <DetailItem label="Estado" value={displayValue(snapshot?.state ?? null)} copyValue={copyableValue(snapshot?.state ?? null)} />
         </DetailSection>
 
         <DetailSection title="Titular da divida">
-          <DetailItem label="Nome" value={displayValue(debtHolder?.full_name ?? null)} />
-          <DetailItem label="CPF" value={displayCpf(debtHolder?.cpf ?? null)} />
-          <DetailItem label="RG" value={displayValue(debtHolder?.rg ?? null)} />
-          <DetailItem label="Nascimento" value={formatDate(debtHolder?.birth_date ?? null)} />
-          <DetailItem label="Estado civil" value={displayValue(debtHolder?.marital_status ?? null)} />
-          <DetailItem label="Profissao" value={displayValue(debtHolder?.profession ?? null)} />
-          <DetailItem label="Nacionalidade" value={displayValue(debtHolder?.nationality ?? null)} />
-          <DetailItem label="Orgao emissor" value={displayValue(debtHolder?.issuer_agency ?? null)} />
-          <DetailItem label="Pai" value={displayValue(debtHolder?.father_name ?? null)} />
-          <DetailItem label="Mae" value={displayValue(debtHolder?.mother_name ?? null)} />
-          <DetailItem label="Celular" value={displayPhone(debtHolder?.phone_mobile ?? null)} />
-          <DetailItem label="Telefone secundario" value={displayPhone(debtHolder?.phone_secondary ?? null)} />
-          <DetailItem label="Email" value={displayValue(debtHolder?.email ?? null)} />
-          <DetailItem label="CEP" value={displayValue(debtHolder?.zip_code ?? null)} />
-          <DetailItem label="Rua" value={displayValue(debtHolder?.street ?? null)} />
-          <DetailItem label="Numero" value={displayValue(debtHolder?.number ?? null)} />
-          <DetailItem label="Bairro" value={displayValue(debtHolder?.district ?? null)} />
-          <DetailItem label="Cidade" value={displayValue(debtHolder?.city ?? null)} />
-          <DetailItem label="Estado" value={displayValue(debtHolder?.state ?? null)} />
+          <DetailItem label="Nome" value={displayValue(debtHolder?.full_name ?? null)} copyValue={copyableValue(debtHolder?.full_name ?? null)} />
+          <DetailItem label="CPF" value={displayCpf(debtHolder?.cpf ?? null)} copyValue={copyableValue(displayCpf(debtHolder?.cpf ?? null))} />
+          <DetailItem label="RG" value={displayValue(debtHolder?.rg ?? null)} copyValue={copyableValue(debtHolder?.rg ?? null)} />
+          <DetailItem label="Nascimento" value={formatDate(debtHolder?.birth_date ?? null)} copyValue={copyableValue(formatDate(debtHolder?.birth_date ?? null))} />
+          <DetailItem label="Estado civil" value={displayValue(debtHolder?.marital_status ?? null)} copyValue={copyableValue(debtHolder?.marital_status ?? null)} />
+          <DetailItem label="Profissao" value={displayValue(debtHolder?.profession ?? null)} copyValue={copyableValue(debtHolder?.profession ?? null)} />
+          <DetailItem label="Nacionalidade" value={displayValue(debtHolder?.nationality ?? null)} copyValue={copyableValue(debtHolder?.nationality ?? null)} />
+          <DetailItem label="Orgao emissor" value={displayValue(debtHolder?.issuer_agency ?? null)} copyValue={copyableValue(debtHolder?.issuer_agency ?? null)} />
+          <DetailItem label="Pai" value={displayValue(debtHolder?.father_name ?? null)} copyValue={copyableValue(debtHolder?.father_name ?? null)} />
+          <DetailItem label="Mae" value={displayValue(debtHolder?.mother_name ?? null)} copyValue={copyableValue(debtHolder?.mother_name ?? null)} />
+          <DetailItem label="Celular" value={displayPhone(debtHolder?.phone_mobile ?? null)} copyValue={copyableValue(displayPhone(debtHolder?.phone_mobile ?? null))} />
+          <DetailItem label="Telefone secundario" value={displayPhone(debtHolder?.phone_secondary ?? null)} copyValue={copyableValue(displayPhone(debtHolder?.phone_secondary ?? null))} />
+          <DetailItem label="Email" value={displayValue(debtHolder?.email ?? null)} copyValue={copyableValue(debtHolder?.email ?? null)} />
+          <DetailItem label="CEP" value={displayValue(debtHolder?.zip_code ?? null)} copyValue={copyableValue(debtHolder?.zip_code ?? null)} />
+          <DetailItem label="Rua" value={displayValue(debtHolder?.street ?? null)} copyValue={copyableValue(debtHolder?.street ?? null)} />
+          <DetailItem label="Numero" value={displayValue(debtHolder?.number ?? null)} copyValue={copyableValue(debtHolder?.number ?? null)} />
+          <DetailItem label="Bairro" value={displayValue(debtHolder?.district ?? null)} copyValue={copyableValue(debtHolder?.district ?? null)} />
+          <DetailItem label="Cidade" value={displayValue(debtHolder?.city ?? null)} copyValue={copyableValue(debtHolder?.city ?? null)} />
+          <DetailItem label="Estado" value={displayValue(debtHolder?.state ?? null)} copyValue={copyableValue(debtHolder?.state ?? null)} />
         </DetailSection>
 
         <DetailSection title="Dados financeiros">
-          <DetailItem label="Financeira" value={displayValue(financialCase?.financer_name ?? null)} />
+          <DetailItem label="Financeira" value={displayValue(financialCase?.financer_name ?? null)} copyValue={copyableValue(financialCase?.financer_name ?? null)} />
           <DetailItem
             label="Possui contrato de financiamento?"
             value={formatBoolean(financialCase?.has_financing_contract)}
           />
-          <DetailItem label="Valor financiado" value={formatCurrency(financialCase?.financed_amount ?? null)} />
-          <DetailItem label="Valor da parcela" value={formatCurrency(financialCase?.installment_amount ?? null)} />
-          <DetailItem label="Parcelas pagas" value={displayValue(financialCase?.paid_installments === null || financialCase?.paid_installments === undefined ? null : String(financialCase.paid_installments))} />
-          <DetailItem label="Parcelas em atraso" value={displayValue(financialCase?.overdue_installments === null || financialCase?.overdue_installments === undefined ? null : String(financialCase.overdue_installments))} />
-          <DetailItem label="Dia do vencimento" value={displayValue(financialCase?.due_day === null || financialCase?.due_day === undefined ? null : String(financialCase.due_day))} />
-          <DetailItem label="Numero do contrato" value={displayValue(financialCase?.contract_number ?? null)} />
+          <DetailItem label="Valor financiado" value={formatCurrency(financialCase?.financed_amount ?? null)} copyValue={copyableValue(formatCurrency(financialCase?.financed_amount ?? null))} />
+          <DetailItem label="Valor da parcela" value={formatCurrency(financialCase?.installment_amount ?? null)} copyValue={copyableValue(formatCurrency(financialCase?.installment_amount ?? null))} />
+          <DetailItem label="Parcelas pagas" value={displayValue(financialCase?.paid_installments === null || financialCase?.paid_installments === undefined ? null : String(financialCase.paid_installments))} copyValue={copyableValue(financialCase?.paid_installments === null || financialCase?.paid_installments === undefined ? null : String(financialCase.paid_installments))} />
+          <DetailItem label="Parcelas em atraso" value={displayValue(financialCase?.overdue_installments === null || financialCase?.overdue_installments === undefined ? null : String(financialCase.overdue_installments))} copyValue={copyableValue(financialCase?.overdue_installments === null || financialCase?.overdue_installments === undefined ? null : String(financialCase.overdue_installments))} />
+          <DetailItem label="Dia do vencimento" value={displayValue(financialCase?.due_day === null || financialCase?.due_day === undefined ? null : String(financialCase.due_day))} copyValue={copyableValue(financialCase?.due_day === null || financialCase?.due_day === undefined ? null : String(financialCase.due_day))} />
+          <DetailItem label="Numero do contrato" value={displayValue(financialCase?.contract_number ?? null)} copyValue={copyableValue(financialCase?.contract_number ?? null)} />
         </DetailSection>
 
         {preSale.pre_sale_type === "veiculo" ? (
           <DetailSection title="Dados do veiculo">
-            <DetailItem label="Veiculo" value={displayValue(financialCase?.asset_brand_model ?? null)} />
-            <DetailItem label="Cor" value={displayValue(financialCase?.asset_color ?? null)} />
-            <DetailItem label="Ano" value={displayValue(financialCase?.asset_year === null || financialCase?.asset_year === undefined ? null : String(financialCase.asset_year))} />
-            <DetailItem label="Placa" value={displayValue(financialCase?.asset_plate ?? null)} />
+            <DetailItem label="Veiculo" value={displayValue(financialCase?.asset_brand_model ?? null)} copyValue={copyableValue(financialCase?.asset_brand_model ?? null)} />
+            <DetailItem label="Cor" value={displayValue(financialCase?.asset_color ?? null)} copyValue={copyableValue(financialCase?.asset_color ?? null)} />
+            <DetailItem label="Ano" value={displayValue(financialCase?.asset_year === null || financialCase?.asset_year === undefined ? null : String(financialCase.asset_year))} copyValue={copyableValue(financialCase?.asset_year === null || financialCase?.asset_year === undefined ? null : String(financialCase.asset_year))} />
+            <DetailItem label="Placa" value={displayValue(financialCase?.asset_plate ?? null)} copyValue={copyableValue(financialCase?.asset_plate ?? null)} />
           </DetailSection>
         ) : null}
 
         <DetailSection title="Contratacao e negociacao">
-          <DetailItem label="Valor do contrato" value={formatCurrency(preSale.contract_value)} />
+          <DetailItem label="Valor do contrato" value={formatCurrency(preSale.contract_value)} copyValue={copyableValue(formatCurrency(preSale.contract_value))} />
           <DetailItem
             label="Descricao de contrato"
             className="md:col-span-2"
@@ -319,6 +361,7 @@ export default async function PreVendaPage({ params, searchParams }: PreVendaPag
                 {displayValue(preSale.payment_description)}
               </p>
             }
+            copyValue={copyableValue(preSale.payment_description)}
           />
           <DetailItem
             label="Descricao livre da contratacao / informe"
@@ -328,6 +371,7 @@ export default async function PreVendaPage({ params, searchParams }: PreVendaPag
                 {displayValue(preSale.negotiation_details)}
               </p>
             }
+            copyValue={copyableValue(preSale.negotiation_details)}
           />
         </DetailSection>
 

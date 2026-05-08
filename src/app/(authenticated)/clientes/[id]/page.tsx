@@ -10,6 +10,7 @@ import { WhatsAppLink } from "@/components/clients/whatsapp-link";
 import { ClientDocumentsSection } from "@/components/client-documents/client-documents-section";
 import { ClientCalculationsSection } from "@/components/calculations/client-calculations-section";
 import { PageHeader } from "@/components/layout/page-header";
+import { PreSalesStatusBadge } from "@/components/pre-sales/pre-sales-status-badge";
 import {
   displayCpf,
   displayPhone,
@@ -18,6 +19,7 @@ import {
   formatDateTime,
 } from "@/lib/clients/formatters";
 import { getCurrentUserContext } from "@/lib/auth/current-user";
+import { formatPreSaleType, formatUserName } from "@/lib/pre-sales/formatters";
 import { listAccessiblePreSaleIdsForCurrentUser } from "@/lib/pre-sales/access";
 import { resolveUserDisplayName } from "@/lib/users/account";
 import type { Client, ClientAuditUser } from "@/types/client";
@@ -29,6 +31,7 @@ import {
   type GeneratedDocument,
 } from "@/types/document";
 import { isDeletedClient } from "@/lib/clients/status";
+import type { PreSale } from "@/types/pre-sale";
 
 type ClientePageProps = {
   params: Promise<{ id: string }>;
@@ -61,6 +64,20 @@ const addressDetails = [
 
 function formatTemplateType(type: DocumentTemplateType | null | undefined) {
   return documentTemplateTypes.find((item) => item.value === type)?.label ?? "-";
+}
+
+function copyableValue(value: string | null | undefined) {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : null;
+}
+
+function renderCopyableValue(display: string, copyValue?: string | null) {
+  return (
+    <span className="inline-flex flex-wrap items-center gap-2">
+      {display}
+      {copyValue ? <CopyButton value={copyValue} label="Copiar" /> : null}
+    </span>
+  );
 }
 
 export default async function ClientePage({
@@ -116,7 +133,26 @@ export default async function ClientePage({
     new Set(generatedDocuments.map((document) => document.pre_sale_id).filter(Boolean)),
   );
 
-  const [{ data: templatesData }, { data: preSalesData }] = await Promise.all([
+  const { data: clientPreSalesData, error: clientPreSalesError } = await supabase
+    .from("pre_sales")
+    .select("id, status, pre_sale_type, service_type, media, consultant_user_id, created_at, updated_at, created_by, legal_stage, legal_stage_updated_at, company_id, client_id, contract_value, payment_description, negotiation_details")
+    .eq("company_id", companyId)
+    .eq("client_id", client.id)
+    .order("created_at", { ascending: false });
+  let clientPreSales = (clientPreSalesData ?? []) as PreSale[];
+
+  if (role === "seller" && businessArea !== "legal") {
+    const accessiblePreSaleIds = new Set(
+      (await listAccessiblePreSaleIdsForCurrentUser()) ?? [],
+    );
+    clientPreSales = clientPreSales.filter((preSale) => accessiblePreSaleIds.has(preSale.id));
+  }
+
+  const consultantIds = Array.from(
+    new Set(clientPreSales.map((preSale) => preSale.consultant_user_id).filter(Boolean)),
+  );
+
+  const [{ data: templatesData }, { data: preSalesData }, { data: consultantsData }] = await Promise.all([
     templateIds.length
       ? supabase
           .from("document_templates")
@@ -131,9 +167,24 @@ export default async function ClientePage({
           .eq("company_id", companyId)
           .in("id", preSaleIds)
       : Promise.resolve({ data: [] }),
+    consultantIds.length
+      ? supabase
+          .from("user_profiles")
+          .select("id, full_name, username, email, role, nickname")
+          .eq("company_id", companyId)
+          .in("id", consultantIds)
+      : Promise.resolve({ data: [] }),
   ]);
   const templates = (templatesData ?? []) as Pick<DocumentTemplate, "id" | "name">[];
   const preSales = (preSalesData ?? []) as Array<{ id: string; status: string | null }>;
+  const consultants = (consultantsData ?? []) as Array<{
+    id: string;
+    full_name: string | null;
+    username: string | null;
+    email: string | null;
+    role: string | null;
+    nickname?: string | null;
+  }>;
 
   const successMessage =
     queryParams.success === "created"
@@ -198,12 +249,21 @@ export default async function ClientePage({
                     <p className="mt-1 text-sm font-medium text-slate-950">
                       {key === "birth_date" ? formatDate(client[key]) : null}
                       {key === "cpf" ? (
-                        <span className="inline-flex flex-wrap items-center gap-2">
-                          {displayCpf(client[key])}
-                          <CopyButton value={displayCpf(client[key])} label="Copiar" />
-                        </span>
+                        renderCopyableValue(
+                          displayCpf(client[key]),
+                          copyableValue(displayCpf(client[key])),
+                        )
                       ) : null}
-                      {key !== "birth_date" && key !== "cpf"
+                      {key === "rg" || key === "nationality" || key === "marital_status" || key === "profession"
+                        ? renderCopyableValue(displayValue(client[key]), copyableValue(displayValue(client[key])))
+                        : null}
+                      {key === "birth_date"
+                        ? renderCopyableValue(
+                            formatDate(client[key]),
+                            copyableValue(formatDate(client[key])),
+                          )
+                        : null}
+                      {key !== "birth_date" && key !== "cpf" && key !== "rg" && key !== "nationality" && key !== "marital_status" && key !== "profession"
                         ? displayValue(client[key])
                         : null}
                     </p>
@@ -222,12 +282,15 @@ export default async function ClientePage({
                     </p>
                     <p className="mt-1 text-sm font-medium text-slate-950">
                       {key === "phone_mobile" || key === "phone_secondary" ? (
-                        <span className="inline-flex flex-wrap items-center gap-2">
-                          {displayPhone(client[key])}
-                          {client[key] ? (
-                            <CopyButton value={displayPhone(client[key])} label="Copiar" />
-                          ) : null}
-                        </span>
+                        renderCopyableValue(
+                          displayPhone(client[key]),
+                          client[key] ? displayPhone(client[key]) : null,
+                        )
+                      ) : key === "email" ? (
+                        renderCopyableValue(
+                          displayValue(client[key]),
+                          copyableValue(client[key]),
+                        )
                       ) : (
                         displayValue(client[key])
                       )}
@@ -246,7 +309,10 @@ export default async function ClientePage({
                       {label}
                     </p>
                     <p className="mt-1 text-sm font-medium text-slate-950">
-                      {displayValue(client[key])}
+                      {renderCopyableValue(
+                        displayValue(client[key]),
+                        copyableValue(client[key]),
+                      )}
                     </p>
                   </div>
                 ))}
@@ -396,6 +462,89 @@ export default async function ClientePage({
           ) : (
             <div className="px-6 py-6 text-sm text-slate-500">
               Nenhum documento gerado encontrado para este cliente.
+            </div>
+          )}
+        </section>
+
+        <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+          <div className="border-b border-slate-200 px-6 py-4">
+            <h2 className="text-base font-semibold text-slate-950">
+              Pre-vendas deste cliente
+            </h2>
+            <p className="mt-1 text-sm text-slate-600">
+              Historico comercial com acesso rapido as oportunidades abertas para este cliente.
+            </p>
+          </div>
+
+          {clientPreSalesError ? (
+            <div className="px-6 py-4 text-sm text-red-700">
+              {clientPreSalesError.message}
+            </div>
+          ) : clientPreSales.length ? (
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[860px] border-collapse text-left text-sm">
+                <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+                  <tr>
+                    <th className="px-6 py-3 font-semibold">Tipo</th>
+                    <th className="px-6 py-3 font-semibold">Servico</th>
+                    <th className="px-6 py-3 font-semibold">Midia</th>
+                    <th className="px-6 py-3 font-semibold">Consultor</th>
+                    <th className="px-6 py-3 font-semibold">Status</th>
+                    <th className="px-6 py-3 font-semibold">Criada em</th>
+                    <th className="px-6 py-3 font-semibold">Acoes</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {clientPreSales.map((preSale) => {
+                    const consultant =
+                      consultants.find((item) => item.id === preSale.consultant_user_id) ??
+                      null;
+
+                    return (
+                      <tr key={preSale.id} className="transition hover:bg-slate-50">
+                        <td className="px-6 py-4 font-medium text-slate-950">
+                          {formatPreSaleType(preSale.pre_sale_type)}
+                        </td>
+                        <td className="px-6 py-4 text-slate-700">
+                          {displayValue(preSale.service_type)}
+                        </td>
+                        <td className="px-6 py-4 text-slate-700">
+                          {displayValue(preSale.media)}
+                        </td>
+                        <td className="px-6 py-4 text-slate-700">
+                          {formatUserName(consultant)}
+                        </td>
+                        <td className="px-6 py-4">
+                          <PreSalesStatusBadge status={preSale.status} />
+                        </td>
+                        <td className="px-6 py-4 text-slate-700">
+                          {formatDateTime(preSale.created_at)}
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex flex-wrap gap-2">
+                            <Link
+                              href={`/pre-vendas/${preSale.id}`}
+                              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                            >
+                              Visualizar
+                            </Link>
+                            <Link
+                              href={`/calculos/novo?preSaleId=${preSale.id}`}
+                              className="rounded-lg border border-teal-300 bg-teal-50 px-3 py-2 text-sm font-semibold text-teal-800 transition hover:bg-teal-100"
+                            >
+                              Simulacao
+                            </Link>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="px-6 py-6 text-sm text-slate-500">
+              Nenhuma pre-venda encontrada para este cliente.
             </div>
           )}
         </section>
