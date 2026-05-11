@@ -15,6 +15,7 @@ import {
   formatCpfDigits,
 } from "@/lib/calculations/formatters";
 import { assertCalculationAccess, canManageCalculations } from "@/lib/calculations/service";
+import { formatPreSaleType } from "@/lib/pre-sales/formatters";
 import { resolveUserDisplayName } from "@/lib/users/account";
 
 type CalculoPageProps = {
@@ -138,6 +139,10 @@ export default async function CalculoPage({
 
         <DetailSection title="Resumo da simulacao">
           <DetailItem label="Status" value={<CalculationStatusBadge status={calculation.status} />} />
+          <DetailItem
+            label="Tipo da simulacao"
+            value={calculation.simulation_type ? formatPreSaleType(calculation.simulation_type) : "Nao informado"}
+          />
           <DetailItem label="Financeira" value={calculation.financial_institution ?? "Nao informado"} />
           <DetailItem label="Criado por" value={creatorName} />
           <DetailItem label="Criado em" value={formatCalculationDateTime(calculation.created_at)} />
@@ -156,13 +161,17 @@ export default async function CalculoPage({
 
         <DetailSection title="Dados do financiamento">
           <DetailItem label="Valor a vista" value={formatCalculationCurrency(calculation.cash_value)} />
-          <DetailItem label="Entrada" value={formatCalculationCurrency(calculation.down_payment)} />
+          {calculation.simulation_type === "veiculo" ? (
+            <DetailItem label="Entrada" value={formatCalculationCurrency(calculation.down_payment)} />
+          ) : null}
           <DetailItem label="Valor financiado" value={formatCalculationCurrency(calculation.financed_value)} />
           <DetailItem label="Valor atual da parcela" value={formatCalculationCurrency(calculation.current_installment_value)} />
           <DetailItem label="Quantidade de parcelas" value={String(calculation.installment_count ?? "Nao informado")} />
           <DetailItem label="Parcelas pagas" value={String(calculation.paid_installments ?? "Nao informado")} />
           <DetailItem label="Parcelas a pagar" value={String(calculation.remaining_installments ?? "Nao informado")} />
-          <DetailItem label="Ano" value={calculation.vehicle_year ?? "Nao informado"} />
+          {calculation.simulation_type === "veiculo" ? (
+            <DetailItem label="Ano" value={calculation.vehicle_year ?? "Nao informado"} />
+          ) : null}
         </DetailSection>
 
         <DetailSection

@@ -59,6 +59,7 @@ export default async function NovoCalculoPage({
       ...defaultValues,
       client_id: selectedPreSale.client_id,
       pre_sale_id: selectedPreSale.id,
+      simulation_type: selectedPreSale.pre_sale_type,
       client_name: selectedPreSale.client_name,
       client_cpf: formatCpf(selectedPreSale.client_cpf),
       client_phone: formatPhone(selectedPreSale.client_phone ?? ""),

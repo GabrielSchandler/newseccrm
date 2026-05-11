@@ -4,7 +4,11 @@ import {
   formatNumberForPtBrInput,
   parseBrazilianDecimalInput,
 } from "@/lib/calculations/currency";
-import type { FinancingCalculation } from "@/types/calculation";
+import {
+  financingCalculationTypes,
+  type FinancingCalculation,
+  type FinancingCalculationType,
+} from "@/types/calculation";
 
 const optionalText = z
   .union([z.string(), z.null(), z.undefined()])
@@ -54,9 +58,19 @@ const optionalInteger = z
   .refine((value) => value === null || Number.isInteger(value), "Informe um numero valido.")
   .refine((value) => value === null || value >= 0, "Informe um numero maior ou igual a zero.");
 
+const optionalCalculationType = z
+  .union([z.string(), z.null(), z.undefined()])
+  .transform((value) => (typeof value === "string" && value.trim() ? value.trim() : null))
+  .refine(
+    (value): value is FinancingCalculationType | null =>
+      value === null || financingCalculationTypes.some((item) => item.value === value),
+    "Selecione um tipo de simulacao valido.",
+  );
+
 export const financingCalculationFormSchema = z.object({
   client_id: optionalUuid,
   pre_sale_id: optionalUuid,
+  simulation_type: optionalCalculationType,
   client_name: optionalDisplayText,
   client_cpf: optionalCpf,
   client_phone: optionalPhone,
@@ -86,6 +100,7 @@ export type FinancingCalculationPayload = z.output<
 export const financingCalculationDefaultValues: FinancingCalculationFormValues = {
   client_id: "",
   pre_sale_id: "",
+  simulation_type: "veiculo",
   client_name: "",
   client_cpf: "",
   client_phone: "",
@@ -132,6 +147,7 @@ export function financingCalculationToFormValues(
   return {
     client_id: calculation.client_id ?? "",
     pre_sale_id: calculation.pre_sale_id ?? "",
+    simulation_type: calculation.simulation_type ?? "veiculo",
     client_name: calculation.client_name ?? "",
     client_cpf: formatCpf(calculation.client_cpf ?? ""),
     client_phone: formatPhone(calculation.client_phone ?? ""),

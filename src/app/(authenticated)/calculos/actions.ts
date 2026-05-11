@@ -71,8 +71,11 @@ function resolveFinancedValue(
   values: FinancingCalculationPayload,
   fallbackValue?: number | string | null,
 ) {
+  const isVehicleSimulation = values.simulation_type === "veiculo";
   const cashValue = parseBrazilianDecimalInput(values.cash_value);
-  const downPayment = parseBrazilianDecimalInput(values.down_payment);
+  const downPayment = isVehicleSimulation
+    ? parseBrazilianDecimalInput(values.down_payment)
+    : 0;
   const providedFinancedValue = parseBrazilianDecimalInput(
     values.financed_value ?? fallbackValue ?? null,
   );
@@ -102,10 +105,13 @@ function resolveRemainingInstallments(values: FinancingCalculationPayload) {
 }
 
 function normalizeCalculationPayload(values: FinancingCalculationPayload) {
+  const isVehicleSimulation = values.simulation_type === "veiculo";
   return {
     ...values,
     cash_value: parseBrazilianDecimalInput(values.cash_value),
-    down_payment: parseBrazilianDecimalInput(values.down_payment),
+    down_payment: isVehicleSimulation
+      ? parseBrazilianDecimalInput(values.down_payment)
+      : null,
     financed_value: parseBrazilianDecimalInput(values.financed_value),
     current_installment_value: parseBrazilianDecimalInput(
       values.current_installment_value,
@@ -123,6 +129,7 @@ function normalizeCalculationPayload(values: FinancingCalculationPayload) {
       values.remaining_installments === undefined
         ? null
         : Number(String(values.remaining_installments).replace(/\D/g, "")) || null,
+    vehicle_year: isVehicleSimulation ? values.vehicle_year : null,
   };
 }
 

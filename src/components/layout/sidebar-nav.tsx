@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { WORKSPACE_COOKIE_NAME, type WorkspaceView } from "@/lib/workspace";
 
 export type SidebarNavigationItem = {
   href: string;
@@ -36,6 +37,7 @@ export type SidebarNavigationItem = {
 type SidebarNavProps = {
   items: SidebarNavigationItem[];
   canManageTemplates: boolean;
+  workspace: WorkspaceView;
 };
 
 const icons = {
@@ -60,8 +62,16 @@ function isActivePath(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-export function SidebarNav({ items, canManageTemplates }: SidebarNavProps) {
+export function SidebarNav({
+  items,
+  canManageTemplates,
+  workspace,
+}: SidebarNavProps) {
   const pathname = usePathname();
+
+  function persistWorkspacePreference() {
+    document.cookie = `${WORKSPACE_COOKIE_NAME}=${workspace}; path=/; max-age=${60 * 60 * 24 * 30}; samesite=lax`;
+  }
 
   return (
     <nav className="flex flex-1 flex-col gap-1">
@@ -78,6 +88,7 @@ export function SidebarNav({ items, canManageTemplates }: SidebarNavProps) {
             key={item.href}
             href={item.href}
             aria-current={active ? "page" : undefined}
+            onClick={persistWorkspacePreference}
             className={`inline-flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600 focus-visible:ring-offset-2 ${
               active
                 ? "bg-teal-50 text-teal-900"

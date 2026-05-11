@@ -293,6 +293,7 @@ export async function listCalculationPreSales() {
     return {
       id: preSale.id,
       client_id: preSale.client_id,
+      pre_sale_type: preSale.pre_sale_type,
       label: `${snapshot?.full_name ?? "Cliente"} - ${formatPreSaleType(preSale.pre_sale_type)} - ${new Intl.DateTimeFormat(
         "pt-BR",
       ).format(new Date(preSale.created_at))}`,

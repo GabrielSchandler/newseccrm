@@ -21,6 +21,7 @@ import {
   type FinancingCalculationFormValues,
   type FinancingCalculationPayload,
 } from "@/lib/calculations/schema";
+import { financingCalculationTypes } from "@/types/calculation";
 import type {
   CalculationClientOption,
   CalculationPreSaleOption,
@@ -65,10 +66,13 @@ function getCurrencyInputDisplayValue(value: string | number | null | undefined)
 function getComputedFinancedDisplayValue(
   cashValue: string | number | null | undefined,
   downPayment: string | number | null | undefined,
+  shouldApplyDownPayment: boolean,
   fallbackValue: string | number | null | undefined,
 ) {
   const parsedCashValue = parseBrazilianDecimalInput(cashValue);
-  const parsedDownPayment = parseBrazilianDecimalInput(downPayment);
+  const parsedDownPayment = shouldApplyDownPayment
+    ? parseBrazilianDecimalInput(downPayment)
+    : 0;
 
   if (parsedCashValue !== null && Number.isFinite(parsedCashValue)) {
     return formatNumberForPtBrInput(
@@ -197,11 +201,15 @@ export function CalculationForm({
   const paidInstallments = watch("paid_installments");
   const financedValue = watch("financed_value");
   const remainingInstallments = watch("remaining_installments");
+  const simulationType = watch("simulation_type");
+  const vehicleYear = watch("vehicle_year");
+  const isVehicleSimulation = simulationType === "veiculo";
   const disabled = isPending || isSubmitting;
   const selectedPreSale = preSales.find((preSale) => preSale.id === selectedPreSaleId);
   const computedFinancedValue = getComputedFinancedDisplayValue(
     cashValue,
     downPayment,
+    isVehicleSimulation,
     financedValue,
   );
 
@@ -230,6 +238,26 @@ export function CalculationForm({
     }
   }, [installmentCount, paidInstallments, remainingInstallments, setValue]);
 
+  useEffect(() => {
+    if (isVehicleSimulation) {
+      return;
+    }
+
+    if ((downPayment ?? "") !== "") {
+      setValue("down_payment", "", {
+        shouldDirty: true,
+        shouldValidate: true,
+      });
+    }
+
+    if ((vehicleYear ?? "") !== "") {
+      setValue("vehicle_year", "", {
+        shouldDirty: true,
+        shouldValidate: true,
+      });
+    }
+  }, [downPayment, isVehicleSimulation, setValue, vehicleYear]);
+
   function applyClientSelection(clientId: string) {
     const client = clients.find((item) => item.id === clientId);
 
@@ -253,6 +281,7 @@ export function CalculationForm({
     }
 
     setValue("pre_sale_id", preSale.id, { shouldDirty: true });
+    setValue("simulation_type", preSale.pre_sale_type, { shouldDirty: true });
     setValue("client_id", preSale.client_id, { shouldDirty: true });
     setValue("client_name", preSale.client_name, { shouldDirty: true });
     setValue("client_cpf", formatCpf(preSale.client_cpf), { shouldDirty: true });
@@ -470,6 +499,28 @@ export function CalculationForm({
         <div className="grid gap-5 md:grid-cols-2">
           <div className="space-y-2">
             <FormFieldLabel
+              htmlFor="simulation_type"
+              label="Tipo da simulacao"
+              requirement="required"
+            />
+            <select
+              id="simulation_type"
+              disabled={disabled}
+              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
+              {...register("simulation_type")}
+            >
+              {financingCalculationTypes.map((type) => (
+                <option key={type.value} value={type.value}>
+                  {type.label}
+                </option>
+              ))}
+            </select>
+            {errors.simulation_type?.message ? (
+              <p className="text-sm text-red-600">{String(errors.simulation_type.message)}</p>
+            ) : null}
+          </div>
+          <div className="space-y-2">
+            <FormFieldLabel
               htmlFor="financial_institution"
               label="Financeira"
               requirement="optional"
@@ -496,18 +547,22 @@ export function CalculationForm({
 
       <section className="space-y-4 rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
         <div>
-          <h2 className="text-base font-semibold text-slate-950">Dados do veiculo</h2>
+          <h2 className="text-base font-semibold text-slate-950">
+            {isVehicleSimulation ? "Dados do veiculo" : "Observacoes"}
+          </h2>
         </div>
         <div className="grid gap-5 md:grid-cols-2">
-          <div className="space-y-2">
-            <FormFieldLabel htmlFor="vehicle_year" label="Ano" requirement="optional" />
-            <input
-              id="vehicle_year"
-              disabled={disabled}
-              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
-              {...register("vehicle_year")}
-            />
-          </div>
+          {isVehicleSimulation ? (
+            <div className="space-y-2">
+              <FormFieldLabel htmlFor="vehicle_year" label="Ano" requirement="optional" />
+              <input
+                id="vehicle_year"
+                disabled={disabled}
+                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
+                {...register("vehicle_year")}
+              />
+            </div>
+          ) : null}
           <div className="space-y-2 md:col-span-2">
             <FormFieldLabel htmlFor="notes" label="Observacoes" requirement="optional" />
             <textarea
@@ -572,46 +627,48 @@ export function CalculationForm({
               <p className="text-sm text-red-600">{String(errors.cash_value.message)}</p>
             ) : null}
           </div>
-          <div className="space-y-2">
-            <FormFieldLabel
-              htmlFor="down_payment"
-              label="Entrada"
-              requirement="optional"
-            />
-            <Controller
-              control={control}
-              name="down_payment"
-              render={({ field }) => (
-                <input
-                  id="down_payment"
-                  disabled={disabled}
-                  inputMode="decimal"
-                  value={getCurrencyInputDisplayValue(field.value)}
-                  onChange={(event) => {
-                    const nextValue = formatCurrencyInputValueFromDigits(
-                      event.target.value,
-                    );
-                    field.onChange(nextValue);
-                  }}
-                  onBlur={(event) => {
-                    const nextValue = normalizeCurrencyInputValue(
-                      event.target.value,
-                    );
-                    field.onChange(nextValue);
-                    field.onBlur();
-                  }}
-                  ref={field.ref}
-                  name={field.name}
-                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
-                />
-              )}
-            />
-            {errors.down_payment?.message ? (
-              <p className="text-sm text-red-600">
-                {String(errors.down_payment.message)}
-              </p>
-            ) : null}
-          </div>
+          {isVehicleSimulation ? (
+            <div className="space-y-2">
+              <FormFieldLabel
+                htmlFor="down_payment"
+                label="Entrada"
+                requirement="optional"
+              />
+              <Controller
+                control={control}
+                name="down_payment"
+                render={({ field }) => (
+                  <input
+                    id="down_payment"
+                    disabled={disabled}
+                    inputMode="decimal"
+                    value={getCurrencyInputDisplayValue(field.value)}
+                    onChange={(event) => {
+                      const nextValue = formatCurrencyInputValueFromDigits(
+                        event.target.value,
+                      );
+                      field.onChange(nextValue);
+                    }}
+                    onBlur={(event) => {
+                      const nextValue = normalizeCurrencyInputValue(
+                        event.target.value,
+                      );
+                      field.onChange(nextValue);
+                      field.onBlur();
+                    }}
+                    ref={field.ref}
+                    name={field.name}
+                    className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
+                  />
+                )}
+              />
+              {errors.down_payment?.message ? (
+                <p className="text-sm text-red-600">
+                  {String(errors.down_payment.message)}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
           <div className="space-y-2">
             <FormFieldLabel
               htmlFor="financed_value"
@@ -627,7 +684,9 @@ export function CalculationForm({
               {computedFinancedValue || "Nao informado"}
             </div>
             <p className="text-xs text-slate-500">
-              Calculado automaticamente: valor a vista menos entrada.
+              {isVehicleSimulation
+                ? "Calculado automaticamente: valor a vista menos entrada."
+                : "Calculado automaticamente a partir do valor informado para a operacao."}
             </p>
             {errors.financed_value?.message ? (
               <p className="text-sm text-red-600">

@@ -3,8 +3,10 @@
 import Link from "next/link";
 import { House } from "lucide-react";
 import { usePathname } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 import {
   classifyWorkspacePath,
+  WORKSPACE_COOKIE_NAME,
   type WorkspaceView,
 } from "@/lib/workspace";
 import { SidebarNav, type SidebarNavigationItem } from "./sidebar-nav";
@@ -37,7 +39,33 @@ export function SidebarFrame({
   navigation,
 }: SidebarFrameProps) {
   const pathname = usePathname();
-  const currentWorkspace = classifyWorkspacePath(pathname) ?? resolvedWorkspace;
+  const [workspacePreference, setWorkspacePreference] =
+    useState<WorkspaceView>(resolvedWorkspace);
+
+  useEffect(() => {
+    const cookieValue = document.cookie
+      .split("; ")
+      .find((entry) => entry.startsWith(`${WORKSPACE_COOKIE_NAME}=`))
+      ?.split("=")[1];
+
+    if (cookieValue === "management" || cookieValue === "commercial" || cookieValue === "legal") {
+      setWorkspacePreference(cookieValue);
+    }
+  }, [pathname]);
+
+  const currentWorkspace = useMemo(() => {
+    const pathWorkspace = classifyWorkspacePath(pathname);
+
+    if (pathWorkspace) {
+      return pathWorkspace;
+    }
+
+    if (workspacePreference === "commercial" || workspacePreference === "legal") {
+      return workspacePreference;
+    }
+
+    return resolvedWorkspace === "legal" ? "legal" : "commercial";
+  }, [pathname, resolvedWorkspace, workspacePreference]);
 
   const visibleNavigation = navigation.filter(
     (item) =>
@@ -98,6 +126,9 @@ export function SidebarFrame({
           <div className="mt-3 space-y-3 pb-2">
             <Link
               href={homeHref}
+              onClick={() => {
+                document.cookie = `${WORKSPACE_COOKIE_NAME}=${currentWorkspace}; path=/; max-age=${60 * 60 * 24 * 30}; samesite=lax`;
+              }}
               className="inline-flex w-full items-center gap-3 rounded-lg bg-teal-700 px-3 py-3 text-sm font-semibold text-white transition hover:bg-teal-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600 focus-visible:ring-offset-2"
             >
               <House aria-hidden="true" className="h-4 w-4" />
@@ -106,6 +137,7 @@ export function SidebarFrame({
             <SidebarNav
               items={visibleNavigation}
               canManageTemplates={canManageTemplates}
+              workspace={currentWorkspace}
             />
             {logoutNode}
           </div>
@@ -142,6 +174,9 @@ export function SidebarFrame({
             <div className="px-2">
               <Link
                 href={homeHref}
+                onClick={() => {
+                  document.cookie = `${WORKSPACE_COOKIE_NAME}=${currentWorkspace}; path=/; max-age=${60 * 60 * 24 * 30}; samesite=lax`;
+                }}
                 className="inline-flex w-full items-center gap-3 rounded-lg bg-teal-700 px-3 py-3 text-sm font-semibold text-white transition hover:bg-teal-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600 focus-visible:ring-offset-2"
               >
                 <House aria-hidden="true" className="h-4 w-4" />
@@ -151,6 +186,7 @@ export function SidebarFrame({
             <SidebarNav
               items={visibleNavigation}
               canManageTemplates={canManageTemplates}
+              workspace={currentWorkspace}
             />
           </div>
         </div>

@@ -14,6 +14,7 @@ import {
   formatCpfDigits,
 } from "@/lib/calculations/formatters";
 import { formatCnpj, formatPhone } from "@/lib/clients/masks";
+import { formatPreSaleType } from "@/lib/pre-sales/formatters";
 import type { FinancingCalculation } from "@/types/calculation";
 
 const COLORS = {
@@ -626,10 +627,13 @@ export function CalculationReportPdf({
   const monthlyReduction = displayCurrency(
     calculation.abusive_interest_per_installment,
   );
+  const isVehicleSimulation = calculation.simulation_type === "veiculo";
 
   const operationRows = [
     { label: "Valor à vista", value: displayCurrency(calculation.cash_value) },
-    { label: "Entrada", value: displayCurrency(calculation.down_payment) },
+    ...(isVehicleSimulation
+      ? [{ label: "Entrada", value: displayCurrency(calculation.down_payment) }]
+      : []),
     {
       label: "Valor financiado",
       value: displayCurrency(calculation.financed_value),
@@ -780,28 +784,38 @@ export function CalculationReportPdf({
                 label="Financeira"
                 value={displayText(calculation.financial_institution)}
               />
-                <InfoItem
-                  label="Especialista responsável"
-                  value={specialist}
-                />
-                <InfoItem
-                  label="Data do atendimento"
-                  value={attendanceDate}
-                />
-                <InfoItem
-                  label="Situação"
-                  value={situation}
-                />
               <InfoItem
-                label="Proposta valida até:"
+                label="Tipo da simulacao"
+                value={
+                  calculation.simulation_type
+                    ? formatPreSaleType(calculation.simulation_type)
+                    : "Nao informado"
+                }
+              />
+              <InfoItem
+                label="Especialista responsavel"
+                value={specialist}
+              />
+              <InfoItem
+                label="Data do atendimento"
+                value={attendanceDate}
+              />
+              <InfoItem
+                label="Situacao"
+                value={situation}
+              />
+              <InfoItem
+                label="Proposta valida ate:"
                 value={expiresIn}
               />
+              {isVehicleSimulation ? (
+                <InfoItem
+                  label="Veiculo/Ano"
+                  value={displayText(calculation.vehicle_year)}
+                />
+              ) : null}
               <InfoItem
-                label="Veículo/Ano"
-                value={displayText(calculation.vehicle_year)}
-              />
-              <InfoItem
-                label="Observações"
+                label="Observacoes"
                 value={displayText(calculation.notes)}
                 full
               />
@@ -884,3 +898,4 @@ export function CalculationReportPdf({
     </Document>
   );
 }
+

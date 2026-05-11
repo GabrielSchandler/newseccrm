@@ -1,10 +1,12 @@
 export type FinancingCalculationStatus = "calculado" | "pdf_gerado";
+export type FinancingCalculationType = "emprestimo" | "veiculo" | "imovel";
 
 export type FinancingCalculation = {
   id: string;
   company_id: string;
   client_id: string | null;
   pre_sale_id: string | null;
+  simulation_type: FinancingCalculationType | null;
   client_name: string;
   client_cpf: string;
   client_phone: string | null;
@@ -59,6 +61,7 @@ export type CalculationClientOption = {
 export type CalculationPreSaleOption = {
   id: string;
   client_id: string;
+  pre_sale_type: FinancingCalculationType;
   label: string;
   client_name: string;
   client_cpf: string;
@@ -99,4 +102,13 @@ export const financingCalculationStatuses: Array<{
 }> = [
   { value: "calculado", label: "Simulada" },
   { value: "pdf_gerado", label: "PDF gerado" },
+];
+
+export const financingCalculationTypes: Array<{
+  value: FinancingCalculationType;
+  label: string;
+}> = [
+  { value: "emprestimo", label: "Emprestimo" },
+  { value: "veiculo", label: "Veiculo" },
+  { value: "imovel", label: "Imovel" },
 ];
