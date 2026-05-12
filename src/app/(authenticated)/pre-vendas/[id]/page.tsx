@@ -137,13 +137,13 @@ export default async function PreVendaPage({ params, searchParams }: PreVendaPag
     preSale.consultant_user_id
       ? supabase
           .from("user_profiles")
-          .select("id, full_name, username, email, role")
+          .select("id, full_name, nickname, username, email, role")
           .eq("id", preSale.consultant_user_id)
           .maybeSingle()
       : Promise.resolve({ data: null }),
     supabase
       .from("user_profiles")
-      .select("id, full_name, username, email, role")
+      .select("id, full_name, nickname, username, email, role")
       .eq("id", preSale.created_by)
       .maybeSingle(),
     supabase
@@ -175,7 +175,9 @@ export default async function PreVendaPage({ params, searchParams }: PreVendaPag
   ]);
 
   const client = clientData as ClientOption | null;
-  const consultant = consultantData as UserProfileOption | null;
+  const consultant =
+    (consultantData as UserProfileOption | null) ??
+    (creatorData as UserProfileOption | null);
   const creator = creatorData as UserProfileOption | null;
   const snapshot = snapshotData as PreSaleClientSnapshot | null;
   const debtHolder = debtHolderData as PreSaleDebtHolder | null;

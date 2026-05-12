@@ -15,6 +15,7 @@ export type LeadMedia = "Soul" | "Growper" | "Prosperity";
 export type UserProfileOption = {
   id: string;
   full_name: string | null;
+  nickname?: string | null;
   username: string | null;
   email: string | null;
   role: string | null;

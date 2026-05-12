@@ -40,7 +40,11 @@ function attachRelations(
     ...preSale,
     client: clients.find((client) => client.id === preSale.client_id) ?? null,
     consultant:
-      consultants.find((consultant) => consultant.id === preSale.consultant_user_id) ??
+      consultants.find(
+        (consultant) =>
+          consultant.id === preSale.consultant_user_id ||
+          consultant.id === preSale.created_by,
+      ) ??
       null,
   }));
 }
@@ -92,7 +96,7 @@ export default async function PreVendasPage({ searchParams }: PreVendasPageProps
       .eq("company_id", companyId),
     supabase
       .from("user_profiles")
-      .select("id, full_name, username, email, role")
+      .select("id, full_name, nickname, username, email, role")
       .eq("company_id", companyId),
   ]);
 

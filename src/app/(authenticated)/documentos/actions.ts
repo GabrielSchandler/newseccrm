@@ -350,11 +350,11 @@ async function getDocumentContext(preSaleId: string, companyId: string) {
       .eq("id", preSale.client_id)
       .eq("company_id", companyId)
       .maybeSingle(),
-    preSale.consultant_user_id
+    (preSale.consultant_user_id ?? preSale.created_by)
         ? supabase
             .from("user_profiles")
-            .select("id, full_name, username, email, role")
-            .eq("id", preSale.consultant_user_id)
+            .select("id, full_name, nickname, username, email, role")
+            .eq("id", preSale.consultant_user_id ?? preSale.created_by)
             .eq("company_id", companyId)
             .maybeSingle()
       : Promise.resolve({ data: null }),

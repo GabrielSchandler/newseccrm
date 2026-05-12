@@ -196,7 +196,7 @@ export async function listCalculationPreSales() {
   const { supabase, companyId, role, userProfileId } = await getCurrentUserContext();
   let query = supabase
     .from("pre_sales")
-    .select("id, client_id, consultant_user_id, pre_sale_type, created_at")
+    .select("id, client_id, consultant_user_id, created_by, pre_sale_type, created_at")
     .eq("company_id", companyId)
     .order("created_at", { ascending: false });
 
@@ -216,6 +216,7 @@ export async function listCalculationPreSales() {
     id: string;
     client_id: string;
     consultant_user_id: string | null;
+    created_by: string;
     pre_sale_type: "emprestimo" | "imovel" | "veiculo";
     created_at: string;
   }>;
@@ -301,9 +302,11 @@ export async function listCalculationPreSales() {
       client_cpf: snapshot?.cpf ?? "",
       client_phone: snapshot?.phone_mobile ?? null,
       financial_institution: financial?.financer_name ?? null,
-      specialist_name: preSale.consultant_user_id
-        ? (consultantMap.get(preSale.consultant_user_id) ?? null)
-        : null,
+      specialist_name:
+        (preSale.consultant_user_id
+          ? (consultantMap.get(preSale.consultant_user_id) ?? null)
+          : null) ??
+        (consultantMap.get(preSale.created_by) ?? null),
       vehicle_year:
         financial?.asset_year === null || financial?.asset_year === undefined
           ? null

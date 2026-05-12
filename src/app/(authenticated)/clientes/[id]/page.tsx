@@ -149,7 +149,11 @@ export default async function ClientePage({
   }
 
   const consultantIds = Array.from(
-    new Set(clientPreSales.map((preSale) => preSale.consultant_user_id).filter(Boolean)),
+    new Set(
+      clientPreSales
+        .flatMap((preSale) => [preSale.consultant_user_id, preSale.created_by])
+        .filter(Boolean),
+    ),
   );
 
   const [{ data: templatesData }, { data: preSalesData }, { data: consultantsData }] = await Promise.all([
@@ -497,7 +501,11 @@ export default async function ClientePage({
                 <tbody className="divide-y divide-slate-100">
                   {clientPreSales.map((preSale) => {
                     const consultant =
-                      consultants.find((item) => item.id === preSale.consultant_user_id) ??
+                      consultants.find(
+                        (item) =>
+                          item.id === preSale.consultant_user_id ||
+                          item.id === preSale.created_by,
+                      ) ??
                       null;
 
                     return (
