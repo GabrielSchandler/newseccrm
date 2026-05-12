@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { recordAuditLog } from "@/lib/audit/log";
 import { getCurrentUserContext } from "@/lib/auth/current-user";
+import { createAdminClient } from "@/lib/supabase/admin";
 import {
   assertClientBelongsToCompany,
   assertPreSaleBelongsToClient,
@@ -33,8 +34,10 @@ function friendlyError(message: string): ClientDocumentActionState {
 }
 
 async function ensureClientDocumentsBucketAvailable() {
-  const { supabase } = await getCurrentUserContext();
-  const { error } = await supabase.storage.from(clientDocumentsBucket).list("", { limit: 1 });
+  const adminSupabase = createAdminClient();
+  const { error } = await adminSupabase.storage
+    .from(clientDocumentsBucket)
+    .list("", { limit: 1 });
 
   if (!error) {
     return null;
@@ -83,6 +86,7 @@ export async function uploadClientDocumentAction(
 
   try {
     const { supabase, companyId, userProfileId, role } = await getCurrentUserContext();
+    const adminSupabase = createAdminClient();
 
     if (!canManageClientDocuments(role)) {
       return friendlyError("Voce nao tem permissao para enviar documentos.");
@@ -102,7 +106,7 @@ export async function uploadClientDocumentAction(
 
     const { documentId, filePath } = buildClientDocumentPath(companyId, clientId, file.name);
     const buffer = Buffer.from(await file.arrayBuffer());
-    const { error: uploadError } = await supabase.storage
+    const { error: uploadError } = await adminSupabase.storage
       .from(clientDocumentsBucket)
       .upload(filePath, buffer, {
         contentType: file.type || "application/octet-stream",
@@ -129,7 +133,7 @@ export async function uploadClientDocumentAction(
     });
 
     if (insertError) {
-      await supabase.storage.from(clientDocumentsBucket).remove([filePath]);
+      await adminSupabase.storage.from(clientDocumentsBucket).remove([filePath]);
       return friendlyError(insertError.message);
     }
 
@@ -171,7 +175,7 @@ export async function createSignedDocumentUrlAction(
   mode: "view" | "download" = "view",
 ): Promise<ClientDocumentActionState> {
   try {
-    const { supabase } = await getCurrentUserContext();
+    const adminSupabase = createAdminClient();
     const bucketError = await ensureClientDocumentsBucketAvailable();
 
     if (bucketError) {
@@ -179,7 +183,7 @@ export async function createSignedDocumentUrlAction(
     }
 
     const document = await getClientDocumentWithAccess(documentId);
-    const { data, error } = await supabase.storage
+    const { data, error } = await adminSupabase.storage
       .from(clientDocumentsBucket)
       .createSignedUrl(document.file_path, 60 * 10, {
         download: mode === "download" ? document.file_name : false,
