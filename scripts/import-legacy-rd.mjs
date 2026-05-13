@@ -33,6 +33,32 @@ function parseArgs(argv) {
   return parsed;
 }
 
+function normalizeSupabaseUrl(value) {
+  const raw = String(value ?? "").trim();
+
+  if (!raw) {
+    return "";
+  }
+
+  if (raw.startsWith("sb_publishable_") || raw.startsWith("eyJ")) {
+    throw new Error(
+      "NEXT_PUBLIC_SUPABASE_URL esta com uma chave e nao com a URL do projeto. Use algo como https://SEU-PROJETO.supabase.co",
+    );
+  }
+
+  let parsedUrl;
+
+  try {
+    parsedUrl = new URL(raw);
+  } catch {
+    throw new Error(
+      "NEXT_PUBLIC_SUPABASE_URL invalida. Use a URL base do projeto, por exemplo https://SEU-PROJETO.supabase.co",
+    );
+  }
+
+  return parsedUrl.origin;
+}
+
 function onlyDigits(value) {
   return String(value ?? "").replace(/\D/g, "");
 }
@@ -853,7 +879,7 @@ async function main() {
   if (apply) {
     loadEnvConfig(cwd);
 
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseUrl = normalizeSupabaseUrl(process.env.NEXT_PUBLIC_SUPABASE_URL);
     const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
     if (!supabaseUrl || !serviceRoleKey) {
