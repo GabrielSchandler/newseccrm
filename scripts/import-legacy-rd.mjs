@@ -57,7 +57,28 @@ function normalizeText(value) {
   }
 
   const normalized = String(value).trim();
-  return normalized ? normalized : null;
+
+  if (!normalized) {
+    return null;
+  }
+
+  const sanitized = normalized
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .toLowerCase();
+
+  if (
+    /^-+$/.test(normalized) ||
+    sanitized === "em branco" ||
+    sanitized === "nao definido" ||
+    sanitized === "null" ||
+    sanitized === "nulo" ||
+    sanitized === "n/a"
+  ) {
+    return null;
+  }
+
+  return normalized;
 }
 
 function normalizeNameKey(value) {
