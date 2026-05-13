@@ -29,6 +29,13 @@ export function canDeleteClientDocument(role: string | null) {
   return role === "admin" || role === "manager";
 }
 
+export function canModifyClientDocuments(
+  role: string | null,
+  businessArea: string | null,
+) {
+  return role === "admin" || role === "manager" || (role === "seller" && businessArea === "legal");
+}
+
 export function canManageClientDocuments(role: string | null) {
   return role === "admin" || role === "manager" || role === "seller";
 }

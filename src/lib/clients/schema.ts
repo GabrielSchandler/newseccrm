@@ -50,6 +50,9 @@ export const clientFormSchema = z.object({
   city: z.string().trim().min(1, "Informe a cidade.").transform((value) => value.trim()),
   state: z.string().trim().min(1, "Informe o estado.").transform((value) => value.trim()),
   notes: optionalText,
+  legal_responsible_user_id: z
+    .union([z.string().uuid("Responsavel juridico invalido."), z.literal(""), z.null(), z.undefined()])
+    .transform((value) => (typeof value === "string" && value.trim() ? value : null)),
 });
 
 export type ClientFormValues = z.input<typeof clientFormSchema>;
@@ -73,6 +76,7 @@ export const clientDefaultValues: ClientFormValues = {
   city: "",
   state: "",
   notes: "",
+  legal_responsible_user_id: "",
 };
 
 export function clientToFormValues(client: Client): ClientFormValues {
@@ -94,5 +98,6 @@ export function clientToFormValues(client: Client): ClientFormValues {
     city: client.city ?? "",
     state: client.state ?? "",
     notes: client.notes ?? "",
+    legal_responsible_user_id: client.legal_responsible_user_id ?? "",
   };
 }

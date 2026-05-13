@@ -20,6 +20,21 @@ function friendlyError(message = "Nao foi possivel salvar o cliente.") {
   };
 }
 
+function isMissingLegalResponsibleColumn(error: { message?: string } | null | undefined) {
+  return (
+    error?.message?.includes("legal_responsible_user_id") &&
+    error.message.includes("clients")
+  );
+}
+
+function withoutLegalResponsibleField<T extends { legal_responsible_user_id?: string | null }>(
+  values: T,
+) {
+  const clonedValues: Partial<T> = { ...values };
+  delete clonedValues.legal_responsible_user_id;
+  return clonedValues;
+}
+
 type ExistingCpfClient = {
   id: string;
   deleted_at: string | null;
@@ -80,15 +95,27 @@ export async function createClientAction(
       return friendlyError("Ja existe cliente cadastrado com esse CPF.");
     }
 
-    const { data, error } = await supabase
+    const clientValues = {
+      ...parsed.data,
+      company_id: companyId,
+      created_by: userProfileId,
+    };
+    let { data, error } = await supabase
       .from("clients")
-      .insert({
-        ...parsed.data,
-        company_id: companyId,
-        created_by: userProfileId,
-      })
+      .insert(clientValues)
       .select("id")
       .single();
+
+    if (error && isMissingLegalResponsibleColumn(error)) {
+      const legacyCompatibleValues = withoutLegalResponsibleField(clientValues);
+      const retry = await supabase
+        .from("clients")
+        .insert(legacyCompatibleValues)
+        .select("id")
+        .single();
+      data = retry.data;
+      error = retry.error;
+    }
 
     if (error) {
       if (error.code === "23505") {
@@ -150,15 +177,27 @@ export async function updateClientAction(
       return friendlyError("Ja existe cliente cadastrado com esse CPF.");
     }
 
-    const { error } = await supabase
+    const clientValues = {
+      ...parsed.data,
+      updated_at: new Date().toISOString(),
+    };
+    let { error } = await supabase
       .from("clients")
-      .update({
-        ...parsed.data,
-        updated_at: new Date().toISOString(),
-      })
+      .update(clientValues)
       .eq("id", clientId)
       .eq("company_id", companyId)
       .is("deleted_at", null);
+
+    if (error && isMissingLegalResponsibleColumn(error)) {
+      const legacyCompatibleValues = withoutLegalResponsibleField(clientValues);
+      const retry = await supabase
+        .from("clients")
+        .update(legacyCompatibleValues)
+        .eq("id", clientId)
+        .eq("company_id", companyId)
+        .is("deleted_at", null);
+      error = retry.error;
+    }
 
     if (error) {
       if (error.code === "23505") {

@@ -1,7 +1,7 @@
 import { ClientDocumentList } from "@/components/client-documents/client-document-list";
 import { ClientDocumentUpload } from "@/components/client-documents/client-document-upload";
 import {
-  canDeleteClientDocument,
+  canModifyClientDocuments,
   listClientDocumentsByClient,
   listClientDocumentsByPreSale,
   listUploaderProfiles,
@@ -22,7 +22,7 @@ export async function ClientDocumentsSection({
   title,
   description,
 }: ClientDocumentsSectionProps) {
-  const { role } = await getCurrentUserContext();
+  const { role, businessArea } = await getCurrentUserContext();
   const documents = preSaleId
     ? await listClientDocumentsByPreSale(clientId, preSaleId)
     : await listClientDocumentsByClient(clientId);
@@ -48,7 +48,7 @@ export async function ClientDocumentsSection({
       <ClientDocumentUpload clientId={clientId} preSaleId={preSaleId} />
       <ClientDocumentList
         documents={enrichedDocuments}
-        canDelete={canDeleteClientDocument(role)}
+        canManage={canModifyClientDocuments(role, businessArea)}
       />
     </section>
   );

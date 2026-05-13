@@ -23,6 +23,7 @@ import type { ClientOption, PreSale, UserProfileOption } from "@/types/pre-sale"
 export type LegalBoardPreSale = PreSale & {
   client: Pick<ClientOption, "id" | "full_name"> | null;
   consultant: UserProfileOption | null;
+  legalResponsibleUserId: string | null;
   currentLegalStage: LegalWorkflowStage;
   stageUpdatedAt: string;
   generatedDocuments: GeneratedDocument[];
@@ -31,6 +32,8 @@ export type LegalBoardPreSale = PreSale & {
 type LegalKanbanProps = {
   preSales: LegalBoardPreSale[];
   templates: DocumentTemplate[];
+  legalConsultants: UserProfileOption[];
+  currentUserId: string;
 };
 
 function getStageAgeLabel(isoDate: string) {
@@ -90,19 +93,38 @@ function getPreSaleStageDocuments(
   return generatedDocuments.filter((document) => stageTemplateIds.has(document.template_id));
 }
 
-export function LegalKanban({ preSales, templates }: LegalKanbanProps) {
+export function LegalKanban({
+  preSales,
+  templates,
+  legalConsultants,
+  currentUserId,
+}: LegalKanbanProps) {
   const router = useRouter();
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [dropTarget, setDropTarget] = useState<LegalWorkflowStage | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [messageTone, setMessageTone] = useState<"success" | "error">("success");
   const [isPending, startTransition] = useTransition();
+  const [responsibleFilter, setResponsibleFilter] = useState<string>(() =>
+    legalConsultants.some((consultant) => consultant.id === currentUserId) &&
+    preSales.some((preSale) => preSale.legalResponsibleUserId === currentUserId)
+      ? currentUserId
+      : "all",
+  );
 
   const stageTemplatesMap = useMemo(() => {
     return Object.fromEntries(
       legalWorkflowStages.map((stage) => [stage.value, getStageTemplates(templates, stage.value)]),
     ) as Record<LegalWorkflowStage, DocumentTemplate[]>;
   }, [templates]);
+
+  const filteredPreSales = useMemo(() => {
+    if (responsibleFilter === "all") {
+      return preSales;
+    }
+
+    return preSales.filter((preSale) => preSale.legalResponsibleUserId === responsibleFilter);
+  }, [preSales, responsibleFilter]);
 
   function handleDrop(stage: LegalWorkflowStage) {
     if (!draggedId) {
@@ -141,8 +163,41 @@ export function LegalKanban({ preSales, templates }: LegalKanbanProps) {
       ) : null}
 
       <section className="grid gap-4 md:grid-cols-3 xl:grid-cols-5">
+        <div className="md:col-span-3 xl:col-span-5">
+          <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+            <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+              <div>
+                <p className="text-sm font-semibold text-slate-950">Filtro de adm responsavel</p>
+                <p className="mt-1 text-sm text-slate-600">
+                  A esteira abre filtrada para o consultor juridico logado quando houver vinculo. Se precisar, voce pode trocar para outro responsavel ou ver todos os clientes.
+                </p>
+              </div>
+              <div className="w-full md:max-w-sm">
+                <label
+                  htmlFor="legal-responsible-filter"
+                  className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500"
+                >
+                  Adm responsavel
+                </label>
+                <select
+                  id="legal-responsible-filter"
+                  value={responsibleFilter}
+                  onChange={(event) => setResponsibleFilter(event.target.value)}
+                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
+                >
+                  <option value="all">Todos</option>
+                  {legalConsultants.map((consultant) => (
+                    <option key={consultant.id} value={consultant.id}>
+                      {formatUserName(consultant)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
         {legalWorkflowStages.map((stage) => {
-          const total = preSales.filter(
+          const total = filteredPreSales.filter(
             (preSale) => preSale.currentLegalStage === stage.value,
           ).length;
 
@@ -166,7 +221,7 @@ export function LegalKanban({ preSales, templates }: LegalKanbanProps) {
       <section className="grid gap-4 xl:grid-cols-5">
         {legalWorkflowStages.map((stage) => {
           const stageTemplates = stageTemplatesMap[stage.value];
-          const stagePreSales = preSales.filter(
+          const stagePreSales = filteredPreSales.filter(
             (preSale) => preSale.currentLegalStage === stage.value,
           );
 
@@ -243,6 +298,14 @@ export function LegalKanban({ preSales, templates }: LegalKanbanProps) {
                           <p>
                             <span className="font-semibold text-slate-700">Consultor:</span>{" "}
                             {formatUserName(preSale.consultant)}
+                          </p>
+                          <p>
+                            <span className="font-semibold text-slate-700">Adm responsavel:</span>{" "}
+                            {formatUserName(
+                              legalConsultants.find(
+                                (consultant) => consultant.id === preSale.legalResponsibleUserId,
+                              ) ?? null,
+                            )}
                           </p>
                           <p>
                             <span className="font-semibold text-slate-700">Valor:</span>{" "}

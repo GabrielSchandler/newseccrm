@@ -5,6 +5,7 @@ import { updateClientAction } from "@/app/(authenticated)/clientes/actions";
 import { getCurrentUserContext } from "@/lib/auth/current-user";
 import { clientToFormValues } from "@/lib/clients/schema";
 import type { Client } from "@/types/client";
+import type { UserProfileOption } from "@/types/pre-sale";
 
 type EditarClientePageProps = {
   params: Promise<{ id: string }>;
@@ -27,6 +28,16 @@ export default async function EditarClientePage({ params }: EditarClientePagePro
     notFound();
   }
 
+  const { data: legalConsultantsData } = await supabase
+    .from("user_profiles")
+    .select("id, full_name, nickname, username, email, role")
+    .eq("company_id", companyId)
+    .eq("role", "seller")
+    .eq("business_area", "legal")
+    .eq("is_active", true)
+    .order("full_name", { ascending: true });
+  const legalConsultants = (legalConsultantsData ?? []) as UserProfileOption[];
+
   return (
     <>
       <PageHeader
@@ -39,6 +50,7 @@ export default async function EditarClientePage({ params }: EditarClientePagePro
             submitLabel="Salvar alteracoes"
             defaultValues={clientToFormValues(client)}
             onSubmitAction={updateClientAction.bind(null, client.id)}
+            legalConsultants={legalConsultants}
           />
         </div>
       </div>

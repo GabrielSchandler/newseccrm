@@ -10,7 +10,7 @@ function canUseLegalArea(role: string | null, businessArea: string) {
 }
 
 export default async function JuridicoPage() {
-  const { supabase, companyId, role, businessArea } = await getCurrentUserContext();
+  const { supabase, companyId, role, businessArea, userProfileId } = await getCurrentUserContext();
 
   if (!canUseLegalArea(role, businessArea)) {
     return null;
@@ -32,11 +32,11 @@ export default async function JuridicoPage() {
       .order("created_at", { ascending: true }),
     supabase
       .from("clients")
-      .select("id, full_name")
+      .select("*")
       .eq("company_id", companyId),
     supabase
       .from("user_profiles")
-      .select("id, full_name, nickname, username, email, role")
+      .select("id, full_name, nickname, username, email, role, business_area, is_active")
       .eq("company_id", companyId),
     supabase
       .from("document_templates")
@@ -63,8 +63,21 @@ export default async function JuridicoPage() {
       : Promise.resolve({ data: [] }),
   ]);
 
-  const clients = (clientsData ?? []) as Array<Pick<ClientOption, "id" | "full_name">>;
-  const consultants = (consultantsData ?? []) as UserProfileOption[];
+  const clients = (clientsData ?? []) as Array<
+    Pick<ClientOption, "id" | "full_name"> & { legal_responsible_user_id: string | null }
+  >;
+  const consultants = (consultantsData ?? []) as Array<
+    UserProfileOption & {
+      business_area?: string | null;
+      is_active?: boolean | null;
+    }
+  >;
+  const legalConsultants = consultants.filter(
+    (consultant) =>
+      consultant.role === "seller" &&
+      consultant.business_area === "legal" &&
+      consultant.is_active !== false,
+  );
   const templates = (templatesData ?? []) as DocumentTemplate[];
   const generatedDocuments = (generatedDocumentsData ?? []) as GeneratedDocument[];
 
@@ -76,6 +89,9 @@ export default async function JuridicoPage() {
     return {
       ...preSale,
       client: clients.find((client) => client.id === preSale.client_id) ?? null,
+      legalResponsibleUserId:
+        clients.find((client) => client.id === preSale.client_id)?.legal_responsible_user_id ??
+        null,
       consultant:
         consultants.find(
           (consultant) =>
@@ -103,7 +119,12 @@ export default async function JuridicoPage() {
             {preSalesError.message}
           </div>
         ) : null}
-        <LegalKanban preSales={legalPreSales} templates={templates} />
+        <LegalKanban
+          preSales={legalPreSales}
+          templates={templates}
+          legalConsultants={legalConsultants}
+          currentUserId={userProfileId}
+        />
       </div>
     </>
   );

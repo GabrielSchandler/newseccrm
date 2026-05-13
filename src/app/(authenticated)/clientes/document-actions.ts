@@ -8,7 +8,7 @@ import {
   assertClientBelongsToCompany,
   assertPreSaleBelongsToClient,
   buildClientDocumentPath,
-  canDeleteClientDocument,
+  canModifyClientDocuments,
   canManageClientDocuments,
   clientDocumentsBucket,
   getClientDocumentWithAccess,
@@ -17,6 +17,8 @@ import {
 } from "@/lib/client-documents/service";
 import {
   clientDocumentUploadSchema,
+  clientDocumentUpdateSchema,
+  type ClientDocumentUpdatePayload,
   type ClientDocumentUploadPayload,
 } from "@/lib/client-documents/schema";
 
@@ -205,14 +207,158 @@ export async function createSignedDocumentUrlAction(
   }
 }
 
+export async function updateClientDocumentAction(
+  documentId: string,
+  values: ClientDocumentUpdatePayload,
+  formData: FormData,
+): Promise<ClientDocumentActionState> {
+  const parsed = clientDocumentUpdateSchema.safeParse(values);
+
+  if (!parsed.success) {
+    return friendlyError("Confira os dados do documento.");
+  }
+
+  const replacementFile = formData.get("file");
+
+  if (replacementFile && !(replacementFile instanceof File)) {
+    return friendlyError("Arquivo invalido para substituicao.");
+  }
+
+  if (replacementFile instanceof File && replacementFile.size > 0) {
+    if (!isAllowedClientDocumentFile(replacementFile)) {
+      return friendlyError("Formato invalido. Envie PDF, JPG, PNG, WEBP, DOC ou DOCX.");
+    }
+
+    if (replacementFile.size > maxClientDocumentSize) {
+      return friendlyError("Envie um arquivo com ate 10 MB.");
+    }
+  }
+
+  try {
+    const { supabase, companyId, role, businessArea, userProfileId } =
+      await getCurrentUserContext();
+    const adminSupabase = createAdminClient();
+
+    if (!canModifyClientDocuments(role, businessArea)) {
+      return friendlyError(
+        "Apenas admin, gerente ou consultor juridico podem editar documentos.",
+      );
+    }
+
+    const bucketError = await ensureClientDocumentsBucketAvailable();
+
+    if (bucketError) {
+      return bucketError;
+    }
+
+    const document = await getClientDocumentWithAccess(documentId);
+    let nextFilePath = document.file_path;
+    let nextFileName = document.file_name;
+    let nextMimeType = document.mime_type;
+    let nextFileSize = document.file_size;
+    let uploadedReplacementPath: string | null = null;
+
+    if (replacementFile instanceof File && replacementFile.size > 0) {
+      const { filePath } = buildClientDocumentPath(
+        companyId,
+        document.client_id,
+        replacementFile.name,
+      );
+      const buffer = Buffer.from(await replacementFile.arrayBuffer());
+      const { error: uploadError } = await adminSupabase.storage
+        .from(clientDocumentsBucket)
+        .upload(filePath, buffer, {
+          contentType: replacementFile.type || "application/octet-stream",
+          upsert: false,
+        });
+
+      if (uploadError) {
+        return friendlyError(uploadError.message);
+      }
+
+      uploadedReplacementPath = filePath;
+      nextFilePath = filePath;
+      nextFileName = replacementFile.name;
+      nextMimeType = replacementFile.type || null;
+      nextFileSize = replacementFile.size;
+    }
+
+    const { error } = await supabase
+      .from("client_documents")
+      .update({
+        document_type: parsed.data.document_type,
+        title: parsed.data.title,
+        description: parsed.data.description,
+        file_path: nextFilePath,
+        file_name: nextFileName,
+        mime_type: nextMimeType,
+        file_size: nextFileSize,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", documentId)
+      .eq("company_id", companyId)
+      .is("deleted_at", null);
+
+    if (error) {
+      if (uploadedReplacementPath) {
+        await adminSupabase.storage.from(clientDocumentsBucket).remove([uploadedReplacementPath]);
+      }
+
+      return friendlyError(error.message);
+    }
+
+    if (uploadedReplacementPath && uploadedReplacementPath !== document.file_path) {
+      await adminSupabase.storage.from(clientDocumentsBucket).remove([document.file_path]);
+    }
+
+    await recordAuditLog({
+      supabase,
+      companyId,
+      userProfileId,
+      action: replacementFile instanceof File && replacementFile.size > 0
+        ? "client_document.replaced"
+        : "client_document.updated",
+      entityType: "client_document",
+      entityId: documentId,
+      entityLabel: parsed.data.title || nextFileName,
+      details: {
+        client_id: document.client_id,
+        pre_sale_id: document.pre_sale_id,
+        document_type: parsed.data.document_type,
+        replaced_file: Boolean(uploadedReplacementPath),
+      },
+    });
+
+    revalidatePath(`/clientes/${document.client_id}`);
+
+    if (document.pre_sale_id) {
+      revalidatePath(`/pre-vendas/${document.pre_sale_id}`);
+    }
+
+    return {
+      ok: true,
+      message: uploadedReplacementPath
+        ? "Documento substituido com sucesso."
+        : "Documento atualizado com sucesso.",
+    };
+  } catch (error) {
+    return friendlyError(
+      error instanceof Error ? error.message : "Nao foi possivel atualizar o documento.",
+    );
+  }
+}
+
 export async function softDeleteClientDocumentAction(
   documentId: string,
 ): Promise<ClientDocumentActionState> {
   try {
-    const { supabase, companyId, role, userProfileId } = await getCurrentUserContext();
+    const { supabase, companyId, role, businessArea, userProfileId } =
+      await getCurrentUserContext();
 
-    if (!canDeleteClientDocument(role)) {
-      return friendlyError("Apenas admin ou gerente podem excluir documentos.");
+    if (!canModifyClientDocuments(role, businessArea)) {
+      return friendlyError(
+        "Apenas admin, gerente ou consultor juridico podem excluir documentos.",
+      );
     }
 
     const document = await getClientDocumentWithAccess(documentId);

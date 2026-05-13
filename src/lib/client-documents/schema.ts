@@ -31,6 +31,12 @@ export const clientDocumentUploadSchema = z.object({
 
 export type ClientDocumentUploadFormValues = z.input<typeof clientDocumentUploadSchema>;
 export type ClientDocumentUploadPayload = z.output<typeof clientDocumentUploadSchema>;
+export const clientDocumentUpdateSchema = clientDocumentUploadSchema.pick({
+  document_type: true,
+  title: true,
+  description: true,
+});
+export type ClientDocumentUpdatePayload = z.output<typeof clientDocumentUpdateSchema>;
 
 export const clientDocumentUploadDefaultValues: ClientDocumentUploadFormValues = {
   client_id: "",

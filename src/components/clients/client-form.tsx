@@ -14,14 +14,17 @@ import {
 } from "@/lib/clients/schema";
 import { formatCpf, formatPhone, formatZipCode, onlyDigits } from "@/lib/clients/masks";
 import { FormFieldLabel } from "@/components/form-field-label";
+import { resolveUserDisplayName } from "@/lib/users/account";
 import { ReactivateClientButton } from "./reactivate-client-button";
 import type { ClientActionState } from "@/app/(authenticated)/clientes/actions";
+import type { UserProfileOption } from "@/types/pre-sale";
 
 type ClientFormProps = {
   defaultValues?: Partial<ClientFormValues>;
   submitLabel: string;
   onSubmitAction: (values: ClientPayload) => Promise<ClientActionState>;
   canReactivateDeletedClient?: boolean;
+  legalConsultants?: UserProfileOption[];
 };
 
 const fields = [
@@ -88,6 +91,7 @@ export function ClientForm({
   submitLabel,
   onSubmitAction,
   canReactivateDeletedClient = false,
+  legalConsultants = [],
 }: ClientFormProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -261,6 +265,33 @@ export function ClientForm({
             disabled={disabled}
             {...register("notes")}
           />
+        </div>
+
+        <div className="space-y-2 md:col-span-2">
+          <FormFieldLabel
+            htmlFor="legal_responsible_user_id"
+            label="Adm responsavel"
+            requirement="legal"
+            hint="Selecione o consultor juridico responsavel por acompanhar a documentacao e a esteira deste cliente."
+          />
+          <select
+            id="legal_responsible_user_id"
+            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
+            disabled={disabled}
+            {...register("legal_responsible_user_id")}
+          >
+            <option value="">Nao definido</option>
+            {legalConsultants.map((consultant) => (
+              <option key={consultant.id} value={consultant.id}>
+                {resolveUserDisplayName(consultant, "Consultor juridico")}
+              </option>
+            ))}
+          </select>
+          {errors.legal_responsible_user_id?.message ? (
+            <p className="text-sm text-red-600">
+              {String(errors.legal_responsible_user_id?.message)}
+            </p>
+          ) : null}
         </div>
       </div>
 

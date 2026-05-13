@@ -99,12 +99,22 @@ export default async function ClientePage({
     notFound();
   }
 
-  const { data: createdByProfileData } = await supabase
-    .from("user_profiles")
-    .select("full_name, username, email")
-    .eq("id", client.created_by)
-    .maybeSingle();
+  const [{ data: createdByProfileData }, { data: legalResponsibleProfileData }] = await Promise.all([
+    supabase
+      .from("user_profiles")
+      .select("id, full_name, nickname, username, email")
+      .eq("id", client.created_by)
+      .maybeSingle(),
+    client.legal_responsible_user_id
+      ? supabase
+          .from("user_profiles")
+          .select("id, full_name, nickname, username, email")
+          .eq("id", client.legal_responsible_user_id)
+          .maybeSingle()
+      : Promise.resolve({ data: null }),
+  ]);
   const createdByProfile = createdByProfileData as ClientAuditUser | null;
+  const legalResponsibleProfile = legalResponsibleProfileData as ClientAuditUser | null;
 
   const { data: generatedDocumentsData, error: generatedDocumentsError } = await supabase
     .from("generated_documents")
@@ -348,6 +358,20 @@ export default async function ClientePage({
                   </p>
                   <p className="mt-1 text-sm font-medium text-slate-950">
                     {formatDateTime(client.updated_at)}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <h2 className="text-base font-semibold text-slate-950">Juridico</h2>
+              <div className="mt-4 grid gap-5 md:grid-cols-2">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    Adm responsavel
+                  </p>
+                  <p className="mt-1 text-sm font-medium text-slate-950">
+                    {displayValue(resolveUserDisplayName(legalResponsibleProfile, ""))}
                   </p>
                 </div>
               </div>
