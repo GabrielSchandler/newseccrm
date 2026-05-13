@@ -20,6 +20,7 @@ import {
 } from "@/lib/calculations/currency";
 import { displayCpf, displayPhone } from "@/lib/clients/formatters";
 import {
+  formatCnpj,
   formatCpf,
   formatPhone,
   formatZipCode,
@@ -62,7 +63,7 @@ type TextFieldProps = {
   disabled: boolean;
   type?: string;
   inputMode?: "numeric" | "decimal";
-  requirement?: "required" | "optional" | "conditional";
+  requirement?: "required" | "optional" | "conditional" | "legal";
   placeholder?: string;
   className?: string;
   hint?: string;
@@ -144,6 +145,10 @@ function maskPhone(event: ChangeEvent<HTMLInputElement>) {
 
 function maskZipCode(event: ChangeEvent<HTMLInputElement>) {
   event.target.value = formatZipCode(event.target.value);
+}
+
+function maskCnpj(event: ChangeEvent<HTMLInputElement>) {
+  event.target.value = formatCnpj(event.target.value);
 }
 
 function handleCurrencyMask(event: ChangeEvent<HTMLInputElement>) {
@@ -502,6 +507,67 @@ export function PreSalesForm({
         description="Dados da operacao, financiamento e contrato existente."
       >
         <TextField name="financer_name" label="Financeira" register={register} errors={errors} disabled={disabled} requirement="required" hint="Usado diretamente no contrato atual." />
+        <TextField
+          name="financer_legal_name"
+          label="Razao social da financeira"
+          register={register}
+          errors={errors}
+          disabled={disabled}
+          requirement="legal"
+          hint="Importante para notificacao extrajudicial e qualificacao completa da instituicao financeira."
+        />
+        <TextField
+          name="financer_cnpj"
+          label="CNPJ da financeira"
+          register={register}
+          errors={errors}
+          disabled={disabled}
+          requirement="legal"
+          inputMode="numeric"
+          registerOptions={{ onChange: maskCnpj }}
+        />
+        <TextField
+          name="financer_address"
+          label="Sede / endereco da financeira"
+          register={register}
+          errors={errors}
+          disabled={disabled}
+          requirement="legal"
+        />
+        <TextField
+          name="financer_district"
+          label="Bairro da financeira"
+          register={register}
+          errors={errors}
+          disabled={disabled}
+          requirement="legal"
+        />
+        <TextField
+          name="financer_zip_code"
+          label="CEP da financeira"
+          register={register}
+          errors={errors}
+          disabled={disabled}
+          requirement="legal"
+          inputMode="numeric"
+          registerOptions={{ onChange: maskZipCode }}
+        />
+        <TextField
+          name="financer_city"
+          label="Cidade da financeira"
+          register={register}
+          errors={errors}
+          disabled={disabled}
+          requirement="legal"
+        />
+        <TextField
+          name="financer_state"
+          label="UF da financeira"
+          register={register}
+          errors={errors}
+          disabled={disabled}
+          requirement="legal"
+        />
         <div className="space-y-2">
           <FormFieldLabel
             htmlFor="has_financing_contract"
@@ -525,6 +591,108 @@ export function PreSalesForm({
           <TextField name="overdue_installments" label="Parcelas em atraso" register={register} errors={errors} disabled={disabled} requirement="optional" inputMode="numeric" registerOptions={{ onChange: handleIntegerMask }} />
           <TextField name="due_day" label="Dia do vencimento" register={register} errors={errors} disabled={disabled} requirement="optional" inputMode="numeric" registerOptions={{ onChange: handleIntegerMask }} />
         <TextField name="contract_number" label="Numero do contrato" register={register} errors={errors} disabled={disabled} requirement="optional" />
+      </FormSection>
+
+      <FormSection
+        title="Dados juridicos"
+        description="Campos usados pelo Juridico e pela migracao da base antiga."
+      >
+        <TextField
+          name="legal_department"
+          label="Departamento juridico legado"
+          register={register}
+          errors={errors}
+          disabled={disabled}
+          requirement="legal"
+        />
+        <TextField
+          name="legal_status_text"
+          label="Status juridico"
+          register={register}
+          errors={errors}
+          disabled={disabled}
+          requirement="legal"
+        />
+        <TextField
+          name="legal_document_status"
+          label="Status documental juridico"
+          register={register}
+          errors={errors}
+          disabled={disabled}
+          requirement="legal"
+        />
+        <TextField
+          name="legal_case_number"
+          label="Numero do processo"
+          register={register}
+          errors={errors}
+          disabled={disabled}
+          requirement="legal"
+        />
+        <TextField
+          name="legal_case_year"
+          label="Ano do processo"
+          register={register}
+          errors={errors}
+          disabled={disabled}
+          requirement="legal"
+        />
+        <TextField
+          name="legal_deadline"
+          label="Prazo"
+          register={register}
+          errors={errors}
+          disabled={disabled}
+          requirement="legal"
+        />
+        <TextField
+          name="legal_county"
+          label="Comarca"
+          register={register}
+          errors={errors}
+          disabled={disabled}
+          requirement="legal"
+        />
+        <TextField
+          name="legal_forum"
+          label="Forum"
+          register={register}
+          errors={errors}
+          disabled={disabled}
+          requirement="legal"
+        />
+        <TextField
+          name="legal_court_division"
+          label="Vara"
+          register={register}
+          errors={errors}
+          disabled={disabled}
+          requirement="legal"
+        />
+        <TextField
+          name="legal_operator_name"
+          label="Operador juridico legado"
+          register={register}
+          errors={errors}
+          disabled={disabled}
+          requirement="legal"
+        />
+        <TextField
+          name="legal_process_operator_name"
+          label="Operador processual legado"
+          register={register}
+          errors={errors}
+          disabled={disabled}
+          requirement="legal"
+        />
+        <TextField
+          name="legal_protocol"
+          label="Protocolo juridico"
+          register={register}
+          errors={errors}
+          disabled={disabled}
+          requirement="legal"
+        />
       </FormSection>
 
       {selectedPreSaleType === "veiculo" ? (

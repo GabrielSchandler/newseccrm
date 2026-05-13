@@ -5,6 +5,7 @@ import {
   formatDate,
   formatDateTime,
 } from "@/lib/clients/formatters";
+import { formatCnpj } from "@/lib/clients/masks";
 import {
   formatBoolean,
   formatCurrency,
@@ -167,6 +168,14 @@ export const documentVariableCatalog = [
     group: "Dados financeiros",
     variables: [
       "financeira",
+      "financeira_razao_social",
+      "financeira_cnpj",
+      "financeira_endereco",
+      "financeira_bairro",
+      "financeira_cep",
+      "financeira_cidade",
+      "financeira_estado",
+      "financeira_endereco_completo",
       "possui_contrato_financiamento",
       "valor_operacao",
       "valor_entrada",
@@ -190,6 +199,23 @@ export const documentVariableCatalog = [
   {
     group: "Contratacao",
     variables: ["valor_contrato", "descricao_pagamento", "data_contrato"],
+  },
+  {
+    group: "Juridico",
+    variables: [
+      "juridico_departamento_legado",
+      "juridico_status",
+      "juridico_status_documental",
+      "juridico_numero_processo",
+      "juridico_ano_processo",
+      "juridico_prazo",
+      "juridico_comarca",
+      "juridico_forum",
+      "juridico_vara",
+      "juridico_operador_legado",
+      "juridico_operador_processual_legado",
+      "juridico_protocolo",
+    ],
   },
   {
     group: "Pagamentos",
@@ -235,6 +261,10 @@ function formatText(value: string | null | undefined) {
 
 function formatCpfValue(value: string | null | undefined) {
   return emptyDash(displayCpf(value ?? null));
+}
+
+function formatCnpjValue(value: string | null | undefined) {
+  return emptyDash(formatCnpj(value ?? null) || "-");
 }
 
 function formatPhoneValue(value: string | null | undefined) {
@@ -523,6 +553,32 @@ function buildAddress(
     .join(", ");
 }
 
+function buildFinancerAddress(
+  source:
+    | Pick<
+        PreSaleFinancialCase,
+        | "financer_address"
+        | "financer_district"
+        | "financer_city"
+        | "financer_state"
+        | "financer_zip_code"
+      >
+    | null,
+) {
+  if (!source) {
+    return "";
+  }
+
+  const cityLine = [source.financer_district, source.financer_city, source.financer_state].filter(
+    Boolean,
+  );
+  const zipCode = source.financer_zip_code ? `CEP ${source.financer_zip_code}` : null;
+
+  return [source.financer_address, cityLine.join(" - "), zipCode]
+    .filter(Boolean)
+    .join(", ");
+}
+
 function stringFromUnknown(value: unknown) {
   if (typeof value === "string") {
     return value;
@@ -741,6 +797,14 @@ export function buildDocumentVariables(context: DocumentTemplateContext) {
     pre_venda_data_abertura: emptyDash(formatDateTime(preSale.created_at)),
     pre_venda_observacoes: formatText(preSale.negotiation_details),
     financeira: formatText(financialCase?.financer_name),
+    financeira_razao_social: formatText(financialCase?.financer_legal_name),
+    financeira_cnpj: formatCnpjValue(financialCase?.financer_cnpj),
+    financeira_endereco: formatText(financialCase?.financer_address),
+    financeira_bairro: formatText(financialCase?.financer_district),
+    financeira_cep: formatText(financialCase?.financer_zip_code),
+    financeira_cidade: formatText(financialCase?.financer_city),
+    financeira_estado: formatText(financialCase?.financer_state),
+    financeira_endereco_completo: buildFinancerAddress(financialCase),
     possui_contrato_financiamento: emptyDash(
       formatBoolean(financialCase?.has_financing_contract),
     ),
@@ -777,6 +841,18 @@ export function buildDocumentVariables(context: DocumentTemplateContext) {
     valor_contrato: formatCurrencyWithWords(preSale.contract_value),
     descricao_pagamento: formatText(preSale.payment_description),
     data_contrato: formatLongDatePtBr(now),
+    juridico_departamento_legado: formatText(preSale.legal_department),
+    juridico_status: formatText(preSale.legal_status_text),
+    juridico_status_documental: formatText(preSale.legal_document_status),
+    juridico_numero_processo: formatText(preSale.legal_case_number),
+    juridico_ano_processo: formatText(preSale.legal_case_year),
+    juridico_prazo: formatText(preSale.legal_deadline),
+    juridico_comarca: formatText(preSale.legal_county),
+    juridico_forum: formatText(preSale.legal_forum),
+    juridico_vara: formatText(preSale.legal_court_division),
+    juridico_operador_legado: formatText(preSale.legal_operator_name),
+    juridico_operador_processual_legado: formatText(preSale.legal_process_operator_name),
+    juridico_protocolo: formatText(preSale.legal_protocol),
     empresa_razao_social:
       stringFromUnknown(companyRecord.legal_name) ||
       stringFromUnknown(companyRecord.corporate_name) ||
@@ -785,7 +861,7 @@ export function buildDocumentVariables(context: DocumentTemplateContext) {
       stringFromUnknown(companyRecord.trade_name) ||
       stringFromUnknown(companyRecord.fantasy_name) ||
       stringFromUnknown(companyRecord.nome_fantasia),
-    empresa_cnpj: stringFromUnknown(companyRecord.cnpj),
+    empresa_cnpj: formatCnpjValue(stringFromUnknown(companyRecord.cnpj)),
     empresa_email: stringFromUnknown(companyRecord.email),
     empresa_telefone: stringFromUnknown(companyRecord.phone),
     empresa_cidade: stringFromUnknown(companyRecord.city),

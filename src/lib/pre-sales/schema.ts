@@ -63,6 +63,13 @@ const optionalCpf = optionalText
   )
   .transform((value) => (value ? onlyDigits(value) : null));
 
+const optionalCnpj = optionalText
+  .refine(
+    (value) => !value || onlyDigits(value).length === 14,
+    "Informe um CNPJ com 14 digitos.",
+  )
+  .transform((value) => (value ? onlyDigits(value) : null));
+
 const optionalPhone = optionalText
   .refine((value) => isValidPhone(value), "Informe um telefone valido.")
   .transform((value) => (value ? onlyDigits(value) : null));
@@ -113,6 +120,18 @@ export const preSaleFormSchema = z.object({
   contract_value: requiredNumber,
   payment_description: requiredText,
   negotiation_details: optionalText,
+  legal_department: optionalText,
+  legal_status_text: optionalText,
+  legal_document_status: optionalText,
+  legal_case_number: optionalText,
+  legal_case_year: optionalText,
+  legal_deadline: optionalText,
+  legal_county: optionalText,
+  legal_forum: optionalText,
+  legal_court_division: optionalText,
+  legal_operator_name: optionalText,
+  legal_process_operator_name: optionalText,
+  legal_protocol: optionalText,
   snapshot_full_name: z.string().trim().min(1, "Informe o nome do contratante."),
   snapshot_cpf: requiredCpf,
   snapshot_rg: optionalText,
@@ -148,6 +167,13 @@ export const preSaleFormSchema = z.object({
   debt_holder_city: optionalText,
   debt_holder_state: optionalText,
   financer_name: requiredText,
+  financer_legal_name: optionalText,
+  financer_cnpj: optionalCnpj,
+  financer_address: optionalText,
+  financer_district: optionalText,
+  financer_zip_code: optionalText,
+  financer_city: optionalText,
+  financer_state: optionalText,
   has_financing_contract: z
     .union([z.boolean(), z.string(), z.null(), z.undefined()])
     .transform((value) => {
@@ -231,6 +257,18 @@ export const preSaleDefaultValues: PreSaleFormValues = {
   contract_value: "",
   payment_description: "",
   negotiation_details: "",
+  legal_department: "",
+  legal_status_text: "",
+  legal_document_status: "",
+  legal_case_number: "",
+  legal_case_year: "",
+  legal_deadline: "",
+  legal_county: "",
+  legal_forum: "",
+  legal_court_division: "",
+  legal_operator_name: "",
+  legal_process_operator_name: "",
+  legal_protocol: "",
   snapshot_full_name: "",
   snapshot_cpf: "",
   snapshot_rg: "",
@@ -266,6 +304,13 @@ export const preSaleDefaultValues: PreSaleFormValues = {
   debt_holder_city: "",
   debt_holder_state: "",
   financer_name: "",
+  financer_legal_name: "",
+  financer_cnpj: "",
+  financer_address: "",
+  financer_district: "",
+  financer_zip_code: "",
+  financer_city: "",
+  financer_state: "",
   has_financing_contract: "",
   financed_amount: "",
   installment_amount: "",
@@ -302,6 +347,18 @@ export function preSaleToFormValues(
       formatNumberForPtBrInput(preSale.contract_value),
     payment_description: preSale.payment_description ?? "",
     negotiation_details: preSale.negotiation_details ?? "",
+    legal_department: preSale.legal_department ?? "",
+    legal_status_text: preSale.legal_status_text ?? "",
+    legal_document_status: preSale.legal_document_status ?? "",
+    legal_case_number: preSale.legal_case_number ?? "",
+    legal_case_year: preSale.legal_case_year ?? "",
+    legal_deadline: preSale.legal_deadline ?? "",
+    legal_county: preSale.legal_county ?? "",
+    legal_forum: preSale.legal_forum ?? "",
+    legal_court_division: preSale.legal_court_division ?? "",
+    legal_operator_name: preSale.legal_operator_name ?? "",
+    legal_process_operator_name: preSale.legal_process_operator_name ?? "",
+    legal_protocol: preSale.legal_protocol ?? "",
     snapshot_full_name: snapshot?.full_name ?? "",
     snapshot_cpf: snapshot?.cpf ?? "",
     snapshot_rg: snapshot?.rg ?? "",
@@ -337,6 +394,13 @@ export function preSaleToFormValues(
     debt_holder_city: debtHolder?.city ?? "",
     debt_holder_state: debtHolder?.state ?? "",
     financer_name: financialCase?.financer_name ?? "",
+    financer_legal_name: financialCase?.financer_legal_name ?? "",
+    financer_cnpj: financialCase?.financer_cnpj ?? "",
+    financer_address: financialCase?.financer_address ?? "",
+    financer_district: financialCase?.financer_district ?? "",
+    financer_zip_code: financialCase?.financer_zip_code ?? "",
+    financer_city: financialCase?.financer_city ?? "",
+    financer_state: financialCase?.financer_state ?? "",
     has_financing_contract:
       financialCase?.has_financing_contract === null ||
       financialCase?.has_financing_contract === undefined
