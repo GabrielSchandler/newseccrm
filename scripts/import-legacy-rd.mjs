@@ -571,11 +571,32 @@ async function ensureLegacyImportRow(supabase, companyId, normalizedRow, importS
   };
 
   if (normalizedRow.legacyExternalId) {
-    const { error } = await supabase
+    const { data: existingRows, error: existingError } = await supabase
       .from("legacy_rd_import")
-      .upsert(payload, {
-        onConflict: "company_id,legacy_external_id",
-      });
+      .select("id")
+      .eq("company_id", companyId)
+      .eq("legacy_external_id", normalizedRow.legacyExternalId)
+      .order("created_at", { ascending: false })
+      .limit(1);
+
+    if (existingError) {
+      throw existingError;
+    }
+
+    if (existingRows?.length) {
+      const { error } = await supabase
+        .from("legacy_rd_import")
+        .update(payload)
+        .eq("id", existingRows[0].id);
+
+      if (error) {
+        throw error;
+      }
+
+      return;
+    }
+
+    const { error } = await supabase.from("legacy_rd_import").insert(payload);
 
     if (error) {
       throw error;
