@@ -8,6 +8,7 @@ import { CopyButton } from "@/components/clients/copy-button";
 import { ReactivateClientButton } from "@/components/clients/reactivate-client-button";
 import { WhatsAppLink } from "@/components/clients/whatsapp-link";
 import { ClientDocumentsSection } from "@/components/client-documents/client-documents-section";
+import { ClientTimelineSection } from "@/components/clients/client-timeline-section";
 import { ClientCalculationsSection } from "@/components/calculations/client-calculations-section";
 import { PageHeader } from "@/components/layout/page-header";
 import { PreSalesStatusBadge } from "@/components/pre-sales/pre-sales-status-badge";
@@ -19,6 +20,7 @@ import {
   formatDateTime,
 } from "@/lib/clients/formatters";
 import { getCurrentUserContext } from "@/lib/auth/current-user";
+import { listClientTimelineEvents } from "@/lib/client-timeline/service";
 import { formatPreSaleType, formatUserName } from "@/lib/pre-sales/formatters";
 import { listAccessiblePreSaleIdsForCurrentUser } from "@/lib/pre-sales/access";
 import { resolveUserDisplayName } from "@/lib/users/account";
@@ -157,6 +159,8 @@ export default async function ClientePage({
     );
     clientPreSales = clientPreSales.filter((preSale) => accessiblePreSaleIds.has(preSale.id));
   }
+
+  const timelineEvents = await listClientTimelineEvents(companyId, client.id);
 
   const consultantIds = Array.from(
     new Set(
@@ -385,6 +389,8 @@ export default async function ClientePage({
             </div>
           </div>
         </section>
+
+        <ClientTimelineSection clientId={client.id} events={timelineEvents} />
 
         <ClientDocumentsSection
           clientId={client.id}

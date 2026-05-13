@@ -14,6 +14,7 @@ import {
 } from "@/lib/clients/schema";
 import { formatCpf, formatPhone, formatZipCode, onlyDigits } from "@/lib/clients/masks";
 import { FormFieldLabel } from "@/components/form-field-label";
+import { ChangeNoteModal } from "@/components/shared/change-note-modal";
 import { resolveUserDisplayName } from "@/lib/users/account";
 import { ReactivateClientButton } from "./reactivate-client-button";
 import type { ClientActionState } from "@/app/(authenticated)/clientes/actions";
@@ -22,9 +23,13 @@ import type { UserProfileOption } from "@/types/pre-sale";
 type ClientFormProps = {
   defaultValues?: Partial<ClientFormValues>;
   submitLabel: string;
-  onSubmitAction: (values: ClientPayload) => Promise<ClientActionState>;
+  onSubmitAction: (
+    values: ClientPayload,
+    changeNote?: string | null,
+  ) => Promise<ClientActionState>;
   canReactivateDeletedClient?: boolean;
   legalConsultants?: UserProfileOption[];
+  requireChangeNote?: boolean;
 };
 
 const fields = [
@@ -92,10 +97,13 @@ export function ClientForm({
   onSubmitAction,
   canReactivateDeletedClient = false,
   legalConsultants = [],
+  requireChangeNote = false,
 }: ClientFormProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [actionState, setActionState] = useState<ClientActionState | null>(null);
+  const [isChangeNoteModalOpen, setIsChangeNoteModalOpen] = useState(false);
+  const [pendingValues, setPendingValues] = useState<ClientPayload | null>(null);
   const [lastFetchedZipCode, setLastFetchedZipCode] = useState<string | null>(() =>
     onlyDigits(typeof defaultValues?.zip_code === "string" ? defaultValues.zip_code : ""),
   );
@@ -173,16 +181,26 @@ export function ClientForm({
     }
   }, [fetchAddressByZipCode, zipCodeValue]);
 
-  function onValidSubmit(values: ClientPayload) {
+  function submitValues(values: ClientPayload, changeNote?: string | null) {
     setActionState(null);
 
     startTransition(async () => {
-      const result = await onSubmitAction(values);
+      const result = await onSubmitAction(values, changeNote);
 
       if (!result.ok) {
         setActionState(result);
       }
     });
+  }
+
+  function onValidSubmit(values: ClientPayload) {
+    if (requireChangeNote) {
+      setPendingValues(values);
+      setIsChangeNoteModalOpen(true);
+      return;
+    }
+
+    submitValues(values);
   }
 
   const disabled = isSubmitting || isPending;
@@ -345,6 +363,30 @@ export function ClientForm({
           Lista de clientes
         </Link>
       </div>
+
+      <ChangeNoteModal
+        isOpen={isChangeNoteModalOpen}
+        title="Registrar alteracao no cliente"
+        description="Antes de salvar, escreva o que foi alterado no cadastro do cliente e por que essa mudanca foi feita."
+        confirmLabel="Salvar com anotacao"
+        pending={disabled}
+        onClose={() => {
+          if (disabled) {
+            return;
+          }
+
+          setIsChangeNoteModalOpen(false);
+          setPendingValues(null);
+        }}
+        onConfirm={(note) => {
+          if (!pendingValues) {
+            return;
+          }
+
+          setIsChangeNoteModalOpen(false);
+          submitValues(pendingValues, note);
+        }}
+      />
     </form>
   );
 }

@@ -51,6 +51,7 @@ export default async function EditarClientePage({ params }: EditarClientePagePro
             defaultValues={clientToFormValues(client)}
             onSubmitAction={updateClientAction.bind(null, client.id)}
             legalConsultants={legalConsultants}
+            requireChangeNote
           />
         </div>
       </div>

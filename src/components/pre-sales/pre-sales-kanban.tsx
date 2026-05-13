@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { WhatsAppLink } from "@/components/clients/whatsapp-link";
 import { PreSaleDeleteButton } from "@/components/pre-sales/pre-sale-delete-button";
+import { ChangeNoteModal } from "@/components/shared/change-note-modal";
 import {
   formatCurrency,
   formatPreSaleType,
@@ -23,6 +24,10 @@ export function PreSalesKanban({ preSales, canDelete = false }: PreSalesKanbanPr
   const router = useRouter();
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [dropTarget, setDropTarget] = useState<PreSaleStatus | null>(null);
+  const [pendingStatusChange, setPendingStatusChange] = useState<{
+    preSaleId: string;
+    status: PreSaleStatus;
+  } | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [messageTone, setMessageTone] = useState<"success" | "error">("success");
   const [isPending, startTransition] = useTransition();
@@ -32,9 +37,34 @@ export function PreSalesKanban({ preSales, canDelete = false }: PreSalesKanbanPr
       return;
     }
 
+    const draggedPreSale = preSales.find((preSale) => preSale.id === draggedId);
+
+    if (!draggedPreSale || draggedPreSale.status === status) {
+      setDraggedId(null);
+      setDropTarget(null);
+      return;
+    }
+
     setMessage(null);
+    setPendingStatusChange({
+      preSaleId: draggedId,
+      status,
+    });
+    setDraggedId(null);
+    setDropTarget(null);
+  }
+
+  function confirmStatusChange(note: string) {
+    if (!pendingStatusChange) {
+      return;
+    }
+
     startTransition(async () => {
-      const result = await updatePreSaleStatusAction(draggedId, status);
+      const result = await updatePreSaleStatusAction(
+        pendingStatusChange.preSaleId,
+        pendingStatusChange.status,
+        note,
+      );
 
       if (!result.ok) {
         setMessageTone("error");
@@ -45,8 +75,7 @@ export function PreSalesKanban({ preSales, canDelete = false }: PreSalesKanbanPr
         router.refresh();
       }
     });
-    setDraggedId(null);
-    setDropTarget(null);
+    setPendingStatusChange(null);
   }
 
   return (
@@ -158,6 +187,22 @@ export function PreSalesKanban({ preSales, canDelete = false }: PreSalesKanbanPr
           );
         })}
       </div>
+
+      <ChangeNoteModal
+        isOpen={Boolean(pendingStatusChange)}
+        title="Registrar mudanca de status"
+        description="Explique o que aconteceu nessa movimentacao da pre-venda e por que ela foi para esta nova etapa."
+        confirmLabel="Mover com anotacao"
+        pending={isPending}
+        onClose={() => {
+          if (isPending) {
+            return;
+          }
+
+          setPendingStatusChange(null);
+        }}
+        onConfirm={confirmStatusChange}
+      />
     </section>
   );
 }

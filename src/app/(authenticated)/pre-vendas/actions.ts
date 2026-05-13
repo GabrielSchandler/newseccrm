@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { recordAuditLog } from "@/lib/audit/log";
 import { getCurrentUserContext } from "@/lib/auth/current-user";
+import { recordClientTimelineEvent } from "@/lib/client-timeline/service";
 import {
   assertPreSaleAccess,
   canCreatePreSales,
@@ -23,6 +24,11 @@ function friendlyError(message = "Nao foi possivel salvar a pre-venda.") {
     ok: false,
     message,
   };
+}
+
+function requireChangeNote(changeNote?: string | null) {
+  const normalizedChangeNote = changeNote?.trim();
+  return normalizedChangeNote ? normalizedChangeNote : null;
 }
 
 async function assertClientBelongsToCompany(clientId: string, companyId: string) {
@@ -287,7 +293,9 @@ async function savePayments(
 
 export async function createPreSaleAction(
   values: PreSalePayload,
+  changeNote?: string | null,
 ): Promise<PreSaleActionState> {
+  void changeNote;
   const parsed = preSaleFormSchema.safeParse(values);
 
   if (!parsed.success) {
@@ -297,7 +305,7 @@ export async function createPreSaleAction(
   let preSaleId = "";
 
   try {
-    const { supabase, companyId, userProfileId, role, businessArea } =
+    const { supabase, companyId, userProfileId, role, businessArea, profile } =
       await getCurrentUserContext();
     const {
       preSaleValues,
@@ -378,6 +386,22 @@ export async function createPreSaleAction(
           client_id: parsed.data.client_id,
         },
       });
+
+      await recordClientTimelineEvent({
+        companyId,
+        clientId: parsed.data.client_id,
+        preSaleId,
+        eventType: "pre_sale_created",
+        title: "Pre-venda criada",
+        actorUserProfileId: userProfileId,
+        actorRole: role,
+        actorBusinessArea: businessArea,
+        actor: profile,
+        details: {
+          status: parsed.data.status,
+          type: parsed.data.pre_sale_type,
+        },
+      });
     } catch (error) {
     return friendlyError(
       error instanceof Error ? error.message : "Nao foi possivel criar a pre-venda.",
@@ -391,6 +415,7 @@ export async function createPreSaleAction(
 export async function updatePreSaleAction(
   preSaleId: string,
   values: PreSalePayload,
+  changeNote?: string | null,
 ): Promise<PreSaleActionState> {
   const parsed = preSaleFormSchema.safeParse(values);
 
@@ -398,8 +423,14 @@ export async function updatePreSaleAction(
     return friendlyError("Confira os campos obrigatorios da pre-venda.");
   }
 
+  const normalizedChangeNote = requireChangeNote(changeNote);
+
+  if (!normalizedChangeNote) {
+    return friendlyError("Descreva o que foi alterado na pre-venda e por que.");
+  }
+
   try {
-    const { supabase, companyId, userProfileId, role, businessArea } =
+    const { supabase, companyId, userProfileId, role, businessArea, profile } =
       await getCurrentUserContext();
     const {
       preSaleValues,
@@ -469,6 +500,23 @@ export async function updatePreSaleAction(
           client_id: parsed.data.client_id,
         },
       });
+
+      await recordClientTimelineEvent({
+        companyId,
+        clientId: parsed.data.client_id,
+        preSaleId,
+        eventType: "pre_sale_updated",
+        title: "Pre-venda atualizada",
+        note: normalizedChangeNote,
+        actorUserProfileId: userProfileId,
+        actorRole: role,
+        actorBusinessArea: businessArea,
+        actor: profile,
+        details: {
+          status: parsed.data.status,
+          type: parsed.data.pre_sale_type,
+        },
+      });
     } catch (error) {
     return friendlyError(
       error instanceof Error ? error.message : "Nao foi possivel atualizar a pre-venda.",
@@ -483,11 +531,28 @@ export async function updatePreSaleAction(
 export async function updatePreSaleStatusAction(
   preSaleId: string,
   status: PreSaleStatus,
+  changeNote?: string | null,
 ): Promise<PreSaleActionState> {
+  const normalizedChangeNote = requireChangeNote(changeNote);
+
+  if (!normalizedChangeNote) {
+    return friendlyError("Descreva a mudanca de status da pre-venda e o motivo.");
+  }
+
   try {
-    const { supabase, companyId, userProfileId, role, businessArea } =
+    const { supabase, companyId, userProfileId, role, businessArea, profile } =
       await getCurrentUserContext();
     const accessiblePreSale = await assertPreSaleAccess(preSaleId);
+    const { data: currentPreSaleData, error: currentPreSaleError } = await supabase
+      .from("pre_sales")
+      .select("status")
+      .eq("id", preSaleId)
+      .eq("company_id", companyId)
+      .single();
+
+    if (currentPreSaleError || !currentPreSaleData) {
+      return friendlyError("Pre-venda nao encontrada para atualizar o status.");
+    }
 
     if (!canEditPreSaleRecord(role, businessArea, userProfileId, accessiblePreSale)) {
       return friendlyError("O usuario atual nao pode alterar o status desta pre-venda.");
@@ -516,6 +581,23 @@ export async function updatePreSaleStatusAction(
         entityLabel: preSaleId,
         details: {
           status,
+        },
+      });
+
+      await recordClientTimelineEvent({
+        companyId,
+        clientId: accessiblePreSale.client_id,
+        preSaleId,
+        eventType: "pre_sale_status_updated",
+        title: `Status comercial movido para ${status}`,
+        note: normalizedChangeNote,
+        actorUserProfileId: userProfileId,
+        actorRole: role,
+        actorBusinessArea: businessArea,
+        actor: profile,
+        details: {
+          previous_status: (currentPreSaleData as { status: string | null }).status,
+          next_status: status,
         },
       });
     } catch (error) {

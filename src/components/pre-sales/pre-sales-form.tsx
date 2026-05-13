@@ -14,6 +14,7 @@ import type {
 } from "react-hook-form";
 import type { PreSaleActionState } from "@/app/(authenticated)/pre-vendas/actions";
 import { FormFieldLabel } from "@/components/form-field-label";
+import { ChangeNoteModal } from "@/components/shared/change-note-modal";
 import {
   formatCurrencyInputValueFromDigits,
   normalizeCurrencyInputValue,
@@ -46,7 +47,11 @@ type PreSalesFormProps = {
   consultants: UserProfileOption[];
   submitLabel: string;
   openingDateLabel?: string;
-  onSubmitAction: (values: PreSalePayload) => Promise<PreSaleActionState>;
+  onSubmitAction: (
+    values: PreSalePayload,
+    changeNote?: string | null,
+  ) => Promise<PreSaleActionState>;
+  requireChangeNote?: boolean;
 };
 
 type FormSectionProps = {
@@ -232,10 +237,13 @@ export function PreSalesForm({
   submitLabel,
   openingDateLabel = "Sera definida ao salvar",
   onSubmitAction,
+  requireChangeNote = false,
 }: PreSalesFormProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [message, setMessage] = useState<string | null>(null);
+  const [isChangeNoteModalOpen, setIsChangeNoteModalOpen] = useState(false);
+  const [pendingValues, setPendingValues] = useState<PreSalePayload | null>(null);
 
   const {
     control,
@@ -278,16 +286,26 @@ export function PreSalesForm({
     return !isDirty || window.confirm("Existem alteracoes nao salvas. Deseja sair mesmo assim?");
   }
 
-  function onValidSubmit(values: PreSalePayload) {
+  function submitValues(values: PreSalePayload, changeNote?: string | null) {
     setMessage(null);
 
     startTransition(async () => {
-      const result = await onSubmitAction(values);
+      const result = await onSubmitAction(values, changeNote);
 
       if (!result.ok) {
         setMessage(result.message);
       }
     });
+  }
+
+  function onValidSubmit(values: PreSalePayload) {
+    if (requireChangeNote) {
+      setPendingValues(values);
+      setIsChangeNoteModalOpen(true);
+      return;
+    }
+
+    submitValues(values);
   }
 
   function handleClientChange(event: ChangeEvent<HTMLSelectElement>) {
@@ -894,6 +912,30 @@ export function PreSalesForm({
           Lista de pre-vendas
         </Link>
       </div>
+
+      <ChangeNoteModal
+        isOpen={isChangeNoteModalOpen}
+        title="Registrar alteracao na pre-venda"
+        description="Antes de salvar, descreva o que foi ajustado na pre-venda e por que essa alteracao foi necessaria."
+        confirmLabel="Salvar com anotacao"
+        pending={disabled}
+        onClose={() => {
+          if (disabled) {
+            return;
+          }
+
+          setIsChangeNoteModalOpen(false);
+          setPendingValues(null);
+        }}
+        onConfirm={(note) => {
+          if (!pendingValues) {
+            return;
+          }
+
+          setIsChangeNoteModalOpen(false);
+          submitValues(pendingValues, note);
+        }}
+      />
     </form>
   );
 }

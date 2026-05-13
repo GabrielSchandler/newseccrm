@@ -117,6 +117,7 @@ export default async function EditarPreVendaPage({ params }: EditarPreVendaPageP
               payments,
             )}
             onSubmitAction={updatePreSaleAction.bind(null, preSale.id)}
+            requireChangeNote
           />
         </div>
       </div>

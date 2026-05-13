@@ -6,6 +6,8 @@ import { recordAuditLog } from "@/lib/audit/log";
 import { getCurrentUserContext } from "@/lib/auth/current-user";
 import { formatCpf } from "@/lib/clients/masks";
 import { clientFormSchema, type ClientPayload } from "@/lib/clients/schema";
+import { recordClientTimelineEvent } from "@/lib/client-timeline/service";
+import type { Client } from "@/types/client";
 
 export type ClientActionState = {
   ok: boolean;
@@ -18,6 +20,52 @@ function friendlyError(message = "Nao foi possivel salvar o cliente.") {
     ok: false,
     message,
   };
+}
+
+const clientFieldLabels: Record<keyof ClientPayload, string> = {
+  full_name: "Nome completo",
+  cpf: "CPF",
+  rg: "RG",
+  nationality: "Nacionalidade",
+  birth_date: "Data de nascimento",
+  marital_status: "Estado civil",
+  profession: "Profissao",
+  email: "Email",
+  phone_mobile: "Celular",
+  phone_secondary: "Telefone secundario",
+  zip_code: "CEP",
+  street: "Rua",
+  number: "Numero",
+  district: "Bairro",
+  city: "Cidade",
+  state: "Estado",
+  notes: "Observacoes",
+  legal_responsible_user_id: "Adm responsavel",
+};
+
+function normalizeComparableValue(value: unknown) {
+  if (typeof value === "string") {
+    const trimmedValue = value.trim();
+    return trimmedValue || null;
+  }
+
+  return value ?? null;
+}
+
+function getChangedClientFields(currentClient: Client, nextValues: ClientPayload) {
+  return (Object.entries(clientFieldLabels) as Array<[keyof ClientPayload, string]>)
+    .filter(([field]) => {
+      return (
+        normalizeComparableValue(currentClient[field as keyof Client]) !==
+        normalizeComparableValue(nextValues[field])
+      );
+    })
+    .map(([, label]) => label);
+}
+
+function requireChangeNote(changeNote?: string | null) {
+  const normalizedChangeNote = changeNote?.trim();
+  return normalizedChangeNote ? normalizedChangeNote : null;
 }
 
 function isMissingLegalResponsibleColumn(error: { message?: string } | null | undefined) {
@@ -70,7 +118,9 @@ async function findClientByCpf(
 
 export async function createClientAction(
   values: ClientPayload,
+  changeNote?: string | null,
 ): Promise<ClientActionState> {
+  void changeNote;
   const parsed = clientFormSchema.safeParse(values);
 
   if (!parsed.success) {
@@ -80,7 +130,8 @@ export async function createClientAction(
   let createdClientId = "";
 
   try {
-    const { supabase, userProfileId, companyId } = await getCurrentUserContext();
+    const { supabase, userProfileId, companyId, role, businessArea, profile } =
+      await getCurrentUserContext();
     const existingClient = await findClientByCpf(parsed.data.cpf, companyId);
 
     if (existingClient?.deleted_at) {
@@ -143,6 +194,20 @@ export async function createClientAction(
         cpf: parsed.data.cpf,
       },
     });
+
+    await recordClientTimelineEvent({
+      companyId,
+      clientId: createdClientId,
+      eventType: "client_created",
+      title: "Cliente cadastrado",
+      actorUserProfileId: userProfileId,
+      actorRole: role,
+      actorBusinessArea: businessArea,
+      actor: profile,
+      details: {
+        cpf: parsed.data.cpf,
+      },
+    });
   } catch (error) {
     return friendlyError(
       error instanceof Error ? error.message : "Nao foi possivel criar o cliente.",
@@ -156,6 +221,7 @@ export async function createClientAction(
 export async function updateClientAction(
   clientId: string,
   values: ClientPayload,
+  changeNote?: string | null,
 ): Promise<ClientActionState> {
   const parsed = clientFormSchema.safeParse(values);
 
@@ -163,10 +229,17 @@ export async function updateClientAction(
     return friendlyError("Confira os campos obrigatorios do cliente.");
   }
 
+  const normalizedChangeNote = requireChangeNote(changeNote);
+
+  if (!normalizedChangeNote) {
+    return friendlyError("Descreva o que foi alterado no cliente e por que.");
+  }
+
   let updated = false;
 
   try {
-    const { supabase, companyId, userProfileId } = await getCurrentUserContext();
+    const { supabase, companyId, userProfileId, role, businessArea, profile } =
+      await getCurrentUserContext();
     const duplicatedCpf = await findClientByCpf(
       parsed.data.cpf,
       companyId,
@@ -176,6 +249,21 @@ export async function updateClientAction(
     if (duplicatedCpf) {
       return friendlyError("Ja existe cliente cadastrado com esse CPF.");
     }
+
+    const { data: currentClientData, error: currentClientError } = await supabase
+      .from("clients")
+      .select("*")
+      .eq("id", clientId)
+      .eq("company_id", companyId)
+      .is("deleted_at", null)
+      .single();
+    const currentClient = currentClientData as Client | null;
+
+    if (currentClientError || !currentClient) {
+      return friendlyError("Cliente nao encontrado para atualizacao.");
+    }
+
+    const changedFields = getChangedClientFields(currentClient, parsed.data);
 
     const clientValues = {
       ...parsed.data,
@@ -221,6 +309,24 @@ export async function updateClientAction(
         cpf: parsed.data.cpf,
       },
     });
+
+    await recordClientTimelineEvent({
+      companyId,
+      clientId,
+      eventType: "client_updated",
+      title:
+        changedFields.length > 0
+          ? "Cadastro do cliente atualizado"
+          : "Cadastro do cliente revisado",
+      note: normalizedChangeNote,
+      actorUserProfileId: userProfileId,
+      actorRole: role,
+      actorBusinessArea: businessArea,
+      actor: profile,
+      details: {
+        changed_fields: changedFields,
+      },
+    });
   } catch (error) {
     return friendlyError(
       error instanceof Error ? error.message : "Nao foi possivel atualizar o cliente.",
@@ -233,6 +339,68 @@ export async function updateClientAction(
   }
 
   redirect(`/clientes/${clientId}?success=updated`);
+}
+
+export async function addClientTimelineNoteAction(
+  clientId: string,
+  note: string,
+): Promise<ClientActionState> {
+  const normalizedNote = note.trim();
+
+  if (!normalizedNote) {
+    return friendlyError("Escreva uma anotacao antes de enviar.");
+  }
+
+  try {
+    const { supabase, companyId, userProfileId, role, businessArea, profile } =
+      await getCurrentUserContext();
+    const { data: clientData, error: clientError } = await supabase
+      .from("clients")
+      .select("id, full_name")
+      .eq("id", clientId)
+      .eq("company_id", companyId)
+      .is("deleted_at", null)
+      .single();
+
+    if (clientError || !clientData) {
+      return friendlyError("Cliente nao encontrado para adicionar anotacao.");
+    }
+
+    await recordClientTimelineEvent({
+      companyId,
+      clientId,
+      eventType: "manual_note",
+      title: "Anotacao adicionada",
+      note: normalizedNote,
+      actorUserProfileId: userProfileId,
+      actorRole: role,
+      actorBusinessArea: businessArea,
+      actor: profile,
+    });
+
+    await recordAuditLog({
+      supabase,
+      companyId,
+      userProfileId,
+      action: "client.timeline_note_added",
+      entityType: "client",
+      entityId: clientId,
+      entityLabel: clientData.full_name,
+      details: {
+        note: normalizedNote,
+      },
+    });
+  } catch (error) {
+    return friendlyError(
+      error instanceof Error ? error.message : "Nao foi possivel salvar a anotacao.",
+    );
+  }
+
+  revalidatePath(`/clientes/${clientId}`);
+  return {
+    ok: true,
+    message: "Anotacao salva com sucesso.",
+  };
 }
 
 export async function softDeleteClientAction(

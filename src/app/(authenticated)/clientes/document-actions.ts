@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { recordAuditLog } from "@/lib/audit/log";
 import { getCurrentUserContext } from "@/lib/auth/current-user";
+import { recordClientTimelineEvent } from "@/lib/client-timeline/service";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
   assertClientBelongsToCompany,
@@ -87,7 +88,8 @@ export async function uploadClientDocumentAction(
   const { client_id: clientId, pre_sale_id: preSaleId } = parsed.data;
 
   try {
-    const { supabase, companyId, userProfileId, role } = await getCurrentUserContext();
+    const { supabase, companyId, userProfileId, role, businessArea, profile } =
+      await getCurrentUserContext();
     const adminSupabase = createAdminClient();
 
     if (!canManageClientDocuments(role)) {
@@ -150,6 +152,23 @@ export async function uploadClientDocumentAction(
       details: {
         client_id: clientId,
         pre_sale_id: preSaleId,
+        document_type: parsed.data.document_type,
+        file_name: file.name,
+      },
+    });
+
+    await recordClientTimelineEvent({
+      companyId,
+      clientId,
+      preSaleId,
+      eventType: "client_document_uploaded",
+      title: "Documento enviado ao cadastro do cliente",
+      note: `Arquivo "${parsed.data.title || file.name}" adicionado ao historico documental do cliente.`,
+      actorUserProfileId: userProfileId,
+      actorRole: role,
+      actorBusinessArea: businessArea,
+      actor: profile,
+      details: {
         document_type: parsed.data.document_type,
         file_name: file.name,
       },
@@ -235,7 +254,7 @@ export async function updateClientDocumentAction(
   }
 
   try {
-    const { supabase, companyId, role, businessArea, userProfileId } =
+    const { supabase, companyId, role, businessArea, userProfileId, profile } =
       await getCurrentUserContext();
     const adminSupabase = createAdminClient();
 
@@ -329,6 +348,32 @@ export async function updateClientDocumentAction(
       },
     });
 
+    await recordClientTimelineEvent({
+      companyId,
+      clientId: document.client_id,
+      preSaleId: document.pre_sale_id,
+      eventType:
+        replacementFile instanceof File && replacementFile.size > 0
+          ? "client_document_replaced"
+          : "client_document_updated",
+      title:
+        replacementFile instanceof File && replacementFile.size > 0
+          ? "Documento substituido"
+          : "Documento atualizado",
+      note:
+        replacementFile instanceof File && replacementFile.size > 0
+          ? `O documento "${parsed.data.title || nextFileName}" foi substituido por um novo arquivo.`
+          : `Os dados do documento "${parsed.data.title || nextFileName}" foram ajustados no cadastro do cliente.`,
+      actorUserProfileId: userProfileId,
+      actorRole: role,
+      actorBusinessArea: businessArea,
+      actor: profile,
+      details: {
+        document_type: parsed.data.document_type,
+        replaced_file: Boolean(uploadedReplacementPath),
+      },
+    });
+
     revalidatePath(`/clientes/${document.client_id}`);
 
     if (document.pre_sale_id) {
@@ -352,7 +397,7 @@ export async function softDeleteClientDocumentAction(
   documentId: string,
 ): Promise<ClientDocumentActionState> {
   try {
-    const { supabase, companyId, role, businessArea, userProfileId } =
+    const { supabase, companyId, role, businessArea, userProfileId, profile } =
       await getCurrentUserContext();
 
     if (!canModifyClientDocuments(role, businessArea)) {
@@ -388,6 +433,22 @@ export async function softDeleteClientDocumentAction(
       details: {
         client_id: document.client_id,
         pre_sale_id: document.pre_sale_id,
+      },
+    });
+
+    await recordClientTimelineEvent({
+      companyId,
+      clientId: document.client_id,
+      preSaleId: document.pre_sale_id,
+      eventType: "client_document_deleted",
+      title: "Documento excluido",
+      note: `O documento "${document.title || document.file_name}" foi removido do cadastro do cliente.`,
+      actorUserProfileId: userProfileId,
+      actorRole: role,
+      actorBusinessArea: businessArea,
+      actor: profile,
+      details: {
+        document_type: document.document_type,
       },
     });
 

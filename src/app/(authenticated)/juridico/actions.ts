@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { recordAuditLog } from "@/lib/audit/log";
 import { getCurrentUserContext } from "@/lib/auth/current-user";
+import { recordClientTimelineEvent } from "@/lib/client-timeline/service";
 import {
   getLegalWorkflowStage,
   normalizeLegalWorkflowStage,
@@ -29,9 +30,16 @@ function canUseLegalWorkflow(role: string | null, businessArea: string) {
 export async function updateLegalWorkflowStageAction(
   preSaleId: string,
   stage: LegalWorkflowStage,
+  changeNote?: string | null,
 ): Promise<JuridicoActionState> {
+  const normalizedChangeNote = changeNote?.trim();
+
+  if (!normalizedChangeNote) {
+    return friendlyError("Descreva a movimentacao juridica e o motivo.");
+  }
+
   try {
-    const { supabase, companyId, userProfileId, role, businessArea } =
+    const { supabase, companyId, userProfileId, role, businessArea, profile } =
       await getCurrentUserContext();
 
     if (!canUseLegalWorkflow(role, businessArea)) {
@@ -41,6 +49,16 @@ export async function updateLegalWorkflowStageAction(
     const preSale = await assertPreSaleAccess(preSaleId);
     const normalizedStage = normalizeLegalWorkflowStage(stage);
     const stageMeta = getLegalWorkflowStage(normalizedStage);
+    const { data: currentStageData, error: currentStageError } = await supabase
+      .from("pre_sales")
+      .select("legal_stage")
+      .eq("id", preSale.id)
+      .eq("company_id", companyId)
+      .single();
+
+    if (currentStageError || !currentStageData) {
+      return friendlyError("Pre-venda nao encontrada para atualizar a etapa juridica.");
+    }
 
     const { error } = await supabase
       .from("pre_sales")
@@ -66,6 +84,23 @@ export async function updateLegalWorkflowStageAction(
       entityLabel: preSale.id,
       details: {
         legal_stage: normalizedStage,
+      },
+    });
+
+    await recordClientTimelineEvent({
+      companyId,
+      clientId: preSale.client_id,
+      preSaleId: preSale.id,
+      eventType: "legal_stage_updated",
+      title: `Esteira juridica movida para ${stageMeta.shortLabel}`,
+      note: normalizedChangeNote,
+      actorUserProfileId: userProfileId,
+      actorRole: role,
+      actorBusinessArea: businessArea,
+      actor: profile,
+      details: {
+        previous_stage: (currentStageData as { legal_stage: string | null }).legal_stage,
+        next_stage: normalizedStage,
       },
     });
 

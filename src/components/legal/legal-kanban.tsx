@@ -6,6 +6,7 @@ import { useMemo, useState, useTransition } from "react";
 import { updateLegalWorkflowStageAction } from "@/app/(authenticated)/juridico/actions";
 import { GenerateDocumentModal } from "@/components/documents/generate-document-modal";
 import { LegalStageSelect } from "@/components/legal/legal-stage-select";
+import { ChangeNoteModal } from "@/components/shared/change-note-modal";
 import {
   displayValue,
   formatDate,
@@ -102,6 +103,10 @@ export function LegalKanban({
   const router = useRouter();
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [dropTarget, setDropTarget] = useState<LegalWorkflowStage | null>(null);
+  const [pendingStageChange, setPendingStageChange] = useState<{
+    preSaleId: string;
+    stage: LegalWorkflowStage;
+  } | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [messageTone, setMessageTone] = useState<"success" | "error">("success");
   const [isPending, startTransition] = useTransition();
@@ -131,9 +136,34 @@ export function LegalKanban({
       return;
     }
 
+    const draggedPreSale = preSales.find((preSale) => preSale.id === draggedId);
+
+    if (!draggedPreSale || draggedPreSale.currentLegalStage === stage) {
+      setDraggedId(null);
+      setDropTarget(null);
+      return;
+    }
+
     setMessage(null);
+    setPendingStageChange({
+      preSaleId: draggedId,
+      stage,
+    });
+    setDraggedId(null);
+    setDropTarget(null);
+  }
+
+  function confirmStageChange(note: string) {
+    if (!pendingStageChange) {
+      return;
+    }
+
     startTransition(async () => {
-      const result = await updateLegalWorkflowStageAction(draggedId, stage);
+      const result = await updateLegalWorkflowStageAction(
+        pendingStageChange.preSaleId,
+        pendingStageChange.stage,
+        note,
+      );
 
       if (!result.ok) {
         setMessageTone("error");
@@ -144,8 +174,7 @@ export function LegalKanban({
         router.refresh();
       }
     });
-    setDraggedId(null);
-    setDropTarget(null);
+    setPendingStageChange(null);
   }
 
   return (
@@ -416,6 +445,22 @@ export function LegalKanban({
         })}
       </section>
       {isPending ? <p className="text-sm text-slate-500">Movendo cliente...</p> : null}
+
+      <ChangeNoteModal
+        isOpen={Boolean(pendingStageChange)}
+        title="Registrar mudanca na esteira juridica"
+        description="Antes de mover o cliente de etapa, registre o que foi feito e por que essa movimentacao juridica aconteceu agora."
+        confirmLabel="Mover com anotacao"
+        pending={isPending}
+        onClose={() => {
+          if (isPending) {
+            return;
+          }
+
+          setPendingStageChange(null);
+        }}
+        onConfirm={confirmStageChange}
+      />
     </div>
   );
 }
