@@ -163,7 +163,7 @@ function buildMessage(payload: MicrosoftEmailPayload) {
     subject: payload.subject,
     body: {
       contentType: "HTML",
-      content: payload.body.replace(/\n/g, "<br />"),
+      content: payload.body,
     },
     toRecipients: mapRecipients(payload.to),
     ccRecipients: mapRecipients(payload.cc),

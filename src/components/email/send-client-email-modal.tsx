@@ -297,6 +297,9 @@ export function SendClientEmailModal({
                 <p className="mt-3 whitespace-pre-line text-sm leading-6 text-slate-700">
                   {displayValue(bodyPreview)}
                 </p>
+                <div className="mt-4 rounded-lg border border-slate-200 bg-white px-3 py-3 text-xs text-slate-600">
+                  A assinatura GRS sera adicionada automaticamente no final do email.
+                </div>
               </div>
 
               <div className="rounded-lg border border-slate-200 p-4">

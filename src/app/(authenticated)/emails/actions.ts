@@ -7,12 +7,14 @@ import { getCurrentUserContext } from "@/lib/auth/current-user";
 import { recordClientTimelineEvent } from "@/lib/client-timeline/service";
 import { getValidMicrosoftAccessToken, markMicrosoftIntegrationUsed } from "@/lib/email/integrations";
 import { dispatchMicrosoftEmail, type MicrosoftAttachment } from "@/lib/email/microsoft";
+import { buildSignedEmailHtml } from "@/lib/email/signature";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { clientDocumentsBucket } from "@/lib/client-documents/service";
 import type { Client } from "@/types/client";
 import type { ClientDocument } from "@/types/client-document";
 import type { EmailDispatchMode, EmailLogStatus, EmailTemplate } from "@/types/email";
 import type { PreSale, PreSaleFinancialCase } from "@/types/pre-sale";
+import type { CompanyUserProfile } from "@/types/user";
 
 export type EmailActionState = {
   ok: boolean;
@@ -241,9 +243,20 @@ export async function sendClientEmailAction(
       companyId,
       client.legal_responsible_user_id,
     );
+    const { data: senderProfileData } = await supabase
+      .from("user_profiles")
+      .select("id, full_name, nickname, email, phone, role, legal_role")
+      .eq("id", client.legal_responsible_user_id)
+      .eq("company_id", companyId)
+      .maybeSingle();
+    const senderProfile = senderProfileData as CompanyUserProfile | null;
     const variables = buildVariables(client, preSale, financialCase);
     const subject = renderTemplate(template.subject_template, variables);
-    const body = renderTemplate(template.body_template, variables);
+    const body = buildSignedEmailHtml(renderTemplate(template.body_template, variables), {
+      sender: senderProfile,
+      senderEmail: integration.email,
+      senderDisplayName: integration.display_name,
+    });
     const { graphAttachments, logAttachments } = await getClientDocumentAttachments(
       companyId,
       client.id,
