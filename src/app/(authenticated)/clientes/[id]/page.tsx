@@ -9,6 +9,10 @@ import { ReactivateClientButton } from "@/components/clients/reactivate-client-b
 import { WhatsAppLink } from "@/components/clients/whatsapp-link";
 import { ClientDocumentsSection } from "@/components/client-documents/client-documents-section";
 import { ClientTimelineSection } from "@/components/clients/client-timeline-section";
+import {
+  SendClientEmailModal,
+  type EmailAttachmentOption,
+} from "@/components/email/send-client-email-modal";
 import { ClientCalculationsSection } from "@/components/calculations/client-calculations-section";
 import { PageHeader } from "@/components/layout/page-header";
 import { PreSalesStatusBadge } from "@/components/pre-sales/pre-sales-status-badge";
@@ -33,7 +37,8 @@ import {
   type GeneratedDocument,
 } from "@/types/document";
 import { isDeletedClient } from "@/lib/clients/status";
-import type { PreSale } from "@/types/pre-sale";
+import type { EmailTemplate } from "@/types/email";
+import type { PreSale, PreSaleFinancialCase } from "@/types/pre-sale";
 
 type ClientePageProps = {
   params: Promise<{ id: string }>;
@@ -173,6 +178,37 @@ export default async function ClientePage({
   }
 
   const timelineEvents = await listClientTimelineEvents(companyId, client.id);
+  const primaryEmailPreSale = clientPreSales[0] ?? null;
+  const [
+    { data: emailTemplatesData },
+    { data: clientEmailDocumentsData },
+    { data: emailFinancialCaseData },
+  ] = await Promise.all([
+      supabase
+        .from("email_templates")
+        .select("*")
+        .eq("company_id", companyId)
+        .eq("business_area", "legal")
+        .eq("is_active", true)
+        .order("name", { ascending: true }),
+      supabase
+        .from("client_documents")
+        .select("id, title, file_name, file_size")
+        .eq("company_id", companyId)
+        .eq("client_id", client.id)
+        .is("deleted_at", null)
+        .order("created_at", { ascending: false }),
+      primaryEmailPreSale
+        ? supabase
+            .from("pre_sale_financial_cases")
+            .select("*")
+            .eq("pre_sale_id", primaryEmailPreSale.id)
+            .maybeSingle()
+        : Promise.resolve({ data: null }),
+  ]);
+  const emailTemplates = (emailTemplatesData ?? []) as EmailTemplate[];
+  const clientEmailDocuments = (clientEmailDocumentsData ?? []) as EmailAttachmentOption[];
+  const emailFinancialCase = emailFinancialCaseData as PreSaleFinancialCase | null;
 
   const consultantIds = Array.from(
     new Set(
@@ -224,6 +260,7 @@ export default async function ClientePage({
         : queryParams.success === "reactivated"
           ? "Cliente reativado com sucesso."
           : null;
+  const canUseLegalEmail = role !== "seller" || businessArea === "legal";
 
   return (
     <>
@@ -255,6 +292,28 @@ export default async function ClientePage({
             Voltar para clientes
           </Link>
           <WhatsAppLink phone={client.phone_mobile} />
+          {!isDeletedClient(client) && canUseLegalEmail ? (
+            <SendClientEmailModal
+              clientId={client.id}
+              preSaleId={primaryEmailPreSale?.id ?? null}
+              clientEmail={client.email}
+              bankName={emailFinancialCase?.financer_name ?? null}
+              templates={emailTemplates}
+              documents={clientEmailDocuments}
+              variables={{
+                nome_cliente: client.full_name,
+                cpf: client.cpf,
+                email_cliente: client.email ?? "Nao informado",
+                telefone_cliente: client.phone_mobile,
+                banco: emailFinancialCase?.financer_name ?? "Nao informado",
+                financeira: emailFinancialCase?.financer_name ?? "Nao informado",
+                financeira_razao_social:
+                  emailFinancialCase?.financer_legal_name ?? "Nao informado",
+                financeira_cnpj: emailFinancialCase?.financer_cnpj ?? "Nao informado",
+                numero_contrato: emailFinancialCase?.contract_number ?? "Nao informado",
+              }}
+            />
+          ) : null}
           {!isDeletedClient(client) ? (
             <DeleteClientButton clientId={client.id} />
           ) : null}

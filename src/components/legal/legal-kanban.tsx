@@ -5,6 +5,10 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
 import { updateLegalWorkflowStageAction } from "@/app/(authenticated)/juridico/actions";
 import { GenerateDocumentModal } from "@/components/documents/generate-document-modal";
+import {
+  SendClientEmailModal,
+  type EmailAttachmentOption,
+} from "@/components/email/send-client-email-modal";
 import { LegalStageSelect } from "@/components/legal/legal-stage-select";
 import { ChangeNoteModal } from "@/components/shared/change-note-modal";
 import {
@@ -19,21 +23,30 @@ import {
 } from "@/lib/legal/workflow";
 import { formatCurrency, formatUserName } from "@/lib/pre-sales/formatters";
 import type { DocumentTemplate, GeneratedDocument } from "@/types/document";
-import type { ClientOption, PreSale, UserProfileOption } from "@/types/pre-sale";
+import type { EmailTemplate } from "@/types/email";
+import type {
+  ClientOption,
+  PreSale,
+  PreSaleFinancialCase,
+  UserProfileOption,
+} from "@/types/pre-sale";
 
 export type LegalBoardPreSale = PreSale & {
-  client: Pick<ClientOption, "id" | "full_name"> | null;
+  client: Pick<ClientOption, "id" | "full_name" | "cpf" | "email" | "phone_mobile"> | null;
   consultant: UserProfileOption | null;
   legalResponsibleUserId: string | null;
   legalConsultantUserId: string | null;
   currentLegalStage: LegalWorkflowStage;
   stageUpdatedAt: string;
+  financialCase: PreSaleFinancialCase | null;
+  clientDocuments: EmailAttachmentOption[];
   generatedDocuments: GeneratedDocument[];
 };
 
 type LegalKanbanProps = {
   preSales: LegalBoardPreSale[];
   templates: DocumentTemplate[];
+  emailTemplates: EmailTemplate[];
   legalAdmins: UserProfileOption[];
   legalConsultants: UserProfileOption[];
   currentUserId: string;
@@ -99,6 +112,7 @@ function getPreSaleStageDocuments(
 export function LegalKanban({
   preSales,
   templates,
+  emailTemplates,
   legalAdmins,
   legalConsultants,
   currentUserId,
@@ -437,6 +451,50 @@ export function LegalKanban({
                           <GenerateDocumentModal
                             preSaleId={preSale.id}
                             templates={stageTemplates}
+                          />
+                        </div>
+
+                        <div className="mt-3">
+                          <SendClientEmailModal
+                            clientId={preSale.client_id}
+                            preSaleId={preSale.id}
+                            clientEmail={preSale.client?.email ?? null}
+                            bankName={preSale.financialCase?.financer_name ?? null}
+                            templates={[
+                              ...emailTemplates.filter(
+                                (template) =>
+                                  template.legal_stage === preSale.currentLegalStage,
+                              ),
+                              ...emailTemplates.filter(
+                                (template) =>
+                                  template.legal_stage !== preSale.currentLegalStage,
+                              ),
+                            ]}
+                            documents={preSale.clientDocuments}
+                            variables={{
+                              nome_cliente:
+                                preSale.client?.full_name ?? "Nao informado",
+                              cpf: preSale.client?.cpf ?? "Nao informado",
+                              email_cliente:
+                                preSale.client?.email ?? "Nao informado",
+                              telefone_cliente:
+                                preSale.client?.phone_mobile ?? "Nao informado",
+                              banco:
+                                preSale.financialCase?.financer_name ??
+                                "Nao informado",
+                              financeira:
+                                preSale.financialCase?.financer_name ??
+                                "Nao informado",
+                              financeira_razao_social:
+                                preSale.financialCase?.financer_legal_name ??
+                                "Nao informado",
+                              financeira_cnpj:
+                                preSale.financialCase?.financer_cnpj ??
+                                "Nao informado",
+                              numero_contrato:
+                                preSale.financialCase?.contract_number ??
+                                "Nao informado",
+                            }}
                           />
                         </div>
 

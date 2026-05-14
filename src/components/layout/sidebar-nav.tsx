@@ -9,6 +9,7 @@ import {
   FileText,
   Handshake,
   LayoutDashboard,
+  Mail,
   Users,
 } from "lucide-react";
 import Link from "next/link";
@@ -29,6 +30,8 @@ export type SidebarNavigationItem = {
     | "users"
     | "company"
     | "logs"
+    | "email"
+    | "integrations"
     | "legal";
   managerOnly?: boolean;
   adminOnly?: boolean;
@@ -51,6 +54,8 @@ const icons = {
   users: BarChart3,
   company: Building2,
   logs: ClipboardList,
+  email: Mail,
+  integrations: Mail,
   legal: FileText,
 };
 

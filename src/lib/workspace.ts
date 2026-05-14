@@ -99,6 +99,7 @@ const managementPrefixes = [
   "/logs",
   "/contratos",
   "/documentos/templates",
+  "/emails/templates",
   "/areas",
 ];
 

@@ -76,6 +76,8 @@ export function SidebarFrame({
         [
           "/dashboard",
           "/documentos/templates",
+          "/emails/templates",
+          "/integracoes",
           "/contratos",
           "/usuarios",
           "/empresa",
@@ -84,7 +86,7 @@ export function SidebarFrame({
         (currentWorkspace === "commercial" &&
           ["/clientes", "/pre-vendas", "/calculos", "/documentos"].includes(item.href)) ||
         (currentWorkspace === "legal" &&
-          ["/juridico", "/clientes", "/pre-vendas", "/documentos"].includes(item.href))),
+          ["/juridico", "/clientes", "/pre-vendas", "/documentos", "/integracoes"].includes(item.href))),
   );
 
   const workspaceLabel =

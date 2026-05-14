@@ -9,6 +9,8 @@ export type ClientTimelineEventType =
   | "client_document_updated"
   | "client_document_replaced"
   | "client_document_deleted"
+  | "email_draft_created"
+  | "email_sent"
   | "manual_note";
 
 export type ClientTimelineEvent = {

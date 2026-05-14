@@ -25,6 +25,13 @@ const navigation: SidebarNavigationItem[] = [
     icon: "templates",
     managerOnly: true,
   },
+  {
+    href: "/emails/templates",
+    label: "Templates de email",
+    icon: "email",
+    managerOnly: true,
+  },
+  { href: "/integracoes", label: "Integracoes", icon: "integrations" },
   { href: "/contratos", label: "Contratos", icon: "contracts" },
   { href: "/usuarios", label: "Usuarios", icon: "users" },
   { href: "/empresa", label: "Empresa", icon: "company", adminOnly: true },

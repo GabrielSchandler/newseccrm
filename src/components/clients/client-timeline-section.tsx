@@ -7,6 +7,7 @@ import {
   MessageSquarePlus,
   PenSquare,
   ShieldCheck,
+  Mail,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
@@ -62,6 +63,14 @@ function getEventConfig(eventType: ClientTimelineEventType): TimelineEventConfig
         icon: FileText,
         badgeClassName: "border-amber-200 bg-amber-50 text-amber-700",
         iconClassName: "border-amber-200 bg-amber-50 text-amber-700",
+      };
+    case "email_draft_created":
+    case "email_sent":
+      return {
+        label: "Email",
+        icon: Mail,
+        badgeClassName: "border-indigo-200 bg-indigo-50 text-indigo-700",
+        iconClassName: "border-indigo-200 bg-indigo-50 text-indigo-700",
       };
     case "manual_note":
     default:
