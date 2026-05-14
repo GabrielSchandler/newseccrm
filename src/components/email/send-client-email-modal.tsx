@@ -8,7 +8,6 @@ import {
   type EmailActionState,
 } from "@/app/(authenticated)/emails/actions";
 import { formatClientDocumentSize } from "@/lib/client-documents/formatters";
-import { displayValue } from "@/lib/clients/formatters";
 import {
   emailDispatchModes,
   formatEmailRecipientMode,
@@ -33,6 +32,8 @@ type SendClientEmailModalProps = {
   documents: EmailAttachmentOption[];
   variables: Record<string, string>;
 };
+
+const freeEmailTemplateId = "__free_email__";
 
 function renderTemplate(value: string, variables: Record<string, string>) {
   return value.replace(/\{\{\s*([\w.]+)\s*\}\}/g, (_match, key: string) => {
@@ -69,35 +70,46 @@ export function SendClientEmailModal({
   variables,
 }: SendClientEmailModalProps) {
   const router = useRouter();
+  const initialTemplate = templates[0] ?? null;
   const [isOpen, setIsOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [state, setState] = useState<EmailActionState | null>(null);
-  const [selectedTemplateId, setSelectedTemplateId] = useState(templates[0]?.id ?? "");
+  const [selectedTemplateId, setSelectedTemplateId] = useState(
+    initialTemplate?.id ?? freeEmailTemplateId,
+  );
   const [selectedAttachmentIds, setSelectedAttachmentIds] = useState<string[]>([]);
   const [mode, setMode] = useState<EmailDispatchMode>("draft");
   const [typedBankEmail, setTypedBankEmail] = useState(bankEmail ?? "");
   const selectedTemplate = useMemo(
-    () => templates.find((template) => template.id === selectedTemplateId) ?? null,
+    () =>
+      selectedTemplateId === freeEmailTemplateId
+        ? null
+        : templates.find((template) => template.id === selectedTemplateId) ?? null,
     [selectedTemplateId, templates],
   );
   const [to, setTo] = useState(() =>
-    recipientValue(templates[0] ?? null, clientEmail, bankEmail ?? ""),
+    recipientValue(initialTemplate, clientEmail, bankEmail ?? ""),
   );
-  const [cc, setCc] = useState(templates[0]?.cc_template ?? "");
-  const [bcc, setBcc] = useState(templates[0]?.bcc_template ?? "");
-  const subjectPreview = selectedTemplate
-    ? renderTemplate(selectedTemplate.subject_template, variables)
-    : "";
-  const bodyPreview = selectedTemplate
-    ? renderTemplate(selectedTemplate.body_template, variables)
-    : "";
+  const [cc, setCc] = useState(initialTemplate?.cc_template ?? "");
+  const [bcc, setBcc] = useState(initialTemplate?.bcc_template ?? "");
+  const [subject, setSubject] = useState(() =>
+    initialTemplate ? renderTemplate(initialTemplate.subject_template, variables) : "",
+  );
+  const [body, setBody] = useState(() =>
+    initialTemplate ? renderTemplate(initialTemplate.body_template, variables) : "",
+  );
 
   function handleTemplateChange(templateId: string) {
-    const nextTemplate = templates.find((template) => template.id === templateId) ?? null;
+    const nextTemplate =
+      templateId === freeEmailTemplateId
+        ? null
+        : templates.find((template) => template.id === templateId) ?? null;
     setSelectedTemplateId(templateId);
     setTo(recipientValue(nextTemplate, clientEmail, typedBankEmail));
     setCc(nextTemplate?.cc_template ?? "");
     setBcc(nextTemplate?.bcc_template ?? "");
+    setSubject(nextTemplate ? renderTemplate(nextTemplate.subject_template, variables) : "");
+    setBody(nextTemplate ? renderTemplate(nextTemplate.body_template, variables) : "");
   }
 
   function handleBankEmailChange(value: string) {
@@ -120,10 +132,10 @@ export function SendClientEmailModal({
   }
 
   function handleSend() {
-    if (!selectedTemplateId) {
+    if (!subject.trim() || !body.trim()) {
       setState({
         ok: false,
-        message: "Cadastre e selecione um template de email.",
+        message: "Informe assunto e corpo do email.",
       });
       return;
     }
@@ -133,11 +145,13 @@ export function SendClientEmailModal({
       const result = await sendClientEmailAction({
         client_id: clientId,
         pre_sale_id: preSaleId ?? "",
-        template_id: selectedTemplateId,
+        template_id: selectedTemplate?.id ?? "",
         mode,
         to,
         cc,
         bcc,
+        subject,
+        body,
         attachment_ids: selectedAttachmentIds,
       });
       setState(result);
@@ -166,7 +180,7 @@ export function SendClientEmailModal({
               <div>
                 <h2 className="text-lg font-semibold text-slate-950">Enviar email</h2>
                 <p className="mt-1 text-sm text-slate-600">
-                  Selecione o template, confira os destinatarios e marque os anexos do cadastro do cliente.
+                  Escreva livremente ou use um template como ponto de partida. Depois confira destinatarios e anexos.
                 </p>
               </div>
               <button
@@ -204,7 +218,7 @@ export function SendClientEmailModal({
                     onChange={(event) => handleTemplateChange(event.target.value)}
                     className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
                   >
-                    {!templates.length ? <option value="">Nenhum template cadastrado</option> : null}
+                    <option value={freeEmailTemplateId}>Email livre - sem template</option>
                     {templates.map((template) => (
                       <option key={template.id} value={template.id}>
                         {template.name} - {formatEmailRecipientMode(template.recipient_mode)}
@@ -287,18 +301,37 @@ export function SendClientEmailModal({
                 </div>
               </div>
 
-              <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Previa
-                </p>
-                <p className="mt-3 text-sm font-semibold text-slate-950">
-                  {displayValue(subjectPreview)}
-                </p>
-                <p className="mt-3 whitespace-pre-line text-sm leading-6 text-slate-700">
-                  {displayValue(bodyPreview)}
-                </p>
-                <div className="mt-4 rounded-lg border border-slate-200 bg-white px-3 py-3 text-xs text-slate-600">
-                  A assinatura GRS sera adicionada automaticamente no final do email.
+              <div className="grid gap-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
+                <div className="space-y-2">
+                  <label htmlFor="email-subject" className="text-sm font-semibold text-slate-700">
+                    Assunto
+                  </label>
+                  <input
+                    id="email-subject"
+                    value={subject}
+                    disabled={isPending}
+                    onChange={(event) => setSubject(event.target.value)}
+                    className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
+                    placeholder="Digite o assunto do email"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label htmlFor="email-body" className="text-sm font-semibold text-slate-700">
+                    Corpo do email
+                  </label>
+                  <textarea
+                    id="email-body"
+                    value={body}
+                    disabled={isPending}
+                    onChange={(event) => setBody(event.target.value)}
+                    rows={9}
+                    className="w-full resize-y rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm leading-6 outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
+                    placeholder="Escreva o email aqui. Voce tambem pode usar tags como {{nome_cliente}}, {{cpf}} e {{numero_contrato}}."
+                  />
+                  <p className="text-xs text-slate-500">
+                    A assinatura GRS sera adicionada automaticamente no final do email.
+                  </p>
                 </div>
               </div>
 
@@ -351,7 +384,7 @@ export function SendClientEmailModal({
               </button>
               <button
                 type="button"
-                disabled={isPending || !selectedTemplateId}
+                disabled={isPending || !subject.trim() || !body.trim()}
                 onClick={handleSend}
                 className="rounded-lg bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-70"
               >

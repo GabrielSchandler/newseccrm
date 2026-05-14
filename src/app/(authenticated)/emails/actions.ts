@@ -26,11 +26,15 @@ const sendClientEmailSchema = z.object({
   pre_sale_id: z
     .union([z.string().uuid(), z.literal(""), z.null(), z.undefined()])
     .transform((value) => (typeof value === "string" && value.trim() ? value : null)),
-  template_id: z.string().uuid(),
+  template_id: z
+    .union([z.string().uuid(), z.literal(""), z.null(), z.undefined()])
+    .transform((value) => (typeof value === "string" && value.trim() ? value : null)),
   mode: z.enum(["draft", "send"]),
   to: z.string().trim(),
   cc: z.string().trim().optional().default(""),
   bcc: z.string().trim().optional().default(""),
+  subject: z.string().trim().min(1),
+  body: z.string().trim().min(1),
   attachment_ids: z.array(z.string().uuid()).default([]),
 });
 
@@ -195,13 +199,15 @@ export async function sendClientEmailAction(
           .eq("id", parsed.data.client_id)
           .eq("company_id", companyId)
           .single(),
-        supabase
-          .from("email_templates")
-          .select("*")
-          .eq("id", parsed.data.template_id)
-          .eq("company_id", companyId)
-          .eq("is_active", true)
-          .single(),
+        parsed.data.template_id
+          ? supabase
+              .from("email_templates")
+              .select("*")
+              .eq("id", parsed.data.template_id)
+              .eq("company_id", companyId)
+              .eq("is_active", true)
+              .single()
+          : Promise.resolve({ data: null }),
         parsed.data.pre_sale_id
           ? supabase
               .from("pre_sales")
@@ -219,7 +225,7 @@ export async function sendClientEmailAction(
       return friendlyError("Cliente nao encontrado.");
     }
 
-    if (!template) {
+    if (parsed.data.template_id && !template) {
       return friendlyError("Template de email nao encontrado ou inativo.");
     }
 
@@ -251,8 +257,9 @@ export async function sendClientEmailAction(
       .maybeSingle();
     const senderProfile = senderProfileData as CompanyUserProfile | null;
     const variables = buildVariables(client, preSale, financialCase);
-    const subject = renderTemplate(template.subject_template, variables);
-    const body = buildSignedEmailHtml(renderTemplate(template.body_template, variables), {
+    const templateName = template?.name ?? "Email livre";
+    const subject = renderTemplate(parsed.data.subject, variables);
+    const body = buildSignedEmailHtml(renderTemplate(parsed.data.body, variables), {
       sender: senderProfile,
       senderEmail: integration.email,
       senderDisplayName: integration.display_name,
@@ -283,7 +290,7 @@ export async function sendClientEmailAction(
         company_id: companyId,
         client_id: client.id,
         pre_sale_id: preSale?.id ?? null,
-        template_id: template.id,
+        template_id: template?.id ?? null,
         legal_stage: preSale?.legal_stage ?? null,
         sender_user_profile_id: client.legal_responsible_user_id,
         action_by_user_profile_id: userProfileId,
@@ -307,7 +314,7 @@ export async function sendClientEmailAction(
       company_id: companyId,
       client_id: client.id,
       pre_sale_id: preSale?.id ?? null,
-      template_id: template.id,
+      template_id: template?.id ?? null,
       legal_stage: preSale?.legal_stage ?? null,
       sender_user_profile_id: client.legal_responsible_user_id,
       action_by_user_profile_id: userProfileId,
@@ -332,7 +339,7 @@ export async function sendClientEmailAction(
         parsed.data.mode === "draft"
           ? "Rascunho de email criado no Outlook"
           : "Email enviado pelo Outlook",
-      note: `${template.name} | Para: ${to.join(", ")} | Anexos: ${
+      note: `${templateName} | Para: ${to.join(", ")} | Anexos: ${
         logAttachments.length ? logAttachments.map((item) => item.file_name).join(", ") : "nenhum"
       }`,
       actorUserProfileId: userProfileId,
@@ -340,8 +347,8 @@ export async function sendClientEmailAction(
       actorBusinessArea: businessArea,
       actor: profile,
       details: {
-        template_id: template.id,
-        template_name: template.name,
+        template_id: template?.id ?? null,
+        template_name: templateName,
         sender_email: integration.email,
         recipients: { to, cc, bcc },
         attachments: logAttachments,
@@ -359,7 +366,8 @@ export async function sendClientEmailAction(
       details: {
         client_id: client.id,
         pre_sale_id: preSale?.id ?? null,
-        template_id: template.id,
+        template_id: template?.id ?? null,
+        template_name: templateName,
         sender_email: integration.email,
         to,
       },
