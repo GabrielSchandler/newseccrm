@@ -10,14 +10,27 @@ function canConnectOutlook(role: string | null, businessArea: string, legalRole:
   return role === "admin" || role === "manager" || (businessArea === "legal" && legalRole === "admin");
 }
 
+function redirectToIntegrations(request: Request, error: string) {
+  return NextResponse.redirect(new URL(`/integracoes?error=${error}`, request.url));
+}
+
 export async function GET(request: Request) {
   const { role, businessArea, legalRole } = await getCurrentUserContext();
 
   if (!canConnectOutlook(role, businessArea, legalRole)) {
-    return NextResponse.redirect(new URL("/integracoes?error=permission", request.url));
+    return redirectToIntegrations(request, "permission");
   }
 
   const state = randomBytes(24).toString("hex");
+  let authorizeUrl: string;
+
+  try {
+    authorizeUrl = buildMicrosoftAuthorizeUrl(state);
+  } catch (error) {
+    console.error("[email] outlook connect failed", error);
+    return redirectToIntegrations(request, "outlook_config");
+  }
+
   const cookieStore = await cookies();
   cookieStore.set(outlookOAuthStateCookie, state, {
     httpOnly: true,
@@ -27,5 +40,5 @@ export async function GET(request: Request) {
     path: "/",
   });
 
-  return NextResponse.redirect(buildMicrosoftAuthorizeUrl(state));
+  return NextResponse.redirect(authorizeUrl);
 }

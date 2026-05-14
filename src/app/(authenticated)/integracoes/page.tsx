@@ -28,6 +28,34 @@ function getMessage(params: { outlook?: string; error?: string }) {
     };
   }
 
+  if (params.error === "outlook_config") {
+    return {
+      tone: "error" as const,
+      text: "A integracao Outlook ainda nao esta configurada na Vercel. Revise MICROSOFT_TENANT_ID, MICROSOFT_CLIENT_ID, MICROSOFT_CLIENT_SECRET e MICROSOFT_REDIRECT_URI.",
+    };
+  }
+
+  if (params.error === "invalid_state") {
+    return {
+      tone: "error" as const,
+      text: "A conexao expirou. Clique em Conectar Outlook novamente.",
+    };
+  }
+
+  if (params.error === "outlook_denied") {
+    return {
+      tone: "error" as const,
+      text: "A Microsoft recusou a autorizacao. Confirme o consentimento da conta e tente novamente.",
+    };
+  }
+
+  if (params.error === "connect_failed") {
+    return {
+      tone: "error" as const,
+      text: "Nao foi possivel finalizar a conexao com a Microsoft. Confira o segredo do aplicativo, a URL de callback e as permissoes do Graph.",
+    };
+  }
+
   if (params.error) {
     return {
       tone: "error" as const,
