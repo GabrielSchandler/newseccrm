@@ -4,6 +4,8 @@ import { NextResponse } from "next/server";
 import { getCurrentUserContext } from "@/lib/auth/current-user";
 import { buildMicrosoftAuthorizeUrl } from "@/lib/email/microsoft";
 
+export const runtime = "nodejs";
+
 const outlookOAuthStateCookie = "grscrm_outlook_oauth_state";
 
 function canConnectOutlook(role: string | null, businessArea: string, legalRole: string | null) {

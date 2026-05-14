@@ -5,6 +5,8 @@ import { getCurrentUserContext } from "@/lib/auth/current-user";
 import { persistMicrosoftIntegration } from "@/lib/email/integrations";
 import { exchangeMicrosoftCode } from "@/lib/email/microsoft";
 
+export const runtime = "nodejs";
+
 const outlookOAuthStateCookie = "grscrm_outlook_oauth_state";
 
 function redirectToIntegrations(request: NextRequest, params: Record<string, string>) {
