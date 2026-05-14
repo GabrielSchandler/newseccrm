@@ -36,7 +36,7 @@ export default async function JuridicoPage() {
       .eq("company_id", companyId),
     supabase
       .from("user_profiles")
-      .select("id, full_name, nickname, username, email, role, business_area, is_active")
+      .select("id, full_name, nickname, username, email, role, business_area, is_active, legal_role")
       .eq("company_id", companyId),
     supabase
       .from("document_templates")
@@ -64,7 +64,10 @@ export default async function JuridicoPage() {
   ]);
 
   const clients = (clientsData ?? []) as Array<
-    Pick<ClientOption, "id" | "full_name"> & { legal_responsible_user_id: string | null }
+    Pick<ClientOption, "id" | "full_name"> & {
+      legal_responsible_user_id: string | null;
+      legal_consultant_user_id: string | null;
+    }
   >;
   const consultants = (consultantsData ?? []) as Array<
     UserProfileOption & {
@@ -72,26 +75,32 @@ export default async function JuridicoPage() {
       is_active?: boolean | null;
     }
   >;
+  const legalAdmins = consultants.filter(
+    (consultant) =>
+      consultant.business_area === "legal" &&
+      consultant.is_active !== false &&
+      consultant.legal_role === "admin",
+  );
   const legalConsultants = consultants.filter(
     (consultant) =>
-      consultant.role === "seller" &&
       consultant.business_area === "legal" &&
-      consultant.is_active !== false,
+      consultant.is_active !== false &&
+      (consultant.legal_role === "consultant" || !consultant.legal_role),
   );
   const templates = (templatesData ?? []) as DocumentTemplate[];
   const generatedDocuments = (generatedDocumentsData ?? []) as GeneratedDocument[];
 
   const legalPreSales: LegalBoardPreSale[] = legalPreSalesBase.map((preSale) => {
     const currentLegalStage = normalizeLegalWorkflowStage(preSale.legal_stage);
+    const client = clients.find((item) => item.id === preSale.client_id) ?? null;
     const stageUpdatedAt =
       preSale.legal_stage_updated_at ?? preSale.updated_at ?? preSale.created_at;
 
     return {
       ...preSale,
-      client: clients.find((client) => client.id === preSale.client_id) ?? null,
-      legalResponsibleUserId:
-        clients.find((client) => client.id === preSale.client_id)?.legal_responsible_user_id ??
-        null,
+      client,
+      legalResponsibleUserId: client?.legal_responsible_user_id ?? null,
+      legalConsultantUserId: client?.legal_consultant_user_id ?? null,
       consultant:
         consultants.find(
           (consultant) =>
@@ -122,6 +131,7 @@ export default async function JuridicoPage() {
         <LegalKanban
           preSales={legalPreSales}
           templates={templates}
+          legalAdmins={legalAdmins}
           legalConsultants={legalConsultants}
           currentUserId={userProfileId}
         />

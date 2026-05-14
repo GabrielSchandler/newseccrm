@@ -41,6 +41,7 @@ const clientFieldLabels: Record<keyof ClientPayload, string> = {
   state: "Estado",
   notes: "Observacoes",
   legal_responsible_user_id: "Adm responsavel",
+  legal_consultant_user_id: "Consultor responsavel",
 };
 
 function normalizeComparableValue(value: unknown) {
@@ -69,17 +70,23 @@ function requireChangeNote(changeNote?: string | null) {
 }
 
 function isMissingLegalResponsibleColumn(error: { message?: string } | null | undefined) {
+  const message = error?.message ?? "";
   return (
-    error?.message?.includes("legal_responsible_user_id") &&
-    error.message.includes("clients")
+    message.includes("clients") &&
+    (message.includes("legal_responsible_user_id") ||
+      message.includes("legal_consultant_user_id"))
   );
 }
 
-function withoutLegalResponsibleField<T extends { legal_responsible_user_id?: string | null }>(
-  values: T,
-) {
+function withoutLegalResponsibleField<
+  T extends {
+    legal_responsible_user_id?: string | null;
+    legal_consultant_user_id?: string | null;
+  },
+>(values: T) {
   const clonedValues: Partial<T> = { ...values };
   delete clonedValues.legal_responsible_user_id;
+  delete clonedValues.legal_consultant_user_id;
   return clonedValues;
 }
 

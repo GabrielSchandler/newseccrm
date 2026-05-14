@@ -19,6 +19,9 @@ export type UserProfileOption = {
   username: string | null;
   email: string | null;
   role: string | null;
+  business_area?: string | null;
+  is_active?: boolean | null;
+  legal_role?: string | null;
 };
 
 export type ClientSnapshotFields = {

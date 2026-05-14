@@ -1,5 +1,6 @@
 export type CompanyUserRole = "admin" | "manager" | "seller";
 export type CompanyBusinessArea = "commercial" | "legal";
+export type LegalUserRole = "admin" | "consultant";
 
 export type CompanyUserProfile = {
   id: string;
@@ -12,6 +13,7 @@ export type CompanyUserProfile = {
   phone: string | null;
   role: CompanyUserRole | null;
   business_area: CompanyBusinessArea | null;
+  legal_role: LegalUserRole | null;
   is_active: boolean;
   invited_by: string | null;
   deactivated_at: string | null;
@@ -37,6 +39,14 @@ export const companyBusinessAreas: Array<{
   { value: "legal", label: "Juridico" },
 ];
 
+export const legalUserRoles: Array<{
+  value: LegalUserRole;
+  label: string;
+}> = [
+  { value: "admin", label: "Adm juridico" },
+  { value: "consultant", label: "Consultor juridico" },
+];
+
 export function formatCompanyUserRole(role: CompanyUserRole | string | null) {
   return companyUserRoles.find((item) => item.value === role)?.label ?? "Nao informado";
 }
@@ -45,4 +55,8 @@ export function formatCompanyBusinessArea(
   area: CompanyBusinessArea | string | null,
 ) {
   return companyBusinessAreas.find((item) => item.value === area)?.label ?? "Comercial";
+}
+
+export function formatLegalUserRole(role: LegalUserRole | string | null) {
+  return legalUserRoles.find((item) => item.value === role)?.label ?? "Nao definido";
 }

@@ -34,6 +34,7 @@ export const createCompanyUserSchema = z.object({
     required_error: "Selecione o cargo.",
     invalid_type_error: "Selecione o cargo.",
   }),
+  legal_role: z.enum(["admin", "consultant"]).default("consultant"),
   temporary_password: z
     .string()
     .trim()
@@ -53,6 +54,7 @@ export const updateCompanyUserSchema = z.object({
     required_error: "Selecione o cargo.",
     invalid_type_error: "Selecione o cargo.",
   }),
+  legal_role: z.enum(["admin", "consultant"]).default("consultant"),
   is_active: z.boolean(),
 });
 
@@ -68,6 +70,7 @@ export const createCompanyUserDefaultValues: CreateCompanyUserFormValues = {
   phone: "",
   business_area: "commercial",
   role: "seller",
+  legal_role: "consultant",
   temporary_password: "",
 };
 
@@ -81,6 +84,7 @@ export function companyUserToFormValues(
     phone: user.phone ?? "",
     business_area: user.business_area ?? "commercial",
     role: user.role ?? "seller",
+    legal_role: user.legal_role ?? "consultant",
     is_active: user.is_active,
   };
 }

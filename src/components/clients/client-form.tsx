@@ -28,6 +28,7 @@ type ClientFormProps = {
     changeNote?: string | null,
   ) => Promise<ClientActionState>;
   canReactivateDeletedClient?: boolean;
+  legalAdmins?: UserProfileOption[];
   legalConsultants?: UserProfileOption[];
   requireChangeNote?: boolean;
 };
@@ -96,6 +97,7 @@ export function ClientForm({
   submitLabel,
   onSubmitAction,
   canReactivateDeletedClient = false,
+  legalAdmins = [],
   legalConsultants = [],
   requireChangeNote = false,
 }: ClientFormProps) {
@@ -290,7 +292,7 @@ export function ClientForm({
             htmlFor="legal_responsible_user_id"
             label="Adm responsavel"
             requirement="legal"
-            hint="Selecione o consultor juridico responsavel por acompanhar a documentacao e a esteira deste cliente."
+            hint="Selecione o adm juridico que responde pela operacao deste cliente."
           />
           <select
             id="legal_responsible_user_id"
@@ -299,15 +301,42 @@ export function ClientForm({
             {...register("legal_responsible_user_id")}
           >
             <option value="">Nao definido</option>
-            {legalConsultants.map((consultant) => (
-              <option key={consultant.id} value={consultant.id}>
-                {resolveUserDisplayName(consultant, "Consultor juridico")}
+            {legalAdmins.map((admin) => (
+              <option key={admin.id} value={admin.id}>
+                {resolveUserDisplayName(admin, "Adm juridico")}
               </option>
             ))}
           </select>
           {errors.legal_responsible_user_id?.message ? (
             <p className="text-sm text-red-600">
               {String(errors.legal_responsible_user_id?.message)}
+            </p>
+          ) : null}
+        </div>
+
+        <div className="space-y-2 md:col-span-2">
+          <FormFieldLabel
+            htmlFor="legal_consultant_user_id"
+            label="Consultor responsavel"
+            requirement="legal"
+            hint="Selecione o consultor juridico que acompanha diretamente este cliente."
+          />
+          <select
+            id="legal_consultant_user_id"
+            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
+            disabled={disabled}
+            {...register("legal_consultant_user_id")}
+          >
+            <option value="">Nao definido</option>
+            {legalConsultants.map((consultant) => (
+              <option key={consultant.id} value={consultant.id}>
+                {resolveUserDisplayName(consultant, "Consultor juridico")}
+              </option>
+            ))}
+          </select>
+          {errors.legal_consultant_user_id?.message ? (
+            <p className="text-sm text-red-600">
+              {String(errors.legal_consultant_user_id?.message)}
             </p>
           ) : null}
         </div>

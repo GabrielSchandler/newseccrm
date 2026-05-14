@@ -74,6 +74,10 @@ function canAssignRole(
   return false;
 }
 
+function getLegalRoleForPersistence(businessArea: string, legalRole: string | null | undefined) {
+  return businessArea === "legal" ? legalRole ?? "consultant" : null;
+}
+
 async function getLicenseSummary(companyId: string): Promise<LicenseSummary> {
   const { supabase } = await getCurrentUserContext();
   const [{ data: companyData, error: companyError }, { count, error: countError }] =
@@ -239,6 +243,10 @@ export async function createCompanyUserAction(
       phone: parsed.data.phone,
       role: parsed.data.role,
       business_area: parsed.data.business_area,
+      legal_role: getLegalRoleForPersistence(
+        parsed.data.business_area,
+        parsed.data.legal_role,
+      ),
       is_active: true,
       invited_by: userProfileId,
       deactivated_at: null,
@@ -266,6 +274,10 @@ export async function createCompanyUserAction(
         nickname: parsed.data.nickname,
         role: parsed.data.role,
         business_area: parsed.data.business_area,
+        legal_role: getLegalRoleForPersistence(
+          parsed.data.business_area,
+          parsed.data.legal_role,
+        ),
       },
     });
   } catch (error) {
@@ -377,6 +389,10 @@ export async function updateCompanyUserAction(
       phone: parsed.data.phone,
       role: parsed.data.role,
       business_area: parsed.data.business_area,
+      legal_role: getLegalRoleForPersistence(
+        parsed.data.business_area,
+        parsed.data.legal_role,
+      ),
       is_active: parsed.data.is_active,
       deactivated_at: parsed.data.is_active ? null : new Date().toISOString(),
       deactivated_by: parsed.data.is_active ? null : userProfileId,
@@ -416,6 +432,10 @@ export async function updateCompanyUserAction(
         nickname: parsed.data.nickname,
         role: parsed.data.role,
         business_area: parsed.data.business_area,
+        legal_role: getLegalRoleForPersistence(
+          parsed.data.business_area,
+          parsed.data.legal_role,
+        ),
         is_active: parsed.data.is_active,
       },
     });

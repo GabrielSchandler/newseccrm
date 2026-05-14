@@ -25,6 +25,7 @@ export type LegalBoardPreSale = PreSale & {
   client: Pick<ClientOption, "id" | "full_name"> | null;
   consultant: UserProfileOption | null;
   legalResponsibleUserId: string | null;
+  legalConsultantUserId: string | null;
   currentLegalStage: LegalWorkflowStage;
   stageUpdatedAt: string;
   generatedDocuments: GeneratedDocument[];
@@ -33,6 +34,7 @@ export type LegalBoardPreSale = PreSale & {
 type LegalKanbanProps = {
   preSales: LegalBoardPreSale[];
   templates: DocumentTemplate[];
+  legalAdmins: UserProfileOption[];
   legalConsultants: UserProfileOption[];
   currentUserId: string;
 };
@@ -97,6 +99,7 @@ function getPreSaleStageDocuments(
 export function LegalKanban({
   preSales,
   templates,
+  legalAdmins,
   legalConsultants,
   currentUserId,
 }: LegalKanbanProps) {
@@ -110,9 +113,15 @@ export function LegalKanban({
   const [message, setMessage] = useState<string | null>(null);
   const [messageTone, setMessageTone] = useState<"success" | "error">("success");
   const [isPending, startTransition] = useTransition();
-  const [responsibleFilter, setResponsibleFilter] = useState<string>(() =>
-    legalConsultants.some((consultant) => consultant.id === currentUserId) &&
+  const [adminFilter, setAdminFilter] = useState<string>(() =>
+    legalAdmins.some((admin) => admin.id === currentUserId) &&
     preSales.some((preSale) => preSale.legalResponsibleUserId === currentUserId)
+      ? currentUserId
+      : "all",
+  );
+  const [consultantFilter, setConsultantFilter] = useState<string>(() =>
+    legalConsultants.some((consultant) => consultant.id === currentUserId) &&
+    preSales.some((preSale) => preSale.legalConsultantUserId === currentUserId)
       ? currentUserId
       : "all",
   );
@@ -124,12 +133,23 @@ export function LegalKanban({
   }, [templates]);
 
   const filteredPreSales = useMemo(() => {
-    if (responsibleFilter === "all") {
-      return preSales;
-    }
+    return preSales.filter((preSale) => {
+      const matchesAdmin =
+        adminFilter === "all"
+          ? true
+          : adminFilter === "none"
+            ? !preSale.legalResponsibleUserId
+            : preSale.legalResponsibleUserId === adminFilter;
+      const matchesConsultant =
+        consultantFilter === "all"
+          ? true
+          : consultantFilter === "none"
+            ? !preSale.legalConsultantUserId
+            : preSale.legalConsultantUserId === consultantFilter;
 
-    return preSales.filter((preSale) => preSale.legalResponsibleUserId === responsibleFilter);
-  }, [preSales, responsibleFilter]);
+      return matchesAdmin && matchesConsultant;
+    });
+  }, [adminFilter, consultantFilter, preSales]);
 
   function handleDrop(stage: LegalWorkflowStage) {
     if (!draggedId) {
@@ -196,31 +216,58 @@ export function LegalKanban({
           <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
             <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
               <div>
-                <p className="text-sm font-semibold text-slate-950">Filtro de adm responsavel</p>
+                <p className="text-sm font-semibold text-slate-950">
+                  Filtros de responsaveis juridicos
+                </p>
                 <p className="mt-1 text-sm text-slate-600">
-                  A esteira abre filtrada para o consultor juridico logado quando houver vinculo. Se precisar, voce pode trocar para outro responsavel ou ver todos os clientes.
+                  A esteira abre filtrada para o responsavel logado quando houver vinculo. Se precisar, voce pode trocar para outro responsavel, ver todos ou localizar clientes sem responsavel definido.
                 </p>
               </div>
-              <div className="w-full md:max-w-sm">
-                <label
-                  htmlFor="legal-responsible-filter"
-                  className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500"
-                >
-                  Adm responsavel
-                </label>
-                <select
-                  id="legal-responsible-filter"
-                  value={responsibleFilter}
-                  onChange={(event) => setResponsibleFilter(event.target.value)}
-                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
-                >
-                  <option value="all">Todos</option>
-                  {legalConsultants.map((consultant) => (
-                    <option key={consultant.id} value={consultant.id}>
-                      {formatUserName(consultant)}
-                    </option>
-                  ))}
-                </select>
+              <div className="grid w-full gap-3 md:max-w-2xl md:grid-cols-2">
+                <div>
+                  <label
+                    htmlFor="legal-admin-filter"
+                    className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500"
+                  >
+                    Adm responsavel
+                  </label>
+                  <select
+                    id="legal-admin-filter"
+                    value={adminFilter}
+                    onChange={(event) => setAdminFilter(event.target.value)}
+                    className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
+                  >
+                    <option value="all">Todos</option>
+                    <option value="none">Sem adm responsavel</option>
+                    {legalAdmins.map((admin) => (
+                      <option key={admin.id} value={admin.id}>
+                        {formatUserName(admin)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label
+                    htmlFor="legal-consultant-filter"
+                    className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500"
+                  >
+                    Consultor responsavel
+                  </label>
+                  <select
+                    id="legal-consultant-filter"
+                    value={consultantFilter}
+                    onChange={(event) => setConsultantFilter(event.target.value)}
+                    className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
+                  >
+                    <option value="all">Todos</option>
+                    <option value="none">Sem consultor responsavel</option>
+                    {legalConsultants.map((consultant) => (
+                      <option key={consultant.id} value={consultant.id}>
+                        {formatUserName(consultant)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
             </div>
           </div>
@@ -331,8 +378,16 @@ export function LegalKanban({
                           <p>
                             <span className="font-semibold text-slate-700">Adm responsavel:</span>{" "}
                             {formatUserName(
+                              legalAdmins.find(
+                                (admin) => admin.id === preSale.legalResponsibleUserId,
+                              ) ?? null,
+                            )}
+                          </p>
+                          <p>
+                            <span className="font-semibold text-slate-700">Consultor responsavel:</span>{" "}
+                            {formatUserName(
                               legalConsultants.find(
-                                (consultant) => consultant.id === preSale.legalResponsibleUserId,
+                                (consultant) => consultant.id === preSale.legalConsultantUserId,
                               ) ?? null,
                             )}
                           </p>

@@ -36,6 +36,11 @@ function friendlyError(message: string): ClientDocumentActionState {
   };
 }
 
+function getTitleFromFileName(fileName: string) {
+  const lastDotIndex = fileName.lastIndexOf(".");
+  return (lastDotIndex > 0 ? fileName.slice(0, lastDotIndex) : fileName).trim() || fileName;
+}
+
 async function ensureClientDocumentsBucketAvailable() {
   const adminSupabase = createAdminClient();
   const { error } = await adminSupabase.storage
@@ -187,6 +192,177 @@ export async function uploadClientDocumentAction(
   } catch (error) {
     return friendlyError(
       error instanceof Error ? error.message : "Nao foi possivel enviar o documento.",
+    );
+  }
+}
+
+export async function uploadClientDocumentsBulkAction(
+  values: ClientDocumentUploadPayload,
+  formData: FormData,
+): Promise<ClientDocumentActionState> {
+  const parsed = clientDocumentUploadSchema.safeParse(values);
+
+  if (!parsed.success) {
+    return friendlyError("Confira os dados dos documentos.");
+  }
+
+  const files = formData
+    .getAll("files")
+    .filter((file): file is File => file instanceof File && file.size > 0);
+
+  if (!files.length) {
+    return friendlyError("Selecione pelo menos um arquivo.");
+  }
+
+  for (const file of files) {
+    if (!isAllowedClientDocumentFile(file)) {
+      return friendlyError(
+        `Formato invalido em "${file.name}". Envie PDF, JPG, PNG, WEBP, DOC ou DOCX.`,
+      );
+    }
+
+    if (file.size > maxClientDocumentSize) {
+      return friendlyError(`O arquivo "${file.name}" ultrapassa o limite de 10 MB.`);
+    }
+  }
+
+  const { client_id: clientId, pre_sale_id: preSaleId } = parsed.data;
+  const uploadedPaths: string[] = [];
+
+  try {
+    const { supabase, companyId, userProfileId, role, businessArea, profile } =
+      await getCurrentUserContext();
+    const adminSupabase = createAdminClient();
+
+    if (!canManageClientDocuments(role)) {
+      return friendlyError("Voce nao tem permissao para enviar documentos.");
+    }
+
+    const bucketError = await ensureClientDocumentsBucketAvailable();
+
+    if (bucketError) {
+      return bucketError;
+    }
+
+    await assertClientBelongsToCompany(clientId, companyId);
+
+    if (preSaleId) {
+      await assertPreSaleBelongsToClient(preSaleId, clientId, companyId);
+    }
+
+    const documentsToInsert = [];
+
+    for (const file of files) {
+      const { documentId, filePath } = buildClientDocumentPath(companyId, clientId, file.name);
+      const buffer = Buffer.from(await file.arrayBuffer());
+      const { error: uploadError } = await adminSupabase.storage
+        .from(clientDocumentsBucket)
+        .upload(filePath, buffer, {
+          contentType: file.type || "application/octet-stream",
+          upsert: false,
+        });
+
+      if (uploadError) {
+        if (uploadedPaths.length) {
+          await adminSupabase.storage.from(clientDocumentsBucket).remove(uploadedPaths);
+        }
+
+        return friendlyError(uploadError.message);
+      }
+
+      uploadedPaths.push(filePath);
+      const documentTitle =
+        files.length === 1 && parsed.data.title
+          ? parsed.data.title
+          : getTitleFromFileName(file.name);
+
+      documentsToInsert.push({
+        id: documentId,
+        company_id: companyId,
+        client_id: clientId,
+        pre_sale_id: preSaleId,
+        document_type: parsed.data.document_type,
+        title: documentTitle,
+        description: parsed.data.description,
+        file_name: file.name,
+        file_path: filePath,
+        mime_type: file.type || null,
+        file_size: file.size,
+        uploaded_by: userProfileId,
+      });
+    }
+
+    const { error: insertError } = await supabase
+      .from("client_documents")
+      .insert(documentsToInsert);
+
+    if (insertError) {
+      await adminSupabase.storage.from(clientDocumentsBucket).remove(uploadedPaths);
+      return friendlyError(insertError.message);
+    }
+
+    await recordAuditLog({
+      supabase,
+      companyId,
+      userProfileId,
+      action: files.length > 1 ? "client_document.bulk_uploaded" : "client_document.uploaded",
+      entityType: "client_document",
+      entityId: clientId,
+      entityLabel: `${files.length} documento(s) enviados`,
+      details: {
+        client_id: clientId,
+        pre_sale_id: preSaleId,
+        document_type: parsed.data.document_type,
+        file_names: files.map((file) => file.name),
+      },
+    });
+
+    await recordClientTimelineEvent({
+      companyId,
+      clientId,
+      preSaleId,
+      eventType: "client_document_uploaded",
+      title:
+        files.length > 1
+          ? "Documentos enviados em massa"
+          : "Documento enviado ao cadastro do cliente",
+      note:
+        files.length > 1
+          ? `${files.length} arquivos adicionados ao historico documental do cliente: ${files
+              .map((file) => file.name)
+              .join(", ")}.`
+          : `Arquivo "${documentsToInsert[0]?.title || files[0]?.name}" adicionado ao historico documental do cliente.`,
+      actorUserProfileId: userProfileId,
+      actorRole: role,
+      actorBusinessArea: businessArea,
+      actor: profile,
+      details: {
+        document_type: parsed.data.document_type,
+        file_names: files.map((file) => file.name),
+      },
+    });
+
+    revalidatePath(`/clientes/${clientId}`);
+
+    if (preSaleId) {
+      revalidatePath(`/pre-vendas/${preSaleId}`);
+    }
+
+    return {
+      ok: true,
+      message:
+        files.length > 1
+          ? `${files.length} documentos enviados com sucesso.`
+          : "Documento enviado com sucesso.",
+    };
+  } catch (error) {
+    if (uploadedPaths.length) {
+      const adminSupabase = createAdminClient();
+      await adminSupabase.storage.from(clientDocumentsBucket).remove(uploadedPaths);
+    }
+
+    return friendlyError(
+      error instanceof Error ? error.message : "Nao foi possivel enviar os documentos.",
     );
   }
 }

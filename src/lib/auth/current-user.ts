@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import type { CompanyUserRole } from "@/types/user";
+import type { LegalUserRole } from "@/types/user";
 import { normalizeBusinessArea, type CompanyBusinessArea } from "@/lib/workspace";
 
 export class UserProfileContextError extends Error {
@@ -16,6 +17,7 @@ export type CurrentUserProfile = {
   company_id: string;
   role: CompanyUserRole | null;
   business_area: CompanyBusinessArea | null;
+  legal_role: LegalUserRole | null;
   nickname: string | null;
   username: string | null;
   email: string | null;
@@ -72,6 +74,7 @@ export async function getCurrentUserContext() {
     companyId: profile.company_id,
     role: profile.role,
     businessArea: normalizeBusinessArea(profile.business_area),
+    legalRole: profile.legal_role,
     nickname: profile.nickname,
     username: profile.username,
     email: profile.email,

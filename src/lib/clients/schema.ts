@@ -53,6 +53,9 @@ export const clientFormSchema = z.object({
   legal_responsible_user_id: z
     .union([z.string().uuid("Responsavel juridico invalido."), z.literal(""), z.null(), z.undefined()])
     .transform((value) => (typeof value === "string" && value.trim() ? value : null)),
+  legal_consultant_user_id: z
+    .union([z.string().uuid("Consultor juridico invalido."), z.literal(""), z.null(), z.undefined()])
+    .transform((value) => (typeof value === "string" && value.trim() ? value : null)),
 });
 
 export type ClientFormValues = z.input<typeof clientFormSchema>;
@@ -77,6 +80,7 @@ export const clientDefaultValues: ClientFormValues = {
   state: "",
   notes: "",
   legal_responsible_user_id: "",
+  legal_consultant_user_id: "",
 };
 
 export function clientToFormValues(client: Client): ClientFormValues {
@@ -99,5 +103,6 @@ export function clientToFormValues(client: Client): ClientFormValues {
     state: client.state ?? "",
     notes: client.notes ?? "",
     legal_responsible_user_id: client.legal_responsible_user_id ?? "",
+    legal_consultant_user_id: client.legal_consultant_user_id ?? "",
   };
 }

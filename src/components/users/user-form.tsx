@@ -22,6 +22,7 @@ import {
 import {
   companyBusinessAreas,
   companyUserRoles,
+  legalUserRoles,
   type CompanyUserProfile,
 } from "@/types/user";
 
@@ -115,12 +116,14 @@ function CreateUserForm({
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<CreateCompanyUserFormValues, undefined, CreateCompanyUserPayload>({
     resolver: zodResolver(createCompanyUserSchema),
     defaultValues: createCompanyUserDefaultValues,
   });
   const disabled = isPending || isSubmitting;
+  const businessArea = watch("business_area");
 
   function onValidSubmit(values: CreateCompanyUserPayload) {
     setActionState(null);
@@ -276,6 +279,34 @@ function CreateUserForm({
           ) : null}
         </div>
 
+        {businessArea === "legal" ? (
+          <div className="space-y-2">
+            <FormFieldLabel
+              htmlFor="legal_role"
+              label="Funcao no juridico"
+              requirement="required"
+            />
+            <select
+              id="legal_role"
+              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
+              disabled={disabled}
+              {...register("legal_role")}
+            >
+              {legalUserRoles.map((item) => (
+                <option key={item.value} value={item.value}>
+                  {item.label}
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-slate-500">
+              Adms aparecem no campo Adm responsavel. Consultores aparecem no campo Consultor responsavel.
+            </p>
+            {errors.legal_role?.message ? (
+              <p className="text-sm text-red-600">{String(errors.legal_role.message)}</p>
+            ) : null}
+          </div>
+        ) : null}
+
         <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600 md:col-span-2">
           O sistema cria e gerencia automaticamente um email interno para o Supabase
           Auth. No uso diario do CRM, o acesso e feito pelo login acima.
@@ -301,12 +332,14 @@ function EditUserForm({
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<UpdateCompanyUserFormValues, undefined, UpdateCompanyUserPayload>({
     resolver: zodResolver(updateCompanyUserSchema),
     defaultValues: companyUserToFormValues(defaultValues),
   });
   const disabled = isPending || isSubmitting;
+  const businessArea = watch("business_area");
 
   function onValidSubmit(values: UpdateCompanyUserPayload) {
     setActionState(null);
@@ -440,6 +473,34 @@ function EditUserForm({
             <p className="text-sm text-red-600">{String(errors.role.message)}</p>
           ) : null}
         </div>
+
+        {businessArea === "legal" ? (
+          <div className="space-y-2">
+            <FormFieldLabel
+              htmlFor="legal_role"
+              label="Funcao no juridico"
+              requirement="required"
+            />
+            <select
+              id="legal_role"
+              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
+              disabled={disabled}
+              {...register("legal_role")}
+            >
+              {legalUserRoles.map((item) => (
+                <option key={item.value} value={item.value}>
+                  {item.label}
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-slate-500">
+              Adms aparecem no campo Adm responsavel. Consultores aparecem no campo Consultor responsavel.
+            </p>
+            {errors.legal_role?.message ? (
+              <p className="text-sm text-red-600">{String(errors.legal_role.message)}</p>
+            ) : null}
+          </div>
+        ) : null}
 
         <label className="flex items-start gap-3 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-700">
           <input

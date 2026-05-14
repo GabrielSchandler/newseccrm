@@ -19,6 +19,7 @@ export type Client = {
   state: string | null;
   notes: string | null;
   legal_responsible_user_id: string | null;
+  legal_consultant_user_id: string | null;
   created_by: string;
   created_at: string;
   updated_at: string | null;

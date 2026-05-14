@@ -8,13 +8,16 @@ export default async function NovoClientePage() {
   const { role, supabase, companyId } = await getCurrentUserContext();
   const { data: legalConsultantsData } = await supabase
     .from("user_profiles")
-    .select("id, full_name, nickname, username, email, role")
+    .select("id, full_name, nickname, username, email, role, business_area, is_active, legal_role")
     .eq("company_id", companyId)
-    .eq("role", "seller")
     .eq("business_area", "legal")
     .eq("is_active", true)
     .order("full_name", { ascending: true });
-  const legalConsultants = (legalConsultantsData ?? []) as UserProfileOption[];
+  const legalUsers = (legalConsultantsData ?? []) as UserProfileOption[];
+  const legalAdmins = legalUsers.filter((user) => user.legal_role === "admin");
+  const legalConsultants = legalUsers.filter(
+    (user) => user.legal_role === "consultant" || !user.legal_role,
+  );
 
   return (
     <>
@@ -28,6 +31,7 @@ export default async function NovoClientePage() {
             submitLabel="Cadastrar cliente"
             onSubmitAction={createClientAction}
             canReactivateDeletedClient={role === "admin"}
+            legalAdmins={legalAdmins}
             legalConsultants={legalConsultants}
           />
         </div>

@@ -8,6 +8,7 @@ import { getCurrentUserContext } from "@/lib/auth/current-user";
 import { displayValue, formatDateTime } from "@/lib/clients/formatters";
 import {
   formatCompanyBusinessArea,
+  formatLegalUserRole,
   type CompanyUserProfile,
 } from "@/types/user";
 import { getHomeForRole } from "@/lib/workspace";
@@ -183,6 +184,7 @@ export default async function UsuariosPage({ searchParams }: UsuariosPageProps) 
                     <th className="px-4 py-3 font-semibold">Login</th>
                     <th className="px-4 py-3 font-semibold">Telefone</th>
                     <th className="px-4 py-3 font-semibold">Area</th>
+                    <th className="px-4 py-3 font-semibold">Funcao juridico</th>
                     <th className="px-4 py-3 font-semibold">Cargo</th>
                     <th className="px-4 py-3 font-semibold">Status</th>
                     <th className="px-4 py-3 font-semibold">Criado em</th>
@@ -206,6 +208,11 @@ export default async function UsuariosPage({ searchParams }: UsuariosPageProps) 
                       </td>
                       <td className="px-4 py-3 text-slate-700">
                         {formatCompanyBusinessArea(user.business_area)}
+                      </td>
+                      <td className="px-4 py-3 text-slate-700">
+                        {user.business_area === "legal"
+                          ? formatLegalUserRole(user.legal_role)
+                          : "-"}
                       </td>
                       <td className="px-4 py-3">
                         <UserRoleBadge role={user.role} />
@@ -242,7 +249,7 @@ export default async function UsuariosPage({ searchParams }: UsuariosPageProps) 
                   ))}
                   {!users.length ? (
                     <tr>
-                      <td className="px-4 py-6 text-center text-slate-500" colSpan={9}>
+                      <td className="px-4 py-6 text-center text-slate-500" colSpan={10}>
                         Nenhum usuario encontrado.
                       </td>
                     </tr>

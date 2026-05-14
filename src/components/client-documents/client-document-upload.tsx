@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
 import {
-  uploadClientDocumentAction,
+  uploadClientDocumentsBulkAction,
   type ClientDocumentActionState,
 } from "@/app/(authenticated)/clientes/document-actions";
 import { FormFieldLabel } from "@/components/form-field-label";
@@ -20,12 +20,12 @@ export function ClientDocumentUpload({
 }: ClientDocumentUploadProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [file, setFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
   const [documentType, setDocumentType] = useState(clientDocumentTypes[0]?.value ?? "rg");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [state, setState] = useState<ClientDocumentActionState | null>(null);
-  const disabled = isPending || !file;
+  const disabled = isPending || files.length === 0;
   const hintText = useMemo(
     () =>
       preSaleId
@@ -35,7 +35,7 @@ export function ClientDocumentUpload({
   );
 
   function resetForm() {
-    setFile(null);
+    setFiles([]);
     setDocumentType(clientDocumentTypes[0]?.value ?? "rg");
     setTitle("");
     setDescription("");
@@ -44,20 +44,22 @@ export function ClientDocumentUpload({
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (!file) {
+    if (!files.length) {
       setState({
         ok: false,
-        message: "Selecione um arquivo.",
+        message: "Selecione pelo menos um arquivo.",
       });
       return;
     }
 
     const formData = new FormData();
-    formData.append("file", file);
+    files.forEach((selectedFile) => {
+      formData.append("files", selectedFile);
+    });
     setState(null);
 
     startTransition(async () => {
-      const result = await uploadClientDocumentAction(
+      const result = await uploadClientDocumentsBulkAction(
         {
           client_id: clientId,
           pre_sale_id: preSaleId ?? "",
@@ -90,7 +92,7 @@ export function ClientDocumentUpload({
       onSubmit={handleSubmit}
     >
       <div>
-        <h3 className="text-sm font-semibold text-slate-950">Adicionar documento</h3>
+        <h3 className="text-sm font-semibold text-slate-950">Adicionar documento em massa</h3>
         <p className="mt-1 text-sm text-slate-600">{hintText}</p>
       </div>
 
@@ -127,11 +129,17 @@ export function ClientDocumentUpload({
           <input
             id={`client-document-file-${preSaleId ?? "client"}`}
             type="file"
+            multiple
             disabled={isPending}
             accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,application/pdf,image/jpeg,image/png,image/webp,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
             className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-slate-700 hover:file:bg-slate-200"
-            onChange={(event) => setFile(event.target.files?.[0] ?? null)}
+            onChange={(event) => setFiles(Array.from(event.target.files ?? []))}
           />
+          {files.length ? (
+            <p className="text-xs text-slate-500">
+              {files.length} arquivo(s) selecionado(s).
+            </p>
+          ) : null}
         </div>
 
         <div className="space-y-2">
@@ -141,7 +149,7 @@ export function ClientDocumentUpload({
             value={title}
             disabled={isPending}
             className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
-            placeholder="Ex.: RG frente"
+            placeholder="Opcional para envio unico. Em massa, o nome do arquivo vira titulo."
             onChange={(event) => setTitle(event.target.value)}
           />
         </div>
@@ -185,7 +193,7 @@ export function ClientDocumentUpload({
           disabled={disabled}
           className="rounded-lg bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-70"
         >
-          {isPending ? "Enviando..." : "Enviar documento"}
+          {isPending ? "Enviando..." : files.length > 1 ? "Enviar documentos" : "Enviar documento"}
         </button>
       </div>
     </form>

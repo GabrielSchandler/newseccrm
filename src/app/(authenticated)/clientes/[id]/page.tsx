@@ -101,7 +101,11 @@ export default async function ClientePage({
     notFound();
   }
 
-  const [{ data: createdByProfileData }, { data: legalResponsibleProfileData }] = await Promise.all([
+  const [
+    { data: createdByProfileData },
+    { data: legalResponsibleProfileData },
+    { data: legalConsultantProfileData },
+  ] = await Promise.all([
     supabase
       .from("user_profiles")
       .select("id, full_name, nickname, username, email")
@@ -114,9 +118,17 @@ export default async function ClientePage({
           .eq("id", client.legal_responsible_user_id)
           .maybeSingle()
       : Promise.resolve({ data: null }),
+    client.legal_consultant_user_id
+      ? supabase
+          .from("user_profiles")
+          .select("id, full_name, nickname, username, email")
+          .eq("id", client.legal_consultant_user_id)
+          .maybeSingle()
+      : Promise.resolve({ data: null }),
   ]);
   const createdByProfile = createdByProfileData as ClientAuditUser | null;
   const legalResponsibleProfile = legalResponsibleProfileData as ClientAuditUser | null;
+  const legalConsultantProfile = legalConsultantProfileData as ClientAuditUser | null;
 
   const { data: generatedDocumentsData, error: generatedDocumentsError } = await supabase
     .from("generated_documents")
@@ -376,6 +388,14 @@ export default async function ClientePage({
                   </p>
                   <p className="mt-1 text-sm font-medium text-slate-950">
                     {displayValue(resolveUserDisplayName(legalResponsibleProfile, ""))}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    Consultor responsavel
+                  </p>
+                  <p className="mt-1 text-sm font-medium text-slate-950">
+                    {displayValue(resolveUserDisplayName(legalConsultantProfile, ""))}
                   </p>
                 </div>
               </div>
