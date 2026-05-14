@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { recordAuditLog } from "@/lib/audit/log";
 import { getCurrentUserContext } from "@/lib/auth/current-user";
 import { emailTemplateSchema } from "@/lib/email/schema";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 function canManageEmailTemplates(role: string | null) {
   return role === "admin" || role === "manager";
@@ -58,13 +59,14 @@ export async function createEmailTemplateAction(formData: FormData) {
     redirectWithTemplateError("Preencha nome, assunto e corpo do email.");
   }
 
-  const { supabase, companyId, userProfileId, role } = await getCurrentUserContext();
+  const { companyId, userProfileId, role } = await getCurrentUserContext();
 
   if (!canManageEmailTemplates(role)) {
     redirect("/emails/templates?error=permission");
   }
 
-  const { data, error } = await supabase
+  const adminClient = createAdminClient();
+  const { data, error } = await adminClient
     .from("email_templates")
     .insert({
       company_id: companyId,
@@ -81,7 +83,7 @@ export async function createEmailTemplateAction(formData: FormData) {
   }
 
   await recordAuditLog({
-    supabase,
+    supabase: adminClient,
     companyId,
     userProfileId,
     action: "email_template.created",
@@ -95,13 +97,14 @@ export async function createEmailTemplateAction(formData: FormData) {
 }
 
 export async function toggleEmailTemplateStatusAction(templateId: string, isActive: boolean) {
-  const { supabase, companyId, userProfileId, role } = await getCurrentUserContext();
+  const { companyId, userProfileId, role } = await getCurrentUserContext();
 
   if (!canManageEmailTemplates(role)) {
     redirect("/emails/templates?error=permission");
   }
 
-  const { error } = await supabase
+  const adminClient = createAdminClient();
+  const { error } = await adminClient
     .from("email_templates")
     .update({
       is_active: isActive,
@@ -111,11 +114,11 @@ export async function toggleEmailTemplateStatusAction(templateId: string, isActi
     .eq("company_id", companyId);
 
   if (error) {
-    redirect(`/emails/templates?error=${encodeURIComponent(error.message)}`);
+    redirectWithTemplateError(normalizeTemplateSaveError(error.message));
   }
 
   await recordAuditLog({
-    supabase,
+    supabase: adminClient,
     companyId,
     userProfileId,
     action: isActive ? "email_template.activated" : "email_template.deactivated",
