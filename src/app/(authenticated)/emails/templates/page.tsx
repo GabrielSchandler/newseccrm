@@ -41,9 +41,14 @@ function getBanner(params: { success?: string; error?: string }) {
   }
 
   if (params.error) {
+    const decodedError = decodeURIComponent(params.error);
+
     return {
       tone: "error" as const,
-      text: "Nao foi possivel salvar o template de email.",
+      text:
+        decodedError === "invalid"
+          ? "Preencha nome, assunto e corpo do email."
+          : decodedError,
     };
   }
 

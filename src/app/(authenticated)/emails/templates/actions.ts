@@ -10,6 +10,35 @@ function canManageEmailTemplates(role: string | null) {
   return role === "admin" || role === "manager";
 }
 
+function redirectWithTemplateError(message: string): never {
+  redirect(`/emails/templates?error=${encodeURIComponent(message)}`);
+}
+
+function normalizeTemplateSaveError(message: string) {
+  const lowerMessage = message.toLowerCase();
+
+  if (
+    lowerMessage.includes("email_templates") &&
+    (lowerMessage.includes("does not exist") || lowerMessage.includes("not found"))
+  ) {
+    return "A tabela de templates de email ainda nao existe no Supabase. Rode o SQL docs/sql/email-outlook-juridico.sql.";
+  }
+
+  if (lowerMessage.includes("row-level security")) {
+    return "O Supabase bloqueou o cadastro por politica de seguranca. Confirme se seu usuario esta como admin/gerente e se o SQL de email foi rodado completo.";
+  }
+
+  if (lowerMessage.includes("permission denied")) {
+    return "O usuario atual nao tem permissao para salvar templates de email.";
+  }
+
+  if (lowerMessage.includes("column") && lowerMessage.includes("does not exist")) {
+    return "A tabela de templates de email esta desatualizada. Rode novamente o SQL docs/sql/email-outlook-juridico.sql.";
+  }
+
+  return message || "Nao foi possivel salvar o template de email.";
+}
+
 function formDataToTemplatePayload(formData: FormData) {
   return {
     name: String(formData.get("name") ?? ""),
@@ -26,7 +55,7 @@ export async function createEmailTemplateAction(formData: FormData) {
   const parsed = emailTemplateSchema.safeParse(formDataToTemplatePayload(formData));
 
   if (!parsed.success) {
-    redirect("/emails/templates?error=invalid");
+    redirectWithTemplateError("Preencha nome, assunto e corpo do email.");
   }
 
   const { supabase, companyId, userProfileId, role } = await getCurrentUserContext();
@@ -47,7 +76,8 @@ export async function createEmailTemplateAction(formData: FormData) {
     .single();
 
   if (error) {
-    redirect(`/emails/templates?error=${encodeURIComponent(error.message)}`);
+    console.error("[email-template] create failed", error);
+    redirectWithTemplateError(normalizeTemplateSaveError(error.message));
   }
 
   await recordAuditLog({
