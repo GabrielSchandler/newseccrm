@@ -3,10 +3,13 @@
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
 import {
-  uploadClientDocumentsBulkAction,
+  cancelClientDocumentsBulkUploadAction,
+  completeClientDocumentsBulkUploadAction,
+  prepareClientDocumentsBulkUploadAction,
   type ClientDocumentActionState,
 } from "@/app/(authenticated)/clientes/document-actions";
 import { FormFieldLabel } from "@/components/form-field-label";
+import { createClient } from "@/lib/supabase/browser";
 import { clientDocumentTypes } from "@/types/client-document";
 
 type ClientDocumentUploadProps = {
@@ -52,22 +55,68 @@ export function ClientDocumentUpload({
       return;
     }
 
-    const formData = new FormData();
-    files.forEach((selectedFile) => {
-      formData.append("files", selectedFile);
-    });
     setState(null);
 
     startTransition(async () => {
-      const result = await uploadClientDocumentsBulkAction(
+      const payload = {
+        client_id: clientId,
+        pre_sale_id: preSaleId ?? "",
+        document_type: documentType,
+        title,
+        description,
+      };
+      const prepared = await prepareClientDocumentsBulkUploadAction(
+        payload,
+        files.map((file) => ({
+          name: file.name,
+          size: file.size,
+          type: file.type,
+        })),
+      );
+
+      if (!prepared.ok || !prepared.uploads?.length) {
+        setState(prepared);
+        return;
+      }
+
+      const supabase = createClient();
+      const uploadedPaths: string[] = [];
+
+      for (const upload of prepared.uploads) {
+        const file = files[upload.index];
+
+        if (!file) {
+          await cancelClientDocumentsBulkUploadAction(uploadedPaths);
+          setState({
+            ok: false,
+            message: "Um arquivo selecionado nao foi encontrado. Selecione novamente.",
+          });
+          return;
+        }
+
+        const { error } = await supabase.storage
+          .from("client-documents")
+          .uploadToSignedUrl(upload.filePath, upload.token, file, {
+            contentType: file.type || "application/octet-stream",
+          });
+
+        if (error) {
+          await cancelClientDocumentsBulkUploadAction(uploadedPaths);
+          setState({
+            ok: false,
+            message: error.message,
+          });
+          return;
+        }
+
+        uploadedPaths.push(upload.filePath);
+      }
+
+      const result = await completeClientDocumentsBulkUploadAction(
         {
-          client_id: clientId,
-          pre_sale_id: preSaleId ?? "",
-          document_type: documentType,
-          title,
-          description,
+          ...payload,
         },
-        formData,
+        prepared.uploads,
       );
       setState(result);
 

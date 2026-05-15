@@ -40,7 +40,7 @@ export function canManageClientDocuments(role: string | null) {
   return role === "admin" || role === "manager" || role === "seller";
 }
 
-export function isAllowedClientDocumentFile(file: File) {
+export function isAllowedClientDocumentFile(file: Pick<File, "name" | "type">) {
   const lowerName = file.name.toLowerCase();
   const extension = Array.from(acceptedExtensions).find((value) => lowerName.endsWith(value));
 
