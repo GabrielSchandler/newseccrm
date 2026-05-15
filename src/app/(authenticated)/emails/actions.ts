@@ -42,6 +42,10 @@ export type SendClientEmailPayload = z.input<typeof sendClientEmailSchema>;
 
 const maxSimpleGraphAttachmentBytes = 3 * 1024 * 1024;
 
+function canUseLegalEmail(role: string | null, businessArea: string) {
+  return role === "admin" || role === "manager" || businessArea === "legal";
+}
+
 function friendlyError(message: string): EmailActionState {
   return {
     ok: false,
@@ -189,18 +193,24 @@ export async function sendClientEmailAction(
   }
 
   try {
-    const { supabase, companyId, userProfileId, role, businessArea, profile } =
+    const { companyId, userProfileId, role, businessArea, profile } =
       await getCurrentUserContext();
+    const adminClient = createAdminClient();
+
+    if (!canUseLegalEmail(role, businessArea)) {
+      return friendlyError("Voce nao tem permissao para enviar emails juridicos.");
+    }
+
     const [{ data: clientData }, { data: templateData }, { data: preSaleData }] =
       await Promise.all([
-        supabase
+        adminClient
           .from("clients")
           .select("*")
           .eq("id", parsed.data.client_id)
           .eq("company_id", companyId)
           .single(),
         parsed.data.template_id
-          ? supabase
+          ? adminClient
               .from("email_templates")
               .select("*")
               .eq("id", parsed.data.template_id)
@@ -209,7 +219,7 @@ export async function sendClientEmailAction(
               .single()
           : Promise.resolve({ data: null }),
         parsed.data.pre_sale_id
-          ? supabase
+          ? adminClient
               .from("pre_sales")
               .select("*")
               .eq("id", parsed.data.pre_sale_id)
@@ -238,7 +248,7 @@ export async function sendClientEmailAction(
     }
 
     const { data: financialCaseData } = preSale
-      ? await supabase
+      ? await adminClient
           .from("pre_sale_financial_cases")
           .select("*")
           .eq("pre_sale_id", preSale.id)
@@ -249,7 +259,7 @@ export async function sendClientEmailAction(
       companyId,
       client.legal_responsible_user_id,
     );
-    const { data: senderProfileData } = await supabase
+    const { data: senderProfileData } = await adminClient
       .from("user_profiles")
       .select("id, full_name, nickname, email, phone, role, legal_role")
       .eq("id", client.legal_responsible_user_id)
@@ -286,7 +296,7 @@ export async function sendClientEmailAction(
       dispatchStatus = result.status;
       microsoftMessageId = result.messageId;
     } catch (dispatchError) {
-      await supabase.from("email_logs").insert({
+      await adminClient.from("email_logs").insert({
         company_id: companyId,
         client_id: client.id,
         pre_sale_id: preSale?.id ?? null,
@@ -310,7 +320,7 @@ export async function sendClientEmailAction(
       throw dispatchError;
     }
 
-    await supabase.from("email_logs").insert({
+    await adminClient.from("email_logs").insert({
       company_id: companyId,
       client_id: client.id,
       pre_sale_id: preSale?.id ?? null,
@@ -356,7 +366,7 @@ export async function sendClientEmailAction(
     });
 
     await recordAuditLog({
-      supabase,
+      supabase: adminClient,
       companyId,
       userProfileId,
       action: parsed.data.mode === "draft" ? "email.draft_created" : "email.sent",

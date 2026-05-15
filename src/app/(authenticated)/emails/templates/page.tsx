@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/layout/page-header";
 import { getCurrentUserContext } from "@/lib/auth/current-user";
 import { displayValue, formatDateTime } from "@/lib/clients/formatters";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { legalWorkflowStages } from "@/lib/legal/workflow";
 import {
   emailRecipientModes,
@@ -59,13 +60,14 @@ export default async function EmailTemplatesPage({
   searchParams,
 }: EmailTemplatesPageProps) {
   const params = await searchParams;
-  const { supabase, companyId, role, businessArea } = await getCurrentUserContext();
+  const { companyId, role, businessArea } = await getCurrentUserContext();
 
   if (!canManageEmailTemplates(role)) {
     redirect(businessArea === "legal" ? "/juridico" : "/pre-vendas");
   }
 
-  const { data, error } = await supabase
+  const adminClient = createAdminClient();
+  const { data, error } = await adminClient
     .from("email_templates")
     .select("*")
     .eq("company_id", companyId)

@@ -28,6 +28,7 @@ import { listClientTimelineEvents } from "@/lib/client-timeline/service";
 import { formatPreSaleType, formatUserName } from "@/lib/pre-sales/formatters";
 import { listAccessiblePreSaleIdsForCurrentUser } from "@/lib/pre-sales/access";
 import { resolveUserDisplayName } from "@/lib/users/account";
+import { createAdminClient } from "@/lib/supabase/admin";
 import type { Client, ClientAuditUser } from "@/types/client";
 import {
   documentStatusLabels,
@@ -93,6 +94,7 @@ export default async function ClientePage({
 }: ClientePageProps) {
   const [{ id }, queryParams] = await Promise.all([params, searchParams]);
   const { supabase, companyId, role, businessArea } = await getCurrentUserContext();
+  const adminClient = createAdminClient();
 
   const { data, error } = await supabase
     .from("clients")
@@ -184,11 +186,10 @@ export default async function ClientePage({
     { data: clientEmailDocumentsData },
     { data: emailFinancialCaseData },
   ] = await Promise.all([
-      supabase
+      adminClient
         .from("email_templates")
         .select("*")
         .eq("company_id", companyId)
-        .eq("business_area", "legal")
         .eq("is_active", true)
         .order("name", { ascending: true }),
       supabase

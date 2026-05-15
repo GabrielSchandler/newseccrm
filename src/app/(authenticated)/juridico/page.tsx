@@ -2,6 +2,7 @@ import { LegalKanban, type LegalBoardPreSale } from "@/components/legal/legal-ka
 import { PageHeader } from "@/components/layout/page-header";
 import { getCurrentUserContext } from "@/lib/auth/current-user";
 import { normalizeLegalWorkflowStage } from "@/lib/legal/workflow";
+import { createAdminClient } from "@/lib/supabase/admin";
 import type { DocumentTemplate, GeneratedDocument } from "@/types/document";
 import type { EmailTemplate } from "@/types/email";
 import type {
@@ -17,6 +18,7 @@ function canUseLegalArea(role: string | null, businessArea: string) {
 
 export default async function JuridicoPage() {
   const { supabase, companyId, role, businessArea, userProfileId } = await getCurrentUserContext();
+  const adminClient = createAdminClient();
 
   if (!canUseLegalArea(role, businessArea)) {
     return null;
@@ -90,11 +92,10 @@ export default async function JuridicoPage() {
           .select("*")
           .in("pre_sale_id", generatedPreSaleIds)
       : Promise.resolve({ data: [] }),
-    supabase
+    adminClient
       .from("email_templates")
       .select("*")
       .eq("company_id", companyId)
-      .eq("business_area", "legal")
       .eq("is_active", true)
       .order("name", { ascending: true }),
   ]);
