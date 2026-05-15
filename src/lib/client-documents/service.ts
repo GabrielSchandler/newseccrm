@@ -3,7 +3,7 @@ import { getCurrentUserContext } from "@/lib/auth/current-user";
 import type { ClientDocument } from "@/types/client-document";
 
 export const clientDocumentsBucket = "client-documents";
-export const maxClientDocumentSize = 10 * 1024 * 1024;
+export const maxClientDocumentSize = 20 * 1024 * 1024;
 
 const acceptedMimeTypes = new Set([
   "application/pdf",

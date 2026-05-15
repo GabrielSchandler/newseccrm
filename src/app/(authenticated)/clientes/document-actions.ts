@@ -112,7 +112,7 @@ export async function uploadClientDocumentAction(
   }
 
   if (file.size > maxClientDocumentSize) {
-    return friendlyError("Envie um arquivo com ate 10 MB.");
+    return friendlyError("Envie um arquivo com ate 20 MB.");
   }
 
   const { client_id: clientId, pre_sale_id: preSaleId } = parsed.data;
@@ -247,7 +247,7 @@ export async function uploadClientDocumentsBulkAction(
     }
 
     if (file.size > maxClientDocumentSize) {
-      return friendlyError(`O arquivo "${file.name}" ultrapassa o limite de 10 MB.`);
+      return friendlyError(`O arquivo "${file.name}" ultrapassa o limite de 20 MB.`);
     }
   }
 
@@ -422,7 +422,7 @@ export async function prepareClientDocumentsBulkUploadAction(
     }
 
     if (file.size > maxClientDocumentSize) {
-      return prepareFriendlyError(`O arquivo "${file.name}" ultrapassa o limite de 10 MB.`);
+      return prepareFriendlyError(`O arquivo "${file.name}" ultrapassa o limite de 20 MB.`);
     }
   }
 
@@ -717,7 +717,7 @@ export async function updateClientDocumentAction(
     }
 
     if (replacementFile.size > maxClientDocumentSize) {
-      return friendlyError("Envie um arquivo com ate 10 MB.");
+      return friendlyError("Envie um arquivo com ate 20 MB.");
     }
   }
 

@@ -221,7 +221,7 @@ export function ClientDocumentUpload({
       </div>
 
       <p className="text-xs text-slate-500">
-        Formatos aceitos: PDF, JPG, PNG, WEBP, DOC e DOCX. Tamanho maximo: 10 MB.
+        Formatos aceitos: PDF, JPG, PNG, WEBP, DOC e DOCX. Tamanho maximo: 20 MB.
       </p>
 
       {state ? (
