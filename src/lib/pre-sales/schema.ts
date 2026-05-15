@@ -114,6 +114,8 @@ export const preSaleFormSchema = z.object({
     "em_negociacao",
     "aprovado",
     "perdido",
+    "inativo",
+    "distrato",
   ]),
   media: optionalLeadMedia,
   service_type: optionalText,

@@ -16,7 +16,7 @@ import type {
   PreSaleWithRelations,
   UserProfileOption,
 } from "@/types/pre-sale";
-import { preSaleStatuses, preSaleTypes } from "@/types/pre-sale";
+import { isArchivedPreSaleStatus, preSaleStatuses, preSaleTypes } from "@/types/pre-sale";
 
 const clientOptionSelect =
   "id, full_name, cpf, rg, birth_date, marital_status, profession, email, phone_mobile, phone_secondary, zip_code, street, number, district, city, state";
@@ -74,6 +74,8 @@ export default async function PreVendasPage({ searchParams }: PreVendasPageProps
 
   if (status && preSaleStatuses.some((item) => item.value === status)) {
     preSalesQuery = preSalesQuery.eq("status", status);
+  } else {
+    preSalesQuery = preSalesQuery.neq("status", "inativo").neq("status", "distrato");
   }
 
   if (type && preSaleTypes.some((item) => item.value === type)) {
@@ -153,7 +155,7 @@ export default async function PreVendasPage({ searchParams }: PreVendasPageProps
               defaultValue={params.status ?? ""}
               className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
             >
-              <option value="">Todos os status</option>
+              <option value="">Status ativos</option>
               {preSaleStatuses.map((item) => (
                 <option key={item.value} value={item.value}>
                   {item.label}
@@ -198,7 +200,14 @@ export default async function PreVendasPage({ searchParams }: PreVendasPageProps
           </div>
         ) : (
           <>
-            <PreSalesKanban preSales={preSales} canDelete={canDeletePreSales} />
+            <PreSalesKanban
+              preSales={
+                status && isArchivedPreSaleStatus(status)
+                  ? preSales
+                  : preSales.filter((preSale) => !isArchivedPreSaleStatus(preSale.status))
+              }
+              canDelete={canDeletePreSales}
+            />
             <PreSalesList preSales={preSales} canDelete={canDeletePreSales} />
           </>
         )}

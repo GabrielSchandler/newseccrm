@@ -7,6 +7,8 @@ const statusStyles: Record<PreSaleStatus, string> = {
   em_negociacao: "border-yellow-200 bg-yellow-50 text-yellow-800",
   aprovado: "border-teal-200 bg-teal-50 text-teal-700",
   perdido: "border-red-200 bg-red-50 text-red-700",
+  inativo: "border-slate-300 bg-slate-100 text-slate-700",
+  distrato: "border-rose-200 bg-rose-50 text-rose-700",
 };
 
 export function getPreSaleStatusLabel(status: PreSaleStatus) {

@@ -4,8 +4,12 @@ import { getCurrentUserContext } from "@/lib/auth/current-user";
 import { formatDateTime } from "@/lib/clients/formatters";
 import { formatCurrency } from "@/lib/pre-sales/formatters";
 import type { GeneratedDocument } from "@/types/document";
-import type { PreSale, PreSaleStatus } from "@/types/pre-sale";
-import { preSaleStatuses } from "@/types/pre-sale";
+import {
+  isArchivedPreSaleStatus,
+  preSaleStatuses,
+  type PreSale,
+  type PreSaleStatus,
+} from "@/types/pre-sale";
 
 type DashboardSearchParams = Promise<{
   area?: string;
@@ -501,7 +505,10 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   const recentDocuments = (recentDocumentsData ?? []) as GeneratedDocument[];
   const leads = leadsError ? [] : ((leadsData ?? []) as LeadRow[]);
   const openPreSales = preSales.filter(
-    (preSale) => preSale.status !== "aprovado" && preSale.status !== "perdido",
+    (preSale) =>
+      preSale.status !== "aprovado" &&
+      preSale.status !== "perdido" &&
+      !isArchivedPreSaleStatus(preSale.status),
   ).length;
   const approvedValue = preSales
     .filter((preSale) => preSale.status === "aprovado")

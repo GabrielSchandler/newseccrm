@@ -3,13 +3,20 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
-import { updateLegalWorkflowStageAction } from "@/app/(authenticated)/juridico/actions";
+import {
+  updateLegalArchiveStatusAction,
+  updateLegalWorkflowStageAction,
+} from "@/app/(authenticated)/juridico/actions";
 import { GenerateDocumentModal } from "@/components/documents/generate-document-modal";
 import {
   SendClientEmailModal,
   type EmailAttachmentOption,
 } from "@/components/email/send-client-email-modal";
 import { LegalStageSelect } from "@/components/legal/legal-stage-select";
+import {
+  getPreSaleStatusLabel,
+  PreSalesStatusBadge,
+} from "@/components/pre-sales/pre-sales-status-badge";
 import { ChangeNoteModal } from "@/components/shared/change-note-modal";
 import {
   displayValue,
@@ -28,8 +35,10 @@ import type {
   ClientOption,
   PreSale,
   PreSaleFinancialCase,
+  PreSaleStatus,
   UserProfileOption,
 } from "@/types/pre-sale";
+import { isArchivedPreSaleStatus } from "@/types/pre-sale";
 
 export type LegalBoardPreSale = PreSale & {
   client: Pick<ClientOption, "id" | "full_name" | "cpf" | "email" | "phone_mobile"> | null;
@@ -51,6 +60,10 @@ type LegalKanbanProps = {
   legalConsultants: UserProfileOption[];
   currentUserId: string;
 };
+
+type LegalArchiveStatus = Extract<PreSaleStatus, "aprovado" | "inativo" | "distrato">;
+
+type LegalStatusFilter = "active" | "inativo" | "distrato" | "all";
 
 function getStageAgeLabel(isoDate: string) {
   const stageDate = new Date(isoDate);
@@ -124,9 +137,14 @@ export function LegalKanban({
     preSaleId: string;
     stage: LegalWorkflowStage;
   } | null>(null);
+  const [pendingArchiveChange, setPendingArchiveChange] = useState<{
+    preSaleId: string;
+    status: LegalArchiveStatus;
+  } | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [messageTone, setMessageTone] = useState<"success" | "error">("success");
   const [isPending, startTransition] = useTransition();
+  const [statusFilter, setStatusFilter] = useState<LegalStatusFilter>("active");
   const [adminFilter, setAdminFilter] = useState<string>(() =>
     legalAdmins.some((admin) => admin.id === currentUserId) &&
     preSales.some((preSale) => preSale.legalResponsibleUserId === currentUserId)
@@ -148,6 +166,12 @@ export function LegalKanban({
 
   const filteredPreSales = useMemo(() => {
     return preSales.filter((preSale) => {
+      const matchesStatus =
+        statusFilter === "all"
+          ? true
+          : statusFilter === "active"
+            ? !isArchivedPreSaleStatus(preSale.status)
+            : preSale.status === statusFilter;
       const matchesAdmin =
         adminFilter === "all"
           ? true
@@ -161,9 +185,9 @@ export function LegalKanban({
             ? !preSale.legalConsultantUserId
             : preSale.legalConsultantUserId === consultantFilter;
 
-      return matchesAdmin && matchesConsultant;
+      return matchesStatus && matchesAdmin && matchesConsultant;
     });
-  }, [adminFilter, consultantFilter, preSales]);
+  }, [adminFilter, consultantFilter, preSales, statusFilter]);
 
   function handleDrop(stage: LegalWorkflowStage) {
     if (!draggedId) {
@@ -211,6 +235,35 @@ export function LegalKanban({
     setPendingStageChange(null);
   }
 
+  function requestArchiveChange(preSaleId: string, status: LegalArchiveStatus) {
+    setMessage(null);
+    setPendingArchiveChange({ preSaleId, status });
+  }
+
+  function confirmArchiveChange(note: string) {
+    if (!pendingArchiveChange) {
+      return;
+    }
+
+    startTransition(async () => {
+      const result = await updateLegalArchiveStatusAction(
+        pendingArchiveChange.preSaleId,
+        pendingArchiveChange.status,
+        note,
+      );
+
+      if (!result.ok) {
+        setMessageTone("error");
+        setMessage(result.message);
+      } else {
+        setMessageTone("success");
+        setMessage(result.message);
+        router.refresh();
+      }
+    });
+    setPendingArchiveChange(null);
+  }
+
   return (
     <div className="space-y-6">
       {message ? (
@@ -237,7 +290,26 @@ export function LegalKanban({
                   A esteira abre filtrada para o responsavel logado quando houver vinculo. Se precisar, voce pode trocar para outro responsavel, ver todos ou localizar clientes sem responsavel definido.
                 </p>
               </div>
-              <div className="grid w-full gap-3 md:max-w-2xl md:grid-cols-2">
+              <div className="grid w-full gap-3 md:max-w-4xl md:grid-cols-3">
+                <div>
+                  <label
+                    htmlFor="legal-status-filter"
+                    className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500"
+                  >
+                    Situacao juridica
+                  </label>
+                  <select
+                    id="legal-status-filter"
+                    value={statusFilter}
+                    onChange={(event) => setStatusFilter(event.target.value as LegalStatusFilter)}
+                    className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
+                  >
+                    <option value="active">Ativos na esteira</option>
+                    <option value="inativo">Inativos</option>
+                    <option value="distrato">Distratos</option>
+                    <option value="all">Todos</option>
+                  </select>
+                </div>
                 <div>
                   <label
                     htmlFor="legal-admin-filter"
@@ -379,9 +451,14 @@ export function LegalKanban({
                               {stageMeta.shortLabel} • {getStageAgeLabel(preSale.stageUpdatedAt)}
                             </p>
                           </div>
-                          <span className="rounded-full border border-teal-200 bg-teal-50 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-teal-700">
-                            {stageDocuments.length} docs
-                          </span>
+                          <div className="flex flex-col items-end gap-2">
+                            {isArchivedPreSaleStatus(preSale.status) ? (
+                              <PreSalesStatusBadge status={preSale.status} />
+                            ) : null}
+                            <span className="rounded-full border border-teal-200 bg-teal-50 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-teal-700">
+                              {stageDocuments.length} docs
+                            </span>
+                          </div>
                         </div>
 
                         <div className="mt-4 space-y-2 text-xs text-slate-600">
@@ -445,6 +522,38 @@ export function LegalKanban({
                           >
                             Documentos
                           </Link>
+                        </div>
+
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {isArchivedPreSaleStatus(preSale.status) ? (
+                            <button
+                              type="button"
+                              disabled={isPending}
+                              onClick={() => requestArchiveChange(preSale.id, "aprovado")}
+                              className="rounded-lg border border-teal-200 bg-teal-50 px-3 py-2 text-xs font-semibold text-teal-700 transition hover:bg-teal-100 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              Reativar na esteira
+                            </button>
+                          ) : (
+                            <>
+                              <button
+                                type="button"
+                                disabled={isPending}
+                                onClick={() => requestArchiveChange(preSale.id, "inativo")}
+                                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+                              >
+                                Inativar
+                              </button>
+                              <button
+                                type="button"
+                                disabled={isPending}
+                                onClick={() => requestArchiveChange(preSale.id, "distrato")}
+                                className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+                              >
+                                Distrato
+                              </button>
+                            </>
+                          )}
                         </div>
 
                         <div className="mt-4">
@@ -573,6 +682,35 @@ export function LegalKanban({
           setPendingStageChange(null);
         }}
         onConfirm={confirmStageChange}
+      />
+      <ChangeNoteModal
+        isOpen={Boolean(pendingArchiveChange)}
+        title={
+          pendingArchiveChange?.status === "aprovado"
+            ? "Registrar reativacao juridica"
+            : `Registrar ${getPreSaleStatusLabel(
+                pendingArchiveChange?.status ?? "inativo",
+              ).toLowerCase()}`
+        }
+        description={
+          pendingArchiveChange?.status === "aprovado"
+            ? "Explique por que o cliente esta voltando para a esteira juridica ativa."
+            : "Explique por que o cliente deve sair da esteira juridica ativa neste momento."
+        }
+        confirmLabel={
+          pendingArchiveChange?.status === "aprovado"
+            ? "Reativar com anotacao"
+            : "Arquivar com anotacao"
+        }
+        pending={isPending}
+        onClose={() => {
+          if (isPending) {
+            return;
+          }
+
+          setPendingArchiveChange(null);
+        }}
+        onConfirm={confirmArchiveChange}
       />
     </div>
   );

@@ -3,8 +3,10 @@
 import { Edit, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useState, useTransition } from "react";
 import { WhatsAppLink } from "@/components/clients/whatsapp-link";
 import { PreSaleDeleteButton } from "@/components/pre-sales/pre-sale-delete-button";
+import { ChangeNoteModal } from "@/components/shared/change-note-modal";
 import { displayCpf } from "@/lib/clients/formatters";
 import {
   formatCurrency,
@@ -22,6 +24,12 @@ type PreSalesListProps = {
 
 export function PreSalesList({ preSales, canDelete = false }: PreSalesListProps) {
   const router = useRouter();
+  const [pendingStatusChange, setPendingStatusChange] = useState<{
+    preSaleId: string;
+    status: PreSaleStatus;
+  } | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
 
   if (!preSales.length) {
     return (
@@ -36,13 +44,38 @@ export function PreSalesList({ preSales, canDelete = false }: PreSalesListProps)
     );
   }
 
-  async function handleStatusChange(preSaleId: string, status: PreSaleStatus) {
-    await updatePreSaleStatusAction(preSaleId, status);
-    router.refresh();
+  function confirmStatusChange(note: string) {
+    if (!pendingStatusChange) {
+      return;
+    }
+
+    setMessage(null);
+    startTransition(async () => {
+      const result = await updatePreSaleStatusAction(
+        pendingStatusChange.preSaleId,
+        pendingStatusChange.status,
+        note,
+      );
+
+      if (!result.ok) {
+        setMessage(result.message);
+        setPendingStatusChange(null);
+        return;
+      }
+
+      setPendingStatusChange(null);
+      router.refresh();
+    });
   }
 
   return (
-    <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+    <div className="space-y-3">
+      {message ? (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {message}
+        </div>
+      ) : null}
+      <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
       <div className="overflow-x-auto">
         <table className="w-full min-w-[1080px] border-collapse text-left text-sm">
           <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
@@ -79,15 +112,17 @@ export function PreSalesList({ preSales, canDelete = false }: PreSalesListProps)
                   <div className="flex items-center gap-2">
                     <PreSalesStatusBadge status={preSale.status} />
                     <select
-                      defaultValue={preSale.status}
+                      value={preSale.status}
+                      disabled={isPending}
                       className="rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-xs font-medium text-slate-700"
                       onClick={(event) => event.stopPropagation()}
-                      onChange={(event) =>
-                        void handleStatusChange(
-                          preSale.id,
-                          event.target.value as PreSaleStatus,
-                        )
-                      }
+                      onChange={(event) => {
+                        event.stopPropagation();
+                        setPendingStatusChange({
+                          preSaleId: preSale.id,
+                          status: event.target.value as PreSaleStatus,
+                        });
+                      }}
                     >
                       {preSaleStatuses.map((status) => (
                         <option key={status.value} value={status.value}>
@@ -145,6 +180,22 @@ export function PreSalesList({ preSales, canDelete = false }: PreSalesListProps)
           </tbody>
         </table>
       </div>
+      </div>
+      <ChangeNoteModal
+        isOpen={Boolean(pendingStatusChange)}
+        title="Registrar mudanca de status"
+        description="Explique o que aconteceu nessa movimentacao da pre-venda e por que ela foi para este novo status."
+        confirmLabel="Alterar com anotacao"
+        pending={isPending}
+        onClose={() => {
+          if (isPending) {
+            return;
+          }
+
+          setPendingStatusChange(null);
+        }}
+        onConfirm={confirmStatusChange}
+      />
     </div>
   );
 }

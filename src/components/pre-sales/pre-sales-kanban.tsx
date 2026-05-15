@@ -11,7 +11,12 @@ import {
   formatPreSaleType,
   formatUserName,
 } from "@/lib/pre-sales/formatters";
-import { preSaleStatuses, type PreSaleStatus, type PreSaleWithRelations } from "@/types/pre-sale";
+import {
+  preSalePipelineStatuses,
+  preSaleStatuses,
+  type PreSaleStatus,
+  type PreSaleWithRelations,
+} from "@/types/pre-sale";
 import { updatePreSaleStatusAction } from "@/app/(authenticated)/pre-vendas/actions";
 import { PreSalesStatusBadge } from "./pre-sales-status-badge";
 
@@ -96,7 +101,14 @@ export function PreSalesKanban({ preSales, canDelete = false }: PreSalesKanbanPr
         </div>
       ) : null}
       <div className="grid gap-4 overflow-x-auto lg:grid-cols-6">
-        {preSaleStatuses.map((status) => {
+        {(preSales.some((preSale) =>
+          preSale.status === "inativo" || preSale.status === "distrato",
+        )
+          ? preSaleStatuses.filter((status) =>
+              preSales.some((preSale) => preSale.status === status.value),
+            )
+          : preSalePipelineStatuses
+        ).map((status) => {
           const columnPreSales = preSales.filter((preSale) => preSale.status === status.value);
 
           return (

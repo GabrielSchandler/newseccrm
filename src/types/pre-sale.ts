@@ -7,7 +7,9 @@ export type PreSaleStatus =
   | "em_contato"
   | "em_negociacao"
   | "aprovado"
-  | "perdido";
+  | "perdido"
+  | "inativo"
+  | "distrato";
 
 export type PreSaleType = "emprestimo" | "imovel" | "veiculo";
 export type LeadMedia = "Soul" | "Growper" | "Prosperity";
@@ -147,7 +149,7 @@ export type PreSaleWithRelations = PreSale & {
   creator?: UserProfileOption | null;
 };
 
-export const preSaleStatuses: Array<{
+export const preSalePipelineStatuses: Array<{
   value: PreSaleStatus;
   label: string;
 }> = [
@@ -158,6 +160,23 @@ export const preSaleStatuses: Array<{
   { value: "aprovado", label: "Aprovado" },
   { value: "perdido", label: "Perdido" },
 ];
+
+export const preSaleArchivedStatuses: Array<{
+  value: Extract<PreSaleStatus, "inativo" | "distrato">;
+  label: string;
+}> = [
+  { value: "inativo", label: "Inativo" },
+  { value: "distrato", label: "Distrato" },
+];
+
+export const preSaleStatuses = [
+  ...preSalePipelineStatuses,
+  ...preSaleArchivedStatuses,
+];
+
+export function isArchivedPreSaleStatus(status: PreSaleStatus | string | null | undefined) {
+  return status === "inativo" || status === "distrato";
+}
 
 export const preSaleTypes: Array<{
   value: PreSaleType;
