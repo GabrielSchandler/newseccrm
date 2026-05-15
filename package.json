@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "import:legacy-rd": "node ./scripts/import-legacy-rd.mjs"
+    "import:legacy-rd": "node ./scripts/import-legacy-rd.mjs",
+    "import:rd-crm-activities": "node ./scripts/import-rd-crm-activities.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.0.1",
