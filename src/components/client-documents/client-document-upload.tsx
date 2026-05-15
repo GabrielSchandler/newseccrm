@@ -17,6 +17,14 @@ type ClientDocumentUploadProps = {
   preSaleId?: string | null;
 };
 
+function getFriendlyUploadError(message: string) {
+  if (message.toLowerCase().includes("exceeded the maximum allowed size")) {
+    return "Um dos arquivos ultrapassa o limite permitido pelo Storage. O limite atual para documentos do cliente e 20 MB por arquivo.";
+  }
+
+  return message;
+}
+
 export function ClientDocumentUpload({
   clientId,
   preSaleId = null,
@@ -104,7 +112,7 @@ export function ClientDocumentUpload({
           await cancelClientDocumentsBulkUploadAction(uploadedPaths);
           setState({
             ok: false,
-            message: error.message,
+            message: getFriendlyUploadError(error.message),
           });
           return;
         }

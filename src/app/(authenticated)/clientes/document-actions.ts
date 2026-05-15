@@ -68,11 +68,34 @@ function getTitleFromFileName(fileName: string) {
 
 async function ensureClientDocumentsBucketAvailable() {
   const adminSupabase = createAdminClient();
-  const { error } = await adminSupabase.storage
-    .from(clientDocumentsBucket)
-    .list("", { limit: 1 });
+  const { data: bucket, error } = await adminSupabase.storage.getBucket(clientDocumentsBucket);
 
   if (!error) {
+    const currentLimit = bucket.file_size_limit;
+
+    if (
+      typeof currentLimit === "number" &&
+      currentLimit > 0 &&
+      currentLimit < maxClientDocumentSize
+    ) {
+      const { error: updateError } = await adminSupabase.storage.updateBucket(
+        clientDocumentsBucket,
+        {
+          public: bucket.public,
+          fileSizeLimit: maxClientDocumentSize,
+          allowedMimeTypes: bucket.allowed_mime_types ?? null,
+        },
+      );
+
+      if (updateError) {
+        return friendlyError(
+          `O bucket '${clientDocumentsBucket}' esta limitado a ${Math.floor(
+            currentLimit / 1024 / 1024,
+          )} MB. Ajuste o limite do bucket para 20 MB no Supabase Storage.`,
+        );
+      }
+    }
+
     return null;
   }
 
