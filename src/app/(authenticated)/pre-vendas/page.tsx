@@ -118,7 +118,11 @@ export default async function PreVendasPage({ searchParams }: PreVendasPageProps
         <div className="flex flex-col gap-4 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
           {canFilterCommercialConsultant ? (
             <form className="grid gap-3 md:grid-cols-[minmax(240px,420px)_auto]">
+              <label className="sr-only" htmlFor="commercial-consultant-filter">
+                Consultor comercial
+              </label>
               <select
+                id="commercial-consultant-filter"
                 name="consultant"
                 defaultValue={selectedConsultantId}
                 className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
