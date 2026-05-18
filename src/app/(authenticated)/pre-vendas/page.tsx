@@ -5,27 +5,20 @@ import { PageHeader } from "@/components/layout/page-header";
 import { PreSalesKanban } from "@/components/pre-sales/pre-sales-kanban";
 import { PreSalesList } from "@/components/pre-sales/pre-sales-list";
 import { getCurrentUserContext } from "@/lib/auth/current-user";
-import { onlyDigits } from "@/lib/clients/masks";
 import { canAccessAllPreSales, canCreatePreSales } from "@/lib/pre-sales/access";
 import { resolveUserDisplayName } from "@/lib/users/account";
 import type {
   ClientOption,
   PreSale,
-  PreSaleType,
-  PreSaleStatus,
   PreSaleWithRelations,
   UserProfileOption,
 } from "@/types/pre-sale";
-import { isArchivedPreSaleStatus, preSaleStatuses, preSaleTypes } from "@/types/pre-sale";
 
 const clientOptionSelect =
   "id, full_name, cpf, rg, birth_date, marital_status, profession, email, phone_mobile, phone_secondary, zip_code, street, number, district, city, state";
 
 type PreVendasPageProps = {
   searchParams: Promise<{
-    q?: string;
-    type?: string;
-    status?: string;
     consultant?: string;
     success?: string;
   }>;
@@ -56,10 +49,6 @@ export default async function PreVendasPage({ searchParams }: PreVendasPageProps
   const canDeletePreSales = role === "admin" || role === "manager";
   const canCreatePreSale = canCreatePreSales(role, businessArea);
   const canFilterCommercialConsultant = role === "admin" || role === "manager";
-  const search = params.q?.trim() ?? "";
-  const cpfSearch = onlyDigits(search);
-  const type = params.type as PreSaleType | undefined;
-  const status = params.status as PreSaleStatus | undefined;
   const { data: consultantsData } = await supabase
     .from("user_profiles")
     .select("id, full_name, nickname, username, email, role, business_area, is_active")
@@ -90,15 +79,7 @@ export default async function PreVendasPage({ searchParams }: PreVendasPageProps
     );
   }
 
-  if (status && preSaleStatuses.some((item) => item.value === status)) {
-    preSalesQuery = preSalesQuery.eq("status", status);
-  } else {
-    preSalesQuery = preSalesQuery.neq("status", "inativo").neq("status", "distrato");
-  }
-
-  if (type && preSaleTypes.some((item) => item.value === type)) {
-    preSalesQuery = preSalesQuery.eq("pre_sale_type", type);
-  }
+  preSalesQuery = preSalesQuery.neq("status", "inativo").neq("status", "distrato");
 
   if (selectedConsultantId) {
     preSalesQuery = preSalesQuery.or(
@@ -121,18 +102,7 @@ export default async function PreVendasPage({ searchParams }: PreVendasPageProps
   const consultants = users.filter((consultant) =>
     canAccessAllPreSales(role, businessArea) ? true : consultant.id === userProfileId,
   );
-  let preSales = attachRelations((preSalesData ?? []) as PreSale[], clients, consultants);
-
-  if (search) {
-    preSales = preSales.filter((preSale) => {
-      const client = preSale.client;
-      return (
-        client?.full_name.toLowerCase().includes(search.toLowerCase()) ||
-        client?.cpf.includes(search) ||
-        (cpfSearch ? client?.cpf.includes(cpfSearch) : false)
-      );
-    });
-  }
+  const preSales = attachRelations((preSalesData ?? []) as PreSale[], clients, consultants);
 
   const successMessage =
     params.success === "deleted" ? "Pre-venda excluida com sucesso." : null;
@@ -146,44 +116,8 @@ export default async function PreVendasPage({ searchParams }: PreVendasPageProps
       <div className="space-y-6 p-6">
         {successMessage ? <ClientToast message={successMessage} /> : null}
         <div className="flex flex-col gap-4 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-          <form
-            className={`grid gap-3 ${
-              canFilterCommercialConsultant
-                ? "md:grid-cols-[1fr_180px_180px_240px_auto]"
-                : "md:grid-cols-[1fr_180px_180px_auto]"
-            }`}
-          >
-            <input
-              name="q"
-              defaultValue={search}
-              placeholder="Buscar por cliente ou CPF"
-              className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
-            />
-            <select
-              name="type"
-              defaultValue={params.type ?? ""}
-              className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
-            >
-              <option value="">Todos os tipos</option>
-              {preSaleTypes.map((item) => (
-                <option key={item.value} value={item.value}>
-                  {item.label}
-                </option>
-              ))}
-            </select>
-            <select
-              name="status"
-              defaultValue={params.status ?? ""}
-              className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
-            >
-              <option value="">Status ativos</option>
-              {preSaleStatuses.map((item) => (
-                <option key={item.value} value={item.value}>
-                  {item.label}
-                </option>
-              ))}
-            </select>
-            {canFilterCommercialConsultant ? (
+          {canFilterCommercialConsultant ? (
+            <form className="grid gap-3 md:grid-cols-[minmax(240px,420px)_auto]">
               <select
                 name="consultant"
                 defaultValue={selectedConsultantId}
@@ -196,14 +130,14 @@ export default async function PreVendasPage({ searchParams }: PreVendasPageProps
                   </option>
                 ))}
               </select>
-            ) : null}
-            <button
-              type="submit"
-              className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-            >
-              Filtrar
-            </button>
-          </form>
+              <button
+                type="submit"
+                className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+              >
+                Filtrar
+              </button>
+            </form>
+          ) : null}
           {canCreatePreSale ? (
             <div>
               <Link
@@ -224,11 +158,7 @@ export default async function PreVendasPage({ searchParams }: PreVendasPageProps
         ) : (
           <>
             <PreSalesKanban
-              preSales={
-                status && isArchivedPreSaleStatus(status)
-                  ? preSales
-                  : preSales.filter((preSale) => !isArchivedPreSaleStatus(preSale.status))
-              }
+              preSales={preSales}
               canDelete={canDeletePreSales}
             />
             <PreSalesList preSales={preSales} canDelete={canDeletePreSales} />
