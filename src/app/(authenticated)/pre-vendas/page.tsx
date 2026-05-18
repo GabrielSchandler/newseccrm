@@ -79,7 +79,6 @@ export default async function PreVendasPage({ searchParams }: PreVendasPageProps
     );
   }
 
-  preSalesQuery = preSalesQuery.neq("status", "inativo").neq("status", "distrato");
 
   if (selectedConsultantId) {
     preSalesQuery = preSalesQuery.or(
@@ -102,7 +101,9 @@ export default async function PreVendasPage({ searchParams }: PreVendasPageProps
   const consultants = users.filter((consultant) =>
     canAccessAllPreSales(role, businessArea) ? true : consultant.id === userProfileId,
   );
-  const preSales = attachRelations((preSalesData ?? []) as PreSale[], clients, consultants);
+  const preSales = attachRelations((preSalesData ?? []) as PreSale[], clients, consultants).filter(
+    (preSale) => preSale.status !== "inativo" && preSale.status !== "distrato",
+  );
 
   const successMessage =
     params.success === "deleted" ? "Pre-venda excluida com sucesso." : null;
