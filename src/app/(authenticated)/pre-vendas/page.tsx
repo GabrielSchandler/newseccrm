@@ -55,10 +55,28 @@ export default async function PreVendasPage({ searchParams }: PreVendasPageProps
     await getCurrentUserContext();
   const canDeletePreSales = role === "admin" || role === "manager";
   const canCreatePreSale = canCreatePreSales(role, businessArea);
+  const canFilterCommercialConsultant = role === "admin" || role === "manager";
   const search = params.q?.trim() ?? "";
   const cpfSearch = onlyDigits(search);
   const type = params.type as PreSaleType | undefined;
   const status = params.status as PreSaleStatus | undefined;
+  const { data: consultantsData } = await supabase
+    .from("user_profiles")
+    .select("id, full_name, nickname, username, email, role, business_area, is_active")
+    .eq("company_id", companyId);
+  const users = (consultantsData ?? []) as UserProfileOption[];
+  const commercialConsultants = users.filter(
+    (consultant) =>
+      consultant.role === "seller" &&
+      consultant.business_area === "commercial" &&
+      consultant.is_active !== false,
+  );
+  const selectedConsultantId =
+    canFilterCommercialConsultant &&
+    params.consultant &&
+    commercialConsultants.some((consultant) => consultant.id === params.consultant)
+      ? params.consultant
+      : "";
 
   let preSalesQuery = supabase
     .from("pre_sales")
@@ -82,28 +100,25 @@ export default async function PreVendasPage({ searchParams }: PreVendasPageProps
     preSalesQuery = preSalesQuery.eq("pre_sale_type", type);
   }
 
-  if (params.consultant) {
-    preSalesQuery = preSalesQuery.eq("consultant_user_id", params.consultant);
+  if (selectedConsultantId) {
+    preSalesQuery = preSalesQuery.or(
+      `consultant_user_id.eq.${selectedConsultantId},created_by.eq.${selectedConsultantId}`,
+    );
   }
 
   const [
     { data: preSalesData, error },
     { data: clientsData },
-    { data: consultantsData },
   ] = await Promise.all([
     preSalesQuery,
     supabase
       .from("clients")
       .select(clientOptionSelect)
       .eq("company_id", companyId),
-    supabase
-      .from("user_profiles")
-      .select("id, full_name, nickname, username, email, role")
-      .eq("company_id", companyId),
   ]);
 
   const clients = (clientsData ?? []) as ClientOption[];
-  const consultants = ((consultantsData ?? []) as UserProfileOption[]).filter((consultant) =>
+  const consultants = users.filter((consultant) =>
     canAccessAllPreSales(role, businessArea) ? true : consultant.id === userProfileId,
   );
   let preSales = attachRelations((preSalesData ?? []) as PreSale[], clients, consultants);
@@ -131,7 +146,13 @@ export default async function PreVendasPage({ searchParams }: PreVendasPageProps
       <div className="space-y-6 p-6">
         {successMessage ? <ClientToast message={successMessage} /> : null}
         <div className="flex flex-col gap-4 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-          <form className="grid gap-3 md:grid-cols-[1fr_180px_180px_220px_auto]">
+          <form
+            className={`grid gap-3 ${
+              canFilterCommercialConsultant
+                ? "md:grid-cols-[1fr_180px_180px_240px_auto]"
+                : "md:grid-cols-[1fr_180px_180px_auto]"
+            }`}
+          >
             <input
               name="q"
               defaultValue={search}
@@ -162,18 +183,20 @@ export default async function PreVendasPage({ searchParams }: PreVendasPageProps
                 </option>
               ))}
             </select>
-            <select
-              name="consultant"
-              defaultValue={params.consultant ?? ""}
-              className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
-            >
-              <option value="">Todos os consultores</option>
-              {consultants.map((consultant) => (
-                <option key={consultant.id} value={consultant.id}>
-                  {resolveUserDisplayName(consultant, "Sem nome")}
-                </option>
-              ))}
-            </select>
+            {canFilterCommercialConsultant ? (
+              <select
+                name="consultant"
+                defaultValue={selectedConsultantId}
+                className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
+              >
+                <option value="">Todos os consultores comerciais</option>
+                {commercialConsultants.map((consultant) => (
+                  <option key={consultant.id} value={consultant.id}>
+                    {resolveUserDisplayName(consultant, "Sem nome")}
+                  </option>
+                ))}
+              </select>
+            ) : null}
             <button
               type="submit"
               className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
