@@ -10,6 +10,11 @@ import {
   type DocumentActionState,
 } from "@/app/(authenticated)/documentos/actions";
 import { FormFieldLabel } from "@/components/form-field-label";
+import {
+  closePreparedDocumentTab,
+  openPreparedDocumentTab,
+  prepareDocumentTab,
+} from "@/lib/browser/open-document-tab";
 import { documentTemplateTypes, type DocumentTemplate } from "@/types/document";
 
 type GenerateDocumentModalProps = {
@@ -63,6 +68,8 @@ export function GenerateDocumentModal({
     }
 
     setState(null);
+    const preparedTab = prepareDocumentTab();
+
     startTransition(async () => {
       const result = await createGeneratedDocumentFileUrlAction(
         generatedDocumentId,
@@ -72,7 +79,9 @@ export function GenerateDocumentModal({
       setState(result);
 
       if (result.ok && result.url) {
-        window.open(result.url, "_blank", "noopener,noreferrer");
+        openPreparedDocumentTab(result.url, preparedTab);
+      } else {
+        closePreparedDocumentTab(preparedTab);
       }
     });
   }

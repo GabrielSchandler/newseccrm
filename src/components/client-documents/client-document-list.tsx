@@ -13,6 +13,11 @@ import {
   formatClientDocumentSize,
   formatClientDocumentType,
 } from "@/lib/client-documents/formatters";
+import {
+  closePreparedDocumentTab,
+  openPreparedDocumentTab,
+  prepareDocumentTab,
+} from "@/lib/browser/open-document-tab";
 import { displayValue, formatDateTime } from "@/lib/clients/formatters";
 import {
   clientDocumentTypes,
@@ -56,11 +61,13 @@ export function ClientDocumentList({
     setReplacementFile(null);
   }
 
-  function openUrl(url: string, mode: "view" | "download") {
+  function openUrl(url: string, mode: "view" | "download", tab: Window | null) {
     if (mode === "view") {
-      window.open(url, "_blank", "noopener,noreferrer");
+      openPreparedDocumentTab(url, tab);
       return;
     }
+
+    closePreparedDocumentTab(tab);
 
     const anchor = globalThis.document.createElement("a");
     anchor.href = url;
@@ -71,12 +78,16 @@ export function ClientDocumentList({
 
   function handleSignedUrl(documentId: string, mode: "view" | "download") {
     setState(null);
+    const preparedTab = mode === "view" ? prepareDocumentTab() : null;
+
     startTransition(async () => {
       const result = await createSignedDocumentUrlAction(documentId, mode);
       setState(result);
 
       if (result.ok && result.url) {
-        openUrl(result.url, mode);
+        openUrl(result.url, mode, preparedTab);
+      } else {
+        closePreparedDocumentTab(preparedTab);
       }
     });
   }
