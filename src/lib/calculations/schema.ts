@@ -45,6 +45,11 @@ const optionalNumber = z
   .refine((value) => value === null || !Number.isNaN(value), "Informe um valor valido.")
   .refine((value) => value === null || value >= 0, "Informe um valor maior ou igual a zero.");
 
+const optionalPercentage = optionalNumber.refine(
+  (value) => value === null || value <= 100,
+  "Informe uma porcentagem entre 0 e 100.",
+);
+
 const optionalInteger = z
   .union([z.string(), z.number(), z.null(), z.undefined()])
   .transform((value) => {
@@ -89,6 +94,7 @@ export const financingCalculationFormSchema = z.object({
   current_installment_value: optionalNumber,
   paid_installments: optionalInteger,
   remaining_installments: optionalInteger,
+  installment_reduction_percentage: optionalPercentage,
 });
 
 export type FinancingCalculationFormValues = z.input<
@@ -120,6 +126,7 @@ export const financingCalculationDefaultValues: FinancingCalculationFormValues =
   current_installment_value: "",
   paid_installments: "",
   remaining_installments: "",
+  installment_reduction_percentage: "30",
 };
 
 function numberToInput(value: number | string | null | undefined) {
@@ -170,5 +177,8 @@ export function financingCalculationToFormValues(
     ),
     paid_installments: integerToInput(calculation.paid_installments),
     remaining_installments: integerToInput(calculation.remaining_installments),
+    installment_reduction_percentage: numberToInput(
+      calculation.installment_reduction_percentage ?? 30,
+    ),
   };
 }

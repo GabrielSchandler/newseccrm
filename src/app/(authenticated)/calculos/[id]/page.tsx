@@ -64,6 +64,22 @@ function DetailItem({
   );
 }
 
+function formatPercentage(value: number | string | null | undefined) {
+  if (value === null || value === undefined || value === "") {
+    return "Nao informado";
+  }
+
+  const numeric = Number(String(value).replace(",", "."));
+
+  if (!Number.isFinite(numeric)) {
+    return "Nao informado";
+  }
+
+  return `${new Intl.NumberFormat("pt-BR", {
+    maximumFractionDigits: 2,
+  }).format(numeric)}%`;
+}
+
 export default async function CalculoPage({
   params,
   searchParams,
@@ -166,6 +182,10 @@ export default async function CalculoPage({
           ) : null}
           <DetailItem label="Valor financiado" value={formatCalculationCurrency(calculation.financed_value)} />
           <DetailItem label="Valor atual da parcela" value={formatCalculationCurrency(calculation.current_installment_value)} />
+          <DetailItem
+            label="Reducao da parcela"
+            value={formatPercentage(calculation.installment_reduction_percentage ?? 30)}
+          />
           <DetailItem label="Quantidade de parcelas" value={String(calculation.installment_count ?? "Nao informado")} />
           <DetailItem label="Parcelas pagas" value={String(calculation.paid_installments ?? "Nao informado")} />
           <DetailItem label="Parcelas a pagar" value={String(calculation.remaining_installments ?? "Nao informado")} />

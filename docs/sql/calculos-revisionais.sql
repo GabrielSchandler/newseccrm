@@ -21,6 +21,7 @@ create table if not exists public.financing_calculations (
   financed_value numeric(14,2) null,
   installment_count integer null,
   current_installment_value numeric(14,2) null,
+  installment_reduction_percentage numeric(5,2) null default 30,
   paid_installments integer null,
   remaining_installments integer null,
   corrected_installment_value numeric(14,2) null,
@@ -69,6 +70,7 @@ alter table public.financing_calculations
   add column if not exists financed_value numeric(14,2),
   add column if not exists installment_count integer,
   add column if not exists current_installment_value numeric(14,2),
+  add column if not exists installment_reduction_percentage numeric(5,2) default 30,
   add column if not exists paid_installments integer,
   add column if not exists remaining_installments integer,
   add column if not exists corrected_installment_value numeric(14,2),
@@ -95,6 +97,25 @@ alter table public.financing_calculations
   add column if not exists updated_by uuid,
   add column if not exists created_at timestamptz default timezone('utc', now()),
   add column if not exists updated_at timestamptz default timezone('utc', now());
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'financing_calculations_installment_reduction_percentage_check'
+  ) then
+    alter table public.financing_calculations
+      add constraint financing_calculations_installment_reduction_percentage_check
+      check (
+        installment_reduction_percentage is null
+        or (
+          installment_reduction_percentage >= 0
+          and installment_reduction_percentage <= 100
+        )
+      );
+  end if;
+end $$;
 
 create index if not exists financing_calculations_company_idx
   on public.financing_calculations (company_id, created_at desc);

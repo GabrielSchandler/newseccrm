@@ -760,6 +760,45 @@ export function CalculationForm({
           </div>
           <div className="space-y-2">
             <FormFieldLabel
+              htmlFor="installment_reduction_percentage"
+              label="Reducao da parcela (%)"
+              requirement="optional"
+              hint="Padrao de 30%. Reduza para 15, 10 ou 5 quando o juros do cliente for baixo."
+            />
+            <input
+              id="installment_reduction_percentage"
+              disabled={disabled}
+              inputMode="decimal"
+              placeholder="30"
+              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
+              {...register("installment_reduction_percentage")}
+            />
+            <div className="flex flex-wrap gap-2">
+              {["30", "15", "10", "5"].map((percentage) => (
+                <button
+                  key={percentage}
+                  type="button"
+                  disabled={disabled}
+                  onClick={() =>
+                    setValue("installment_reduction_percentage", percentage, {
+                      shouldDirty: true,
+                      shouldValidate: true,
+                    })
+                  }
+                  className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-70"
+                >
+                  {percentage}%
+                </button>
+              ))}
+            </div>
+            {errors.installment_reduction_percentage?.message ? (
+              <p className="text-sm text-red-600">
+                {String(errors.installment_reduction_percentage.message)}
+              </p>
+            ) : null}
+          </div>
+          <div className="space-y-2">
+            <FormFieldLabel
               htmlFor="installment_count"
               label="Quantidade de parcelas"
               requirement="optional"

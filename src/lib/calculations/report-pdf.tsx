@@ -522,6 +522,23 @@ function optionalInt(value: number | string | null | undefined) {
   return isFilledDisplayValue(result) ? result : null;
 }
 
+function optionalPercentage(value: number | string | null | undefined) {
+  if (value === null || value === undefined || value === "") {
+    return null;
+  }
+
+  const numeric =
+    typeof value === "number" ? value : Number(String(value).replace(",", "."));
+
+  if (!Number.isFinite(numeric)) {
+    return null;
+  }
+
+  return `${new Intl.NumberFormat("pt-BR", {
+    maximumFractionDigits: 2,
+  }).format(numeric)}%`;
+}
+
 function optionalCpf(value: string | null | undefined) {
   const result = formatCpfDigits(value);
   return isFilledDisplayValue(result) ? result : null;
@@ -698,6 +715,9 @@ export function CalculationReportPdf({
   const impactSavings = optionalCurrency(calculation.estimated_savings);
   const currentInstallment = optionalCurrency(calculation.current_installment_value);
   const correctedInstallment = optionalCurrency(calculation.corrected_installment_value);
+  const installmentReductionPercentage = optionalPercentage(
+    calculation.installment_reduction_percentage ?? 30,
+  );
   const comparisonCards = [
     {
       label: "Parcela atual",
@@ -736,6 +756,10 @@ export function CalculationReportPdf({
     {
       label: "Valor atual da parcela",
       value: currentInstallment,
+    },
+    {
+      label: "Reducao da parcela",
+      value: installmentReductionPercentage,
     },
     {
       label: "Parcelas pagas",

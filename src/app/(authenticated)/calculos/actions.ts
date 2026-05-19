@@ -116,6 +116,8 @@ function normalizeCalculationPayload(values: FinancingCalculationPayload) {
     current_installment_value: parseBrazilianDecimalInput(
       values.current_installment_value,
     ),
+    installment_reduction_percentage:
+      parseBrazilianDecimalInput(values.installment_reduction_percentage) ?? 30,
     installment_count:
       values.installment_count === null || values.installment_count === undefined
         ? null

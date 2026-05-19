@@ -25,6 +25,7 @@ export type FinancingCalculation = {
   current_installment_value: number | string | null;
   paid_installments: number | string | null;
   remaining_installments: number | string | null;
+  installment_reduction_percentage: number | string | null;
   corrected_installment_value: number | string | null;
   current_total_financing: number | string | null;
   corrected_total_financing: number | string | null;

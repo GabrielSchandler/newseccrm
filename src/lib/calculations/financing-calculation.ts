@@ -1,14 +1,9 @@
-import type {
-  FinancingCalculationComputedValues,
-  FinancingCalculationType,
-} from "@/types/calculation";
+import type { FinancingCalculationComputedValues } from "@/types/calculation";
 import { parseBrazilianDecimalInput } from "@/lib/calculations/currency";
 
-export const DEFAULT_INSTALLMENT_ADJUSTMENT_FACTOR = 0.7;
-export const REAL_ESTATE_INSTALLMENT_ADJUSTMENT_FACTOR = 0.6;
+export const DEFAULT_INSTALLMENT_REDUCTION_PERCENTAGE = 30;
 
 type CalculationInput = {
-  simulation_type?: FinancingCalculationType | null;
   cash_value?: number | string | null;
   down_payment?: number | string | null;
   financed_value?: number | string | null;
@@ -16,6 +11,7 @@ type CalculationInput = {
   current_installment_value?: number | string | null;
   paid_installments?: number | string | null;
   remaining_installments?: number | string | null;
+  installment_reduction_percentage?: number | string | null;
 };
 
 function toNumber(value: number | string | null | undefined) {
@@ -32,6 +28,16 @@ function roundCurrency(value: number) {
   return Number(value.toFixed(2));
 }
 
+function resolveInstallmentReductionPercentage(value: number | string | null | undefined) {
+  const parsed = parseBrazilianDecimalInput(value);
+
+  if (parsed === null || !Number.isFinite(parsed)) {
+    return DEFAULT_INSTALLMENT_REDUCTION_PERCENTAGE;
+  }
+
+  return Math.min(Math.max(parsed, 0), 100);
+}
+
 export function calculateFinancingRevision(
   input: CalculationInput,
 ): FinancingCalculationComputedValues {
@@ -39,10 +45,10 @@ export function calculateFinancingRevision(
   const currentInstallmentValue = toNumber(input.current_installment_value);
   const paidInstallments = toNumber(input.paid_installments);
   const remainingInstallments = toNumber(input.remaining_installments);
-  const installmentAdjustmentFactor =
-    input.simulation_type === "imovel"
-      ? REAL_ESTATE_INSTALLMENT_ADJUSTMENT_FACTOR
-      : DEFAULT_INSTALLMENT_ADJUSTMENT_FACTOR;
+  const installmentReductionPercentage = resolveInstallmentReductionPercentage(
+    input.installment_reduction_percentage,
+  );
+  const installmentAdjustmentFactor = 1 - installmentReductionPercentage / 100;
 
   const correctedInstallmentValue =
     currentInstallmentValue * installmentAdjustmentFactor;
