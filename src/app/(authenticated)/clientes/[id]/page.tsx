@@ -93,7 +93,8 @@ export default async function ClientePage({
   searchParams,
 }: ClientePageProps) {
   const [{ id }, queryParams] = await Promise.all([params, searchParams]);
-  const { supabase, companyId, role, businessArea } = await getCurrentUserContext();
+  const { supabase, companyId, role, businessArea, userProfileId } =
+    await getCurrentUserContext();
   const adminClient = createAdminClient();
 
   const { data, error } = await supabase
@@ -470,7 +471,12 @@ export default async function ClientePage({
           </div>
         </section>
 
-        <ClientTimelineSection clientId={client.id} events={timelineEvents} />
+        <ClientTimelineSection
+          clientId={client.id}
+          events={timelineEvents}
+          currentUserProfileId={userProfileId}
+          canEditOwnNotes={businessArea === "legal"}
+        />
 
         <ClientDocumentsSection
           clientId={client.id}

@@ -238,7 +238,7 @@ export async function listCalculationPreSales() {
     supabase
       .from("pre_sale_financial_cases")
       .select(
-        "pre_sale_id, financer_name, financed_amount, installment_amount, paid_installments, asset_year",
+        "pre_sale_id, financer_name, financed_amount, installment_amount, paid_installments, asset_brand_model, asset_year",
       )
       .in("pre_sale_id", preSaleIds),
     supabase
@@ -286,6 +286,7 @@ export async function listCalculationPreSales() {
           financed_amount: number | null;
           installment_amount: number | null;
           paid_installments: number | null;
+          asset_brand_model: string | null;
           asset_year: string | number | null;
         }
       | undefined;
@@ -307,6 +308,7 @@ export async function listCalculationPreSales() {
           ? (consultantMap.get(preSale.consultant_user_id) ?? null)
           : null) ??
         (consultantMap.get(preSale.created_by) ?? null),
+      vehicle: financial?.asset_brand_model ?? null,
       vehicle_year:
         financial?.asset_year === null || financial?.asset_year === undefined
           ? null

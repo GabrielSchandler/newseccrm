@@ -460,9 +460,33 @@ function displayText(value: string | null | undefined, fallback = "Não informad
   return trimmed ? trimmed : fallback;
 }
 
+function isFilledDisplayValue(value: string | null | undefined) {
+  const normalized = value
+    ?.trim()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+
+  return Boolean(
+    normalized &&
+      normalized !== "nao informado" &&
+      normalized !== "em branco" &&
+      normalized !== "-",
+  );
+}
+
+function optionalText(value: string | null | undefined) {
+  return isFilledDisplayValue(value) ? value?.trim() ?? null : null;
+}
+
 function displayDate(value: string | null | undefined) {
   const result = formatCalculationDate(value);
   return result === "Nao informado" ? "Não informado" : result;
+}
+
+function optionalDate(value: string | null | undefined) {
+  const result = displayDate(value);
+  return isFilledDisplayValue(result) ? result : null;
 }
 
 function displayCurrency(value: number | string | null | undefined) {
@@ -470,9 +494,19 @@ function displayCurrency(value: number | string | null | undefined) {
   return result === "Nao informado" ? "Não informado" : result;
 }
 
+function optionalCurrency(value: number | string | null | undefined) {
+  const result = displayCurrency(value);
+  return isFilledDisplayValue(result) ? result : null;
+}
+
 function displayPhone(value: string | null | undefined) {
   const formatted = formatPhone(value);
   return formatted || "Não informado";
+}
+
+function optionalPhone(value: string | null | undefined) {
+  const result = displayPhone(value);
+  return isFilledDisplayValue(result) ? result : null;
 }
 
 function displayInt(value: number | string | null | undefined) {
@@ -483,14 +517,24 @@ function displayInt(value: number | string | null | undefined) {
   return String(value);
 }
 
+function optionalInt(value: number | string | null | undefined) {
+  const result = displayInt(value);
+  return isFilledDisplayValue(result) ? result : null;
+}
+
+function optionalCpf(value: string | null | undefined) {
+  const result = formatCpfDigits(value);
+  return isFilledDisplayValue(result) ? result : null;
+}
+
 function displayCompanyCnpj(value: string | null | undefined) {
   const formatted = formatCnpj(value);
-  return formatted || "Nao informado";
+  return formatted || null;
 }
 
 function displayWebsite(value: string | null | undefined) {
   if (!value?.trim()) {
-    return "Nao informado";
+    return null;
   }
 
   return value
@@ -520,9 +564,13 @@ function InfoItem({
   full = false,
 }: {
   label: string;
-  value: string;
+  value: string | null;
   full?: boolean;
 }) {
+  if (!isFilledDisplayValue(value)) {
+    return null;
+  }
+
   return (
     <View style={full ? [styles.infoItem, styles.infoItemFull] : styles.infoItem}>
       <Text style={styles.infoLabel}>{label}</Text>
@@ -534,15 +582,23 @@ function InfoItem({
 function DataTable({
   rows,
 }: {
-  rows: Array<{ label: string; value: string }>;
+  rows: Array<{ label: string; value: string | null }>;
 }) {
+  const visibleRows = rows.filter(
+    (row): row is { label: string; value: string } => isFilledDisplayValue(row.value),
+  );
+
+  if (!visibleRows.length) {
+    return null;
+  }
+
   return (
     <View style={styles.compactTable}>
       <View style={styles.compactHeader}>
         <Text style={styles.compactHeaderCell}>Indicador</Text>
         <Text style={styles.compactHeaderCell}>Valor</Text>
       </View>
-      {rows.map((row) => (
+      {visibleRows.map((row) => (
         <View key={row.label} style={styles.compactRow}>
           <Text style={styles.compactCellLabel}>{row.label}</Text>
           <Text style={styles.compactCellValue}>{row.value}</Text>
@@ -557,11 +613,20 @@ type OpportunityTone = "default" | "positive";
 function OpportunityTable({
   rows,
 }: {
-  rows: Array<{ label: string; value: string; tone?: OpportunityTone }>;
+  rows: Array<{ label: string; value: string | null; tone?: OpportunityTone }>;
 }) {
+  const visibleRows = rows.filter(
+    (row): row is { label: string; value: string; tone?: OpportunityTone } =>
+      isFilledDisplayValue(row.value),
+  );
+
+  if (!visibleRows.length) {
+    return null;
+  }
+
   return (
     <View style={styles.opportunityCard}>
-      {rows.map((row, index) => {
+      {visibleRows.map((row, index) => {
         const tone = row.tone ?? "default";
         const rowStyles =
           tone === "positive"
@@ -623,79 +688,105 @@ export function CalculationReportPdf({
     calculation.attendance_date ?? new Date().toISOString().slice(0, 10),
   );
   const situation = displayText(calculation.situation || "Aprovado");
-  const expiresIn = displayDate(calculation.expires_in);
-  const monthlyReduction = displayCurrency(
+  const expiresIn = optionalDate(calculation.expires_in);
+  const monthlyReduction = optionalCurrency(
     calculation.abusive_interest_per_installment,
   );
   const isVehicleSimulation = calculation.simulation_type === "veiculo";
+  const companyCnpj = displayCompanyCnpj(companyDocument);
+  const protocol = optionalText(protocolNumber);
+  const impactSavings = optionalCurrency(calculation.estimated_savings);
+  const currentInstallment = optionalCurrency(calculation.current_installment_value);
+  const correctedInstallment = optionalCurrency(calculation.corrected_installment_value);
+  const comparisonCards = [
+    {
+      label: "Parcela atual",
+      value: currentInstallment,
+      cardStyle: [styles.comparisonCard, styles.comparisonCardNegative],
+      valueStyle: [styles.comparisonValue, styles.comparisonValueNegative],
+    },
+    {
+      label: "Parcela corrigida",
+      value: correctedInstallment,
+      cardStyle: [styles.comparisonCard, styles.comparisonCardAccent],
+      valueStyle: [styles.comparisonValue, styles.comparisonValueAccent],
+    },
+    {
+      label: "Economia mensal",
+      value: monthlyReduction,
+      cardStyle: [styles.comparisonCard, styles.comparisonCardPositive],
+      valueStyle: [styles.comparisonValue, styles.comparisonValuePositive],
+      hint: "Estimativa inicial com base no cenario informado.",
+    },
+  ].filter((card) => isFilledDisplayValue(card.value));
 
   const operationRows = [
-    { label: "Valor à vista", value: displayCurrency(calculation.cash_value) },
+    { label: "Valor à vista", value: optionalCurrency(calculation.cash_value) },
     ...(isVehicleSimulation
-      ? [{ label: "Entrada", value: displayCurrency(calculation.down_payment) }]
+      ? [{ label: "Entrada", value: optionalCurrency(calculation.down_payment) }]
       : []),
     {
       label: "Valor financiado",
-      value: displayCurrency(calculation.financed_value),
+      value: optionalCurrency(calculation.financed_value),
     },
     {
       label: "Quantidade de parcelas",
-      value: displayInt(calculation.installment_count),
+      value: optionalInt(calculation.installment_count),
     },
     {
       label: "Valor atual da parcela",
-      value: displayCurrency(calculation.current_installment_value),
+      value: currentInstallment,
     },
     {
       label: "Parcelas pagas",
-      value: displayInt(calculation.paid_installments),
+      value: optionalInt(calculation.paid_installments),
     },
     {
       label: "Parcelas a pagar",
-      value: displayInt(calculation.remaining_installments),
+      value: optionalInt(calculation.remaining_installments),
     },
   ];
 
   const opportunityRows = [
     {
       label: "Economia mensal",
-      value: displayCurrency(calculation.abusive_interest_per_installment),
+      value: monthlyReduction,
       tone: "positive" as const,
     },
     {
       label: "Total da dívida atual",
-      value: displayCurrency(calculation.current_total_financing),
+      value: optionalCurrency(calculation.current_total_financing),
     },
     {
       label: "Total da dívida após revisão",
-      value: displayCurrency(calculation.corrected_total_financing),
+      value: optionalCurrency(calculation.corrected_total_financing),
     },
     {
       label: "Economia total",
-      value: displayCurrency(calculation.estimated_savings),
+      value: impactSavings,
       tone: "positive" as const,
     },
     {
       label: "Juros abusivos já pagos",
-      value: displayCurrency(calculation.abusive_interest_paid),
+      value: optionalCurrency(calculation.abusive_interest_paid),
       tone: "positive" as const,
     },
     {
       label: "Parcela com abatimento de juros abusivos já pagos",
-      value: displayCurrency(calculation.installment_reduction_remaining),
+      value: optionalCurrency(calculation.installment_reduction_remaining),
       tone: "positive" as const,
     },
     {
       label: "Total pago até o momento",
-      value: displayCurrency(calculation.paid_amount_until_now),
+      value: optionalCurrency(calculation.paid_amount_until_now),
     },
     {
       label: "Saldo devedor sem correção",
-      value: displayCurrency(calculation.remaining_amount_to_pay),
+      value: optionalCurrency(calculation.remaining_amount_to_pay),
     },
     {
       label: "Saldo devedor pós correção",
-      value: displayCurrency(calculation.real_debt),
+      value: optionalCurrency(calculation.real_debt),
     },
   ];
 
@@ -711,11 +802,15 @@ export function CalculationReportPdf({
           <View style={styles.headerTop}>
             <View style={styles.brandBlock}>
               <Text style={styles.companyName}>{displayText(companyName, "GRS")}</Text>
-              <Text style={styles.companyMeta}>{`CNPJ: ${displayCompanyCnpj(companyDocument)}`}</Text>
+              {companyCnpj ? (
+                <Text style={styles.companyMeta}>{`CNPJ: ${companyCnpj}`}</Text>
+              ) : null}
               <Text style={styles.companyMeta}>Data de emissão: {issueDate}</Text>
-              <Text style={[styles.companyMeta, styles.protocolLine]}>
-                {`Protocolo: ${displayText(protocolNumber, "Nao informado")}`}
-              </Text>
+              {protocol ? (
+                <Text style={[styles.companyMeta, styles.protocolLine]}>
+                  {`Protocolo: ${protocol}`}
+                </Text>
+              ) : null}
             </View>
             <View style={styles.badgeStack}>
               <PdfBadge label="SIMULAÇÃO GRATUITA" accent />
@@ -735,61 +830,51 @@ export function CalculationReportPdf({
           </Text>
         </View>
 
-        <View style={styles.impactCard}>
-          <Text style={styles.impactLabel}>ECONOMIA TOTAL</Text>
-          <Text style={styles.impactValue}>
-            {displayCurrency(calculation.estimated_savings)}
-          </Text>
-          <Text style={styles.impactText}>
-            Com base nos dados informados, identificamos um potencial relevante
-            de redução no custo total do contrato.
-          </Text>
-        </View>
+        {impactSavings ? (
+          <View style={styles.impactCard}>
+            <Text style={styles.impactLabel}>ECONOMIA TOTAL</Text>
+            <Text style={styles.impactValue}>{impactSavings}</Text>
+            <Text style={styles.impactText}>
+              Com base nos dados informados, identificamos um potencial relevante
+              de redução no custo total do contrato.
+            </Text>
+          </View>
+        ) : null}
 
-        <View style={styles.comparisonRow}>
-          <View style={[styles.comparisonCard, styles.comparisonCardNegative]}>
-            <Text style={styles.comparisonLabel}>Parcela atual</Text>
-            <Text style={[styles.comparisonValue, styles.comparisonValueNegative]}>
-              {displayCurrency(calculation.current_installment_value)}
-            </Text>
+        {comparisonCards.length ? (
+          <View style={styles.comparisonRow}>
+            {comparisonCards.map((card) => (
+              <View key={card.label} style={card.cardStyle}>
+                <Text style={styles.comparisonLabel}>{card.label}</Text>
+                <Text style={card.valueStyle}>{card.value}</Text>
+                {card.hint ? (
+                  <Text style={styles.comparisonHint}>{card.hint}</Text>
+                ) : null}
+              </View>
+            ))}
           </View>
-          <View style={[styles.comparisonCard, styles.comparisonCardAccent]}>
-            <Text style={styles.comparisonLabel}>Parcela corrigida</Text>
-            <Text style={[styles.comparisonValue, styles.comparisonValueAccent]}>
-              {displayCurrency(calculation.corrected_installment_value)}
-            </Text>
-          </View>
-          <View style={[styles.comparisonCard, styles.comparisonCardPositive]}>
-            <Text style={styles.comparisonLabel}>Economia mensal</Text>
-            <Text style={[styles.comparisonValue, styles.comparisonValuePositive]}>
-              {monthlyReduction}
-            </Text>
-            <Text style={styles.comparisonHint}>
-              Estimativa inicial com base no cenário informado.
-            </Text>
-          </View>
-        </View>
+        ) : null}
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Dados do atendimento</Text>
           <View style={styles.infoBox}>
             <View style={styles.infoGrid}>
-              <InfoItem label="Cliente" value={displayText(calculation.client_name)} />
-              <InfoItem label="CPF" value={formatCpfDigits(calculation.client_cpf)} />
+              <InfoItem label="Cliente" value={optionalText(calculation.client_name)} />
+              <InfoItem label="CPF" value={optionalCpf(calculation.client_cpf)} />
               <InfoItem
                 label="Telefone"
-                value={displayPhone(calculation.client_phone)}
+                value={optionalPhone(calculation.client_phone)}
               />
               <InfoItem
                 label="Financeira"
-                value={displayText(calculation.financial_institution)}
+                value={optionalText(calculation.financial_institution)}
               />
               <InfoItem
                 label="Tipo da simulacao"
                 value={
                   calculation.simulation_type
                     ? formatPreSaleType(calculation.simulation_type)
-                    : "Nao informado"
+                    : null
                 }
               />
               <InfoItem
@@ -810,13 +895,19 @@ export function CalculationReportPdf({
               />
               {isVehicleSimulation ? (
                 <InfoItem
-                  label="Veiculo/Ano"
-                  value={displayText(calculation.vehicle_year)}
+                  label="Modelo e marca"
+                  value={optionalText(calculation.vehicle)}
+                />
+              ) : null}
+              {isVehicleSimulation ? (
+                <InfoItem
+                  label="Ano"
+                  value={optionalText(calculation.vehicle_year)}
                 />
               ) : null}
               <InfoItem
                 label="Observacoes"
-                value={displayText(calculation.notes)}
+                value={optionalText(calculation.notes)}
                 full
               />
             </View>
@@ -883,15 +974,15 @@ export function CalculationReportPdf({
             <Text style={styles.footerText}>{displayText(companyName, "GRS")}</Text>
           </View>
           <View style={styles.footerContacts}>
-            <Text style={styles.footerAddressText}>
-              {displayText(companyAddress, "Nao informado")}
-            </Text>
-            <Text style={styles.footerContactText}>
-              {displayPhone(companyPhone)}
-            </Text>
-            <Text style={styles.footerContactText}>
-              {displayWebsite(companyWebsite)}
-            </Text>
+            {optionalText(companyAddress) ? (
+              <Text style={styles.footerAddressText}>{optionalText(companyAddress)}</Text>
+            ) : null}
+            {optionalPhone(companyPhone) ? (
+              <Text style={styles.footerContactText}>{optionalPhone(companyPhone)}</Text>
+            ) : null}
+            {displayWebsite(companyWebsite) ? (
+              <Text style={styles.footerContactText}>{displayWebsite(companyWebsite)}</Text>
+            ) : null}
           </View>
         </View>
       </Page>

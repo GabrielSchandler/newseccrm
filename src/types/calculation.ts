@@ -15,6 +15,7 @@ export type FinancingCalculation = {
   situation: string | null;
   expires_in: string | null;
   attendance_date: string | null;
+  vehicle: string | null;
   vehicle_year: string | null;
   notes: string | null;
   cash_value: number | string | null;
@@ -68,6 +69,7 @@ export type CalculationPreSaleOption = {
   client_phone: string | null;
   financial_institution: string | null;
   specialist_name: string | null;
+  vehicle: string | null;
   vehicle_year: string | null;
   financed_value: number | null;
   down_payment: number | null;

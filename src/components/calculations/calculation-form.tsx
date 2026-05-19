@@ -202,6 +202,7 @@ export function CalculationForm({
   const financedValue = watch("financed_value");
   const remainingInstallments = watch("remaining_installments");
   const simulationType = watch("simulation_type");
+  const vehicle = watch("vehicle");
   const vehicleYear = watch("vehicle_year");
   const isVehicleSimulation = simulationType === "veiculo";
   const disabled = isPending || isSubmitting;
@@ -250,13 +251,20 @@ export function CalculationForm({
       });
     }
 
+    if ((vehicle ?? "") !== "") {
+      setValue("vehicle", "", {
+        shouldDirty: true,
+        shouldValidate: true,
+      });
+    }
+
     if ((vehicleYear ?? "") !== "") {
       setValue("vehicle_year", "", {
         shouldDirty: true,
         shouldValidate: true,
       });
     }
-  }, [downPayment, isVehicleSimulation, setValue, vehicleYear]);
+  }, [downPayment, isVehicleSimulation, setValue, vehicle, vehicleYear]);
 
   function applyClientSelection(clientId: string) {
     const client = clients.find((item) => item.id === clientId);
@@ -291,6 +299,7 @@ export function CalculationForm({
     setValue("financial_institution", preSale.financial_institution ?? "", {
       shouldDirty: true,
     });
+    setValue("vehicle", preSale.vehicle ?? "", { shouldDirty: true });
     setValue("vehicle_year", preSale.vehicle_year ?? "", { shouldDirty: true });
     setValue(
       "financed_value",
@@ -553,15 +562,30 @@ export function CalculationForm({
         </div>
         <div className="grid gap-5 md:grid-cols-2">
           {isVehicleSimulation ? (
-            <div className="space-y-2">
-              <FormFieldLabel htmlFor="vehicle_year" label="Ano" requirement="optional" />
-              <input
-                id="vehicle_year"
-                disabled={disabled}
-                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
-                {...register("vehicle_year")}
-              />
-            </div>
+            <>
+              <div className="space-y-2">
+                <FormFieldLabel
+                  htmlFor="vehicle"
+                  label="Modelo e marca"
+                  requirement="optional"
+                />
+                <input
+                  id="vehicle"
+                  disabled={disabled}
+                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
+                  {...register("vehicle")}
+                />
+              </div>
+              <div className="space-y-2">
+                <FormFieldLabel htmlFor="vehicle_year" label="Ano" requirement="optional" />
+                <input
+                  id="vehicle_year"
+                  disabled={disabled}
+                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
+                  {...register("vehicle_year")}
+                />
+              </div>
+            </>
           ) : null}
           <div className="space-y-2 md:col-span-2">
             <FormFieldLabel htmlFor="notes" label="Observacoes" requirement="optional" />

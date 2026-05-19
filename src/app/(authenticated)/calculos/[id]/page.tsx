@@ -170,7 +170,10 @@ export default async function CalculoPage({
           <DetailItem label="Parcelas pagas" value={String(calculation.paid_installments ?? "Nao informado")} />
           <DetailItem label="Parcelas a pagar" value={String(calculation.remaining_installments ?? "Nao informado")} />
           {calculation.simulation_type === "veiculo" ? (
-            <DetailItem label="Ano" value={calculation.vehicle_year ?? "Nao informado"} />
+            <>
+              <DetailItem label="Modelo e marca" value={calculation.vehicle ?? "Nao informado"} />
+              <DetailItem label="Ano" value={calculation.vehicle_year ?? "Nao informado"} />
+            </>
           ) : null}
         </DetailSection>
 

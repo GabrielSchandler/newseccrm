@@ -7,6 +7,7 @@ import { getCurrentUserContext } from "@/lib/auth/current-user";
 import { formatCpf } from "@/lib/clients/masks";
 import { clientFormSchema, type ClientPayload } from "@/lib/clients/schema";
 import { recordClientTimelineEvent } from "@/lib/client-timeline/service";
+import { createAdminClient } from "@/lib/supabase/admin";
 import type { Client } from "@/types/client";
 
 export type ClientActionState = {
@@ -408,6 +409,100 @@ export async function addClientTimelineNoteAction(
     ok: true,
     message: "Anotacao salva com sucesso.",
   };
+}
+
+export async function updateClientTimelineNoteAction(
+  eventId: string,
+  note: string,
+): Promise<ClientActionState> {
+  const normalizedNote = note.trim();
+
+  if (!normalizedNote) {
+    return friendlyError("Escreva uma anotacao antes de salvar.");
+  }
+
+  try {
+    const { supabase, companyId, userProfileId, businessArea } =
+      await getCurrentUserContext();
+
+    if (businessArea !== "legal") {
+      return friendlyError("Apenas integrantes do juridico podem editar anotacoes.");
+    }
+
+    const adminClient = createAdminClient();
+    const { data: eventData, error: eventError } = await adminClient
+      .from("client_timeline_events")
+      .select("id, client_id, title, note, actor_user_profile_id, details")
+      .eq("id", eventId)
+      .eq("company_id", companyId)
+      .maybeSingle();
+    const timelineEvent = eventData as {
+      id: string;
+      client_id: string;
+      title: string;
+      note: string | null;
+      actor_user_profile_id: string | null;
+      details: Record<string, unknown> | null;
+    } | null;
+
+    if (eventError || !timelineEvent) {
+      return friendlyError("Anotacao nao encontrada.");
+    }
+
+    if (timelineEvent.actor_user_profile_id !== userProfileId) {
+      return friendlyError("Voce so pode editar anotacoes feitas por voce.");
+    }
+
+    if (!timelineEvent.note?.trim()) {
+      return friendlyError("Este registro nao possui anotacao editavel.");
+    }
+
+    const editedAt = new Date().toISOString();
+    const { error: updateError } = await adminClient
+      .from("client_timeline_events")
+      .update({
+        note: normalizedNote,
+        details: {
+          ...(timelineEvent.details ?? {}),
+          note_edited_at: editedAt,
+          note_edited_by: userProfileId,
+        },
+      })
+      .eq("id", timelineEvent.id)
+      .eq("company_id", companyId)
+      .eq("actor_user_profile_id", userProfileId);
+
+    if (updateError) {
+      return friendlyError(updateError.message);
+    }
+
+    await recordAuditLog({
+      supabase,
+      companyId,
+      userProfileId,
+      action: "client.timeline_note_updated",
+      entityType: "client",
+      entityId: timelineEvent.client_id,
+      entityLabel: timelineEvent.title,
+      details: {
+        timeline_event_id: timelineEvent.id,
+        previous_note: timelineEvent.note,
+        next_note: normalizedNote,
+        edited_at: editedAt,
+      },
+    });
+
+    revalidatePath(`/clientes/${timelineEvent.client_id}`);
+
+    return {
+      ok: true,
+      message: "Anotacao atualizada com sucesso.",
+    };
+  } catch (error) {
+    return friendlyError(
+      error instanceof Error ? error.message : "Nao foi possivel atualizar a anotacao.",
+    );
+  }
 }
 
 export async function softDeleteClientAction(

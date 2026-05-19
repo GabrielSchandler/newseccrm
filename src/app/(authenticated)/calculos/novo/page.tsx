@@ -65,6 +65,7 @@ export default async function NovoCalculoPage({
       client_phone: formatPhone(selectedPreSale.client_phone ?? ""),
       financial_institution: selectedPreSale.financial_institution ?? "",
       specialist_name: selectedPreSale.specialist_name ?? "",
+      vehicle: selectedPreSale.vehicle ?? "",
       vehicle_year: selectedPreSale.vehicle_year ?? "",
       financed_value: formatNumberForPtBrInput(selectedPreSale.financed_value),
       down_payment: formatNumberForPtBrInput(selectedPreSale.down_payment),

@@ -129,6 +129,7 @@ function normalizeCalculationPayload(values: FinancingCalculationPayload) {
       values.remaining_installments === undefined
         ? null
         : Number(String(values.remaining_installments).replace(/\D/g, "")) || null,
+    vehicle: isVehicleSimulation ? values.vehicle : null,
     vehicle_year: isVehicleSimulation ? values.vehicle_year : null,
   };
 }

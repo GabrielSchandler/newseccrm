@@ -11,7 +11,10 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
-import { addClientTimelineNoteAction } from "@/app/(authenticated)/clientes/actions";
+import {
+  addClientTimelineNoteAction,
+  updateClientTimelineNoteAction,
+} from "@/app/(authenticated)/clientes/actions";
 import { formatDateTime } from "@/lib/clients/formatters";
 import type { ClientTimelineEvent, ClientTimelineEventType } from "@/types/client-timeline";
 import { formatCompanyBusinessArea, formatCompanyUserRole } from "@/types/user";
@@ -19,6 +22,8 @@ import { formatCompanyBusinessArea, formatCompanyUserRole } from "@/types/user";
 type ClientTimelineSectionProps = {
   clientId: string;
   events: ClientTimelineEvent[];
+  currentUserProfileId: string;
+  canEditOwnNotes: boolean;
 };
 
 type TimelineEventConfig = {
@@ -113,15 +118,23 @@ function getDetailLines(event: ClientTimelineEvent) {
     lines.push(`Etapa juridica: ${details.previous_stage} -> ${details.next_stage}`);
   }
 
+  if (typeof details.note_edited_at === "string") {
+    lines.push(`Anotacao editada em: ${formatDateTime(details.note_edited_at)}`);
+  }
+
   return lines;
 }
 
 export function ClientTimelineSection({
   clientId,
   events,
+  currentUserProfileId,
+  canEditOwnNotes,
 }: ClientTimelineSectionProps) {
   const router = useRouter();
   const [note, setNote] = useState("");
+  const [editingEventId, setEditingEventId] = useState<string | null>(null);
+  const [editingNote, setEditingNote] = useState("");
   const [feedback, setFeedback] = useState<{ ok: boolean; message: string } | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -145,6 +158,40 @@ export function ClientTimelineSection({
 
       if (result.ok) {
         setNote("");
+        router.refresh();
+      }
+    });
+  }
+
+  function beginEditing(event: ClientTimelineEvent) {
+    setEditingEventId(event.id);
+    setEditingNote(event.note ?? "");
+    setFeedback(null);
+  }
+
+  function cancelEditing() {
+    setEditingEventId(null);
+    setEditingNote("");
+  }
+
+  function handleUpdateNote(eventId: string) {
+    const trimmedNote = editingNote.trim();
+
+    if (!trimmedNote) {
+      setFeedback({
+        ok: false,
+        message: "Escreva uma anotacao antes de salvar.",
+      });
+      return;
+    }
+
+    setFeedback(null);
+    startTransition(async () => {
+      const result = await updateClientTimelineNoteAction(eventId, trimmedNote);
+      setFeedback(result);
+
+      if (result.ok) {
+        cancelEditing();
         router.refresh();
       }
     });
@@ -210,6 +257,11 @@ export function ClientTimelineSection({
             const config = getEventConfig(event.event_type);
             const Icon = config.icon;
             const detailLines = getDetailLines(event);
+            const isOwnNote =
+              canEditOwnNotes &&
+              Boolean(event.note?.trim()) &&
+              event.actor_user_profile_id === currentUserProfileId;
+            const isEditing = editingEventId === event.id;
 
             return (
               <article key={event.id} className="relative pl-14">
@@ -231,10 +283,40 @@ export function ClientTimelineSection({
                     <p className="text-xs font-medium text-slate-500">{formatDateTime(event.created_at)}</p>
                   </div>
 
-                  {event.note ? (
+                  {event.note && !isEditing ? (
                     <p className="mt-3 whitespace-pre-line text-sm leading-6 text-slate-700">
                       {event.note}
                     </p>
+                  ) : null}
+
+                  {isEditing ? (
+                    <div className="mt-3 space-y-3">
+                      <textarea
+                        rows={4}
+                        value={editingNote}
+                        disabled={isPending}
+                        onChange={(inputEvent) => setEditingNote(inputEvent.target.value)}
+                        className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
+                      />
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          disabled={isPending}
+                          onClick={() => handleUpdateNote(event.id)}
+                          className="rounded-lg bg-teal-700 px-3 py-2 text-sm font-semibold text-white transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-70"
+                        >
+                          {isPending ? "Salvando..." : "Salvar anotacao"}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={isPending}
+                          onClick={cancelEditing}
+                          className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-70"
+                        >
+                          Cancelar
+                        </button>
+                      </div>
+                    </div>
                   ) : null}
 
                   {detailLines.length ? (
@@ -253,6 +335,17 @@ export function ClientTimelineSection({
                   <p className="mt-4 text-xs font-medium uppercase tracking-wide text-slate-500">
                     {formatActorLine(event)}
                   </p>
+
+                  {isOwnNote && !isEditing ? (
+                    <button
+                      type="button"
+                      disabled={isPending}
+                      onClick={() => beginEditing(event)}
+                      className="mt-3 rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-70"
+                    >
+                      Editar minha anotacao
+                    </button>
+                  ) : null}
                 </div>
               </article>
             );
