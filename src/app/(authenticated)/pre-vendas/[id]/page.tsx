@@ -377,7 +377,7 @@ export default async function PreVendaPage({ params, searchParams }: PreVendaPag
           <DetailItem label="Parcelas pagas" value={displayValue(financialCase?.paid_installments === null || financialCase?.paid_installments === undefined ? null : String(financialCase.paid_installments))} copyValue={copyableValue(financialCase?.paid_installments === null || financialCase?.paid_installments === undefined ? null : String(financialCase.paid_installments))} />
           <DetailItem label="Parcelas em atraso" value={displayValue(financialCase?.overdue_installments === null || financialCase?.overdue_installments === undefined ? null : String(financialCase.overdue_installments))} copyValue={copyableValue(financialCase?.overdue_installments === null || financialCase?.overdue_installments === undefined ? null : String(financialCase.overdue_installments))} />
           <DetailItem label="Dia do vencimento" value={displayValue(financialCase?.due_day === null || financialCase?.due_day === undefined ? null : String(financialCase.due_day))} copyValue={copyableValue(financialCase?.due_day === null || financialCase?.due_day === undefined ? null : String(financialCase.due_day))} />
-          <DetailItem label="Numero do contrato" value={displayValue(financialCase?.contract_number ?? null)} copyValue={copyableValue(financialCase?.contract_number ?? null)} />
+          <DetailItem label="Numero do financiamento" value={displayValue(financialCase?.contract_number ?? null)} copyValue={copyableValue(financialCase?.contract_number ?? null)} />
         </DetailSection>
 
         <DetailSection

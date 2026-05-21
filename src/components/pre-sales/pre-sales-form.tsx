@@ -608,7 +608,7 @@ export function PreSalesForm({
           <TextField name="paid_installments" label="Parcelas pagas" register={register} errors={errors} disabled={disabled} requirement="optional" inputMode="numeric" registerOptions={{ onChange: handleIntegerMask }} />
           <TextField name="overdue_installments" label="Parcelas em atraso" register={register} errors={errors} disabled={disabled} requirement="optional" inputMode="numeric" registerOptions={{ onChange: handleIntegerMask }} />
           <TextField name="due_day" label="Dia do vencimento" register={register} errors={errors} disabled={disabled} requirement="optional" inputMode="numeric" registerOptions={{ onChange: handleIntegerMask }} />
-        <TextField name="contract_number" label="Numero do contrato" register={register} errors={errors} disabled={disabled} requirement="optional" />
+        <TextField name="contract_number" label="Numero do financiamento" register={register} errors={errors} disabled={disabled} requirement="optional" />
       </FormSection>
 
       <FormSection
@@ -645,7 +645,7 @@ export function PreSalesForm({
           register={register}
           errors={errors}
           disabled={disabled}
-          requirement="legal"
+          requirement="optional"
         />
         <TextField
           name="legal_case_year"
