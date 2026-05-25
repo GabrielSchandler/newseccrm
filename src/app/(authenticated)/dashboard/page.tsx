@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BarChart2, Users, Zap } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { getCurrentUserContext } from "@/lib/auth/current-user";
 import { formatDateTime } from "@/lib/clients/formatters";
@@ -199,6 +200,99 @@ function average(values: number[]) {
   }
 
   return validValues.reduce((total, value) => total + value, 0) / validValues.length;
+}
+
+type TvStatCardProps = {
+  label: string;
+  value: string | number;
+  href?: string;
+  tone?: "teal" | "blue" | "violet";
+  icon: React.ReactNode;
+};
+
+function TvStatCard({ label, value, href, tone = "teal", icon }: TvStatCardProps) {
+  const tones = {
+    teal: {
+      bar: "bg-teal-600",
+      iconBg: "bg-teal-50 text-teal-600",
+      hover: "hover:bg-slate-50/60",
+    },
+    blue: {
+      bar: "bg-sky-500",
+      iconBg: "bg-sky-50 text-sky-600",
+      hover: "hover:bg-slate-50/60",
+    },
+    violet: {
+      bar: "bg-fuchsia-500",
+      iconBg: "bg-fuchsia-50 text-fuchsia-600",
+      hover: "hover:bg-slate-50/60",
+    },
+  };
+  const t = tones[tone];
+
+  const inner = (
+    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+      <div className={`h-1.5 ${t.bar}`} />
+      <div className="flex items-start justify-between p-7">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-widest text-slate-400">
+            {label}
+          </p>
+          <p className="mt-3 text-5xl font-bold tracking-tight text-slate-950">{value}</p>
+        </div>
+        <div className={`rounded-xl p-3 ${t.iconBg}`}>{icon}</div>
+      </div>
+    </div>
+  );
+
+  if (!href) return inner;
+
+  return (
+    <Link href={href} className={`block rounded-xl transition ${t.hover}`}>
+      {inner}
+    </Link>
+  );
+}
+
+const tvStatusColorMap: Record<string, string> = {
+  lead: "bg-slate-400",
+  pre_venda: "bg-sky-500",
+  em_contato: "bg-cyan-500",
+  em_negociacao: "bg-amber-500",
+  aprovado: "bg-teal-600",
+  perdido: "bg-red-500",
+  inativo: "bg-slate-300",
+  distrato: "bg-orange-500",
+};
+
+function TvStatusBars({ preSales }: { preSales: PreSale[] }) {
+  const activePreSales = preSales.filter((p) => !isArchivedPreSaleStatus(p.status));
+
+  return (
+    <div className="space-y-4">
+      {preSaleStatuses.map((status) => {
+        const count = countByStatus(preSales, status.value);
+        const base = activePreSales.length;
+        const percentage = base ? (count / base) * 100 : 0;
+        const color = tvStatusColorMap[status.value] ?? "bg-teal-700";
+
+        return (
+          <div key={status.value}>
+            <div className="mb-1.5 flex items-center justify-between text-sm">
+              <span className="font-semibold text-slate-700">{status.label}</span>
+              <span className="font-bold tabular-nums text-slate-900">{count}</span>
+            </div>
+            <div className="h-3 overflow-hidden rounded-full bg-slate-100">
+              <div
+                className={`h-full rounded-full transition-all ${color}`}
+                style={{ width: `${count > 0 ? Math.max(percentage, 2) : 0}%` }}
+              />
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
 }
 
 function AreaTabs({ activeArea }: { activeArea: DashboardArea }) {
@@ -529,29 +623,31 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
 
         {activeArea === "tv" ? (
           <div className="space-y-6">
-            <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              <StatCard label="Clientes ativos" value={activeClients ?? 0} href="/clientes" />
-              <StatCard
+            <section className="grid gap-5 md:grid-cols-3">
+              <TvStatCard
+                label="Clientes ativos"
+                value={activeClients ?? 0}
+                href="/clientes"
+                tone="teal"
+                icon={<Users size={24} />}
+              />
+              <TvStatCard
                 label="Pre-vendas abertas"
                 value={openPreSales}
                 href="/pre-vendas"
                 tone="blue"
+                icon={<BarChart2 size={24} />}
               />
-              <StatCard
-                label="Valor aprovado"
-                value={formatCurrency(approvedValue)}
-                href="/pre-vendas?status=aprovado"
-                tone="amber"
-              />
-              <StatCard
+              <TvStatCard
                 label="Leads marketing"
                 value={leads.length}
                 href="/dashboard?area=marketing"
                 tone="violet"
+                icon={<Zap size={24} />}
               />
             </section>
 
-            <section className="grid gap-6 xl:grid-cols-[1fr_420px]">
+            <section className="grid gap-6 xl:grid-cols-[1fr_400px]">
               <SectionBlock
                 title="Pre-vendas por status"
                 action={
@@ -563,7 +659,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
                   </Link>
                 }
               >
-                <StatusBars preSales={preSales} />
+                <TvStatusBars preSales={preSales} />
               </SectionBlock>
 
               <SectionBlock
