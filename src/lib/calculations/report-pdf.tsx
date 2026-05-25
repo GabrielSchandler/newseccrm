@@ -599,7 +599,7 @@ function DataTable({
         <Text style={styles.compactHeaderCell}>Valor</Text>
       </View>
       {visibleRows.map((row) => (
-        <View key={row.label} style={styles.compactRow}>
+        <View key={row.label} style={styles.compactRow} wrap={false}>
           <Text style={styles.compactCellLabel}>{row.label}</Text>
           <Text style={styles.compactCellValue}>{row.value}</Text>
         </View>
@@ -650,13 +650,10 @@ function OpportunityTable({
             : [styles.opportunityValue];
 
         return (
-        <View
-          key={row.label}
-          style={rowStyles}
-        >
-          <Text style={labelStyles}>{row.label}</Text>
-          <Text style={valueStyles}>{row.value}</Text>
-        </View>
+          <View key={row.label} style={rowStyles} wrap={false}>
+            <Text style={labelStyles}>{row.label}</Text>
+            <Text style={valueStyles}>{row.value}</Text>
+          </View>
         );
       })}
     </View>
@@ -775,12 +772,6 @@ export function CalculationReportPdf({
       label: "Parcelas a pagar",
       value: optionalInt(calculation.remaining_installments),
     },
-    ...(totalAdminFeePaid !== null
-      ? [{ label: "Total de tarifas pagas", value: optionalCurrency(totalAdminFeePaid) }]
-      : []),
-    ...(totalInsurancePaid !== null
-      ? [{ label: "Total de seguros pagos", value: optionalCurrency(totalInsurancePaid) }]
-      : []),
   ];
 
   const opportunityRows = [
@@ -815,6 +806,14 @@ export function CalculationReportPdf({
     {
       label: "Total pago até o momento",
       value: optionalCurrency(calculation.paid_amount_until_now),
+    },
+    {
+      label: "Total de seguros pagos (até o momento)",
+      value: optionalCurrency(totalInsurancePaid),
+    },
+    {
+      label: "Total de tarifas pagas (até o momento)",
+      value: optionalCurrency(totalAdminFeePaid),
     },
     {
       label: "Saldo devedor sem correção",
