@@ -693,6 +693,30 @@ export function CalculationReportPdf({
     calculation.abusive_interest_per_installment,
   );
   const isVehicleSimulation = calculation.simulation_type === "veiculo";
+  const isImovelSimulation = calculation.simulation_type === "imovel";
+
+  const paidInstallmentsNum =
+    calculation.paid_installments !== null && calculation.paid_installments !== undefined
+      ? Number(calculation.paid_installments)
+      : null;
+
+  const totalInsurancePaid =
+    isImovelSimulation &&
+    paidInstallmentsNum !== null &&
+    !Number.isNaN(paidInstallmentsNum) &&
+    calculation.insurance_value !== null &&
+    calculation.insurance_value !== undefined
+      ? paidInstallmentsNum * Number(calculation.insurance_value)
+      : null;
+
+  const totalAdminFeePaid =
+    isImovelSimulation &&
+    paidInstallmentsNum !== null &&
+    !Number.isNaN(paidInstallmentsNum) &&
+    calculation.administrative_fee !== null &&
+    calculation.administrative_fee !== undefined
+      ? paidInstallmentsNum * Number(calculation.administrative_fee)
+      : null;
   const companyCnpj = displayCompanyCnpj(companyDocument);
   const protocol = optionalText(protocolNumber);
   const impactSavings = optionalCurrency(calculation.estimated_savings);
@@ -737,6 +761,12 @@ export function CalculationReportPdf({
       label: "Valor atual da parcela",
       value: currentInstallment,
     },
+    ...(isImovelSimulation && calculation.administrative_fee !== null && calculation.administrative_fee !== undefined
+      ? [{ label: "Tarifa administrativa (por parcela)", value: optionalCurrency(calculation.administrative_fee) }]
+      : []),
+    ...(isImovelSimulation && calculation.insurance_value !== null && calculation.insurance_value !== undefined
+      ? [{ label: "Seguros (por parcela)", value: optionalCurrency(calculation.insurance_value) }]
+      : []),
     {
       label: "Parcelas pagas",
       value: optionalInt(calculation.paid_installments),
@@ -745,6 +775,12 @@ export function CalculationReportPdf({
       label: "Parcelas a pagar",
       value: optionalInt(calculation.remaining_installments),
     },
+    ...(totalAdminFeePaid !== null
+      ? [{ label: "Total de tarifas pagas", value: optionalCurrency(totalAdminFeePaid) }]
+      : []),
+    ...(totalInsurancePaid !== null
+      ? [{ label: "Total de seguros pagos", value: optionalCurrency(totalInsurancePaid) }]
+      : []),
   ];
 
   const opportunityRows = [

@@ -17,6 +17,8 @@ export type FinancingCalculation = {
   attendance_date: string | null;
   vehicle: string | null;
   vehicle_year: string | null;
+  administrative_fee: number | string | null;
+  insurance_value: number | string | null;
   notes: string | null;
   cash_value: number | string | null;
   down_payment: number | string | null;

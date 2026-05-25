@@ -204,7 +204,10 @@ export function CalculationForm({
   const simulationType = watch("simulation_type");
   const vehicle = watch("vehicle");
   const vehicleYear = watch("vehicle_year");
+  const administrativeFee = watch("administrative_fee");
+  const insuranceValue = watch("insurance_value");
   const isVehicleSimulation = simulationType === "veiculo";
+  const isImovelSimulation = simulationType === "imovel";
   const disabled = isPending || isSubmitting;
   const selectedPreSale = preSales.find((preSale) => preSale.id === selectedPreSaleId);
   const computedFinancedValue = getComputedFinancedDisplayValue(
@@ -265,6 +268,26 @@ export function CalculationForm({
       });
     }
   }, [downPayment, isVehicleSimulation, setValue, vehicle, vehicleYear]);
+
+  useEffect(() => {
+    if (isImovelSimulation) {
+      return;
+    }
+
+    if ((administrativeFee ?? "") !== "") {
+      setValue("administrative_fee", "", {
+        shouldDirty: true,
+        shouldValidate: true,
+      });
+    }
+
+    if ((insuranceValue ?? "") !== "") {
+      setValue("insurance_value", "", {
+        shouldDirty: true,
+        shouldValidate: true,
+      });
+    }
+  }, [administrativeFee, insuranceValue, isImovelSimulation, setValue]);
 
   function applyClientSelection(clientId: string) {
     const client = clients.find((item) => item.id === clientId);
@@ -557,7 +580,11 @@ export function CalculationForm({
       <section className="space-y-4 rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
         <div>
           <h2 className="text-base font-semibold text-slate-950">
-            {isVehicleSimulation ? "Dados do veiculo" : "Observacoes"}
+            {isVehicleSimulation
+              ? "Dados do veiculo"
+              : isImovelSimulation
+                ? "Dados do imovel"
+                : "Observacoes"}
           </h2>
         </div>
         <div className="grid gap-5 md:grid-cols-2">
@@ -584,6 +611,90 @@ export function CalculationForm({
                   className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
                   {...register("vehicle_year")}
                 />
+              </div>
+            </>
+          ) : null}
+          {isImovelSimulation ? (
+            <>
+              <div className="space-y-2">
+                <FormFieldLabel
+                  htmlFor="administrative_fee"
+                  label="Tarifa administrativa"
+                  requirement="optional"
+                />
+                <Controller
+                  control={control}
+                  name="administrative_fee"
+                  render={({ field }) => (
+                    <input
+                      id="administrative_fee"
+                      disabled={disabled}
+                      inputMode="decimal"
+                      value={getCurrencyInputDisplayValue(field.value)}
+                      onChange={(event) => {
+                        const nextValue = formatCurrencyInputValueFromDigits(
+                          event.target.value,
+                        );
+                        field.onChange(nextValue);
+                      }}
+                      onBlur={(event) => {
+                        const nextValue = normalizeCurrencyInputValue(
+                          event.target.value,
+                        );
+                        field.onChange(nextValue);
+                        field.onBlur();
+                      }}
+                      ref={field.ref}
+                      name={field.name}
+                      className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
+                    />
+                  )}
+                />
+                {errors.administrative_fee?.message ? (
+                  <p className="text-sm text-red-600">
+                    {String(errors.administrative_fee.message)}
+                  </p>
+                ) : null}
+              </div>
+              <div className="space-y-2">
+                <FormFieldLabel
+                  htmlFor="insurance_value"
+                  label="Seguros"
+                  requirement="optional"
+                />
+                <Controller
+                  control={control}
+                  name="insurance_value"
+                  render={({ field }) => (
+                    <input
+                      id="insurance_value"
+                      disabled={disabled}
+                      inputMode="decimal"
+                      value={getCurrencyInputDisplayValue(field.value)}
+                      onChange={(event) => {
+                        const nextValue = formatCurrencyInputValueFromDigits(
+                          event.target.value,
+                        );
+                        field.onChange(nextValue);
+                      }}
+                      onBlur={(event) => {
+                        const nextValue = normalizeCurrencyInputValue(
+                          event.target.value,
+                        );
+                        field.onChange(nextValue);
+                        field.onBlur();
+                      }}
+                      ref={field.ref}
+                      name={field.name}
+                      className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
+                    />
+                  )}
+                />
+                {errors.insurance_value?.message ? (
+                  <p className="text-sm text-red-600">
+                    {String(errors.insurance_value.message)}
+                  </p>
+                ) : null}
               </div>
             </>
           ) : null}

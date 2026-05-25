@@ -106,6 +106,7 @@ function resolveRemainingInstallments(values: FinancingCalculationPayload) {
 
 function normalizeCalculationPayload(values: FinancingCalculationPayload) {
   const isVehicleSimulation = values.simulation_type === "veiculo";
+  const isImovelSimulation = values.simulation_type === "imovel";
   return {
     ...values,
     cash_value: parseBrazilianDecimalInput(values.cash_value),
@@ -133,6 +134,12 @@ function normalizeCalculationPayload(values: FinancingCalculationPayload) {
         : Number(String(values.remaining_installments).replace(/\D/g, "")) || null,
     vehicle: isVehicleSimulation ? values.vehicle : null,
     vehicle_year: isVehicleSimulation ? values.vehicle_year : null,
+    administrative_fee: isImovelSimulation
+      ? parseBrazilianDecimalInput(values.administrative_fee)
+      : null,
+    insurance_value: isImovelSimulation
+      ? parseBrazilianDecimalInput(values.insurance_value)
+      : null,
   };
 }
 
