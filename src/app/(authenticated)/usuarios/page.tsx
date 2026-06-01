@@ -14,8 +14,227 @@ import {
 import { getHomeForRole } from "@/lib/workspace";
 
 type UsuariosPageProps = {
-  searchParams: Promise<{ success?: string; error?: string }>;
+  searchParams: Promise<{
+    success?: string;
+    error?: string;
+    status?: string;
+    sort?: string;
+  }>;
 };
+
+const userStatusFilters = ["all", "active", "inactive"] as const;
+
+type UserStatusFilter = (typeof userStatusFilters)[number];
+
+const defaultUserStatusFilter: UserStatusFilter = "all";
+const defaultUserSort = "status_desc";
+
+const sortableColumns = {
+  full_name: {
+    label: "Nome",
+    asc: "name_asc",
+    desc: "name_desc",
+  },
+  nickname: {
+    label: "Apelido",
+    asc: "nickname_asc",
+    desc: "nickname_desc",
+  },
+  username: {
+    label: "Login",
+    asc: "login_asc",
+    desc: "login_desc",
+  },
+  phone: {
+    label: "Telefone",
+    asc: "phone_asc",
+    desc: "phone_desc",
+  },
+  business_area: {
+    label: "Area",
+    asc: "area_asc",
+    desc: "area_desc",
+  },
+  legal_role: {
+    label: "Funcao juridico",
+    asc: "legal_role_asc",
+    desc: "legal_role_desc",
+  },
+  role: {
+    label: "Cargo",
+    asc: "role_asc",
+    desc: "role_desc",
+  },
+  is_active: {
+    label: "Status",
+    asc: "status_asc",
+    desc: "status_desc",
+  },
+  created_at: {
+    label: "Criado em",
+    asc: "created_asc",
+    desc: "created_desc",
+  },
+} as const;
+
+type SortableColumn = keyof typeof sortableColumns;
+
+const validUserSorts: Set<string> = new Set(
+  Object.values(sortableColumns).flatMap((column) => [column.asc, column.desc]),
+);
+
+function getUserStatusFilter(status?: string): UserStatusFilter {
+  return userStatusFilters.includes(status as UserStatusFilter)
+    ? (status as UserStatusFilter)
+    : defaultUserStatusFilter;
+}
+
+function getUserSort(sort?: string) {
+  return validUserSorts.has(sort ?? "") ? (sort as string) : defaultUserSort;
+}
+
+function buildUsersHref(
+  searchParams: Awaited<UsuariosPageProps["searchParams"]>,
+  updates: Record<string, string>,
+) {
+  const params = new URLSearchParams();
+
+  Object.entries(searchParams).forEach(([key, value]) => {
+    if (value && key !== "success" && key !== "error") {
+      params.set(key, value);
+    }
+  });
+
+  Object.entries(updates).forEach(([key, value]) => {
+    if (value) {
+      params.set(key, value);
+    } else {
+      params.delete(key);
+    }
+  });
+
+  const query = params.toString();
+  return query ? `/usuarios?${query}` : "/usuarios";
+}
+
+function buildSortHref(
+  searchParams: Awaited<UsuariosPageProps["searchParams"]>,
+  sort: string,
+  column: SortableColumn,
+) {
+  const config = sortableColumns[column];
+  const nextSort = sort === config.asc ? config.desc : config.asc;
+  return buildUsersHref(searchParams, { sort: nextSort });
+}
+
+function SortHeader({
+  column,
+  sort,
+  searchParams,
+}: {
+  column: SortableColumn;
+  sort: string;
+  searchParams: Awaited<UsuariosPageProps["searchParams"]>;
+}) {
+  const config = sortableColumns[column];
+  const active = sort === config.asc || sort === config.desc;
+  const direction = sort === config.asc ? "ASC" : sort === config.desc ? "DESC" : "";
+
+  return (
+    <Link
+      href={buildSortHref(searchParams, sort, column)}
+      className={`inline-flex items-center gap-1 font-semibold transition hover:text-teal-700 ${
+        active ? "text-teal-700" : ""
+      }`}
+    >
+      {config.label}
+      {direction ? <span>{direction}</span> : null}
+    </Link>
+  );
+}
+
+const userCollator = new Intl.Collator("pt-BR", {
+  numeric: true,
+  sensitivity: "base",
+});
+
+function compareText(
+  left: string | number | boolean | null | undefined,
+  right: string | number | boolean | null | undefined,
+) {
+  return userCollator.compare(String(left ?? ""), String(right ?? ""));
+}
+
+function compareDates(left?: string | null, right?: string | null) {
+  return new Date(left ?? 0).getTime() - new Date(right ?? 0).getTime();
+}
+
+function compareUsersBySort(
+  left: CompanyUserProfile,
+  right: CompanyUserProfile,
+  sort: string,
+) {
+  const direction = sort.endsWith("_desc") ? -1 : 1;
+  let result = 0;
+
+  switch (sort) {
+    case "name_asc":
+    case "name_desc":
+      result = compareText(left.full_name, right.full_name);
+      break;
+    case "nickname_asc":
+    case "nickname_desc":
+      result = compareText(left.nickname, right.nickname);
+      break;
+    case "login_asc":
+    case "login_desc":
+      result = compareText(left.username, right.username);
+      break;
+    case "phone_asc":
+    case "phone_desc":
+      result = compareText(left.phone, right.phone);
+      break;
+    case "area_asc":
+    case "area_desc":
+      result = compareText(
+        formatCompanyBusinessArea(left.business_area),
+        formatCompanyBusinessArea(right.business_area),
+      );
+      break;
+    case "legal_role_asc":
+    case "legal_role_desc":
+      result = compareText(
+        left.business_area === "legal" ? formatLegalUserRole(left.legal_role) : "-",
+        right.business_area === "legal" ? formatLegalUserRole(right.legal_role) : "-",
+      );
+      break;
+    case "role_asc":
+    case "role_desc":
+      result = compareText(left.role, right.role);
+      break;
+    case "status_asc":
+    case "status_desc":
+      result = Number(left.is_active) - Number(right.is_active);
+      break;
+    case "created_asc":
+    case "created_desc":
+      result = compareDates(left.created_at, right.created_at);
+      break;
+    default:
+      result = compareText(left.full_name, right.full_name);
+      break;
+  }
+
+  if (result === 0) {
+    result = compareText(left.full_name, right.full_name);
+  }
+
+  return result * direction;
+}
+
+function sortUsers(users: CompanyUserProfile[], sort: string) {
+  return [...users].sort((left, right) => compareUsersBySort(left, right, sort));
+}
 
 function canAccessUserManagement(role: string | null) {
   return role === "admin" || role === "manager";
@@ -65,6 +284,9 @@ export default async function UsuariosPage({ searchParams }: UsuariosPageProps) 
     redirect(getHomeForRole(role, businessArea));
   }
 
+  const statusFilter = getUserStatusFilter(params.status);
+  const sort = getUserSort(params.sort);
+
   const [{ data: companyData, error: companyError }, { data, error }] =
     await Promise.all([
       supabase
@@ -76,12 +298,25 @@ export default async function UsuariosPage({ searchParams }: UsuariosPageProps) 
         .from("user_profiles")
         .select("*")
         .eq("company_id", companyId)
-        .order("is_active", { ascending: false })
         .order("full_name", { ascending: true, nullsFirst: false }),
     ]);
 
-  const users = (data ?? []) as CompanyUserProfile[];
-  const activeUsers = users.filter((user) => user.is_active).length;
+  const allUsers = (data ?? []) as CompanyUserProfile[];
+  const users = sortUsers(
+    allUsers.filter((user) => {
+      if (statusFilter === "active") {
+        return user.is_active;
+      }
+
+      if (statusFilter === "inactive") {
+        return !user.is_active;
+      }
+
+      return true;
+    }),
+    sort,
+  );
+  const activeUsers = allUsers.filter((user) => user.is_active).length;
   const licenseLimit = Number(companyData?.user_license_limit ?? 0);
   const availableLicenses = Math.max(licenseLimit - activeUsers, 0);
   const createBlocked = !canCreateUsers(role) || activeUsers >= licenseLimit;
@@ -132,35 +367,66 @@ export default async function UsuariosPage({ searchParams }: UsuariosPageProps) 
           </div>
         </section>
 
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="space-y-1">
-            <p className="text-sm font-semibold text-slate-950">
-              {activeUsers} de {licenseLimit} usuarios ativos
-            </p>
-            {activeUsers >= licenseLimit ? (
-              <p className="text-sm text-amber-800">
-                Limite de usuarios atingido. Contrate uma licenca adicional.
+        <div className="flex flex-col gap-4 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="space-y-1">
+              <p className="text-sm font-semibold text-slate-950">
+                {activeUsers} de {licenseLimit} usuarios ativos
               </p>
-            ) : (
-              <p className="text-sm text-slate-600">
-                {availableLicenses} licenca(s) disponivel(is) para novos acessos.
-              </p>
-            )}
+              {activeUsers >= licenseLimit ? (
+                <p className="text-sm text-amber-800">
+                  Limite de usuarios atingido. Contrate uma licenca adicional.
+                </p>
+              ) : (
+                <p className="text-sm text-slate-600">
+                  {availableLicenses} licenca(s) disponivel(is) para novos acessos.
+                </p>
+              )}
+            </div>
+            {canCreateUsers(role) ? (
+              createBlocked ? (
+                <span className="rounded-lg border border-slate-200 bg-slate-100 px-4 py-2.5 text-sm font-semibold text-slate-500">
+                  Novo usuario indisponivel
+                </span>
+              ) : (
+                <Link
+                  href="/usuarios/novo"
+                  className="rounded-lg bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-800"
+                >
+                  Novo usuario
+                </Link>
+              )
+            ) : null}
           </div>
-          {canCreateUsers(role) ? (
-            createBlocked ? (
-              <span className="rounded-lg border border-slate-200 bg-slate-100 px-4 py-2.5 text-sm font-semibold text-slate-500">
-                Novo usuario indisponivel
-              </span>
-            ) : (
-              <Link
-                href="/usuarios/novo"
-                className="rounded-lg bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-800"
-              >
-                Novo usuario
-              </Link>
-            )
-          ) : null}
+
+          <form className="grid gap-3 md:grid-cols-[240px_auto_auto]">
+            <input type="hidden" name="sort" value={sort} />
+            <select
+              name="status"
+              defaultValue={statusFilter}
+              className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
+            >
+              <option value="all">Todos os usuarios</option>
+              <option value="active">Usuarios ativos</option>
+              <option value="inactive">Usuarios desativados</option>
+            </select>
+            <button
+              type="submit"
+              className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+            >
+              Filtrar
+            </button>
+            <Link
+              href="/usuarios"
+              className="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-100"
+            >
+              Limpar
+            </Link>
+          </form>
+
+          <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+            {users.length} usuario(s) exibido(s)
+          </p>
         </div>
 
         {companyError ? (
@@ -179,15 +445,57 @@ export default async function UsuariosPage({ searchParams }: UsuariosPageProps) 
               <table className="w-full min-w-[1080px] border-collapse text-left text-sm">
                 <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
                   <tr>
-                    <th className="px-4 py-3 font-semibold">Nome</th>
-                    <th className="px-4 py-3 font-semibold">Apelido</th>
-                    <th className="px-4 py-3 font-semibold">Login</th>
-                    <th className="px-4 py-3 font-semibold">Telefone</th>
-                    <th className="px-4 py-3 font-semibold">Area</th>
-                    <th className="px-4 py-3 font-semibold">Funcao juridico</th>
-                    <th className="px-4 py-3 font-semibold">Cargo</th>
-                    <th className="px-4 py-3 font-semibold">Status</th>
-                    <th className="px-4 py-3 font-semibold">Criado em</th>
+                    <th className="px-4 py-3">
+                      <SortHeader
+                        column="full_name"
+                        sort={sort}
+                        searchParams={params}
+                      />
+                    </th>
+                    <th className="px-4 py-3">
+                      <SortHeader
+                        column="nickname"
+                        sort={sort}
+                        searchParams={params}
+                      />
+                    </th>
+                    <th className="px-4 py-3">
+                      <SortHeader column="username" sort={sort} searchParams={params} />
+                    </th>
+                    <th className="px-4 py-3">
+                      <SortHeader column="phone" sort={sort} searchParams={params} />
+                    </th>
+                    <th className="px-4 py-3">
+                      <SortHeader
+                        column="business_area"
+                        sort={sort}
+                        searchParams={params}
+                      />
+                    </th>
+                    <th className="px-4 py-3">
+                      <SortHeader
+                        column="legal_role"
+                        sort={sort}
+                        searchParams={params}
+                      />
+                    </th>
+                    <th className="px-4 py-3">
+                      <SortHeader column="role" sort={sort} searchParams={params} />
+                    </th>
+                    <th className="px-4 py-3">
+                      <SortHeader
+                        column="is_active"
+                        sort={sort}
+                        searchParams={params}
+                      />
+                    </th>
+                    <th className="px-4 py-3">
+                      <SortHeader
+                        column="created_at"
+                        sort={sort}
+                        searchParams={params}
+                      />
+                    </th>
                     <th className="px-4 py-3 font-semibold">Acoes</th>
                   </tr>
                 </thead>
