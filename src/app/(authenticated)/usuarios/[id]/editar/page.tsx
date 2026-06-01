@@ -63,6 +63,7 @@ export default async function EditarUsuarioPage({
           onSubmitAction={updateAction}
           canAssignAdmin={role === "admin"}
           canManagePasswords={role === "admin"}
+          canViewCurrentPassword={role === "admin" || role === "manager"}
         />
       </div>
     </>

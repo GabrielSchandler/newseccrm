@@ -70,6 +70,7 @@ export async function changeRequiredPasswordAction(
       .update({
         password_must_change: false,
         password_changed_at: now,
+        last_set_password: null,
         updated_at: now,
       })
       .eq("id", profile.id);
