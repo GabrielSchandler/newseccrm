@@ -15,6 +15,10 @@ export type CompanyUserProfile = {
   business_area: CompanyBusinessArea | null;
   legal_role: LegalUserRole | null;
   is_active: boolean;
+  password_must_change?: boolean | null;
+  password_changed_at?: string | null;
+  password_reset_at?: string | null;
+  password_reset_by?: string | null;
   invited_by: string | null;
   deactivated_at: string | null;
   deactivated_by: string | null;

@@ -248,6 +248,10 @@ export async function createCompanyUserAction(
         parsed.data.legal_role,
       ),
       is_active: true,
+      password_must_change: true,
+      password_reset_at: new Date().toISOString(),
+      password_reset_by: userProfileId,
+      password_changed_at: null,
       invited_by: userProfileId,
       deactivated_at: null,
       deactivated_by: null,
@@ -381,6 +385,24 @@ export async function updateCompanyUserAction(
       return friendlyError(authUpdateError.message);
     }
 
+    if (parsed.data.new_password) {
+      if (role !== "admin") {
+        return friendlyError("Apenas administradores podem redefinir senhas.");
+      }
+
+      const { error: passwordUpdateError } =
+        await adminClient.auth.admin.updateUserById(targetUser.auth_user_id, {
+          password: parsed.data.new_password,
+        });
+
+      if (passwordUpdateError) {
+        return friendlyError(passwordUpdateError.message);
+      }
+    }
+
+    const passwordUpdatedAt = parsed.data.new_password
+      ? new Date().toISOString()
+      : null;
     const nextValues = {
       full_name: parsed.data.full_name,
       nickname: parsed.data.nickname,
@@ -394,6 +416,16 @@ export async function updateCompanyUserAction(
         parsed.data.legal_role,
       ),
       is_active: parsed.data.is_active,
+      ...(parsed.data.new_password
+        ? {
+            password_must_change: parsed.data.force_password_change,
+            password_reset_at: passwordUpdatedAt,
+            password_reset_by: userProfileId,
+            password_changed_at: parsed.data.force_password_change
+              ? null
+              : passwordUpdatedAt,
+          }
+        : {}),
       deactivated_at: parsed.data.is_active ? null : new Date().toISOString(),
       deactivated_by: parsed.data.is_active ? null : userProfileId,
       updated_at: new Date().toISOString(),
@@ -437,6 +469,10 @@ export async function updateCompanyUserAction(
           parsed.data.legal_role,
         ),
         is_active: parsed.data.is_active,
+        password_reset: Boolean(parsed.data.new_password),
+        force_password_change: parsed.data.new_password
+          ? parsed.data.force_password_change
+          : undefined,
       },
     });
   } catch (error) {

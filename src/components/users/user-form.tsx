@@ -37,6 +37,7 @@ type EditUserFormProps = {
   submitLabel: string;
   onSubmitAction: (values: UpdateCompanyUserPayload) => Promise<UserManagementActionState>;
   canAssignAdmin: boolean;
+  canManagePasswords: boolean;
 };
 
 type UserFormProps =
@@ -324,10 +325,12 @@ function EditUserForm({
   submitLabel,
   onSubmitAction,
   canAssignAdmin,
+  canManagePasswords,
 }: EditUserFormProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [actionState, setActionState] = useState<UserManagementActionState | null>(null);
+  const [showNewPassword, setShowNewPassword] = useState(false);
   const roleOptions = availableRoles(canAssignAdmin);
   const {
     register,
@@ -518,6 +521,68 @@ function EditUserForm({
         </label>
       </div>
 
+      {canManagePasswords ? (
+        <div className="grid gap-5 rounded-lg border border-slate-200 bg-white p-5 shadow-sm md:grid-cols-2">
+          <div className="md:col-span-2">
+            <h2 className="text-base font-semibold text-slate-950">
+              Senha de acesso
+            </h2>
+            <p className="mt-1 text-sm leading-6 text-slate-600">
+              Por seguranca, o CRM nao mostra a senha atual. O administrador pode
+              definir uma nova senha provisoria e exigir que o usuario troque no
+              proximo acesso.
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <FormFieldLabel
+              htmlFor="new_password"
+              label="Nova senha provisoria"
+              requirement="optional"
+            />
+            <div className="flex gap-2">
+              <input
+                id="new_password"
+                type={showNewPassword ? "text" : "password"}
+                className="min-w-0 flex-1 rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
+                disabled={disabled}
+                autoComplete="new-password"
+                {...register("new_password")}
+              />
+              <button
+                type="button"
+                disabled={disabled}
+                onClick={() => setShowNewPassword((current) => !current)}
+                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-70"
+              >
+                {showNewPassword ? "Ocultar" : "Ver"}
+              </button>
+            </div>
+            {errors.new_password?.message ? (
+              <p className="text-sm text-red-600">
+                {String(errors.new_password.message)}
+              </p>
+            ) : null}
+          </div>
+
+          <label className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900">
+            <input
+              type="checkbox"
+              className="mt-1 h-4 w-4 rounded border-amber-300 text-teal-700 focus:ring-teal-600"
+              disabled={disabled}
+              {...register("force_password_change")}
+            />
+            <span>
+              Exigir troca no proximo login
+              <span className="mt-1 block text-xs font-normal leading-5 text-amber-800">
+                Com esta opcao marcada, o usuario entra com a senha provisoria
+                e e direcionado para criar uma senha definitiva.
+              </span>
+            </span>
+          </label>
+        </div>
+      ) : null}
+
       <UserActionMessage state={actionState} />
       <UserFormFooter disabled={disabled} submitLabel={submitLabel} />
     </form>
@@ -541,6 +606,7 @@ export function UserForm(props: UserFormProps) {
       submitLabel={props.submitLabel}
       onSubmitAction={props.onSubmitAction}
       canAssignAdmin={props.canAssignAdmin}
+      canManagePasswords={props.canManagePasswords}
     />
   );
 }

@@ -56,6 +56,14 @@ export const updateCompanyUserSchema = z.object({
   }),
   legal_role: z.enum(["admin", "consultant"]).default("consultant"),
   is_active: z.boolean(),
+  new_password: z
+    .union([z.string(), z.null(), z.undefined()])
+    .transform((value) => (typeof value === "string" && value.trim() ? value.trim() : null))
+    .refine(
+      (value) => value === null || value.length >= 6,
+      "A nova senha deve ter pelo menos 6 caracteres.",
+    ),
+  force_password_change: z.boolean().default(true),
 });
 
 export type CreateCompanyUserFormValues = z.input<typeof createCompanyUserSchema>;
@@ -86,5 +94,7 @@ export function companyUserToFormValues(
     role: user.role ?? "seller",
     legal_role: user.legal_role ?? "consultant",
     is_active: user.is_active,
+    new_password: "",
+    force_password_change: true,
   };
 }

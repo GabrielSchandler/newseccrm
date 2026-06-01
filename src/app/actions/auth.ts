@@ -11,6 +11,24 @@ export type LoginActionState = {
   redirectTo?: string;
 };
 
+async function userMustChangePassword(authUserId: string) {
+  const adminClient = createAdminClient();
+  const { data, error } = await adminClient
+    .from("user_profiles")
+    .select("password_must_change")
+    .eq("auth_user_id", authUserId)
+    .maybeSingle();
+
+  if (error) {
+    return false;
+  }
+
+  return Boolean(
+    (data as { password_must_change?: boolean | null } | null)
+      ?.password_must_change,
+  );
+}
+
 export async function signInWithLoginAction(
   _previousState: LoginActionState,
   formData: FormData,
@@ -56,7 +74,7 @@ export async function signInWithLoginAction(
     }
 
     const supabase = await createClient();
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data: signInData, error } = await supabase.auth.signInWithPassword({
       email: authEmail,
       password,
     });
@@ -68,11 +86,16 @@ export async function signInWithLoginAction(
       };
     }
 
+    const mustChangePassword = signInData.user
+      ? await userMustChangePassword(signInData.user.id)
+      : false;
+
     return {
       ok: true,
       message: "Acesso liberado.",
-      redirectTo:
-        redirectedFrom.startsWith("/") && !redirectedFrom.startsWith("//")
+      redirectTo: mustChangePassword
+        ? "/alterar-senha"
+        : redirectedFrom.startsWith("/") && !redirectedFrom.startsWith("//")
           ? redirectedFrom
           : "/",
     };

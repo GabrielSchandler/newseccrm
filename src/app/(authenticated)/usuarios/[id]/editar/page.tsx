@@ -62,6 +62,7 @@ export default async function EditarUsuarioPage({
           submitLabel="Salvar usuario"
           onSubmitAction={updateAction}
           canAssignAdmin={role === "admin"}
+          canManagePasswords={role === "admin"}
         />
       </div>
     </>

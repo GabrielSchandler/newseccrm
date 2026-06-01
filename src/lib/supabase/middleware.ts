@@ -27,6 +27,7 @@ const protectedRoutes = [
   "/usuarios",
   "/areas",
   "/juridico",
+  "/alterar-senha",
 ];
 
 export async function updateSession(request: NextRequest) {
@@ -66,6 +67,7 @@ export async function updateSession(request: NextRequest) {
     request.nextUrl.pathname.startsWith(route),
   );
   const isLoginRoute = request.nextUrl.pathname === "/login";
+  const isPasswordChangeRoute = request.nextUrl.pathname === "/alterar-senha";
   const isDashboardRoute = request.nextUrl.pathname.startsWith("/dashboard");
 
   if (!user && isProtectedRoute) {
@@ -77,20 +79,49 @@ export async function updateSession(request: NextRequest) {
 
   let profileRole: string | null = null;
   let profileBusinessArea: string | null = null;
+  let profilePasswordMustChange = false;
 
-  if (user && (isLoginRoute || isDashboardRoute)) {
+  if (user && (isLoginRoute || isDashboardRoute || isProtectedRoute)) {
     const { data: profile } = await supabase
       .from("user_profiles")
-      .select("role, business_area")
+      .select("role, business_area, password_must_change")
       .eq("auth_user_id", user.id)
       .maybeSingle();
 
     profileRole = (profile as { role?: string | null } | null)?.role ?? null;
     profileBusinessArea =
       (profile as { business_area?: string | null } | null)?.business_area ?? null;
+    profilePasswordMustChange = Boolean(
+      (profile as { password_must_change?: boolean | null } | null)
+        ?.password_must_change,
+    );
   }
 
   if (user && isLoginRoute) {
+    const url = request.nextUrl.clone();
+    url.pathname = profilePasswordMustChange
+      ? "/alterar-senha"
+      : getHomeForRole(
+          profileRole,
+          normalizeBusinessArea(profileBusinessArea),
+        );
+    url.search = "";
+    return NextResponse.redirect(url);
+  }
+
+  if (
+    user &&
+    profilePasswordMustChange &&
+    isProtectedRoute &&
+    !isPasswordChangeRoute
+  ) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/alterar-senha";
+    url.search = "";
+    return NextResponse.redirect(url);
+  }
+
+  if (user && isPasswordChangeRoute && !profilePasswordMustChange) {
     const url = request.nextUrl.clone();
     url.pathname = getHomeForRole(
       profileRole,
@@ -127,7 +158,7 @@ export async function updateSession(request: NextRequest) {
     }
   }
 
-  if (user && !routeWorkspace && profileRole === "seller") {
+  if (user && !routeWorkspace && profileRole === "seller" && !isPasswordChangeRoute) {
     const sellerArea = normalizeBusinessArea(profileBusinessArea);
     const isSharedPath = isSharedOperationalPath(request.nextUrl.pathname);
 
