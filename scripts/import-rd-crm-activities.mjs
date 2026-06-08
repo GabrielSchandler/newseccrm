@@ -660,19 +660,19 @@ async function main() {
     let cpf = null;
 
     try {
-      cpf = findCpfInObject(activity);
+      if (dealIdFilter && cpfFilter) {
+        cpf = cpfFilter;
+      } else {
+        cpf = findCpfInObject(activity);
+      }
 
-      if (cpfFilter && cpf && cpf !== cpfFilter) {
+      if (!dealIdFilter && cpfFilter && cpf && cpf !== cpfFilter) {
         continue;
       }
 
       if (rdDealId && !cpf) {
         deal = await fetchDeal(token, rdDealId, dealCache);
         cpf = findCpfInObject(deal);
-      }
-
-      if (!cpf && dealIdFilter && cpfFilter) {
-        cpf = cpfFilter;
       }
 
       if (cpfFilter && cpf !== cpfFilter) {
