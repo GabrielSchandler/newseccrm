@@ -81,6 +81,17 @@ function parseLimit(value, fallback) {
   return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : fallback;
 }
 
+function parseNonNegativeInteger(value, fallback) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed >= 0 ? Math.floor(parsed) : fallback;
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
 function sanitizeForLog(value) {
   if (value === null || value === undefined) {
     return null;
@@ -287,7 +298,29 @@ function findCpfInObject(value, hinted = false, visited = new WeakSet()) {
   return null;
 }
 
-async function rdFetch(path, token, params = {}) {
+function getRetryAfterMs(response) {
+  const retryAfter = response.headers.get("retry-after");
+
+  if (!retryAfter) {
+    return null;
+  }
+
+  const seconds = Number(retryAfter);
+
+  if (Number.isFinite(seconds) && seconds >= 0) {
+    return seconds * 1000;
+  }
+
+  const retryDate = new Date(retryAfter);
+  const retryMs = retryDate.getTime() - Date.now();
+  return Number.isFinite(retryMs) && retryMs > 0 ? retryMs : null;
+}
+
+function shouldRetryRdStatus(status) {
+  return status === 429 || status >= 500;
+}
+
+async function rdFetch(path, token, params = {}, options = {}) {
   const url = new URL(`${RD_CRM_BASE_URL}/${path.replace(/^\/+/, "")}`);
   url.searchParams.set("token", token);
 
@@ -297,24 +330,41 @@ async function rdFetch(path, token, params = {}) {
     }
   }
 
-  const response = await fetch(url, {
-    headers: {
-      accept: "application/json",
-    },
-  });
+  const retryCount = parseNonNegativeInteger(options.retryCount, 3);
+  const retryDelayMs = parseNonNegativeInteger(options.retryDelayMs, 1500);
 
-  const responseText = await response.text();
-  let payload = null;
+  for (let attempt = 0; attempt <= retryCount; attempt += 1) {
+    const response = await fetch(url, {
+      headers: {
+        accept: "application/json",
+      },
+    });
 
-  if (responseText) {
-    try {
-      payload = JSON.parse(responseText);
-    } catch {
-      payload = { raw: responseText };
+    const responseText = await response.text();
+    let payload = null;
+
+    if (responseText) {
+      try {
+        payload = JSON.parse(responseText);
+      } catch {
+        payload = { raw: responseText };
+      }
     }
-  }
 
-  if (!response.ok) {
+    if (response.ok) {
+      return payload;
+    }
+
+    if (attempt < retryCount && shouldRetryRdStatus(response.status)) {
+      const retryAfterMs = getRetryAfterMs(response);
+      const waitMs = retryAfterMs ?? retryDelayMs * (attempt + 1);
+      console.warn(
+        `RD CRM retornou HTTP ${response.status}. Nova tentativa em ${waitMs}ms (${attempt + 1}/${retryCount}).`,
+      );
+      await sleep(waitMs);
+      continue;
+    }
+
     throw new Error(
       `RD CRM retornou HTTP ${response.status}: ${sanitizeForLog(
         payload?.message ?? payload?.error ?? responseText,
@@ -322,10 +372,19 @@ async function rdFetch(path, token, params = {}) {
     );
   }
 
-  return payload;
+  return null;
 }
 
-async function fetchActivities({ token, limit, pageSize, startDate, endDate, dealId }) {
+async function fetchActivities({
+  token,
+  limit,
+  pageSize,
+  startDate,
+  endDate,
+  dealId,
+  requestOptions,
+  pageDelayMs,
+}) {
   const collected = [];
   let page = 1;
 
@@ -336,7 +395,7 @@ async function fetchActivities({ token, limit, pageSize, startDate, endDate, dea
       start_date: startDate,
       end_date: endDate,
       deal_id: dealId,
-    });
+    }, requestOptions);
     const activities = extractArray(payload, ["activities", "data", "results", "items"]);
 
     if (!activities.length) {
@@ -350,12 +409,16 @@ async function fetchActivities({ token, limit, pageSize, startDate, endDate, dea
     }
 
     page += 1;
+
+    if (pageDelayMs > 0) {
+      await sleep(pageDelayMs);
+    }
   }
 
   return collected.slice(0, limit);
 }
 
-async function fetchDeal(token, dealId, cache) {
+async function fetchDeal(token, dealId, cache, requestOptions = {}) {
   if (!dealId) {
     return null;
   }
@@ -365,7 +428,13 @@ async function fetchDeal(token, dealId, cache) {
   }
 
   try {
-    const deal = await rdFetch(`deals/${encodeURIComponent(dealId)}`, token);
+    const requestDelayMs = parseNonNegativeInteger(requestOptions.requestDelayMs, 0);
+
+    if (requestDelayMs > 0) {
+      await sleep(requestDelayMs);
+    }
+
+    const deal = await rdFetch(`deals/${encodeURIComponent(dealId)}`, token, {}, requestOptions);
     cache.set(dealId, deal);
     return deal;
   } catch (error) {
@@ -605,6 +674,10 @@ async function main() {
   const createdBy = String(args["created-by"] ?? "").trim();
   const limit = parseLimit(args.limit, 20);
   const pageSize = Math.min(parseLimit(args["page-size"], 200), 200);
+  const retryCount = parseNonNegativeInteger(args["retry-count"], 5);
+  const retryDelayMs = parseNonNegativeInteger(args["retry-delay-ms"], 3000);
+  const pageDelayMs = parseNonNegativeInteger(args["page-delay-ms"], 750);
+  const dealDelayMs = parseNonNegativeInteger(args["deal-delay-ms"], 350);
   const startDate = normalizeText(args["start-date"]);
   const endDate = normalizeText(args["end-date"]);
   const dealIdFilter = normalizeText(args["deal-id"] ?? args.deal);
@@ -638,6 +711,14 @@ async function main() {
     },
   });
   const dealCache = new Map();
+  const requestOptions = {
+    retryCount,
+    retryDelayMs,
+  };
+  const dealRequestOptions = {
+    ...requestOptions,
+    requestDelayMs: dealDelayMs,
+  };
   const activities = await fetchActivities({
     token,
     limit,
@@ -645,6 +726,8 @@ async function main() {
     startDate,
     endDate,
     dealId: dealIdFilter,
+    requestOptions,
+    pageDelayMs,
   });
   const summary = {
     scanned: activities.length,
@@ -664,6 +747,9 @@ async function main() {
   if (dealIdFilter) {
     console.log(`Filtro negociacao RD: ${dealIdFilter}`);
   }
+  console.log(
+    `Controle RD: retry=${retryCount}, retryDelayMs=${retryDelayMs}, pageDelayMs=${pageDelayMs}, dealDelayMs=${dealDelayMs}`,
+  );
   console.log(`Modo: ${isApply ? "APLICAR" : "DIAGNOSTICO"}`);
 
   if (isApply) {
@@ -699,7 +785,7 @@ async function main() {
       }
 
       if (rdDealId && !cpf) {
-        deal = await fetchDeal(token, rdDealId, dealCache);
+        deal = await fetchDeal(token, rdDealId, dealCache, dealRequestOptions);
         cpf = findCpfInObject(deal);
       }
 
