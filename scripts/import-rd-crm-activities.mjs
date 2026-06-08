@@ -579,6 +579,8 @@ async function main() {
   const pageSize = Math.min(parseLimit(args["page-size"], 200), 200);
   const startDate = normalizeText(args["start-date"]);
   const endDate = normalizeText(args["end-date"]);
+  const cpfFilterRaw = args.cpf ?? args["client-cpf"];
+  const cpfFilter = cpfFilterRaw ? normalizeCpf(cpfFilterRaw) : null;
 
   if (!supabaseUrl || !serviceRoleKey) {
     throw new Error("Variaveis NEXT_PUBLIC_SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY sao obrigatorias.");
@@ -596,6 +598,10 @@ async function main() {
     throw new Error("Informe --created-by para aplicar a importacao.");
   }
 
+  if (cpfFilterRaw && !cpfFilter) {
+    throw new Error("CPF informado em --cpf invalido. Use um CPF com 11 digitos.");
+  }
+
   const supabase = createClient(supabaseUrl, serviceRoleKey, {
     auth: {
       persistSession: false,
@@ -605,7 +611,8 @@ async function main() {
   const dealCache = new Map();
   const activities = await fetchActivities({ token, limit, pageSize, startDate, endDate });
   const summary = {
-    total: activities.length,
+    scanned: activities.length,
+    total: 0,
     matched: 0,
     imported: 0,
     skipped: 0,
@@ -614,13 +621,16 @@ async function main() {
   let batchId = null;
 
   console.log(`RD CRM - anotações encontradas: ${activities.length}`);
+  if (cpfFilter) {
+    console.log(`Filtro CPF: ${cpfFilter}`);
+  }
   console.log(`Modo: ${isApply ? "APLICAR" : "DIAGNOSTICO"}`);
 
   if (isApply) {
     batchId = await createBatch(supabase, {
       companyId,
       createdBy,
-      notes: `Importacao de anotacoes RD CRM. Limite: ${limit}.`,
+      notes: `Importacao de anotacoes RD CRM. Limite: ${limit}.${cpfFilter ? ` CPF: ${cpfFilter}.` : ""}`,
     });
     console.log(`Batch criado: ${batchId}`);
   }
@@ -635,8 +645,21 @@ async function main() {
     let timelineEventId = null;
     let existing = null;
     let errorMessage = null;
+    let cpf = null;
 
     try {
+      if (rdDealId) {
+        deal = await fetchDeal(token, rdDealId, dealCache);
+      }
+
+      cpf = findCpfInObject(activity) ?? findCpfInObject(deal);
+
+      if (cpfFilter && cpf !== cpfFilter) {
+        continue;
+      }
+
+      summary.total += 1;
+
       if (isApply) {
         existing = await getExistingImport(supabase, companyId, rdActivityId);
 
@@ -646,11 +669,6 @@ async function main() {
         }
       }
 
-      if (rdDealId) {
-        deal = await fetchDeal(token, rdDealId, dealCache);
-      }
-
-      const cpf = findCpfInObject(activity) ?? findCpfInObject(deal);
       const note = extractActivityText(activity);
       const createdAt = extractActivityCreatedAt(activity);
       const actorName = extractActorName(activity);
@@ -739,7 +757,7 @@ async function main() {
             rdActivityId,
             rdDealId,
             rdContactId: null,
-            cpf: findCpfInObject(activity),
+            cpf: cpf ?? findCpfInObject(activity),
             match: { client: null },
             timelineEventId: null,
             status: "error",
