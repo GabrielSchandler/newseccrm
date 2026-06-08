@@ -92,6 +92,16 @@ function sleep(ms) {
   });
 }
 
+function chunkArray(items, size) {
+  const chunks = [];
+
+  for (let index = 0; index < items.length; index += size) {
+    chunks.push(items.slice(index, index + size));
+  }
+
+  return chunks;
+}
+
 function sanitizeForLog(value) {
   if (value === null || value === undefined) {
     return null;
@@ -521,6 +531,91 @@ async function finishBatch(supabase, batchId, status) {
   }
 }
 
+async function fetchImportRowsByBatch(supabase, { companyId, batchId }) {
+  const rows = [];
+  const pageSize = 1000;
+  let from = 0;
+
+  while (true) {
+    const { data, error } = await supabase
+      .from("rd_crm_activity_import")
+      .select("id, import_status, timeline_event_id")
+      .eq("company_id", companyId)
+      .eq("batch_id", batchId)
+      .not("timeline_event_id", "is", null)
+      .range(from, from + pageSize - 1);
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    if (!data?.length) {
+      break;
+    }
+
+    rows.push(...data);
+
+    if (data.length < pageSize) {
+      break;
+    }
+
+    from += pageSize;
+  }
+
+  return rows;
+}
+
+async function rollbackBatch(supabase, { companyId, batchId }) {
+  const rows = await fetchImportRowsByBatch(supabase, { companyId, batchId });
+  const importedRows = rows.filter(
+    (row) => row.import_status === "imported" && row.timeline_event_id,
+  );
+  const timelineEventIds = Array.from(
+    new Set(importedRows.map((row) => row.timeline_event_id).filter(Boolean)),
+  );
+  const importRowIds = importedRows.map((row) => row.id);
+
+  for (const chunk of chunkArray(timelineEventIds, 200)) {
+    const { error } = await supabase
+      .from("client_timeline_events")
+      .delete()
+      .eq("company_id", companyId)
+      .in("id", chunk);
+
+    if (error) {
+      throw new Error(error.message);
+    }
+  }
+
+  const rolledBackAt = new Date().toISOString();
+
+  for (const chunk of chunkArray(importRowIds, 200)) {
+    const { error } = await supabase
+      .from("rd_crm_activity_import")
+      .update({
+        import_status: "rolled_back",
+        timeline_event_id: null,
+        rolled_back_at: rolledBackAt,
+        updated_at: rolledBackAt,
+      })
+      .eq("company_id", companyId)
+      .in("id", chunk);
+
+    if (error) {
+      throw new Error(error.message);
+    }
+  }
+
+  await finishBatch(supabase, batchId, "rolled_back");
+
+  return {
+    batchId,
+    scanned: rows.length,
+    rolledBackImports: importRowIds.length,
+    deletedTimelineEvents: timelineEventIds.length,
+  };
+}
+
 async function getExistingImport(supabase, companyId, rdActivityId) {
   const { data, error } = await supabase
     .from("rd_crm_activity_import")
@@ -664,6 +759,7 @@ async function main() {
   const args = parseArgs(process.argv.slice(2));
   const isApply = Boolean(args.apply);
   const shouldRepair = Boolean(args.repair || args["update-existing"]);
+  const rollbackBatchId = normalizeText(args["rollback-batch"] ?? args.rollback);
 
   loadEnvConfig(process.cwd());
 
@@ -688,12 +784,28 @@ async function main() {
     throw new Error("Variaveis NEXT_PUBLIC_SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY sao obrigatorias.");
   }
 
-  if (!token) {
-    throw new Error("Informe o token com --token ou pela variavel RD_CRM_TOKEN.");
-  }
-
   if (!companyId) {
     throw new Error("Informe --company-id.");
+  }
+
+  if (rollbackBatchId) {
+    const supabase = createClient(supabaseUrl, serviceRoleKey, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+      },
+    });
+    const rollbackSummary = await rollbackBatch(supabase, {
+      companyId,
+      batchId: rollbackBatchId,
+    });
+    console.log("Rollback de importacao RD concluido:");
+    console.log(JSON.stringify(rollbackSummary, null, 2));
+    return;
+  }
+
+  if (!token) {
+    throw new Error("Informe o token com --token ou pela variavel RD_CRM_TOKEN.");
   }
 
   if (isApply && !createdBy) {
