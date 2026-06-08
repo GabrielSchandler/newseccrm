@@ -325,7 +325,7 @@ async function rdFetch(path, token, params = {}) {
   return payload;
 }
 
-async function fetchActivities({ token, limit, pageSize, startDate, endDate }) {
+async function fetchActivities({ token, limit, pageSize, startDate, endDate, dealId }) {
   const collected = [];
   let page = 1;
 
@@ -335,6 +335,7 @@ async function fetchActivities({ token, limit, pageSize, startDate, endDate }) {
       limit: Math.min(pageSize, limit - collected.length),
       start_date: startDate,
       end_date: endDate,
+      deal_id: dealId,
     });
     const activities = extractArray(payload, ["activities", "data", "results", "items"]);
 
@@ -579,6 +580,7 @@ async function main() {
   const pageSize = Math.min(parseLimit(args["page-size"], 200), 200);
   const startDate = normalizeText(args["start-date"]);
   const endDate = normalizeText(args["end-date"]);
+  const dealIdFilter = normalizeText(args["deal-id"] ?? args.deal);
   const cpfFilterRaw = args.cpf ?? args["client-cpf"];
   const cpfFilter = cpfFilterRaw ? normalizeCpf(cpfFilterRaw) : null;
 
@@ -609,7 +611,14 @@ async function main() {
     },
   });
   const dealCache = new Map();
-  const activities = await fetchActivities({ token, limit, pageSize, startDate, endDate });
+  const activities = await fetchActivities({
+    token,
+    limit,
+    pageSize,
+    startDate,
+    endDate,
+    dealId: dealIdFilter,
+  });
   const summary = {
     scanned: activities.length,
     total: 0,
@@ -624,13 +633,16 @@ async function main() {
   if (cpfFilter) {
     console.log(`Filtro CPF: ${cpfFilter}`);
   }
+  if (dealIdFilter) {
+    console.log(`Filtro negociacao RD: ${dealIdFilter}`);
+  }
   console.log(`Modo: ${isApply ? "APLICAR" : "DIAGNOSTICO"}`);
 
   if (isApply) {
     batchId = await createBatch(supabase, {
       companyId,
       createdBy,
-      notes: `Importacao de anotacoes RD CRM. Limite: ${limit}.${cpfFilter ? ` CPF: ${cpfFilter}.` : ""}`,
+      notes: `Importacao de anotacoes RD CRM. Limite: ${limit}.${cpfFilter ? ` CPF: ${cpfFilter}.` : ""}${dealIdFilter ? ` Negociacao RD: ${dealIdFilter}.` : ""}`,
     });
     console.log(`Batch criado: ${batchId}`);
   }
