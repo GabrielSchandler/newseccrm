@@ -535,6 +535,32 @@ async function insertTimelineEvent(
   return data.id;
 }
 
+async function updateTimelineEvent(
+  supabase,
+  {
+    timelineEventId,
+    note,
+    createdAt,
+    actorName,
+    details,
+  },
+) {
+  const { error } = await supabase
+    .from("client_timeline_events")
+    .update({
+      title: "Anotacao importada do RD Station",
+      note,
+      actor_name: actorName ? `RD Station CRM - ${actorName}` : "RD Station CRM",
+      details,
+      created_at: createdAt ?? new Date().toISOString(),
+    })
+    .eq("id", timelineEventId);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+}
+
 function buildImportPayload({
   batchId,
   companyId,
@@ -568,6 +594,7 @@ function buildImportPayload({
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   const isApply = Boolean(args.apply);
+  const shouldRepair = Boolean(args.repair || args["update-existing"]);
 
   loadEnvConfig(process.cwd());
 
@@ -624,6 +651,7 @@ async function main() {
     total: 0,
     matched: 0,
     imported: 0,
+    repaired: 0,
     skipped: 0,
     errors: 0,
   };
@@ -681,15 +709,6 @@ async function main() {
 
       summary.total += 1;
 
-      if (isApply) {
-        existing = await getExistingImport(supabase, companyId, rdActivityId);
-
-        if (existing?.import_status === "imported" && existing.timeline_event_id) {
-          summary.skipped += 1;
-          continue;
-        }
-      }
-
       const note = extractActivityText(activity);
       const createdAt = extractActivityCreatedAt(activity);
       const actorName = extractActorName(activity);
@@ -704,10 +723,42 @@ async function main() {
         throw new Error("Anotacao sem texto identificavel.");
       }
 
+      if (isApply) {
+        existing = await getExistingImport(supabase, companyId, rdActivityId);
+      }
+
+      const timelineDetails = {
+        source: SOURCE,
+        rd_import_batch_id: batchId,
+        rd_activity_id: rdActivityId,
+        rd_deal_id: rdDealId,
+        rd_contact_id: rdContactId,
+        rd_client_cpf: cpf,
+        rd_created_at: createdAt,
+        rd_actor_name: actorName,
+        matched_by: "cpf",
+      };
+
       if (!match.client) {
         status = "error";
         errorMessage = match.message;
         summary.errors += 1;
+      } else if (isApply && existing?.import_status === "imported" && existing.timeline_event_id) {
+        if (shouldRepair) {
+          await updateTimelineEvent(supabase, {
+            timelineEventId: existing.timeline_event_id,
+            note,
+            createdAt,
+            actorName,
+            details: timelineDetails,
+          });
+          timelineEventId = existing.timeline_event_id;
+          status = "imported";
+          summary.repaired += 1;
+        } else {
+          summary.skipped += 1;
+          continue;
+        }
       } else if (isApply) {
         timelineEventId = await insertTimelineEvent(supabase, {
           companyId,
@@ -716,17 +767,7 @@ async function main() {
           note,
           createdAt,
           actorName,
-          details: {
-            source: SOURCE,
-            rd_import_batch_id: batchId,
-            rd_activity_id: rdActivityId,
-            rd_deal_id: rdDealId,
-            rd_contact_id: rdContactId,
-            rd_client_cpf: cpf,
-            rd_created_at: createdAt,
-            rd_actor_name: actorName,
-            matched_by: "cpf",
-          },
+          details: timelineDetails,
         });
         status = "imported";
         summary.imported += 1;
