@@ -632,21 +632,25 @@ async function getExistingImport(supabase, companyId, rdActivityId) {
 }
 
 async function saveImportRow(supabase, payload, existingId = null) {
-  if (existingId) {
+  async function updateExistingImport(importId, nextPayload) {
     const { error } = await supabase
       .from("rd_crm_activity_import")
       .update({
-        ...payload,
+        ...nextPayload,
         updated_at: new Date().toISOString(),
         rolled_back_at: null,
       })
-      .eq("id", existingId);
+      .eq("id", importId);
 
     if (error) {
       throw new Error(error.message);
     }
 
-    return existingId;
+    return importId;
+  }
+
+  if (existingId) {
+    return updateExistingImport(existingId, payload);
   }
 
   const { data, error } = await supabase
@@ -656,6 +660,35 @@ async function saveImportRow(supabase, payload, existingId = null) {
     .single();
 
   if (error) {
+    const isDuplicate =
+      error.code === "23505" ||
+      String(error.message ?? "").includes("duplicate key value");
+
+    if (isDuplicate) {
+      const existing = await getExistingImport(supabase, payload.company_id, payload.rd_activity_id);
+
+      if (existing?.id) {
+        if (
+          existing.timeline_event_id &&
+          payload.timeline_event_id &&
+          existing.timeline_event_id !== payload.timeline_event_id
+        ) {
+          await supabase
+            .from("client_timeline_events")
+            .delete()
+            .eq("id", payload.timeline_event_id)
+            .eq("company_id", payload.company_id);
+
+          return updateExistingImport(existing.id, {
+            ...payload,
+            timeline_event_id: existing.timeline_event_id,
+          });
+        }
+
+        return updateExistingImport(existing.id, payload);
+      }
+    }
+
     throw new Error(error.message);
   }
 
