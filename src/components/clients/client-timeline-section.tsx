@@ -13,6 +13,7 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
 import {
   addClientTimelineNoteAction,
+  deleteClientTimelineNoteAction,
   updateClientTimelineNoteAction,
 } from "@/app/(authenticated)/clientes/actions";
 import { formatDateTime } from "@/lib/clients/formatters";
@@ -24,6 +25,7 @@ type ClientTimelineSectionProps = {
   events: ClientTimelineEvent[];
   currentUserProfileId: string;
   canEditOwnNotes: boolean;
+  canManageAllNotes: boolean;
 };
 
 type TimelineEventConfig = {
@@ -130,6 +132,7 @@ export function ClientTimelineSection({
   events,
   currentUserProfileId,
   canEditOwnNotes,
+  canManageAllNotes,
 }: ClientTimelineSectionProps) {
   const router = useRouter();
   const [note, setNote] = useState("");
@@ -197,6 +200,29 @@ export function ClientTimelineSection({
     });
   }
 
+  function handleDeleteNote(event: ClientTimelineEvent) {
+    const confirmed = window.confirm(
+      "Remover esta anotacao da linha do tempo? Esta acao nao pode ser desfeita.",
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setFeedback(null);
+    startTransition(async () => {
+      const result = await deleteClientTimelineNoteAction(event.id);
+      setFeedback(result);
+
+      if (result.ok) {
+        if (editingEventId === event.id) {
+          cancelEditing();
+        }
+        router.refresh();
+      }
+    });
+  }
+
   return (
     <section className="space-y-4 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
       <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
@@ -257,10 +283,10 @@ export function ClientTimelineSection({
             const config = getEventConfig(event.event_type);
             const Icon = config.icon;
             const detailLines = getDetailLines(event);
-            const isOwnNote =
-              canEditOwnNotes &&
+            const canManageThisNote =
               Boolean(event.note?.trim()) &&
-              event.actor_user_profile_id === currentUserProfileId;
+              (canManageAllNotes ||
+                (canEditOwnNotes && event.actor_user_profile_id === currentUserProfileId));
             const isEditing = editingEventId === event.id;
 
             return (
@@ -336,15 +362,25 @@ export function ClientTimelineSection({
                     {formatActorLine(event)}
                   </p>
 
-                  {isOwnNote && !isEditing ? (
-                    <button
-                      type="button"
-                      disabled={isPending}
-                      onClick={() => beginEditing(event)}
-                      className="mt-3 rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-70"
-                    >
-                      Editar minha anotacao
-                    </button>
+                  {canManageThisNote && !isEditing ? (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        disabled={isPending}
+                        onClick={() => beginEditing(event)}
+                        className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-70"
+                      >
+                        Editar anotacao
+                      </button>
+                      <button
+                        type="button"
+                        disabled={isPending}
+                        onClick={() => handleDeleteNote(event)}
+                        className="rounded-lg border border-red-200 bg-white px-3 py-2 text-xs font-semibold text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-70"
+                      >
+                        Remover anotacao
+                      </button>
+                    </div>
                   ) : null}
                 </div>
               </article>

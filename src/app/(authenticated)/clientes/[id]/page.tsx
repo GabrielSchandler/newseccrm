@@ -476,6 +476,7 @@ export default async function ClientePage({
           events={timelineEvents}
           currentUserProfileId={userProfileId}
           canEditOwnNotes={businessArea === "legal"}
+          canManageAllNotes={role === "admin" || role === "manager"}
         />
 
         <ClientDocumentsSection

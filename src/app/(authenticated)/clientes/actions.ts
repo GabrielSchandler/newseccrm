@@ -422,10 +422,11 @@ export async function updateClientTimelineNoteAction(
   }
 
   try {
-    const { supabase, companyId, userProfileId, businessArea } =
+    const { supabase, companyId, userProfileId, role, businessArea } =
       await getCurrentUserContext();
+    const canManageAllTimelineNotes = role === "admin" || role === "manager";
 
-    if (businessArea !== "legal") {
+    if (!canManageAllTimelineNotes && businessArea !== "legal") {
       return friendlyError("Apenas integrantes do juridico podem editar anotacoes.");
     }
 
@@ -449,7 +450,7 @@ export async function updateClientTimelineNoteAction(
       return friendlyError("Anotacao nao encontrada.");
     }
 
-    if (timelineEvent.actor_user_profile_id !== userProfileId) {
+    if (!canManageAllTimelineNotes && timelineEvent.actor_user_profile_id !== userProfileId) {
       return friendlyError("Voce so pode editar anotacoes feitas por voce.");
     }
 
@@ -469,8 +470,7 @@ export async function updateClientTimelineNoteAction(
         },
       })
       .eq("id", timelineEvent.id)
-      .eq("company_id", companyId)
-      .eq("actor_user_profile_id", userProfileId);
+      .eq("company_id", companyId);
 
     if (updateError) {
       return friendlyError(updateError.message);
@@ -501,6 +501,101 @@ export async function updateClientTimelineNoteAction(
   } catch (error) {
     return friendlyError(
       error instanceof Error ? error.message : "Nao foi possivel atualizar a anotacao.",
+    );
+  }
+}
+
+export async function deleteClientTimelineNoteAction(
+  eventId: string,
+): Promise<ClientActionState> {
+  try {
+    const { supabase, companyId, userProfileId, role, businessArea } =
+      await getCurrentUserContext();
+    const canManageAllTimelineNotes = role === "admin" || role === "manager";
+
+    if (!canManageAllTimelineNotes && businessArea !== "legal") {
+      return friendlyError("Apenas integrantes do juridico podem remover anotacoes.");
+    }
+
+    const adminClient = createAdminClient();
+    const { data: eventData, error: eventError } = await adminClient
+      .from("client_timeline_events")
+      .select("id, client_id, title, note, actor_user_profile_id, details")
+      .eq("id", eventId)
+      .eq("company_id", companyId)
+      .maybeSingle();
+    const timelineEvent = eventData as {
+      id: string;
+      client_id: string;
+      title: string;
+      note: string | null;
+      actor_user_profile_id: string | null;
+      details: Record<string, unknown> | null;
+    } | null;
+
+    if (eventError || !timelineEvent) {
+      return friendlyError("Anotacao nao encontrada.");
+    }
+
+    if (!canManageAllTimelineNotes && timelineEvent.actor_user_profile_id !== userProfileId) {
+      return friendlyError("Voce so pode remover anotacoes feitas por voce.");
+    }
+
+    if (!timelineEvent.note?.trim()) {
+      return friendlyError("Este registro nao possui anotacao removivel.");
+    }
+
+    const { error: deleteError } = await adminClient
+      .from("client_timeline_events")
+      .delete()
+      .eq("id", timelineEvent.id)
+      .eq("company_id", companyId);
+
+    if (deleteError) {
+      return friendlyError(deleteError.message);
+    }
+
+    const rdActivityId =
+      typeof timelineEvent.details?.rd_activity_id === "string"
+        ? timelineEvent.details.rd_activity_id
+        : null;
+
+    if (rdActivityId) {
+      await adminClient
+        .from("rd_crm_activity_import")
+        .update({
+          import_status: "deleted",
+          timeline_event_id: null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("company_id", companyId)
+        .eq("rd_activity_id", rdActivityId);
+    }
+
+    await recordAuditLog({
+      supabase,
+      companyId,
+      userProfileId,
+      action: "client.timeline_note_deleted",
+      entityType: "client",
+      entityId: timelineEvent.client_id,
+      entityLabel: timelineEvent.title,
+      details: {
+        timeline_event_id: timelineEvent.id,
+        previous_note: timelineEvent.note,
+        rd_activity_id: rdActivityId,
+      },
+    });
+
+    revalidatePath(`/clientes/${timelineEvent.client_id}`);
+
+    return {
+      ok: true,
+      message: "Anotacao removida com sucesso.",
+    };
+  } catch (error) {
+    return friendlyError(
+      error instanceof Error ? error.message : "Nao foi possivel remover a anotacao.",
     );
   }
 }
