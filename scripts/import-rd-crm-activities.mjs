@@ -453,6 +453,21 @@ async function fetchDeal(token, dealId, cache, requestOptions = {}) {
   }
 }
 
+function buildDealCpfMap(activities) {
+  const map = new Map();
+
+  for (const activity of activities) {
+    const rdDealId = extractDealId(activity);
+    const cpf = findCpfInObject(activity);
+
+    if (rdDealId && cpf && !map.has(rdDealId)) {
+      map.set(rdDealId, cpf);
+    }
+  }
+
+  return map;
+}
+
 async function findClientByCpf(supabase, companyId, cpf) {
   if (!cpf) {
     return {
@@ -884,6 +899,7 @@ async function main() {
     errors: 0,
   };
   let batchId = null;
+  const dealCpfMap = buildDealCpfMap(activities);
 
   console.log(`RD CRM - anotações encontradas: ${activities.length}`);
   if (cpfFilter) {
@@ -892,6 +908,7 @@ async function main() {
   if (dealIdFilter) {
     console.log(`Filtro negociacao RD: ${dealIdFilter}`);
   }
+  console.log(`Negociacoes RD com CPF identificado: ${dealCpfMap.size}`);
   console.log(
     `Controle RD: retry=${retryCount}, retryDelayMs=${retryDelayMs}, pageDelayMs=${pageDelayMs}, dealDelayMs=${dealDelayMs}`,
   );
@@ -922,7 +939,7 @@ async function main() {
       if (dealIdFilter && cpfFilter) {
         cpf = cpfFilter;
       } else {
-        cpf = findCpfInObject(activity);
+        cpf = findCpfInObject(activity) ?? (rdDealId ? dealCpfMap.get(rdDealId) : null) ?? null;
       }
 
       if (!dealIdFilter && cpfFilter && cpf && cpf !== cpfFilter) {
@@ -932,6 +949,10 @@ async function main() {
       if (rdDealId && !cpf) {
         deal = await fetchDeal(token, rdDealId, dealCache, dealRequestOptions);
         cpf = findCpfInObject(deal);
+
+        if (cpf) {
+          dealCpfMap.set(rdDealId, cpf);
+        }
       }
 
       if (cpfFilter && cpf !== cpfFilter) {
