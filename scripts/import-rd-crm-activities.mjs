@@ -671,6 +671,10 @@ async function main() {
         cpf = findCpfInObject(deal);
       }
 
+      if (!cpf && dealIdFilter && cpfFilter) {
+        cpf = cpfFilter;
+      }
+
       if (cpfFilter && cpf !== cpfFilter) {
         continue;
       }
