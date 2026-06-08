@@ -648,11 +648,16 @@ async function main() {
     let cpf = null;
 
     try {
-      if (rdDealId) {
-        deal = await fetchDeal(token, rdDealId, dealCache);
+      cpf = findCpfInObject(activity);
+
+      if (cpfFilter && cpf && cpf !== cpfFilter) {
+        continue;
       }
 
-      cpf = findCpfInObject(activity) ?? findCpfInObject(deal);
+      if (rdDealId && !cpf) {
+        deal = await fetchDeal(token, rdDealId, dealCache);
+        cpf = findCpfInObject(deal);
+      }
 
       if (cpfFilter && cpf !== cpfFilter) {
         continue;
