@@ -76,6 +76,24 @@ function normalizeText(value) {
   return normalized || null;
 }
 
+function normalizeComparableName(value) {
+  const text = normalizeText(value);
+
+  if (!text) {
+    return null;
+  }
+
+  const normalized = text
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .replace(/[^a-zA-Z\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toUpperCase();
+
+  return normalized.length >= 6 ? normalized : null;
+}
+
 function parseLimit(value, fallback) {
   const parsed = Number(value);
   return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : fallback;
@@ -231,6 +249,46 @@ function extractActorName(activity) {
 
   const user = activity?.user || activity?.author || activity?.owner;
   return normalizeText(getAny(user, ["name", "full_name", "email", "username"]));
+}
+
+function extractDealName(value) {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  const direct = normalizeText(getAny(value, ["deal_name", "opportunity_name"]));
+
+  if (direct) {
+    return direct;
+  }
+
+  const deal = value.deal || value.deal_reference || value.opportunity;
+  const nested = normalizeText(getAny(deal, ["name", "full_name", "title"]));
+
+  if (nested) {
+    return nested;
+  }
+
+  return normalizeText(getAny(value, ["name", "title"]));
+}
+
+function extractClientNameFromText(text) {
+  const normalized = normalizeText(text);
+
+  if (!normalized) {
+    return null;
+  }
+
+  const match = normalized.match(/(?:^|\n)\s*Nome\s*:\s*([^\n\r]+)/i);
+  return match ? normalizeText(match[1]) : null;
+}
+
+function extractClientName(activity, deal = null) {
+  return (
+    extractDealName(deal) ??
+    extractDealName(activity) ??
+    extractClientNameFromText(extractActivityText(activity))
+  );
 }
 
 function hasCpfHint(key, object) {
@@ -574,6 +632,30 @@ function buildDealCpfMap(activities, deals = []) {
   return map;
 }
 
+function buildDealNameMap(activities, deals = []) {
+  const map = new Map();
+
+  for (const deal of deals) {
+    const rdDealId = extractDealId(deal) || String(getAny(deal, ["id", "_id"]) ?? "").trim();
+    const name = extractClientName(null, deal);
+
+    if (rdDealId && name && !map.has(rdDealId)) {
+      map.set(rdDealId, name);
+    }
+  }
+
+  for (const activity of activities) {
+    const rdDealId = extractDealId(activity);
+    const name = extractClientName(activity);
+
+    if (rdDealId && name && !map.has(rdDealId)) {
+      map.set(rdDealId, name);
+    }
+  }
+
+  return map;
+}
+
 async function findClientByCpf(supabase, companyId, cpf) {
   if (!cpf) {
     return {
@@ -615,6 +697,95 @@ async function findClientByCpf(supabase, companyId, cpf) {
     status: "matched",
     client: data[0],
     message: null,
+  };
+}
+
+async function findClientByName(supabase, companyId, name) {
+  const comparableName = normalizeComparableName(name);
+
+  if (!comparableName) {
+    return {
+      status: "missing_name",
+      client: null,
+      message: "Nome do cliente nao encontrado na anotacao/negociacao do RD.",
+    };
+  }
+
+  const firstToken = comparableName.split(" ")[0];
+  const { data, error } = await supabase
+    .from("clients")
+    .select("id, full_name, cpf")
+    .eq("company_id", companyId)
+    .is("deleted_at", null)
+    .ilike("full_name", `%${firstToken}%`)
+    .limit(50);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  const matches = (data ?? []).filter(
+    (client) => normalizeComparableName(client.full_name) === comparableName,
+  );
+
+  if (!matches.length) {
+    return {
+      status: "client_not_found_by_name",
+      client: null,
+      message: `Cliente nao encontrado no CRM para nome ${name}.`,
+    };
+  }
+
+  if (matches.length > 1) {
+    return {
+      status: "duplicate_client_name",
+      client: null,
+      message: `Mais de um cliente ativo encontrado no CRM para nome ${name}.`,
+    };
+  }
+
+  return {
+    status: "matched",
+    client: matches[0],
+    message: null,
+  };
+}
+
+async function findClientMatch(supabase, companyId, { cpf, name }) {
+  const cpfMatch = await findClientByCpf(supabase, companyId, cpf);
+
+  if (cpfMatch.client) {
+    return {
+      ...cpfMatch,
+      matchedBy: "cpf",
+      matchValue: cpf,
+    };
+  }
+
+  if (cpfMatch.status === "duplicate_client") {
+    return {
+      ...cpfMatch,
+      matchedBy: null,
+      matchValue: null,
+    };
+  }
+
+  const nameMatch = await findClientByName(supabase, companyId, name);
+
+  if (nameMatch.client) {
+    return {
+      ...nameMatch,
+      matchedBy: "name",
+      matchValue: name,
+      cpfErrorMessage: cpfMatch.message,
+    };
+  }
+
+  return {
+    ...nameMatch,
+    matchedBy: null,
+    matchValue: null,
+    message: `${cpfMatch.message} ${nameMatch.message}`,
   };
 }
 
@@ -888,6 +1059,8 @@ function buildImportPayload({
   rdContactId,
   cpf,
   match,
+  matchedBy,
+  matchValue,
   timelineEventId,
   status,
   errorMessage,
@@ -901,8 +1074,8 @@ function buildImportPayload({
     rd_client_cpf: cpf,
     matched_client_id: match.client?.id ?? null,
     timeline_event_id: timelineEventId,
-    matched_by: match.client ? "cpf" : null,
-    match_value: match.client ? cpf : null,
+    matched_by: match.client ? matchedBy : null,
+    match_value: match.client ? matchValue : null,
     import_status: status,
     error_message: errorMessage,
     raw_payload: activity,
@@ -1027,6 +1200,8 @@ async function main() {
     scanned: activities.length,
     total: 0,
     matched: 0,
+    matchedByCpf: 0,
+    matchedByName: 0,
     imported: 0,
     repaired: 0,
     skipped: 0,
@@ -1034,6 +1209,7 @@ async function main() {
   };
   let batchId = null;
   const dealCpfMap = buildDealCpfMap(activities, scannedDeals);
+  const dealNameMap = buildDealNameMap(activities, scannedDeals);
 
   console.log(`RD CRM - anotações encontradas: ${activities.length}`);
   if (scanDeals && !dealIdFilter) {
@@ -1048,6 +1224,7 @@ async function main() {
     console.log(`Filtro negociacao RD: ${dealIdFilter}`);
   }
   console.log(`Negociacoes RD com CPF identificado: ${dealCpfMap.size}`);
+  console.log(`Negociacoes RD com nome identificado: ${dealNameMap.size}`);
   console.log(
     `Controle RD: retry=${retryCount}, retryDelayMs=${retryDelayMs}, pageDelayMs=${pageDelayMs}, dealDelayMs=${dealDelayMs}`,
   );
@@ -1085,6 +1262,7 @@ async function main() {
     let existing = null;
     let errorMessage = null;
     let cpf = null;
+    let clientName = null;
 
     try {
       if (dealIdFilter && cpfFilter) {
@@ -1115,11 +1293,35 @@ async function main() {
       const note = extractActivityText(activity);
       const createdAt = extractActivityCreatedAt(activity);
       const actorName = extractActorName(activity);
+
+      clientName =
+        extractClientName(activity, deal) ?? (rdDealId ? dealNameMap.get(rdDealId) : null) ?? null;
+
+      if (rdDealId && !clientName) {
+        deal = await fetchDeal(token, rdDealId, dealCache, dealRequestOptions);
+        clientName = extractClientName(activity, deal);
+
+        if (clientName) {
+          dealNameMap.set(rdDealId, clientName);
+        }
+      }
+
       const rdContactId = extractContactId(activity, deal);
-      const match = await findClientByCpf(supabase, companyId, cpf);
+      const match = await findClientMatch(supabase, companyId, {
+        cpf,
+        name: clientName,
+      });
 
       if (match.client) {
         summary.matched += 1;
+
+        if (match.matchedBy === "cpf") {
+          summary.matchedByCpf += 1;
+        }
+
+        if (match.matchedBy === "name") {
+          summary.matchedByName += 1;
+        }
       }
 
       if (!note) {
@@ -1137,9 +1339,11 @@ async function main() {
         rd_deal_id: rdDealId,
         rd_contact_id: rdContactId,
         rd_client_cpf: cpf,
+        rd_client_name: clientName,
         rd_created_at: createdAt,
         rd_actor_name: actorName,
-        matched_by: "cpf",
+        matched_by: match.matchedBy,
+        match_value: match.matchValue,
       };
 
       if (!match.client) {
@@ -1188,6 +1392,8 @@ async function main() {
             rdContactId,
             cpf,
             match,
+            matchedBy: match.matchedBy,
+            matchValue: match.matchValue,
             timelineEventId,
             status,
             errorMessage,
@@ -1201,6 +1407,8 @@ async function main() {
           rdActivityId,
           rdDealId,
           cpf,
+          clientName,
+          matchedBy: match.matchedBy,
           matchedClient: match.client?.full_name ?? null,
           status: isApply ? status : match.status,
           notePreview: sanitizeForLog(note),
