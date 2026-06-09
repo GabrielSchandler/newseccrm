@@ -67,6 +67,15 @@ function normalizeCpf(value) {
   return digits.length === 11 ? digits : null;
 }
 
+function findCpfInText(value) {
+  const text = String(value ?? "");
+  const match = text.match(
+    /(?<![a-zA-Z0-9])(\d{3}\.?\d{3}\.?\d{3}-?\d{2})(?![a-zA-Z0-9])/,
+  );
+
+  return match ? normalizeCpf(match[1]) : null;
+}
+
 function normalizeText(value) {
   if (value === null || value === undefined) {
     return null;
@@ -328,8 +337,7 @@ function findCpfInObject(value, hinted = false, visited = new WeakSet()) {
       return normalizeCpf(digits);
     }
 
-    const match = text.match(/\d{3}\.?\d{3}\.?\d{3}-?\d{2}/);
-    return match ? normalizeCpf(match[0]) : null;
+    return findCpfInText(text);
   }
 
   if (typeof value !== "object") {
