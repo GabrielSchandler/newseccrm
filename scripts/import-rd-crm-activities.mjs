@@ -428,6 +428,103 @@ async function fetchActivities({
   return collected.slice(0, limit);
 }
 
+async function fetchDeals({
+  token,
+  limit,
+  pageSize,
+  requestOptions,
+  pageDelayMs,
+}) {
+  const collected = [];
+  let page = 1;
+  let nextPage = null;
+
+  while (collected.length < limit) {
+    const payload = await rdFetch("deals", token, {
+      page,
+      limit: Math.min(pageSize, limit - collected.length),
+      order: "created_at",
+      direction: "desc",
+      next_page: nextPage,
+    }, requestOptions);
+    const deals = extractArray(payload, ["deals", "data", "results", "items"]);
+
+    if (!deals.length) {
+      break;
+    }
+
+    collected.push(...deals);
+
+    nextPage = normalizeText(payload?.next_page);
+    const hasMore = payload?.has_more;
+
+    const expectedPageSize = Math.min(pageSize, limit - collected.length + deals.length);
+
+    if (!nextPage && (hasMore === false || deals.length < expectedPageSize)) {
+      break;
+    }
+
+    page += 1;
+
+    if (pageDelayMs > 0) {
+      await sleep(pageDelayMs);
+    }
+  }
+
+  return collected.slice(0, limit);
+}
+
+async function fetchActivitiesFromDeals({
+  token,
+  deals,
+  perDealLimit,
+  pageSize,
+  startDate,
+  endDate,
+  requestOptions,
+  pageDelayMs,
+  dealDelayMs,
+  dealCache,
+}) {
+  const byId = new Map();
+
+  for (const [index, deal] of deals.entries()) {
+    const dealId = extractDealId(deal) || String(getAny(deal, ["id", "_id"]) ?? "").trim();
+
+    if (!dealId) {
+      continue;
+    }
+
+    dealCache.set(dealId, deal);
+
+    if (dealDelayMs > 0 && index > 0) {
+      await sleep(dealDelayMs);
+    }
+
+    const dealActivities = await fetchActivities({
+      token,
+      limit: perDealLimit,
+      pageSize,
+      startDate,
+      endDate,
+      dealId,
+      requestOptions,
+      pageDelayMs,
+    });
+
+    for (const [activityIndex, activity] of dealActivities.entries()) {
+      const activityId =
+        extractActivityId(activity) || `sem-id-${dealId}-${activityIndex + 1}`;
+
+      if (!byId.has(activityId)) {
+        byId.set(activityId, activity);
+      }
+    }
+  }
+
+  return Array.from(byId.values());
+}
+
 async function fetchDeal(token, dealId, cache, requestOptions = {}) {
   if (!dealId) {
     return null;
@@ -453,8 +550,17 @@ async function fetchDeal(token, dealId, cache, requestOptions = {}) {
   }
 }
 
-function buildDealCpfMap(activities) {
+function buildDealCpfMap(activities, deals = []) {
   const map = new Map();
+
+  for (const deal of deals) {
+    const rdDealId = extractDealId(deal) || String(getAny(deal, ["id", "_id"]) ?? "").trim();
+    const cpf = findCpfInObject(deal);
+
+    if (rdDealId && cpf && !map.has(rdDealId)) {
+      map.set(rdDealId, cpf);
+    }
+  }
 
   for (const activity of activities) {
     const rdDealId = extractDealId(activity);
@@ -818,6 +924,9 @@ async function main() {
   const createdBy = String(args["created-by"] ?? "").trim();
   const limit = parseLimit(args.limit, 20);
   const pageSize = Math.min(parseLimit(args["page-size"], 200), 200);
+  const scanDeals = Boolean(args["scan-deals"] || args["por-negociacao"]);
+  const dealLimit = parseLimit(args["deal-limit"], limit);
+  const perDealLimit = parseLimit(args["per-deal-limit"], 1000);
   const retryCount = parseNonNegativeInteger(args["retry-count"], 5);
   const retryDelayMs = parseNonNegativeInteger(args["retry-delay-ms"], 3000);
   const pageDelayMs = parseNonNegativeInteger(args["page-delay-ms"], 750);
@@ -879,16 +988,41 @@ async function main() {
     ...requestOptions,
     requestDelayMs: dealDelayMs,
   };
-  const activities = await fetchActivities({
-    token,
-    limit,
-    pageSize,
-    startDate,
-    endDate,
-    dealId: dealIdFilter,
-    requestOptions,
-    pageDelayMs,
-  });
+  let scannedDeals = [];
+  let activities = [];
+
+  if (scanDeals && !dealIdFilter) {
+    scannedDeals = await fetchDeals({
+      token,
+      limit: dealLimit,
+      pageSize,
+      requestOptions,
+      pageDelayMs,
+    });
+    activities = await fetchActivitiesFromDeals({
+      token,
+      deals: scannedDeals,
+      perDealLimit,
+      pageSize,
+      startDate,
+      endDate,
+      requestOptions,
+      pageDelayMs,
+      dealDelayMs,
+      dealCache,
+    });
+  } else {
+    activities = await fetchActivities({
+      token,
+      limit,
+      pageSize,
+      startDate,
+      endDate,
+      dealId: dealIdFilter,
+      requestOptions,
+      pageDelayMs,
+    });
+  }
   const summary = {
     scanned: activities.length,
     total: 0,
@@ -899,9 +1033,14 @@ async function main() {
     errors: 0,
   };
   let batchId = null;
-  const dealCpfMap = buildDealCpfMap(activities);
+  const dealCpfMap = buildDealCpfMap(activities, scannedDeals);
 
   console.log(`RD CRM - anotações encontradas: ${activities.length}`);
+  if (scanDeals && !dealIdFilter) {
+    console.log(`Modo de varredura: por negociacao (${scannedDeals.length} negociacoes lidas)`);
+  } else {
+    console.log("Modo de varredura: anotacoes gerais");
+  }
   if (cpfFilter) {
     console.log(`Filtro CPF: ${cpfFilter}`);
   }
@@ -915,10 +1054,22 @@ async function main() {
   console.log(`Modo: ${isApply ? "APLICAR" : "DIAGNOSTICO"}`);
 
   if (isApply) {
+    const batchNotes = [
+      `Importacao de anotacoes RD CRM. Modo: ${scanDeals && !dealIdFilter ? "por negociacao" : "geral"}.`,
+      `Limite: ${limit}.`,
+      scanDeals && !dealIdFilter
+        ? `Negociacoes: ${dealLimit}. Por negociacao: ${perDealLimit}.`
+        : "",
+      cpfFilter ? `CPF: ${cpfFilter}.` : "",
+      dealIdFilter ? `Negociacao RD: ${dealIdFilter}.` : "",
+    ]
+      .filter(Boolean)
+      .join(" ");
+
     batchId = await createBatch(supabase, {
       companyId,
       createdBy,
-      notes: `Importacao de anotacoes RD CRM. Limite: ${limit}.${cpfFilter ? ` CPF: ${cpfFilter}.` : ""}${dealIdFilter ? ` Negociacao RD: ${dealIdFilter}.` : ""}`,
+      notes: batchNotes,
     });
     console.log(`Batch criado: ${batchId}`);
   }
