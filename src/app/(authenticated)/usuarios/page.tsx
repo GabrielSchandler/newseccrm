@@ -60,6 +60,11 @@ const sortableColumns = {
     asc: "legal_role_asc",
     desc: "legal_role_desc",
   },
+  monthly_goal: {
+    label: "Meta do mes",
+    asc: "monthly_goal_asc",
+    desc: "monthly_goal_desc",
+  },
   role: {
     label: "Cargo",
     asc: "role_asc",
@@ -158,6 +163,11 @@ const userCollator = new Intl.Collator("pt-BR", {
   sensitivity: "base",
 });
 
+const currencyFormatter = new Intl.NumberFormat("pt-BR", {
+  style: "currency",
+  currency: "BRL",
+});
+
 function compareText(
   left: string | number | boolean | null | undefined,
   right: string | number | boolean | null | undefined,
@@ -167,6 +177,23 @@ function compareText(
 
 function compareDates(left?: string | null, right?: string | null) {
   return new Date(left ?? 0).getTime() - new Date(right ?? 0).getTime();
+}
+
+function compareNumbers(
+  left: string | number | null | undefined,
+  right: string | number | null | undefined,
+) {
+  return Number(left ?? 0) - Number(right ?? 0);
+}
+
+function formatMonthlyGoal(value: string | number | null | undefined) {
+  const numeric = Number(value ?? 0);
+
+  if (!Number.isFinite(numeric) || numeric <= 0) {
+    return "-";
+  }
+
+  return currencyFormatter.format(numeric);
 }
 
 function compareUsersBySort(
@@ -207,6 +234,10 @@ function compareUsersBySort(
         left.business_area === "legal" ? formatLegalUserRole(left.legal_role) : "-",
         right.business_area === "legal" ? formatLegalUserRole(right.legal_role) : "-",
       );
+      break;
+    case "monthly_goal_asc":
+    case "monthly_goal_desc":
+      result = compareNumbers(left.monthly_goal, right.monthly_goal);
       break;
     case "role_asc":
     case "role_desc":
@@ -442,7 +473,7 @@ export default async function UsuariosPage({ searchParams }: UsuariosPageProps) 
         ) : (
           <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[1080px] border-collapse text-left text-sm">
+              <table className="w-full min-w-[1180px] border-collapse text-left text-sm">
                 <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
                   <tr>
                     <th className="px-4 py-3">
@@ -475,6 +506,13 @@ export default async function UsuariosPage({ searchParams }: UsuariosPageProps) 
                     <th className="px-4 py-3">
                       <SortHeader
                         column="legal_role"
+                        sort={sort}
+                        searchParams={params}
+                      />
+                    </th>
+                    <th className="px-4 py-3">
+                      <SortHeader
+                        column="monthly_goal"
                         sort={sort}
                         searchParams={params}
                       />
@@ -522,6 +560,11 @@ export default async function UsuariosPage({ searchParams }: UsuariosPageProps) 
                           ? formatLegalUserRole(user.legal_role)
                           : "-"}
                       </td>
+                      <td className="px-4 py-3 text-slate-700">
+                        {user.business_area === "commercial" && user.role === "seller"
+                          ? formatMonthlyGoal(user.monthly_goal)
+                          : "-"}
+                      </td>
                       <td className="px-4 py-3">
                         <UserRoleBadge role={user.role} />
                       </td>
@@ -557,7 +600,7 @@ export default async function UsuariosPage({ searchParams }: UsuariosPageProps) 
                   ))}
                   {!users.length ? (
                     <tr>
-                      <td className="px-4 py-6 text-center text-slate-500" colSpan={10}>
+                      <td className="px-4 py-6 text-center text-slate-500" colSpan={11}>
                         Nenhum usuario encontrado.
                       </td>
                     </tr>

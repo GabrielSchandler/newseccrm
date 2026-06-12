@@ -1,4 +1,8 @@
 import { z } from "zod";
+import {
+  formatNumberForPtBrInput,
+  parseBrazilianDecimalInput,
+} from "@/lib/calculations/currency";
 import { isValidPhone, onlyDigits } from "@/lib/clients/masks";
 import { isUsernameLike, normalizeUsername } from "@/lib/users/account";
 import type { CompanyUserProfile } from "@/types/user";
@@ -11,6 +15,14 @@ const optionalPhone = optionalText
   .refine((value) => isValidPhone(value), "Informe um telefone valido.")
   .transform((value) => (value ? onlyDigits(value) : null));
 
+const optionalCurrency = z
+  .union([z.string(), z.number(), z.null(), z.undefined()])
+  .transform((value) => parseBrazilianDecimalInput(value))
+  .refine(
+    (value) => value === null || (!Number.isNaN(value) && value >= 0),
+    "Informe um valor valido.",
+  );
+
 const usernameSchema = z
   .string()
   .trim()
@@ -21,11 +33,24 @@ const usernameSchema = z
     "Use apenas letras, numeros, ponto, hifen ou underscore no login.",
   );
 
-export const createCompanyUserSchema = z.object({
+function normalizeMonthlyGoal<T extends { business_area: string; role: string; monthly_goal: number | null }>(
+  values: T,
+) {
+  return {
+    ...values,
+    monthly_goal:
+      values.business_area === "commercial" && values.role === "seller"
+        ? values.monthly_goal
+        : null,
+  };
+}
+
+const createCompanyUserBaseSchema = z.object({
   full_name: z.string().trim().min(1, "Informe o nome completo."),
   nickname: optionalText,
   username: usernameSchema,
   phone: optionalPhone,
+  monthly_goal: optionalCurrency,
   business_area: z.enum(["commercial", "legal"], {
     required_error: "Selecione a area principal.",
     invalid_type_error: "Selecione a area principal.",
@@ -41,11 +66,16 @@ export const createCompanyUserSchema = z.object({
     .min(6, "A senha provisoria deve ter pelo menos 6 caracteres."),
 });
 
-export const updateCompanyUserSchema = z.object({
+export const createCompanyUserSchema = createCompanyUserBaseSchema.transform(
+  normalizeMonthlyGoal,
+);
+
+const updateCompanyUserBaseSchema = z.object({
   full_name: z.string().trim().min(1, "Informe o nome completo."),
   nickname: optionalText,
   username: usernameSchema,
   phone: optionalPhone,
+  monthly_goal: optionalCurrency,
   business_area: z.enum(["commercial", "legal"], {
     required_error: "Selecione a area principal.",
     invalid_type_error: "Selecione a area principal.",
@@ -66,6 +96,10 @@ export const updateCompanyUserSchema = z.object({
   force_password_change: z.boolean().default(true),
 });
 
+export const updateCompanyUserSchema = updateCompanyUserBaseSchema.transform(
+  normalizeMonthlyGoal,
+);
+
 export type CreateCompanyUserFormValues = z.input<typeof createCompanyUserSchema>;
 export type CreateCompanyUserPayload = z.output<typeof createCompanyUserSchema>;
 export type UpdateCompanyUserFormValues = z.input<typeof updateCompanyUserSchema>;
@@ -76,6 +110,7 @@ export const createCompanyUserDefaultValues: CreateCompanyUserFormValues = {
   nickname: "",
   username: "",
   phone: "",
+  monthly_goal: "",
   business_area: "commercial",
   role: "seller",
   legal_role: "consultant",
@@ -90,6 +125,7 @@ export function companyUserToFormValues(
     nickname: user.nickname ?? "",
     username: user.username ?? "",
     phone: user.phone ?? "",
+    monthly_goal: formatNumberForPtBrInput(user.monthly_goal),
     business_area: user.business_area ?? "commercial",
     role: user.role ?? "seller",
     legal_role: user.legal_role ?? "consultant",

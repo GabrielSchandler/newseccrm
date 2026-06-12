@@ -11,6 +11,7 @@ export type CompanyUserProfile = {
   username: string | null;
   email: string | null;
   phone: string | null;
+  monthly_goal?: number | string | null;
   role: CompanyUserRole | null;
   business_area: CompanyBusinessArea | null;
   legal_role: LegalUserRole | null;

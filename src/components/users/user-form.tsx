@@ -4,10 +4,14 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { ChangeEvent } from "react";
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import type { UserManagementActionState } from "@/app/(authenticated)/usuarios/actions";
 import { FormFieldLabel } from "@/components/form-field-label";
+import {
+  formatCurrencyInputValueFromDigits,
+  normalizeCurrencyInputValue,
+} from "@/lib/calculations/currency";
 import { formatPhone } from "@/lib/clients/masks";
 import {
   companyUserToFormValues,
@@ -106,6 +110,14 @@ function handlePhoneMask(event: ChangeEvent<HTMLInputElement>) {
   event.target.value = formatPhone(event.target.value);
 }
 
+function handleCurrencyMask(event: ChangeEvent<HTMLInputElement>) {
+  event.target.value = formatCurrencyInputValueFromDigits(event.target.value);
+}
+
+function handleCurrencyBlur(event: ChangeEvent<HTMLInputElement>) {
+  event.target.value = normalizeCurrencyInputValue(event.target.value);
+}
+
 function CreateUserForm({
   submitLabel,
   onSubmitAction,
@@ -119,6 +131,7 @@ function CreateUserForm({
     register,
     handleSubmit,
     watch,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<CreateCompanyUserFormValues, undefined, CreateCompanyUserPayload>({
     resolver: zodResolver(createCompanyUserSchema),
@@ -126,6 +139,14 @@ function CreateUserForm({
   });
   const disabled = isPending || isSubmitting;
   const businessArea = watch("business_area");
+  const userRole = watch("role");
+  const shouldShowMonthlyGoal = businessArea === "commercial" && userRole === "seller";
+
+  useEffect(() => {
+    if (!shouldShowMonthlyGoal) {
+      setValue("monthly_goal", "", { shouldDirty: true });
+    }
+  }, [setValue, shouldShowMonthlyGoal]);
 
   function onValidSubmit(values: CreateCompanyUserPayload) {
     setActionState(null);
@@ -309,6 +330,40 @@ function CreateUserForm({
           </div>
         ) : null}
 
+        {shouldShowMonthlyGoal ? (
+          <div className="space-y-2">
+            <FormFieldLabel
+              htmlFor="monthly_goal"
+              label="Meta do mes"
+              requirement="optional"
+            />
+            <div className="flex rounded-lg border border-slate-300 bg-white focus-within:border-teal-600 focus-within:ring-2 focus-within:ring-teal-600/15">
+              <span className="flex items-center border-r border-slate-200 px-3 text-sm font-semibold text-slate-500">
+                R$
+              </span>
+              <input
+                id="monthly_goal"
+                inputMode="decimal"
+                className="min-w-0 flex-1 rounded-r-lg bg-transparent px-3 py-2.5 text-sm outline-none"
+                disabled={disabled}
+                placeholder="0,00"
+                {...register("monthly_goal", {
+                  onBlur: handleCurrencyBlur,
+                  onChange: handleCurrencyMask,
+                })}
+              />
+            </div>
+            <p className="text-xs text-slate-500">
+              Usado para acompanhar a meta mensal do consultor comercial.
+            </p>
+            {errors.monthly_goal?.message ? (
+              <p className="text-sm text-red-600">
+                {String(errors.monthly_goal.message)}
+              </p>
+            ) : null}
+          </div>
+        ) : null}
+
         <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600 md:col-span-2">
           O sistema cria e gerencia automaticamente um email interno para o Supabase
           Auth. No uso diario do CRM, o acesso e feito pelo login acima.
@@ -339,6 +394,7 @@ function EditUserForm({
     register,
     handleSubmit,
     watch,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<UpdateCompanyUserFormValues, undefined, UpdateCompanyUserPayload>({
     resolver: zodResolver(updateCompanyUserSchema),
@@ -346,6 +402,14 @@ function EditUserForm({
   });
   const disabled = isPending || isSubmitting;
   const businessArea = watch("business_area");
+  const userRole = watch("role");
+  const shouldShowMonthlyGoal = businessArea === "commercial" && userRole === "seller";
+
+  useEffect(() => {
+    if (!shouldShowMonthlyGoal) {
+      setValue("monthly_goal", "", { shouldDirty: true });
+    }
+  }, [setValue, shouldShowMonthlyGoal]);
 
   function onValidSubmit(values: UpdateCompanyUserPayload) {
     setActionState(null);
@@ -504,6 +568,40 @@ function EditUserForm({
             </p>
             {errors.legal_role?.message ? (
               <p className="text-sm text-red-600">{String(errors.legal_role.message)}</p>
+            ) : null}
+          </div>
+        ) : null}
+
+        {shouldShowMonthlyGoal ? (
+          <div className="space-y-2">
+            <FormFieldLabel
+              htmlFor="monthly_goal"
+              label="Meta do mes"
+              requirement="optional"
+            />
+            <div className="flex rounded-lg border border-slate-300 bg-white focus-within:border-teal-600 focus-within:ring-2 focus-within:ring-teal-600/15">
+              <span className="flex items-center border-r border-slate-200 px-3 text-sm font-semibold text-slate-500">
+                R$
+              </span>
+              <input
+                id="monthly_goal"
+                inputMode="decimal"
+                className="min-w-0 flex-1 rounded-r-lg bg-transparent px-3 py-2.5 text-sm outline-none"
+                disabled={disabled}
+                placeholder="0,00"
+                {...register("monthly_goal", {
+                  onBlur: handleCurrencyBlur,
+                  onChange: handleCurrencyMask,
+                })}
+              />
+            </div>
+            <p className="text-xs text-slate-500">
+              Usado para acompanhar a meta mensal do consultor comercial.
+            </p>
+            {errors.monthly_goal?.message ? (
+              <p className="text-sm text-red-600">
+                {String(errors.monthly_goal.message)}
+              </p>
             ) : null}
           </div>
         ) : null}

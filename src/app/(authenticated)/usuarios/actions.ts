@@ -241,6 +241,7 @@ export async function createCompanyUserAction(
       username: normalizedUsername,
       email: internalAuthEmail,
       phone: parsed.data.phone,
+      monthly_goal: parsed.data.monthly_goal,
       role: parsed.data.role,
       business_area: parsed.data.business_area,
       legal_role: getLegalRoleForPersistence(
@@ -279,6 +280,7 @@ export async function createCompanyUserAction(
         nickname: parsed.data.nickname,
         role: parsed.data.role,
         business_area: parsed.data.business_area,
+        monthly_goal: parsed.data.monthly_goal,
         legal_role: getLegalRoleForPersistence(
           parsed.data.business_area,
           parsed.data.legal_role,
@@ -410,6 +412,7 @@ export async function updateCompanyUserAction(
       username: normalizedUsername,
       email: nextInternalAuthEmail,
       phone: parsed.data.phone,
+      monthly_goal: parsed.data.monthly_goal,
       role: parsed.data.role,
       business_area: parsed.data.business_area,
       legal_role: getLegalRoleForPersistence(
@@ -466,6 +469,7 @@ export async function updateCompanyUserAction(
         nickname: parsed.data.nickname,
         role: parsed.data.role,
         business_area: parsed.data.business_area,
+        monthly_goal: parsed.data.monthly_goal,
         legal_role: getLegalRoleForPersistence(
           parsed.data.business_area,
           parsed.data.legal_role,
