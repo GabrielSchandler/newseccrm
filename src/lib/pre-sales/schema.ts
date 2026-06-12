@@ -36,6 +36,10 @@ function sanitizePaymentMethod(
   return "";
 }
 
+function isAutomaticGoalPaymentMethod(value: string | null | undefined) {
+  return value === "Pix" || value === "Boleto";
+}
+
 const optionalText = z
   .union([z.string(), z.null(), z.undefined()])
   .transform((value) => (typeof value === "string" && value.trim() ? value.trim() : null));
@@ -126,7 +130,7 @@ function hasPaymentContent(payment: {
   );
 }
 
-export const preSaleFormSchema = z.object({
+const preSaleFormBaseSchema = z.object({
   client_id: z.string().uuid("Selecione um cliente."),
   consultant_user_id: z
     .union([z.string(), z.null(), z.undefined()])
@@ -243,7 +247,9 @@ export const preSaleFormSchema = z.object({
       }),
     )
     .max(12, "Informe no maximo 12 pagamentos previstos."),
-}).superRefine((values, context) => {
+});
+
+export const preSaleFormSchema = preSaleFormBaseSchema.superRefine((values, context) => {
   if (values.debt_holder_full_name || values.debt_holder_cpf) {
     if (!values.debt_holder_issuer_agency) {
       context.addIssue({
@@ -310,7 +316,9 @@ export const preSaleFormSchema = z.object({
     }
 
     if (
-      (payment.payment_method === "Pix" || payment.payment_method === "Boleto") &&
+      isAutomaticGoalPaymentMethod(payment.payment_method) &&
+      payment.amount !== null &&
+      payment.goal_amount !== null &&
       payment.goal_amount !== payment.amount
     ) {
       context.addIssue({
@@ -320,7 +328,17 @@ export const preSaleFormSchema = z.object({
       });
     }
   });
-});
+}).transform((values) => ({
+  ...values,
+  payments: values.payments.map((payment) =>
+    isAutomaticGoalPaymentMethod(payment.payment_method)
+      ? {
+          ...payment,
+          goal_amount: payment.amount,
+        }
+      : payment,
+  ),
+}));
 
 export type PreSaleFormValues = z.input<typeof preSaleFormSchema>;
 export type PreSalePayload = z.output<typeof preSaleFormSchema>;

@@ -181,6 +181,10 @@ function handleCurrencyBlur(event: ChangeEvent<HTMLInputElement>) {
   event.target.value = normalizeCurrencyInputValue(event.target.value);
 }
 
+function isAutomaticGoalPaymentMethod(value: string | null | undefined) {
+  return value === "Pix" || value === "Boleto";
+}
+
 function handleIntegerMask(event: ChangeEvent<HTMLInputElement>) {
   event.target.value = event.target.value.replace(/\D/g, "");
 }
@@ -288,7 +292,7 @@ export function PreSalesForm({
 
   useEffect(() => {
     watchedPayments?.forEach((payment, index) => {
-      if (payment.payment_method !== "Pix" && payment.payment_method !== "Boleto") {
+      if (!isAutomaticGoalPaymentMethod(payment.payment_method)) {
         return;
       }
 
@@ -296,12 +300,19 @@ export function PreSalesForm({
 
       if (payment.goal_amount !== amount) {
         setValue(`payments.${index}.goal_amount`, amount, {
-          shouldDirty: true,
+          shouldDirty: false,
           shouldValidate: false,
         });
       }
     });
   }, [setValue, watchedPayments]);
+
+  function syncPaymentGoalWithAmount(index: number, amount?: string | number | null) {
+    setValue(`payments.${index}.goal_amount`, amount ?? "", {
+      shouldDirty: true,
+      shouldValidate: false,
+    });
+  }
 
   useEffect(() => {
     function handleBeforeUnload(event: BeforeUnloadEvent) {
@@ -867,15 +878,44 @@ export function PreSalesForm({
                 disabled={disabled}
                 placeholder="Valor"
                 {...register(`payments.${index}.amount`, {
-                  onChange: handleCurrencyMask,
-                  onBlur: handleCurrencyBlur,
+                  onChange: (event) => {
+                    handleCurrencyMask(event);
+
+                    if (
+                      isAutomaticGoalPaymentMethod(
+                        getValues(`payments.${index}.payment_method`),
+                      )
+                    ) {
+                      syncPaymentGoalWithAmount(index, event.target.value);
+                    }
+                  },
+                  onBlur: (event) => {
+                    handleCurrencyBlur(event);
+
+                    if (
+                      isAutomaticGoalPaymentMethod(
+                        getValues(`payments.${index}.payment_method`),
+                      )
+                    ) {
+                      syncPaymentGoalWithAmount(index, event.target.value);
+                    }
+                  },
                 })}
               />
               <select
                 aria-label="Forma"
                 className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
                 disabled={disabled}
-                {...register(`payments.${index}.payment_method`)}
+                {...register(`payments.${index}.payment_method`, {
+                  onChange: (event) => {
+                    if (isAutomaticGoalPaymentMethod(event.target.value)) {
+                      syncPaymentGoalWithAmount(
+                        index,
+                        getValues(`payments.${index}.amount`),
+                      );
+                    }
+                  },
+                })}
               >
                 <option value="">Forma</option>
                 {paymentMethodOptions.map((method) => (
@@ -888,16 +928,12 @@ export function PreSalesForm({
                 aria-label="Meta"
                 inputMode="decimal"
                 className={`rounded-lg border border-slate-300 px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15 ${
-                  watchedPayments?.[index]?.payment_method === "Pix" ||
-                  watchedPayments?.[index]?.payment_method === "Boleto"
+                  isAutomaticGoalPaymentMethod(watchedPayments?.[index]?.payment_method)
                     ? "bg-slate-200 font-semibold text-slate-700"
                     : "bg-white"
                 }`}
                 disabled={disabled}
-                readOnly={
-                  watchedPayments?.[index]?.payment_method === "Pix" ||
-                  watchedPayments?.[index]?.payment_method === "Boleto"
-                }
+                readOnly={isAutomaticGoalPaymentMethod(watchedPayments?.[index]?.payment_method)}
                 placeholder="Meta"
                 {...register(`payments.${index}.goal_amount`, {
                   onChange: handleCurrencyMask,
