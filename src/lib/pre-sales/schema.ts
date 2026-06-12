@@ -14,11 +14,22 @@ import {
 } from "@/lib/calculations/currency";
 
 const leadMediaValues = ["Soul", "Growper", "Prosperity"] as const;
+const paymentMethodValues = ["Pix", "Boleto", "Cartao"] as const;
 
 function sanitizeLeadMedia(
   value: string | null | undefined,
 ): "" | (typeof leadMediaValues)[number] {
   if (value === "Soul" || value === "Growper" || value === "Prosperity") {
+    return value;
+  }
+
+  return "";
+}
+
+function sanitizePaymentMethod(
+  value: string | null | undefined,
+): "" | (typeof paymentMethodValues)[number] {
+  if (value === "Pix" || value === "Boleto" || value === "Cartao") {
     return value;
   }
 
@@ -79,6 +90,10 @@ const optionalNumber = z
   .transform((value) => parseBrazilianDecimalInput(value))
   .refine((value) => value === null || !Number.isNaN(value), "Informe um valor valido.");
 
+const paymentMethod = z
+  .union([z.enum(paymentMethodValues), z.literal(""), z.null(), z.undefined()])
+  .transform((value) => (typeof value === "string" && value.trim() ? value : null));
+
 const requiredNumber = z
   .union([z.string(), z.number(), z.null(), z.undefined()])
   .transform((value) => parseBrazilianDecimalInput(value))
@@ -96,6 +111,20 @@ const optionalInteger = z
     return digits ? Number(digits) : Number.NaN;
   })
   .refine((value) => value === null || Number.isInteger(value), "Informe um numero valido.");
+
+function hasPaymentContent(payment: {
+  amount: number | null;
+  goal_amount: number | null;
+  payment_method: string | null;
+  payment_date: string | null;
+}) {
+  return Boolean(
+    payment.amount !== null ||
+      payment.goal_amount !== null ||
+      payment.payment_method ||
+      payment.payment_date,
+  );
+}
 
 export const preSaleFormSchema = z.object({
   client_id: z.string().uuid("Selecione um cliente."),
@@ -207,7 +236,8 @@ export const preSaleFormSchema = z.object({
       z.object({
         installment_number: optionalInteger,
         amount: optionalNumber,
-        payment_method: optionalText,
+        goal_amount: optionalNumber,
+        payment_method: paymentMethod,
         payment_date: optionalText,
         status: optionalText,
       }),
@@ -224,23 +254,69 @@ export const preSaleFormSchema = z.object({
     }
   }
 
-  if (values.pre_sale_type !== "veiculo") {
-    return;
+  if (values.pre_sale_type === "veiculo") {
+    const requiredVehicleFields = [
+      ["asset_brand_model", values.asset_brand_model, "Informe o veiculo."],
+      ["asset_color", values.asset_color, "Informe a cor."],
+      ["asset_year", values.asset_year, "Informe o ano."],
+      ["asset_plate", values.asset_plate, "Informe a placa."],
+    ] as const;
+
+    requiredVehicleFields.forEach(([path, value, message]) => {
+      if (!value) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: [path],
+          message,
+        });
+      }
+    });
   }
 
-  const requiredVehicleFields = [
-    ["asset_brand_model", values.asset_brand_model, "Informe o veiculo."],
-    ["asset_color", values.asset_color, "Informe a cor."],
-    ["asset_year", values.asset_year, "Informe o ano."],
-    ["asset_plate", values.asset_plate, "Informe a placa."],
-  ] as const;
+  values.payments.forEach((payment, index) => {
+    if (!hasPaymentContent(payment)) {
+      return;
+    }
 
-  requiredVehicleFields.forEach(([path, value, message]) => {
-    if (!value) {
+    if (!payment.payment_method) {
       context.addIssue({
         code: z.ZodIssueCode.custom,
-        path: [path],
-        message,
+        path: ["payments", index, "payment_method"],
+        message: "Selecione a forma de pagamento.",
+      });
+    }
+
+    if (payment.status === "previsto") {
+      if (!payment.payment_date) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["payments", index, "payment_date"],
+          message: "Informe uma data futura para pagamento previsto.",
+        });
+      } else {
+        const today = new Date();
+        const todayLocal = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+        const [year, month, day] = payment.payment_date.split("-").map(Number);
+        const paymentDate = new Date(year, month - 1, day);
+
+        if (Number.isNaN(paymentDate.getTime()) || paymentDate <= todayLocal) {
+          context.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["payments", index, "payment_date"],
+            message: "A data do pagamento previsto precisa ser futura.",
+          });
+        }
+      }
+    }
+
+    if (
+      (payment.payment_method === "Pix" || payment.payment_method === "Boleto") &&
+      payment.goal_amount !== payment.amount
+    ) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["payments", index, "goal_amount"],
+        message: "Para Pix e boleto, a meta deve ser igual ao valor.",
       });
     }
   });
@@ -325,9 +401,9 @@ export const preSaleDefaultValues: PreSaleFormValues = {
   asset_year: "",
   asset_plate: "",
   payments: [
-    { installment_number: "1", amount: "", payment_method: "", payment_date: "", status: "previsto" },
-    { installment_number: "2", amount: "", payment_method: "", payment_date: "", status: "previsto" },
-    { installment_number: "3", amount: "", payment_method: "", payment_date: "", status: "previsto" },
+    { installment_number: "1", amount: "", goal_amount: "", payment_method: "", payment_date: "", status: "previsto" },
+    { installment_number: "2", amount: "", goal_amount: "", payment_method: "", payment_date: "", status: "previsto" },
+    { installment_number: "3", amount: "", goal_amount: "", payment_method: "", payment_date: "", status: "previsto" },
   ],
 };
 
@@ -440,7 +516,9 @@ export function preSaleToFormValues(
               : String(payment.installment_number),
           amount:
             formatNumberForPtBrInput(payment.amount),
-          payment_method: payment.payment_method ?? "",
+          goal_amount:
+            formatNumberForPtBrInput(payment.goal_amount),
+          payment_method: sanitizePaymentMethod(payment.payment_method),
           payment_date: payment.payment_date ?? "",
           status: payment.status ?? "previsto",
         }))

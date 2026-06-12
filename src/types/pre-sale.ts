@@ -138,6 +138,7 @@ export type PreSalePayment = {
   pre_sale_id?: string;
   installment_number: number | string | null;
   amount: number | string | null;
+  goal_amount: number | string | null;
   payment_method: string | null;
   payment_date: string | null;
   status: string | null;

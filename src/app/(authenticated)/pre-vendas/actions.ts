@@ -202,7 +202,12 @@ function splitPreSalePayload(values: PreSalePayload) {
       asset_plate: shouldKeepVehicleFields ? asset_plate : null,
     },
     payments: payments.filter((payment) =>
-      Object.values(payment).some((value) => value !== null && value !== ""),
+      Boolean(
+        payment.amount !== null ||
+          payment.goal_amount !== null ||
+          payment.payment_method ||
+          payment.payment_date,
+      ),
     ),
   };
 }
@@ -280,6 +285,7 @@ async function savePayments(
       pre_sale_id: preSaleId,
       installment_number: payment.installment_number ?? index + 1,
       amount: payment.amount,
+      goal_amount: payment.goal_amount,
       payment_method: payment.payment_method,
       payment_date: payment.payment_date,
       status: payment.status ?? "previsto",

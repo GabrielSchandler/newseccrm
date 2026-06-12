@@ -82,6 +82,8 @@ const paymentStatusOptions = [
   "cancelado",
 ] as const;
 
+const paymentMethodOptions = ["Pix", "Boleto", "Cartao"] as const;
+
 function FormSection({ title, description, children }: FormSectionProps) {
   return (
     <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
@@ -150,6 +152,21 @@ function maskPhone(event: ChangeEvent<HTMLInputElement>) {
 
 function maskZipCode(event: ChangeEvent<HTMLInputElement>) {
   event.target.value = formatZipCode(event.target.value);
+}
+
+function getPaymentErrorMessage(
+  errors: FieldErrors<PreSaleFormValues>,
+  index: number,
+  field: "amount" | "goal_amount" | "payment_method" | "payment_date" | "status",
+) {
+  const paymentsError = errors.payments;
+
+  if (!Array.isArray(paymentsError)) {
+    return null;
+  }
+
+  const fieldError = paymentsError[index]?.[field];
+  return fieldError && "message" in fieldError ? String(fieldError.message) : null;
 }
 
 function maskCnpj(event: ChangeEvent<HTMLInputElement>) {
@@ -266,7 +283,25 @@ export function PreSalesForm({
     name: "payments",
   });
   const selectedPreSaleType = watch("pre_sale_type");
+  const watchedPayments = watch("payments");
   const disabled = isSubmitting || isPending;
+
+  useEffect(() => {
+    watchedPayments?.forEach((payment, index) => {
+      if (payment.payment_method !== "Pix" && payment.payment_method !== "Boleto") {
+        return;
+      }
+
+      const amount = payment.amount ?? "";
+
+      if (payment.goal_amount !== amount) {
+        setValue(`payments.${index}.goal_amount`, amount, {
+          shouldDirty: true,
+          shouldValidate: false,
+        });
+      }
+    });
+  }, [setValue, watchedPayments]);
 
   useEffect(() => {
     function handleBeforeUnload(event: BeforeUnloadEvent) {
@@ -790,6 +825,7 @@ export function PreSalesForm({
               append({
                 installment_number: String(fields.length + 1),
                 amount: "",
+                goal_amount: "",
                 payment_method: "",
                 payment_date: "",
                 status: "previsto",
@@ -800,10 +836,11 @@ export function PreSalesForm({
           </button>
         </div>
         <div className="space-y-3">
-          <div className="grid gap-2 text-xs text-slate-500 md:grid-cols-[90px_1fr_1fr_1fr_1fr_auto]">
+          <div className="grid gap-2 text-xs text-slate-500 md:grid-cols-[80px_1fr_1fr_1fr_1fr_1fr_auto]">
             <span>Parcela (Opcional)</span>
             <span>Valor (Obrigatorio para recibo)</span>
             <span>Forma (Obrigatorio para recibo)</span>
+            <span>Meta</span>
             <span>Data (Opcional)</span>
             <span>Status (Opcional)</span>
             <span />
@@ -811,7 +848,7 @@ export function PreSalesForm({
           {fields.map((field, index) => (
             <div
               key={field.id}
-              className="grid gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3 md:grid-cols-[90px_1fr_1fr_1fr_1fr_auto]"
+              className="grid gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3 md:grid-cols-[80px_1fr_1fr_1fr_1fr_1fr_auto]"
             >
               <input
                 aria-label="Numero da parcela"
@@ -831,20 +868,52 @@ export function PreSalesForm({
                 placeholder="Valor"
                 {...register(`payments.${index}.amount`, {
                   onChange: handleCurrencyMask,
+                  onBlur: handleCurrencyBlur,
                 })}
               />
-              <input
+              <select
                 aria-label="Forma"
                 className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
                 disabled={disabled}
-                placeholder="Forma"
                 {...register(`payments.${index}.payment_method`)}
+              >
+                <option value="">Forma</option>
+                {paymentMethodOptions.map((method) => (
+                  <option key={method} value={method}>
+                    {method}
+                  </option>
+                ))}
+              </select>
+              <input
+                aria-label="Meta"
+                inputMode="decimal"
+                className={`rounded-lg border border-slate-300 px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15 ${
+                  watchedPayments?.[index]?.payment_method === "Pix" ||
+                  watchedPayments?.[index]?.payment_method === "Boleto"
+                    ? "bg-slate-200 font-semibold text-slate-700"
+                    : "bg-white"
+                }`}
+                disabled={disabled}
+                readOnly={
+                  watchedPayments?.[index]?.payment_method === "Pix" ||
+                  watchedPayments?.[index]?.payment_method === "Boleto"
+                }
+                placeholder="Meta"
+                {...register(`payments.${index}.goal_amount`, {
+                  onChange: handleCurrencyMask,
+                  onBlur: handleCurrencyBlur,
+                })}
               />
               <input
                 aria-label="Data"
                 type="date"
                 className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
                 disabled={disabled}
+                min={
+                  watchedPayments?.[index]?.status === "previsto"
+                    ? new Date(Date.now() + 86400000).toISOString().slice(0, 10)
+                    : undefined
+                }
                 {...register(`payments.${index}.payment_date`)}
               />
               <select
@@ -867,6 +936,25 @@ export function PreSalesForm({
               >
                 Remover
               </button>
+              {[
+                getPaymentErrorMessage(errors, index, "amount"),
+                getPaymentErrorMessage(errors, index, "payment_method"),
+                getPaymentErrorMessage(errors, index, "goal_amount"),
+                getPaymentErrorMessage(errors, index, "payment_date"),
+                getPaymentErrorMessage(errors, index, "status"),
+              ].filter(Boolean).length ? (
+                <div className="text-sm text-red-600 md:col-span-7">
+                  {[
+                    getPaymentErrorMessage(errors, index, "amount"),
+                    getPaymentErrorMessage(errors, index, "payment_method"),
+                    getPaymentErrorMessage(errors, index, "goal_amount"),
+                    getPaymentErrorMessage(errors, index, "payment_date"),
+                    getPaymentErrorMessage(errors, index, "status"),
+                  ]
+                    .filter(Boolean)
+                    .join(" ")}
+                </div>
+              ) : null}
             </div>
           ))}
           {errors.payments?.message ? (

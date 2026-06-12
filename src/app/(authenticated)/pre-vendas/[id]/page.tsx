@@ -434,12 +434,13 @@ export default async function PreVendaPage({ params, searchParams }: PreVendaPag
         <DetailSection title="Pagamentos previstos">
           {payments.length ? (
             <div className="overflow-x-auto md:col-span-2">
-              <table className="w-full min-w-[720px] border-collapse text-left text-sm">
+              <table className="w-full min-w-[820px] border-collapse text-left text-sm">
                 <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
                   <tr>
                     <th className="px-4 py-3 font-semibold">Parcela</th>
                     <th className="px-4 py-3 font-semibold">Valor</th>
                     <th className="px-4 py-3 font-semibold">Forma</th>
+                    <th className="px-4 py-3 font-semibold">Meta</th>
                     <th className="px-4 py-3 font-semibold">Data</th>
                     <th className="px-4 py-3 font-semibold">Status</th>
                   </tr>
@@ -454,6 +455,7 @@ export default async function PreVendaPage({ params, searchParams }: PreVendaPag
                       <td className="px-4 py-3">
                         {displayValue(payment.payment_method)}
                       </td>
+                      <td className="px-4 py-3">{formatCurrency(payment.goal_amount ?? null)}</td>
                       <td className="px-4 py-3">{formatDate(payment.payment_date ?? null)}</td>
                       <td className="px-4 py-3">{displayValue(payment.status)}</td>
                     </tr>
