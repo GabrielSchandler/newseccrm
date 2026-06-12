@@ -13,7 +13,6 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/layout/page-header";
 import { getCurrentUserContext } from "@/lib/auth/current-user";
-import { formatDate } from "@/lib/clients/formatters";
 import { canAccessAllPreSales } from "@/lib/pre-sales/access";
 import { resolveUserDisplayName } from "@/lib/users/account";
 import { getHomeForRole } from "@/lib/workspace";
@@ -193,6 +192,16 @@ function sumPaymentsForPreSale(payments: PreSalePayment[]) {
   );
 }
 
+function isPaymentInRange(payment: PreSalePayment, startYmd: string, endYmd: string) {
+  const paymentDate = payment.payment_date?.slice(0, 10);
+
+  return Boolean(paymentDate && paymentDate >= startYmd && paymentDate < endYmd);
+}
+
+function isPaidPayment(payment: PreSalePayment) {
+  return payment.status === "pago";
+}
+
 function getPreSaleOwnerId(preSale: ApprovedPreSale) {
   return preSale.consultant_user_id ?? preSale.created_by;
 }
@@ -292,7 +301,7 @@ function SegmentList({
             </div>
           ))
         ) : (
-          <p className="text-sm text-slate-500">Nenhuma venda aprovada neste mes.</p>
+          <p className="text-sm text-slate-500">Nenhum pagamento pago neste mes.</p>
         )}
       </div>
     </section>
@@ -324,8 +333,6 @@ export default async function ComercialDashboardPage() {
         )
         .eq("company_id", companyId)
         .eq("status", "aprovado")
-        .gte("created_at", `${monthStartYmd}T00:00:00-03:00`)
-        .lt("created_at", `${nextMonthStartYmd}T00:00:00-03:00`)
         .order("created_at", { ascending: false }),
     ]);
 
@@ -376,6 +383,7 @@ export default async function ComercialDashboardPage() {
     ((clientsData ?? []) as ClientSummary[]).map((client) => [client.id, client]),
   );
   const paymentsByPreSaleId = new Map<string, PreSalePayment[]>();
+  const monthlyPaidPaymentsByPreSaleId = new Map<string, PreSalePayment[]>();
 
   ((paymentsData ?? []) as PreSalePayment[]).forEach((payment) => {
     if (!payment.pre_sale_id) {
@@ -385,6 +393,12 @@ export default async function ComercialDashboardPage() {
     const current = paymentsByPreSaleId.get(payment.pre_sale_id) ?? [];
     current.push(payment);
     paymentsByPreSaleId.set(payment.pre_sale_id, current);
+
+    if (isPaidPayment(payment) && isPaymentInRange(payment, monthStartYmd, nextMonthStartYmd)) {
+      const monthlyCurrent = monthlyPaidPaymentsByPreSaleId.get(payment.pre_sale_id) ?? [];
+      monthlyCurrent.push(payment);
+      monthlyPaidPaymentsByPreSaleId.set(payment.pre_sale_id, monthlyCurrent);
+    }
   });
 
   const sellerGoal =
@@ -394,11 +408,24 @@ export default async function ComercialDashboardPage() {
           (total, user) => total + toNumber(user.monthly_goal),
           0,
         );
-  const preSaleValues = approvedPreSales.map((preSale) => ({
-    preSale,
-    value: sumPaymentsForPreSale(paymentsByPreSaleId.get(preSale.id) ?? []),
-    contractValue: toNumber(preSale.contract_value),
-  }));
+  const preSaleValues = approvedPreSales
+    .map((preSale) => {
+      const monthlyPaidPayments = monthlyPaidPaymentsByPreSaleId.get(preSale.id) ?? [];
+      const paymentDate =
+        monthlyPaidPayments
+          .map((payment) => payment.payment_date?.slice(0, 10) ?? "")
+          .filter(Boolean)
+          .sort()
+          .at(-1) ?? null;
+
+      return {
+        preSale,
+        value: sumPaymentsForPreSale(monthlyPaidPayments),
+        contractValue: toNumber(preSale.contract_value),
+        paymentDate,
+      };
+    })
+    .filter((item) => item.value > 0);
   const salesTotal = preSaleValues.reduce((total, item) => total + item.value, 0);
   const contractTotal = preSaleValues.reduce(
     (total, item) => total + item.contractValue,
@@ -411,14 +438,15 @@ export default async function ComercialDashboardPage() {
   const nextTierGap = commission.nextTier
     ? Math.max(commission.nextTier.target - salesTotal, 0)
     : 0;
-  const averageTicket = approvedPreSales.length ? salesTotal / approvedPreSales.length : 0;
-  const missingPaymentGoalCount = preSaleValues.filter(
-    (item) => item.value <= 0 && item.contractValue > 0,
+  const averageTicket = preSaleValues.length ? salesTotal / preSaleValues.length : 0;
+  const currentMonthPaidPayments = [...monthlyPaidPaymentsByPreSaleId.values()].flat();
+  const missingPaymentGoalCount = currentMonthPaidPayments.filter(
+    (payment) => payment.goal_amount === null && toNumber(payment.amount) > 0,
   ).length;
 
   const preSalesById = new Map(approvedPreSales.map((preSale) => [preSale.id, preSale]));
   const pendingPayments = ((paymentsData ?? []) as PreSalePayment[])
-    .filter((payment) => payment.status !== "pago")
+    .filter((payment) => !isPaidPayment(payment))
     .map((payment) => {
       const preSale = payment.pre_sale_id ? preSalesById.get(payment.pre_sale_id) : null;
 
@@ -479,7 +507,7 @@ export default async function ComercialDashboardPage() {
     <>
       <PageHeader
         title="Painel comercial"
-        description="Vendas aprovadas, meta do mes, comissao e pagamentos que precisam de acompanhamento."
+        description="Pagamentos pagos no mes, meta, comissao e cobrancas que precisam de acompanhamento."
       />
       <div className="space-y-6 p-6">
         {preSalesError ? (
@@ -497,7 +525,7 @@ export default async function ComercialDashboardPage() {
               </h2>
               <p className="mt-2 text-sm leading-6 text-slate-600">
                 Periodo analisado: {formatYmdDate(monthStartYmd)} ate {formatYmdDate(monthEndYmd)}.
-                Somente pre-vendas aprovadas entram nos indicadores.
+                Somente pagamentos pagos no periodo entram na venda total.
               </p>
             </div>
             <Link
@@ -536,7 +564,7 @@ export default async function ComercialDashboardPage() {
             icon={CircleDollarSign}
             label="Venda total"
             value={formatCurrency(salesTotal)}
-            detail="Soma do campo Meta dos pagamentos previstos nas pre-vendas aprovadas."
+            detail="Soma do campo Meta dos pagamentos pagos dentro do mes atual."
             tone="success"
           />
           <StatCard
@@ -559,7 +587,7 @@ export default async function ComercialDashboardPage() {
           <StatCard
             icon={Users}
             label="Clientes aprovados"
-            value={numberFormatter.format(approvedPreSales.length)}
+            value={numberFormatter.format(preSaleValues.length)}
             detail={`Ticket medio pela meta: ${formatCurrency(averageTicket)}.`}
           />
           <StatCard
@@ -587,7 +615,7 @@ export default async function ComercialDashboardPage() {
             icon={AlertTriangle}
             label="Meta nao informada"
             value={numberFormatter.format(missingPaymentGoalCount)}
-            detail={`${formatCurrency(contractTotal)} em contratos aprovados no mes para conferencia.`}
+            detail={`${formatCurrency(contractTotal)} em contratos com pagamentos pagos no mes para conferencia.`}
             tone={missingPaymentGoalCount ? "warning" : "success"}
           />
         </section>
@@ -605,7 +633,7 @@ export default async function ComercialDashboardPage() {
                 Clientes com venda aprovada
               </h2>
               <p className="mt-1 text-sm text-slate-600">
-                Parte inferior do painel com os nomes dos clientes do mes.
+                Clientes com pagamento pago dentro do periodo do painel.
               </p>
             </div>
             <div className="overflow-x-auto">
@@ -616,11 +644,11 @@ export default async function ComercialDashboardPage() {
                     <th className="px-5 py-3 font-semibold">Produto</th>
                     <th className="px-5 py-3 font-semibold">Origem</th>
                     <th className="px-5 py-3 font-semibold">Meta</th>
-                    <th className="px-5 py-3 font-semibold">Data</th>
+                    <th className="px-5 py-3 font-semibold">Pagamento</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {preSaleValues.map(({ preSale, value }) => {
+                  {preSaleValues.map(({ preSale, value, paymentDate }) => {
                     const client = clientsById.get(preSale.client_id);
 
                     return (
@@ -649,7 +677,7 @@ export default async function ComercialDashboardPage() {
                           {formatCurrency(value)}
                         </td>
                         <td className="px-5 py-3 text-slate-700">
-                          {formatDate(preSale.created_at)}
+                          {formatYmdDate(paymentDate)}
                         </td>
                       </tr>
                     );
@@ -657,7 +685,7 @@ export default async function ComercialDashboardPage() {
                   {!preSaleValues.length ? (
                     <tr>
                       <td className="px-5 py-8 text-center text-slate-500" colSpan={5}>
-                        Nenhuma venda aprovada neste mes.
+                        Nenhum pagamento pago neste mes.
                       </td>
                     </tr>
                   ) : null}
@@ -712,7 +740,7 @@ export default async function ComercialDashboardPage() {
               })}
               {!pendingPayments.length ? (
                 <div className="p-5 text-sm text-slate-500">
-                  Nenhum pagamento pendente entre as vendas aprovadas deste mes.
+                  Nenhum pagamento pendente entre as pre-vendas aprovadas.
                 </div>
               ) : null}
             </div>
