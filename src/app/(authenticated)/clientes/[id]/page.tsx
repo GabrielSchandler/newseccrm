@@ -109,8 +109,14 @@ export default async function ClientePage({
     notFound();
   }
 
+  const accessiblePreSaleIds =
+    role === "seller" && businessArea !== "legal"
+      ? new Set((await listAccessiblePreSaleIdsForCurrentUser()) ?? [])
+      : null;
+
   const [
     { data: createdByProfileData },
+    { data: commercialConsultantProfileData },
     { data: legalResponsibleProfileData },
     { data: legalConsultantProfileData },
   ] = await Promise.all([
@@ -119,6 +125,13 @@ export default async function ClientePage({
       .select("id, full_name, nickname, username, email")
       .eq("id", client.created_by)
       .maybeSingle(),
+    client.commercial_consultant_user_id
+      ? supabase
+          .from("user_profiles")
+          .select("id, full_name, nickname, username, email")
+          .eq("id", client.commercial_consultant_user_id)
+          .maybeSingle()
+      : Promise.resolve({ data: null }),
     client.legal_responsible_user_id
       ? supabase
           .from("user_profiles")
@@ -135,6 +148,7 @@ export default async function ClientePage({
       : Promise.resolve({ data: null }),
   ]);
   const createdByProfile = createdByProfileData as ClientAuditUser | null;
+  const commercialConsultantProfile = commercialConsultantProfileData as ClientAuditUser | null;
   const legalResponsibleProfile = legalResponsibleProfileData as ClientAuditUser | null;
   const legalConsultantProfile = legalConsultantProfileData as ClientAuditUser | null;
 
@@ -148,10 +162,7 @@ export default async function ClientePage({
     .order("created_at", { ascending: false });
   let generatedDocuments = (generatedDocumentsData ?? []) as GeneratedDocument[];
 
-  if (role === "seller" && businessArea !== "legal") {
-    const accessiblePreSaleIds = new Set(
-      (await listAccessiblePreSaleIdsForCurrentUser()) ?? [],
-    );
+  if (accessiblePreSaleIds) {
     generatedDocuments = generatedDocuments.filter(
       (document) =>
         document.pre_sale_id ? accessiblePreSaleIds.has(document.pre_sale_id) : false,
@@ -173,10 +184,7 @@ export default async function ClientePage({
     .order("created_at", { ascending: false });
   let clientPreSales = (clientPreSalesData ?? []) as PreSale[];
 
-  if (role === "seller" && businessArea !== "legal") {
-    const accessiblePreSaleIds = new Set(
-      (await listAccessiblePreSaleIdsForCurrentUser()) ?? [],
-    );
+  if (accessiblePreSaleIds) {
     clientPreSales = clientPreSales.filter((preSale) => accessiblePreSaleIds.has(preSale.id));
   }
 
@@ -435,6 +443,20 @@ export default async function ClientePage({
                   </p>
                   <p className="mt-1 text-sm font-medium text-slate-950">
                     {formatDateTime(client.updated_at)}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <h2 className="text-base font-semibold text-slate-950">Comercial</h2>
+              <div className="mt-4 grid gap-5 md:grid-cols-2">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    Consultor comercial responsavel
+                  </p>
+                  <p className="mt-1 text-sm font-medium text-slate-950">
+                    {displayValue(resolveUserDisplayName(commercialConsultantProfile, ""))}
                   </p>
                 </div>
               </div>

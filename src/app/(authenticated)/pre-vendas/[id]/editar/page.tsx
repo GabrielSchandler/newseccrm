@@ -25,7 +25,7 @@ type EditarPreVendaPageProps = {
 };
 
 const clientOptionSelect =
-  "id, full_name, cpf, rg, birth_date, marital_status, profession, email, phone_mobile, phone_secondary, zip_code, street, number, district, city, state";
+  "id, commercial_consultant_user_id, full_name, cpf, rg, birth_date, marital_status, profession, email, phone_mobile, phone_secondary, zip_code, street, number, district, city, state";
 
 export default async function EditarPreVendaPage({ params }: EditarPreVendaPageProps) {
   const { id } = await params;

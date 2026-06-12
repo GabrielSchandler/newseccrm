@@ -7,7 +7,7 @@ import { canAccessAllPreSales, canCreatePreSales } from "@/lib/pre-sales/access"
 import type { ClientOption, UserProfileOption } from "@/types/pre-sale";
 
 const clientOptionSelect =
-  "id, full_name, cpf, rg, birth_date, marital_status, profession, email, phone_mobile, phone_secondary, zip_code, street, number, district, city, state";
+  "id, commercial_consultant_user_id, full_name, cpf, rg, birth_date, marital_status, profession, email, phone_mobile, phone_secondary, zip_code, street, number, district, city, state";
 
 export default async function NovaPreVendaPage() {
   const { supabase, companyId, role, businessArea, userProfileId } =

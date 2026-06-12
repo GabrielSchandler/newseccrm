@@ -41,6 +41,7 @@ const clientFieldLabels: Record<keyof ClientPayload, string> = {
   city: "Cidade",
   state: "Estado",
   notes: "Observacoes",
+  commercial_consultant_user_id: "Consultor comercial responsavel",
   legal_responsible_user_id: "Adm responsavel",
   legal_consultant_user_id: "Consultor responsavel",
 };
@@ -70,22 +71,25 @@ function requireChangeNote(changeNote?: string | null) {
   return normalizedChangeNote ? normalizedChangeNote : null;
 }
 
-function isMissingLegalResponsibleColumn(error: { message?: string } | null | undefined) {
+function isMissingResponsibleColumn(error: { message?: string } | null | undefined) {
   const message = error?.message ?? "";
   return (
     message.includes("clients") &&
-    (message.includes("legal_responsible_user_id") ||
+    (message.includes("commercial_consultant_user_id") ||
+      message.includes("legal_responsible_user_id") ||
       message.includes("legal_consultant_user_id"))
   );
 }
 
-function withoutLegalResponsibleField<
+function withoutResponsibleFields<
   T extends {
+    commercial_consultant_user_id?: string | null;
     legal_responsible_user_id?: string | null;
     legal_consultant_user_id?: string | null;
   },
 >(values: T) {
   const clonedValues: Partial<T> = { ...values };
+  delete clonedValues.commercial_consultant_user_id;
   delete clonedValues.legal_responsible_user_id;
   delete clonedValues.legal_consultant_user_id;
   return clonedValues;
@@ -124,6 +128,32 @@ async function findClientByCpf(
   return data?.[0] ?? null;
 }
 
+async function assertCommercialConsultantAvailable(
+  userProfileId: string | null,
+  companyId: string,
+) {
+  if (!userProfileId) {
+    return true;
+  }
+
+  const { supabase } = await getCurrentUserContext();
+  const { data, error } = await supabase
+    .from("user_profiles")
+    .select("id")
+    .eq("id", userProfileId)
+    .eq("company_id", companyId)
+    .eq("business_area", "commercial")
+    .eq("role", "seller")
+    .eq("is_active", true)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  return Boolean(data);
+}
+
 export async function createClientAction(
   values: ClientPayload,
   changeNote?: string | null,
@@ -154,6 +184,15 @@ export async function createClientAction(
       return friendlyError("Ja existe cliente cadastrado com esse CPF.");
     }
 
+    const commercialConsultantExists = await assertCommercialConsultantAvailable(
+      parsed.data.commercial_consultant_user_id,
+      companyId,
+    );
+
+    if (!commercialConsultantExists) {
+      return friendlyError("Selecione um consultor comercial ativo da empresa.");
+    }
+
     const clientValues = {
       ...parsed.data,
       company_id: companyId,
@@ -165,8 +204,8 @@ export async function createClientAction(
       .select("id")
       .single();
 
-    if (error && isMissingLegalResponsibleColumn(error)) {
-      const legacyCompatibleValues = withoutLegalResponsibleField(clientValues);
+    if (error && isMissingResponsibleColumn(error)) {
+      const legacyCompatibleValues = withoutResponsibleFields(clientValues);
       const retry = await supabase
         .from("clients")
         .insert(legacyCompatibleValues)
@@ -258,6 +297,15 @@ export async function updateClientAction(
       return friendlyError("Ja existe cliente cadastrado com esse CPF.");
     }
 
+    const commercialConsultantExists = await assertCommercialConsultantAvailable(
+      parsed.data.commercial_consultant_user_id,
+      companyId,
+    );
+
+    if (!commercialConsultantExists) {
+      return friendlyError("Selecione um consultor comercial ativo da empresa.");
+    }
+
     const { data: currentClientData, error: currentClientError } = await supabase
       .from("clients")
       .select("*")
@@ -284,8 +332,8 @@ export async function updateClientAction(
       .eq("company_id", companyId)
       .is("deleted_at", null);
 
-    if (error && isMissingLegalResponsibleColumn(error)) {
-      const legacyCompatibleValues = withoutLegalResponsibleField(clientValues);
+    if (error && isMissingResponsibleColumn(error)) {
+      const legacyCompatibleValues = withoutResponsibleFields(clientValues);
       const retry = await supabase
         .from("clients")
         .update(legacyCompatibleValues)

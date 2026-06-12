@@ -35,33 +35,78 @@ async function assertClientBelongsToCompany(clientId: string, companyId: string)
   const { supabase } = await getCurrentUserContext();
   const { data, error } = await supabase
     .from("clients")
-    .select("id")
+    .select("id, commercial_consultant_user_id")
     .eq("id", clientId)
     .eq("company_id", companyId)
     .is("deleted_at", null)
     .maybeSingle();
 
+  if (error && error.message.includes("commercial_consultant_user_id")) {
+    const retry = await supabase
+      .from("clients")
+      .select("id")
+      .eq("id", clientId)
+      .eq("company_id", companyId)
+      .is("deleted_at", null)
+      .maybeSingle();
+
+    if (retry.error) {
+      throw retry.error;
+    }
+
+    return retry.data ? { id: retry.data.id as string, commercialConsultantUserId: null } : null;
+  }
+
   if (error) {
     throw error;
   }
 
-  return Boolean(data);
+  return data
+    ? {
+        id: data.id as string,
+        commercialConsultantUserId:
+          (data as { commercial_consultant_user_id?: string | null })
+            .commercial_consultant_user_id ?? null,
+      }
+    : null;
 }
 
 async function assertClientExistsInCompany(clientId: string, companyId: string) {
   const { supabase } = await getCurrentUserContext();
   const { data, error } = await supabase
     .from("clients")
-    .select("id")
+    .select("id, commercial_consultant_user_id")
     .eq("id", clientId)
     .eq("company_id", companyId)
     .maybeSingle();
+
+  if (error && error.message.includes("commercial_consultant_user_id")) {
+    const retry = await supabase
+      .from("clients")
+      .select("id")
+      .eq("id", clientId)
+      .eq("company_id", companyId)
+      .maybeSingle();
+
+    if (retry.error) {
+      throw retry.error;
+    }
+
+    return retry.data ? { id: retry.data.id as string, commercialConsultantUserId: null } : null;
+  }
 
   if (error) {
     throw error;
   }
 
-  return Boolean(data);
+  return data
+    ? {
+        id: data.id as string,
+        commercialConsultantUserId:
+          (data as { commercial_consultant_user_id?: string | null })
+            .commercial_consultant_user_id ?? null,
+      }
+    : null;
 }
 
 async function assertUserBelongsToCompany(userProfileId: string, companyId: string) {
@@ -320,9 +365,9 @@ export async function createPreSaleAction(
       financialCaseValues,
       payments,
     } = splitPreSalePayload(parsed.data);
-    const clientExists = await assertClientBelongsToCompany(parsed.data.client_id, companyId);
+    const clientRecord = await assertClientBelongsToCompany(parsed.data.client_id, companyId);
 
-    if (!clientExists) {
+    if (!clientRecord) {
       return friendlyError("Selecione um cliente ativo da empresa.");
     }
 
@@ -355,7 +400,17 @@ export async function createPreSaleAction(
     const consultantUserId =
       role === "seller" && businessArea === "commercial"
         ? userProfileId
-        : parsed.data.consultant_user_id || null;
+        : parsed.data.consultant_user_id ||
+          clientRecord.commercialConsultantUserId ||
+          null;
+
+    if (consultantUserId) {
+      const consultantExists = await assertUserBelongsToCompany(consultantUserId, companyId);
+
+      if (!consultantExists) {
+        return friendlyError("Selecione um consultor da empresa.");
+      }
+    }
 
     const { data, error } = await supabase
       .from("pre_sales")
@@ -451,9 +506,9 @@ export async function updatePreSaleAction(
       return friendlyError("O usuario atual nao pode editar esta pre-venda.");
     }
 
-    const clientExists = await assertClientExistsInCompany(parsed.data.client_id, companyId);
+    const clientRecord = await assertClientExistsInCompany(parsed.data.client_id, companyId);
 
-    if (!clientExists) {
+    if (!clientRecord) {
       return friendlyError("Selecione um cliente da empresa.");
     }
 
@@ -471,7 +526,17 @@ export async function updatePreSaleAction(
     const consultantUserId =
       role === "seller" && businessArea === "commercial"
         ? userProfileId
-        : parsed.data.consultant_user_id || null;
+        : parsed.data.consultant_user_id ||
+          clientRecord.commercialConsultantUserId ||
+          null;
+
+    if (consultantUserId) {
+      const consultantExists = await assertUserBelongsToCompany(consultantUserId, companyId);
+
+      if (!consultantExists) {
+        return friendlyError("Selecione um consultor da empresa.");
+      }
+    }
 
     const { error } = await supabase
       .from("pre_sales")

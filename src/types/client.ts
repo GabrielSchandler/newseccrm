@@ -18,6 +18,7 @@ export type Client = {
   city: string | null;
   state: string | null;
   notes: string | null;
+  commercial_consultant_user_id: string | null;
   legal_responsible_user_id: string | null;
   legal_consultant_user_id: string | null;
   created_by: string;

@@ -359,6 +359,15 @@ export function PreSalesForm({
 
     if (client) {
       copyClientToSnapshot(client, setValue);
+
+      if (
+        client.commercial_consultant_user_id &&
+        consultants.some((consultant) => consultant.id === client.commercial_consultant_user_id)
+      ) {
+        setValue("consultant_user_id", client.commercial_consultant_user_id, {
+          shouldDirty: true,
+        });
+      }
     }
   }
 

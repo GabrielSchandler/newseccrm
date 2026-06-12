@@ -66,7 +66,8 @@ export type DebtHolder = {
   state: string | null;
 };
 
-export type ClientOption = Pick<Client, "id"> & ClientSnapshotFields;
+export type ClientOption = Pick<Client, "id" | "commercial_consultant_user_id"> &
+  ClientSnapshotFields;
 
 export type PreSale = {
   id: string;

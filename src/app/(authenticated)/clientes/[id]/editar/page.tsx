@@ -28,13 +28,25 @@ export default async function EditarClientePage({ params }: EditarClientePagePro
     notFound();
   }
 
-  const { data: legalConsultantsData } = await supabase
-    .from("user_profiles")
-    .select("id, full_name, nickname, username, email, role, business_area, is_active, legal_role")
-    .eq("company_id", companyId)
-    .eq("business_area", "legal")
-    .eq("is_active", true)
-    .order("full_name", { ascending: true });
+  const [{ data: commercialConsultantsData }, { data: legalConsultantsData }] =
+    await Promise.all([
+      supabase
+        .from("user_profiles")
+        .select("id, full_name, nickname, username, email, role, business_area, is_active, legal_role")
+        .eq("company_id", companyId)
+        .eq("business_area", "commercial")
+        .eq("role", "seller")
+        .eq("is_active", true)
+        .order("full_name", { ascending: true }),
+      supabase
+        .from("user_profiles")
+        .select("id, full_name, nickname, username, email, role, business_area, is_active, legal_role")
+        .eq("company_id", companyId)
+        .eq("business_area", "legal")
+        .eq("is_active", true)
+        .order("full_name", { ascending: true }),
+    ]);
+  const commercialConsultants = (commercialConsultantsData ?? []) as UserProfileOption[];
   const legalUsers = (legalConsultantsData ?? []) as UserProfileOption[];
   const legalAdmins = legalUsers.filter((user) => user.legal_role === "admin");
   const legalConsultants = legalUsers.filter(
@@ -53,6 +65,7 @@ export default async function EditarClientePage({ params }: EditarClientePagePro
             submitLabel="Salvar alteracoes"
             defaultValues={clientToFormValues(client)}
             onSubmitAction={updateClientAction.bind(null, client.id)}
+            commercialConsultants={commercialConsultants}
             legalAdmins={legalAdmins}
             legalConsultants={legalConsultants}
             requireChangeNote

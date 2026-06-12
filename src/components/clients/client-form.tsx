@@ -28,6 +28,7 @@ type ClientFormProps = {
     changeNote?: string | null,
   ) => Promise<ClientActionState>;
   canReactivateDeletedClient?: boolean;
+  commercialConsultants?: UserProfileOption[];
   legalAdmins?: UserProfileOption[];
   legalConsultants?: UserProfileOption[];
   requireChangeNote?: boolean;
@@ -97,6 +98,7 @@ export function ClientForm({
   submitLabel,
   onSubmitAction,
   canReactivateDeletedClient = false,
+  commercialConsultants = [],
   legalAdmins = [],
   legalConsultants = [],
   requireChangeNote = false,
@@ -285,6 +287,34 @@ export function ClientForm({
             disabled={disabled}
             {...register("notes")}
           />
+        </div>
+
+        <div className="space-y-2 md:col-span-2">
+          <FormFieldLabel
+            htmlFor="commercial_consultant_user_id"
+            label="Consultor comercial responsavel"
+            requirement="optional"
+            hint="Selecione o consultor comercial que deve acompanhar este cliente e novas pre-vendas."
+          />
+          <select
+            id="commercial_consultant_user_id"
+            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
+            disabled={disabled}
+            {...register("commercial_consultant_user_id")}
+          >
+            <option value="">Nao definido</option>
+            {commercialConsultants.map((consultant) => (
+              <option key={consultant.id} value={consultant.id}>
+                {resolveUserDisplayName(consultant, "Consultor comercial")}
+                {consultant.is_active === false ? " (desativado)" : ""}
+              </option>
+            ))}
+          </select>
+          {errors.commercial_consultant_user_id?.message ? (
+            <p className="text-sm text-red-600">
+              {String(errors.commercial_consultant_user_id?.message)}
+            </p>
+          ) : null}
         </div>
 
         <div className="space-y-2 md:col-span-2">

@@ -5,19 +5,38 @@ import { getCurrentUserContext } from "@/lib/auth/current-user";
 import type { UserProfileOption } from "@/types/pre-sale";
 
 export default async function NovoClientePage() {
-  const { role, supabase, companyId } = await getCurrentUserContext();
-  const { data: legalConsultantsData } = await supabase
-    .from("user_profiles")
-    .select("id, full_name, nickname, username, email, role, business_area, is_active, legal_role")
-    .eq("company_id", companyId)
-    .eq("business_area", "legal")
-    .eq("is_active", true)
-    .order("full_name", { ascending: true });
+  const { role, businessArea, userProfileId, supabase, companyId } =
+    await getCurrentUserContext();
+  const [{ data: commercialConsultantsData }, { data: legalConsultantsData }] =
+    await Promise.all([
+      supabase
+        .from("user_profiles")
+        .select("id, full_name, nickname, username, email, role, business_area, is_active, legal_role")
+        .eq("company_id", companyId)
+        .eq("business_area", "commercial")
+        .eq("role", "seller")
+        .eq("is_active", true)
+        .order("full_name", { ascending: true }),
+      supabase
+        .from("user_profiles")
+        .select("id, full_name, nickname, username, email, role, business_area, is_active, legal_role")
+        .eq("company_id", companyId)
+        .eq("business_area", "legal")
+        .eq("is_active", true)
+        .order("full_name", { ascending: true }),
+    ]);
+  const commercialConsultants = (commercialConsultantsData ?? []) as UserProfileOption[];
   const legalUsers = (legalConsultantsData ?? []) as UserProfileOption[];
   const legalAdmins = legalUsers.filter((user) => user.legal_role === "admin");
   const legalConsultants = legalUsers.filter(
     (user) => user.legal_role === "consultant" || !user.legal_role,
   );
+  const defaultCommercialConsultantId =
+    role === "seller" &&
+    businessArea === "commercial" &&
+    commercialConsultants.some((consultant) => consultant.id === userProfileId)
+      ? userProfileId
+      : "";
 
   return (
     <>
@@ -29,8 +48,12 @@ export default async function NovoClientePage() {
         <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
           <ClientForm
             submitLabel="Cadastrar cliente"
+            defaultValues={{
+              commercial_consultant_user_id: defaultCommercialConsultantId,
+            }}
             onSubmitAction={createClientAction}
             canReactivateDeletedClient={role === "admin"}
+            commercialConsultants={commercialConsultants}
             legalAdmins={legalAdmins}
             legalConsultants={legalConsultants}
           />
