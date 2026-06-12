@@ -18,6 +18,7 @@ type CookieToSet = {
 const protectedRoutes = [
   "/dashboard",
   "/clientes",
+  "/comercial",
   "/pre-vendas",
   "/calculos",
   "/documentos",

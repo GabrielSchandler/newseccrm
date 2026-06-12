@@ -38,7 +38,7 @@ export const workspaceOptions: Array<{
     value: "commercial",
     label: "Comercial",
     description: "Clientes, pre-vendas, simulacoes e documentos da operacao comercial.",
-    href: "/pre-vendas",
+    href: "/comercial",
   },
   {
     value: "legal",
@@ -61,7 +61,7 @@ export function normalizeWorkspaceView(value: string | null | undefined): Worksp
 }
 
 export function getSellerHome(area: CompanyBusinessArea) {
-  return area === "legal" ? "/juridico" : "/pre-vendas";
+  return area === "legal" ? "/juridico" : "/comercial";
 }
 
 export function getHomeForRole(role: CompanyUserRole | string | null, area: CompanyBusinessArea) {
@@ -105,7 +105,7 @@ const managementPrefixes = [
 
 const legalPrefixes = ["/juridico"];
 
-const commercialPrefixes = ["/calculos"];
+const commercialPrefixes = ["/comercial", "/calculos"];
 
 const sharedOperationalPrefixes = ["/clientes", "/pre-vendas", "/documentos"];
 
