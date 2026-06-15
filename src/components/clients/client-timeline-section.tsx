@@ -79,6 +79,15 @@ function getEventConfig(eventType: ClientTimelineEventType): TimelineEventConfig
         badgeClassName: "border-indigo-200 bg-indigo-50 text-indigo-700",
         iconClassName: "border-indigo-200 bg-indigo-50 text-indigo-700",
       };
+    case "tracking_update_created":
+    case "tracking_update_updated":
+    case "tracking_update_deleted":
+      return {
+        label: "Acompanhamento",
+        icon: FolderClock,
+        badgeClassName: "border-teal-200 bg-teal-50 text-teal-700",
+        iconClassName: "border-teal-200 bg-teal-50 text-teal-700",
+      };
     case "manual_note":
     default:
       return {

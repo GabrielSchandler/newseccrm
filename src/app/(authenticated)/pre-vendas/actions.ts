@@ -31,6 +31,53 @@ function requireChangeNote(changeNote?: string | null) {
   return normalizedChangeNote ? normalizedChangeNote : null;
 }
 
+function getProtocolDateStamp() {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date());
+
+  const year = parts.find((part) => part.type === "year")?.value ?? "0000";
+  const month = parts.find((part) => part.type === "month")?.value ?? "00";
+  const day = parts.find((part) => part.type === "day")?.value ?? "00";
+
+  return `${year}${month}${day}`;
+}
+
+async function generateTrackingProtocol(
+  supabase: Awaited<ReturnType<typeof getCurrentUserContext>>["supabase"],
+  companyId: string,
+) {
+  const stamp = getProtocolDateStamp();
+
+  for (let attempt = 0; attempt < 8; attempt += 1) {
+    const suffix = Math.floor(1000 + Math.random() * 9000).toString();
+    const protocol = `GRS-${stamp}-${suffix}`;
+    const { data, error } = await supabase
+      .from("pre_sales")
+      .select("id")
+      .eq("company_id", companyId)
+      .eq("tracking_protocol", protocol)
+      .maybeSingle();
+
+    if (error && error.message.includes("tracking_protocol")) {
+      return null;
+    }
+
+    if (error) {
+      throw error;
+    }
+
+    if (!data) {
+      return protocol;
+    }
+  }
+
+  return `GRS-${stamp}-${Date.now().toString().slice(-6)}`;
+}
+
 async function assertClientBelongsToCompany(clientId: string, companyId: string) {
   const { supabase } = await getCurrentUserContext();
   const { data, error } = await supabase
@@ -412,16 +459,36 @@ export async function createPreSaleAction(
       }
     }
 
-    const { data, error } = await supabase
+    const trackingProtocol = await generateTrackingProtocol(supabase, companyId);
+    const preSaleInsertValues = {
+      ...preSaleValues,
+      consultant_user_id: consultantUserId,
+      company_id: companyId,
+      created_by: userProfileId,
+      ...(trackingProtocol ? { tracking_protocol: trackingProtocol } : {}),
+    };
+
+    let { data, error } = await supabase
       .from("pre_sales")
-      .insert({
-        ...preSaleValues,
-        consultant_user_id: consultantUserId,
-        company_id: companyId,
-        created_by: userProfileId,
-      })
+      .insert(preSaleInsertValues)
       .select("id")
       .single();
+
+    if (error && error.message.includes("tracking_protocol")) {
+      const retry = await supabase
+        .from("pre_sales")
+        .insert({
+          ...preSaleValues,
+          consultant_user_id: consultantUserId,
+          company_id: companyId,
+          created_by: userProfileId,
+        })
+        .select("id")
+        .single();
+
+      data = retry.data;
+      error = retry.error;
+    }
 
     if (error) {
       return friendlyError(error.message);

@@ -9,6 +9,7 @@ import { ReactivateClientButton } from "@/components/clients/reactivate-client-b
 import { WhatsAppLink } from "@/components/clients/whatsapp-link";
 import { ClientDocumentsSection } from "@/components/client-documents/client-documents-section";
 import { ClientTimelineSection } from "@/components/clients/client-timeline-section";
+import { ClientTrackingSection } from "@/components/clients/client-tracking-section";
 import {
   SendClientEmailModal,
   type EmailAttachmentOption,
@@ -39,6 +40,7 @@ import {
 } from "@/types/document";
 import { isDeletedClient } from "@/lib/clients/status";
 import type { EmailTemplate } from "@/types/email";
+import type { ClientTrackingUpdate } from "@/types/client-tracking";
 import type { PreSale, PreSaleFinancialCase } from "@/types/pre-sale";
 
 type ClientePageProps = {
@@ -178,7 +180,7 @@ export default async function ClientePage({
 
   const { data: clientPreSalesData, error: clientPreSalesError } = await supabase
     .from("pre_sales")
-    .select("id, status, pre_sale_type, service_type, media, consultant_user_id, created_at, updated_at, created_by, legal_stage, legal_stage_updated_at, company_id, client_id, contract_value, payment_description, negotiation_details")
+    .select("id, status, pre_sale_type, service_type, media, consultant_user_id, created_at, updated_at, created_by, legal_stage, legal_stage_updated_at, company_id, client_id, contract_value, payment_description, negotiation_details, tracking_protocol")
     .eq("company_id", companyId)
     .eq("client_id", client.id)
     .order("created_at", { ascending: false });
@@ -189,6 +191,15 @@ export default async function ClientePage({
   }
 
   const timelineEvents = await listClientTimelineEvents(companyId, client.id);
+  const { data: trackingUpdatesData } = await adminClient
+    .from("client_tracking_updates")
+    .select("*")
+    .eq("company_id", companyId)
+    .eq("client_id", client.id)
+    .is("deleted_at", null)
+    .order("event_at", { ascending: false })
+    .order("created_at", { ascending: false });
+  const trackingUpdates = (trackingUpdatesData ?? []) as ClientTrackingUpdate[];
   const primaryEmailPreSale = clientPreSales[0] ?? null;
   const [
     { data: emailTemplatesData },
@@ -493,6 +504,19 @@ export default async function ClientePage({
           </div>
         </section>
 
+        <ClientTrackingSection
+          clientId={client.id}
+          preSales={clientPreSales.map((preSale) => ({
+            id: preSale.id,
+            status: preSale.status,
+            pre_sale_type: preSale.pre_sale_type,
+            service_type: preSale.service_type,
+            tracking_protocol: preSale.tracking_protocol,
+            created_at: preSale.created_at,
+          }))}
+          updates={trackingUpdates}
+        />
+
         <ClientTimelineSection
           clientId={client.id}
           events={timelineEvents}
@@ -631,6 +655,7 @@ export default async function ClientePage({
                     <th className="px-6 py-3 font-semibold">Tipo</th>
                     <th className="px-6 py-3 font-semibold">Servico</th>
                     <th className="px-6 py-3 font-semibold">Midia</th>
+                    <th className="px-6 py-3 font-semibold">Protocolo</th>
                     <th className="px-6 py-3 font-semibold">Consultor</th>
                     <th className="px-6 py-3 font-semibold">Status</th>
                     <th className="px-6 py-3 font-semibold">Criada em</th>
@@ -657,6 +682,12 @@ export default async function ClientePage({
                         </td>
                         <td className="px-6 py-4 text-slate-700">
                           {displayValue(preSale.media)}
+                        </td>
+                        <td className="px-6 py-4 text-slate-700">
+                          {renderCopyableValue(
+                            displayValue(preSale.tracking_protocol),
+                            copyableValue(preSale.tracking_protocol),
+                          )}
                         </td>
                         <td className="px-6 py-4 text-slate-700">
                           {formatUserName(consultant)}

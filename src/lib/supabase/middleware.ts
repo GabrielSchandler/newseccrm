@@ -70,6 +70,7 @@ export async function updateSession(request: NextRequest) {
   const isLoginRoute = request.nextUrl.pathname === "/login";
   const isPasswordChangeRoute = request.nextUrl.pathname === "/alterar-senha";
   const isDashboardRoute = request.nextUrl.pathname.startsWith("/dashboard");
+  const isPublicTrackingRoute = request.nextUrl.pathname.startsWith("/acompanhamento");
 
   if (!user && isProtectedRoute) {
     const url = request.nextUrl.clone();
@@ -159,7 +160,13 @@ export async function updateSession(request: NextRequest) {
     }
   }
 
-  if (user && !routeWorkspace && profileRole === "seller" && !isPasswordChangeRoute) {
+  if (
+    user &&
+    !routeWorkspace &&
+    profileRole === "seller" &&
+    !isPasswordChangeRoute &&
+    !isPublicTrackingRoute
+  ) {
     const sellerArea = normalizeBusinessArea(profileBusinessArea);
     const isSharedPath = isSharedOperationalPath(request.nextUrl.pathname);
 
