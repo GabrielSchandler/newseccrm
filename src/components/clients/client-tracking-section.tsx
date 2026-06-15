@@ -85,7 +85,7 @@ function getStatusIcon(status: ClientTrackingStatus | string | null) {
 function getPreSaleLabel(preSale: TrackingPreSaleOption) {
   const protocol = preSale.tracking_protocol ?? "Sem protocolo";
   const type = formatPreSaleType(preSale.pre_sale_type as PreSaleType);
-  const service = preSale.service_type ? ` - ${preSale.service_type}` : "";
+  const service = preSale.service_type ? ` — ${preSale.service_type}` : "";
   return `${protocol} | ${type}${service}`;
 }
 
@@ -194,7 +194,7 @@ export function ClientTrackingSection({
 
   function handleDelete(update: ClientTrackingUpdate) {
     const confirmed = window.confirm(
-      "Remover esta atualizacao de acompanhamento? Ela deixara de aparecer para a equipe e para o cliente.",
+      "Remover esta atualização de acompanhamento? Ela deixará de aparecer para a equipe e para o cliente.",
     );
 
     if (!confirmed) {
@@ -227,13 +227,13 @@ export function ClientTrackingSection({
               Acompanhamento do cliente
             </h2>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-              Registre movimentacoes claras para reduzir cobrancas repetidas do
-              cliente. Apenas itens marcados como visiveis aparecem na consulta publica.
+              Registre movimentações claras para reduzir cobranças repetidas do
+              cliente. Apenas itens marcados como visíveis aparecem na consulta pública.
             </p>
           </div>
           <div className="rounded-lg border border-teal-200 bg-white px-4 py-3 text-sm text-slate-700 shadow-sm">
             <span className="font-semibold text-teal-800">{updates.length}</span>{" "}
-            movimentacao{updates.length === 1 ? "" : "es"} registrada
+            movimentação{updates.length === 1 ? "" : "ões"} registrada
           </div>
         </div>
       </div>
@@ -241,7 +241,7 @@ export function ClientTrackingSection({
       <div className="grid gap-6 p-6 lg:grid-cols-[minmax(280px,420px)_1fr]">
         <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
           <h3 className="text-sm font-semibold text-slate-950">
-            Nova atualizacao
+            Nova atualização
           </h3>
           <div className="mt-4 space-y-4">
             <label className="block">
@@ -266,25 +266,25 @@ export function ClientTrackingSection({
 
             <label className="block">
               <span className="text-xs font-semibold uppercase tracking-wide text-slate-600">
-                Titulo
+                Título
               </span>
               <input
                 value={form.title}
                 onChange={(event) => updateForm("title", event.target.value)}
-                placeholder="Ex.: Notificacao extrajudicial enviada"
+                placeholder="Ex.: Notificação extrajudicial enviada"
                 className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
               />
             </label>
 
             <label className="block">
               <span className="text-xs font-semibold uppercase tracking-wide text-slate-600">
-                Descricao para acompanhamento
+                Descrição para acompanhamento
               </span>
               <textarea
                 value={form.description}
                 onChange={(event) => updateForm("description", event.target.value)}
                 rows={5}
-                placeholder="Escreva uma explicacao curta, objetiva e segura para o cliente entender o andamento."
+                placeholder="Escreva uma explicação curta, objetiva e segura para o cliente entender o andamento."
                 className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm leading-6 text-slate-950 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
               />
             </label>
@@ -336,7 +336,7 @@ export function ClientTrackingSection({
                   Mostrar no portal do cliente
                 </span>
                 <span className="mt-1 block text-xs leading-5 text-slate-500">
-                  Desmarque para registrar apenas controle interno.
+                  Desmarque para registrar apenas como controle interno.
                 </span>
               </span>
             </label>
@@ -438,7 +438,7 @@ export function ClientTrackingSection({
                                 }
                                 className="h-4 w-4 rounded border-slate-300 text-teal-700 focus:ring-teal-600"
                               />
-                              Visivel ao cliente
+                              Visível ao cliente
                             </label>
                           </div>
                           <div className="flex flex-wrap gap-2">
@@ -448,7 +448,7 @@ export function ClientTrackingSection({
                               disabled={isPending}
                               className="rounded-lg bg-teal-700 px-3 py-2 text-sm font-semibold text-white transition hover:bg-teal-800 disabled:opacity-60"
                             >
-                              Salvar edicao
+                              Salvar edição
                             </button>
                             <button
                               type="button"
@@ -478,7 +478,7 @@ export function ClientTrackingSection({
                                     <EyeOff className="h-3.5 w-3.5" />
                                   )}
                                   {update.visible_to_client
-                                    ? "Visivel ao cliente"
+                                    ? "Visível ao cliente"
                                     : "Interno"}
                                 </span>
                               </div>
@@ -513,7 +513,7 @@ export function ClientTrackingSection({
                             <span>
                               {preSale
                                 ? getPreSaleLabel(preSale)
-                                : "Pre-venda vinculada nao encontrada"}
+                                : "Pre-venda vinculada não encontrada"}
                             </span>
                           </div>
                         </>
@@ -526,11 +526,11 @@ export function ClientTrackingSection({
           ) : (
             <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 px-6 py-10 text-center">
               <p className="text-sm font-semibold text-slate-950">
-                Nenhuma movimentacao registrada ainda.
+                Nenhuma movimentação registrada ainda.
               </p>
               <p className="mt-2 text-sm leading-6 text-slate-500">
-                Use o formulario ao lado para criar a primeira atualizacao que
-                podera aparecer no portal do cliente.
+                Use o formulário ao lado para criar a primeira atualização que
+                poderá aparecer no portal do cliente.
               </p>
             </div>
           )}

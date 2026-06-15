@@ -26,17 +26,17 @@ export const clientTrackingStatusOptions: Array<{
   {
     value: "in_progress",
     label: "Em andamento",
-    description: "O cliente esta aguardando uma proxima movimentacao.",
+    description: "O cliente está aguardando uma próxima movimentação.",
   },
   {
     value: "completed",
-    label: "Concluido",
-    description: "A movimentacao foi finalizada nesta etapa.",
+    label: "Concluído",
+    description: "A movimentação foi finalizada nesta etapa.",
   },
   {
     value: "cancelled",
     label: "Cancelado",
-    description: "A movimentacao deixou de seguir por alguma razao.",
+    description: "A movimentação deixou de seguir por alguma razão.",
   },
 ];
 

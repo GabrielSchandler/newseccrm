@@ -161,33 +161,33 @@ export default async function AcompanhamentoPage({
   const companyName =
     result?.company?.trade_name?.trim() ||
     result?.company?.legal_name?.trim() ||
-    "GRS Solucoes";
+    "GRS Soluções";
 
   return (
     <main className="min-h-screen bg-[#f5f7f6] text-slate-950">
-      <section className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex w-full max-w-6xl flex-col gap-10 px-5 py-10 md:px-8 lg:flex-row lg:items-end lg:justify-between lg:py-14">
+      <section className="border-b border-slate-200 bg-[linear-gradient(180deg,#ffffff_0%,#f5f7f6_100%)]">
+        <div className="mx-auto flex w-full max-w-6xl flex-col gap-10 px-5 py-10 md:px-8 lg:flex-row lg:items-end lg:justify-between lg:py-16">
           <div className="max-w-2xl">
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-teal-700">
               Acompanhamento GRS
             </p>
             <h1 className="mt-4 text-3xl font-semibold leading-tight text-slate-950 md:text-5xl">
-              Consulte o andamento do seu contrato com seguranca.
+              Consulte o andamento do seu contrato com segurança.
             </h1>
             <p className="mt-5 text-base leading-7 text-slate-600">
-              Informe CPF e protocolo para acompanhar as movimentacoes liberadas
+              Informe CPF e protocolo para acompanhar as movimentações liberadas
               pela nossa equipe. A consulta mostra apenas dados essenciais do
               seu atendimento.
             </p>
           </div>
-          <div className="rounded-lg border border-teal-200 bg-teal-50 px-4 py-3 text-sm leading-6 text-teal-900">
+          <div className="rounded-lg border border-teal-200 bg-white px-5 py-4 text-sm leading-6 text-teal-900 shadow-sm">
             <div className="flex items-center gap-2 font-semibold">
               <LockKeyhole className="h-4 w-4" />
               Consulta protegida
             </div>
             <p className="mt-1 max-w-sm">
-              Nenhum dado financeiro, documento pessoal ou informacao sensivel e
-              exibido nesta pagina.
+              Nenhum dado financeiro, documento pessoal ou informação sensível é
+              exibido nesta página.
             </p>
           </div>
         </div>
@@ -200,8 +200,8 @@ export default async function AcompanhamentoPage({
               Localizar acompanhamento
             </h2>
             <p className="mt-2 text-sm leading-6 text-slate-600">
-              O protocolo fica no atendimento da sua contratacao. Em caso de
-              duvida, fale com a nossa equipe.
+              O protocolo fica no atendimento da sua contratação. Em caso de
+              dúvida, fale com a nossa equipe.
             </p>
 
             <div className="mt-5 space-y-4">
@@ -240,7 +240,7 @@ export default async function AcompanhamentoPage({
             </div>
           </form>
 
-          <div className="rounded-lg border border-slate-200 bg-white shadow-sm">
+          <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
             {!hasSearch ? (
               <div className="flex min-h-[360px] flex-col items-center justify-center px-6 py-12 text-center">
                 <div className="flex h-14 w-14 items-center justify-center rounded-lg border border-teal-200 bg-teal-50 text-teal-700">
@@ -251,20 +251,20 @@ export default async function AcompanhamentoPage({
                 </h2>
                 <p className="mt-3 max-w-md text-sm leading-6 text-slate-600">
                   Assim que CPF e protocolo forem informados, exibiremos uma
-                  linha do tempo objetiva com as movimentacoes publicadas pela GRS.
+                  linha do tempo objetiva com as movimentações publicadas pela GRS.
                 </p>
               </div>
             ) : result ? (
               <div>
-                <div className="border-b border-slate-200 bg-slate-50 px-6 py-5">
+                <div className="border-b border-slate-200 bg-[linear-gradient(135deg,#f8fbfa_0%,#eef8f5_100%)] px-6 py-6">
                   <p className="text-xs font-semibold uppercase tracking-wide text-teal-700">
                     {companyName}
                   </p>
                   <h2 className="mt-2 text-2xl font-semibold text-slate-950">
-                    Ola, {getFirstName(result.client.full_name)}.
+                    Olá, {getFirstName(result.client.full_name)}.
                   </h2>
                   <div className="mt-4 grid gap-3 text-sm md:grid-cols-3">
-                    <div className="rounded-lg border border-slate-200 bg-white p-3">
+                    <div className="rounded-lg border border-slate-200 bg-white/90 p-3 shadow-sm">
                       <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                         Protocolo
                       </p>
@@ -272,15 +272,15 @@ export default async function AcompanhamentoPage({
                         {result.preSale.tracking_protocol}
                       </p>
                     </div>
-                    <div className="rounded-lg border border-slate-200 bg-white p-3">
+                    <div className="rounded-lg border border-slate-200 bg-white/90 p-3 shadow-sm">
                       <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                        Contratacao
+                        Contratação
                       </p>
                       <p className="mt-1 font-semibold text-slate-950">
                         {formatDate(result.preSale.created_at)}
                       </p>
                     </div>
-                    <div className="rounded-lg border border-slate-200 bg-white p-3">
+                    <div className="rounded-lg border border-slate-200 bg-white/90 p-3 shadow-sm">
                       <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                         Atendimento
                       </p>
@@ -306,7 +306,7 @@ export default async function AcompanhamentoPage({
                             >
                               <Icon className="h-5 w-5" />
                             </div>
-                            <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+                            <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm transition hover:border-teal-200 hover:shadow-md">
                               <div className="flex flex-wrap items-center gap-2">
                                 <span
                                   className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${getStatusClassName(
@@ -333,11 +333,11 @@ export default async function AcompanhamentoPage({
                   ) : (
                     <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 px-6 py-10 text-center">
                       <p className="text-base font-semibold text-slate-950">
-                        Ainda nao ha movimentacoes publicadas.
+                        Ainda não há movimentações publicadas.
                       </p>
                       <p className="mt-2 text-sm leading-6 text-slate-600">
-                        O atendimento foi localizado, mas nossa equipe ainda nao
-                        liberou uma atualizacao publica para este protocolo.
+                        O atendimento foi localizado, mas nossa equipe ainda não
+                        liberou uma atualização pública para este protocolo.
                       </p>
                     </div>
                   )}
@@ -349,11 +349,11 @@ export default async function AcompanhamentoPage({
                   <FileSearch className="h-7 w-7" />
                 </div>
                 <h2 className="mt-5 text-xl font-semibold text-slate-950">
-                  Nao encontramos esse acompanhamento.
+                  Não encontramos esse acompanhamento.
                 </h2>
                 <p className="mt-3 max-w-md text-sm leading-6 text-slate-600">
-                  Confira CPF e protocolo. Se as informacoes estiverem corretas,
-                  nossa equipe pode confirmar o numero do seu atendimento.
+                  Confira CPF e protocolo. Se as informações estiverem corretas,
+                  nossa equipe pode confirmar o número do seu atendimento.
                 </p>
               </div>
             )}
@@ -362,7 +362,7 @@ export default async function AcompanhamentoPage({
 
         <div className="mt-8 flex flex-wrap items-center justify-between gap-4 border-t border-slate-200 pt-6 text-xs text-slate-500">
           <p>
-            Esta pagina exibe somente movimentacoes liberadas para consulta do
+            Esta página exibe somente movimentações liberadas para consulta do
             cliente.
           </p>
           <Link href="/login" className="font-semibold text-teal-700 hover:text-teal-800">

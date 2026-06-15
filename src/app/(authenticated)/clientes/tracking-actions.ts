@@ -22,7 +22,7 @@ const trackingPayloadSchema = z.object({
   event_at: z.string().min(1),
 });
 
-function friendlyError(message = "Nao foi possivel salvar o acompanhamento.") {
+function friendlyError(message = "Não foi possível salvar o acompanhamento.") {
   return {
     ok: false,
     message,
@@ -59,7 +59,7 @@ async function assertTrackingAccess(clientId: string, preSaleId: string) {
   }
 
   if (!client) {
-    return { allowed: false, message: "Cliente nao encontrado nesta empresa." };
+    return { allowed: false, message: "Cliente não encontrado nesta empresa." };
   }
 
   const { data: preSale, error: preSaleError } = await adminSupabase
@@ -84,7 +84,7 @@ async function assertTrackingAccess(clientId: string, preSaleId: string) {
     (role === "seller" && (businessArea === "legal" || businessArea === "commercial"));
 
   if (!canManageTracking) {
-    return { allowed: false, message: "Seu usuario nao pode alterar o acompanhamento." };
+    return { allowed: false, message: "Seu usuário não pode alterar o acompanhamento." };
   }
 
   return { allowed: true, message: null };
@@ -113,13 +113,13 @@ export async function createClientTrackingUpdateAction(
   const parsed = trackingPayloadSchema.safeParse(values);
 
   if (!parsed.success) {
-    return friendlyError("Confira titulo, descricao, status e data do acompanhamento.");
+    return friendlyError("Confira título, descrição, status e data do acompanhamento.");
   }
 
   const eventAt = normalizeEventAt(parsed.data.event_at);
 
   if (!eventAt) {
-    return friendlyError("Informe uma data valida para a movimentacao.");
+    return friendlyError("Informe uma data válida para a movimentação.");
   }
 
   try {
@@ -158,7 +158,7 @@ export async function createClientTrackingUpdateAction(
       preSaleId: parsed.data.pre_sale_id,
       eventType: "tracking_update_created",
       title: "Acompanhamento do cliente atualizado",
-      note: `Nova movimentacao adicionada: ${parsed.data.title}`,
+      note: `Nova movimentação adicionada: ${parsed.data.title}`,
       actorUserProfileId: userProfileId,
       actorRole: role,
       actorBusinessArea: businessArea,
@@ -180,7 +180,7 @@ export async function createClientTrackingUpdateAction(
     };
   } catch (error) {
     return friendlyError(
-      error instanceof Error ? error.message : "Nao foi possivel registrar o acompanhamento.",
+      error instanceof Error ? error.message : "Não foi possível registrar o acompanhamento.",
     );
   }
 }
@@ -192,13 +192,13 @@ export async function updateClientTrackingUpdateAction(
   const parsed = trackingPayloadSchema.safeParse(values);
 
   if (!parsed.success) {
-    return friendlyError("Confira titulo, descricao, status e data do acompanhamento.");
+    return friendlyError("Confira título, descrição, status e data do acompanhamento.");
   }
 
   const eventAt = normalizeEventAt(parsed.data.event_at);
 
   if (!eventAt) {
-    return friendlyError("Informe uma data valida para a movimentacao.");
+    return friendlyError("Informe uma data válida para a movimentação.");
   }
 
   try {
@@ -207,7 +207,7 @@ export async function updateClientTrackingUpdateAction(
     const existing = await loadTrackingUpdate(updateId, companyId);
 
     if (!existing) {
-      return friendlyError("Acompanhamento nao encontrado.");
+      return friendlyError("Acompanhamento não encontrado.");
     }
 
     const access = await assertTrackingAccess(existing.client_id, existing.pre_sale_id);
@@ -241,7 +241,7 @@ export async function updateClientTrackingUpdateAction(
       preSaleId: existing.pre_sale_id,
       eventType: "tracking_update_updated",
       title: "Acompanhamento do cliente editado",
-      note: `Movimentacao editada: ${parsed.data.title}`,
+      note: `Movimentação editada: ${parsed.data.title}`,
       actorUserProfileId: userProfileId,
       actorRole: role,
       actorBusinessArea: businessArea,
@@ -264,7 +264,7 @@ export async function updateClientTrackingUpdateAction(
     };
   } catch (error) {
     return friendlyError(
-      error instanceof Error ? error.message : "Nao foi possivel atualizar o acompanhamento.",
+      error instanceof Error ? error.message : "Não foi possível atualizar o acompanhamento.",
     );
   }
 }
@@ -278,7 +278,7 @@ export async function deleteClientTrackingUpdateAction(
     const existing = await loadTrackingUpdate(updateId, companyId);
 
     if (!existing) {
-      return friendlyError("Acompanhamento nao encontrado.");
+      return friendlyError("Acompanhamento não encontrado.");
     }
 
     const access = await assertTrackingAccess(existing.client_id, existing.pre_sale_id);
@@ -307,7 +307,7 @@ export async function deleteClientTrackingUpdateAction(
       preSaleId: existing.pre_sale_id,
       eventType: "tracking_update_deleted",
       title: "Acompanhamento do cliente removido",
-      note: `Movimentacao removida: ${existing.title}`,
+      note: `Movimentação removida: ${existing.title}`,
       actorUserProfileId: userProfileId,
       actorRole: role,
       actorBusinessArea: businessArea,
@@ -328,7 +328,7 @@ export async function deleteClientTrackingUpdateAction(
     };
   } catch (error) {
     return friendlyError(
-      error instanceof Error ? error.message : "Nao foi possivel remover o acompanhamento.",
+      error instanceof Error ? error.message : "Não foi possível remover o acompanhamento.",
     );
   }
 }
