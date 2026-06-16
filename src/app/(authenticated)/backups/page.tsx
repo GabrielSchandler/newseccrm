@@ -6,6 +6,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getHomeForRole } from "@/lib/workspace";
 import { BackupGenerator } from "./backup-generator";
 import { ClientRestoreTool } from "./client-restore-tool";
+import { FullRestoreTool } from "./full-restore-tool";
 import { RestoreDiagnostics } from "./restore-diagnostics";
 import { StoredBackupRunner } from "./stored-backup-runner";
 
@@ -335,6 +336,37 @@ export default async function BackupsPage() {
                 Esta ferramenta faz upsert: se o registro do cliente ja existir,
                 ele pode ser sobrescrito pelo conteudo do backup. Por isso ela
                 exige selecao do cliente, previa e confirmacao manual.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section className="rounded-lg border border-red-300 bg-white p-6 shadow-sm">
+          <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-red-700">
+                Restauracao completa
+              </p>
+              <h2 className="mt-2 text-xl font-semibold text-slate-950">
+                Restaurar todo o sistema a partir de um backup completo
+              </h2>
+              <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
+                Use somente em caso de perda grave de dados ou migracao
+                controlada. A ferramenta envia os arquivos do ZIP para os
+                buckets originais e substitui os dados da empresa atual pelo
+                conteudo do backup.
+              </p>
+              <FullRestoreTool />
+            </div>
+
+            <div className="rounded-lg border border-red-200 bg-red-50 p-5">
+              <h3 className="text-sm font-semibold text-red-950">
+                Antes de restaurar
+              </h3>
+              <p className="mt-3 text-sm leading-6 text-red-900">
+                Baixe e guarde um backup atual antes de executar esta acao. A
+                restauracao completa apaga os dados atuais da empresa nas
+                tabelas do CRM e reinsere o conteudo do ZIP selecionado.
               </p>
             </div>
           </div>
