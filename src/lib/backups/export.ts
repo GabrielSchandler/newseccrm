@@ -6,6 +6,7 @@ import {
   backupRestoreOrder,
   grsBackupFormat,
 } from "@/lib/backups/format";
+import { safeBackupPath } from "@/lib/backups/client-restore";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export type ExportedTable = {
@@ -75,11 +76,7 @@ export function getBackupStamp(date = new Date()) {
 }
 
 export function safeZipPath(path: string) {
-  return path
-    .replace(/\\/g, "/")
-    .split("/")
-    .filter((part) => part && part !== "." && part !== "..")
-    .join("/");
+  return safeBackupPath(path);
 }
 
 function addStorageRef(

@@ -5,6 +5,7 @@ import { getStoredBackupDownloadUrl, isMissingBackupTable } from "@/lib/backups/
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getHomeForRole } from "@/lib/workspace";
 import { BackupGenerator } from "./backup-generator";
+import { ClientRestoreTool } from "./client-restore-tool";
 import { RestoreDiagnostics } from "./restore-diagnostics";
 import { StoredBackupRunner } from "./stored-backup-runner";
 
@@ -299,10 +300,41 @@ export default async function BackupsPage() {
                 Modo seguro
               </h3>
               <p className="mt-3 text-sm leading-6 text-amber-900">
-                A restauracao real sera implementada em uma etapa com
-                confirmacao forte, relatorio de impacto e travas para evitar
-                sobrescrever dados por engano. Por enquanto, esta tela valida
-                se o pacote esta pronto.
+                O diagnostico nao altera dados do CRM. A restauracao por
+                cliente esta disponivel abaixo; a restauracao completa do
+                sistema sera feita em uma etapa separada, com relatorio de
+                impacto proprio.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-red-700">
+                Restauracao por cliente
+              </p>
+              <h2 className="mt-2 text-xl font-semibold text-slate-950">
+                Recuperar cadastro, historico, pre-vendas e arquivos de um cliente
+              </h2>
+              <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
+                Use quando precisar recuperar somente um cliente do backup. O
+                sistema restaura os dados vinculados a ele e grava os arquivos
+                recuperados em um caminho novo de restauracao, sem apagar
+                documentos atuais do Storage.
+              </p>
+              <ClientRestoreTool />
+            </div>
+
+            <div className="rounded-lg border border-red-200 bg-red-50 p-5">
+              <h3 className="text-sm font-semibold text-red-950">
+                Acao sensivel
+              </h3>
+              <p className="mt-3 text-sm leading-6 text-red-900">
+                Esta ferramenta faz upsert: se o registro do cliente ja existir,
+                ele pode ser sobrescrito pelo conteudo do backup. Por isso ela
+                exige selecao do cliente, previa e confirmacao manual.
               </p>
             </div>
           </div>
