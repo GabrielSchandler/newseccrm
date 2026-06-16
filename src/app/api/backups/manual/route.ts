@@ -1,11 +1,9 @@
-import JSZip from "jszip";
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
-export const maxDuration = 60;
 
 type ExportedTable = {
   table: string;
@@ -19,28 +17,13 @@ type StorageFileRef = {
   source: string;
 };
 
-type BackupManifest = {
-  generated_at: string;
-  backup_name: string;
-  company_id: string;
-  generated_by: string;
-  includes_storage_files: boolean;
-  tables: Array<{
-    table: string;
-    rows: number;
-    error: string | null;
-  }>;
-  storage: {
-    requested_files: number;
-    downloaded_files: number;
-    errors: Array<{
-      bucket: string;
-      path: string;
-      source: string;
-      error: string;
-    }>;
-  };
+type SignedStorageFile = StorageFileRef & {
+  zip_path: string;
+  signed_url: string | null;
+  error: string | null;
 };
+
+const signedUrlExpiresInSeconds = 60 * 60;
 
 const companyScopedTables = [
   "companies",
@@ -80,7 +63,8 @@ function getBackupStamp(date = new Date()) {
     hour12: false,
   }).formatToParts(date);
 
-  const getPart = (type: string) => parts.find((part) => part.type === type)?.value ?? "00";
+  const getPart = (type: string) =>
+    parts.find((part) => part.type === type)?.value ?? "00";
 
   return `${getPart("year")}-${getPart("month")}-${getPart("day")}-${getPart("hour")}-${getPart("minute")}`;
 }
@@ -183,63 +167,44 @@ async function exportPreSaleChildTable(
   } satisfies ExportedTable;
 }
 
-function writeTable(zip: JSZip, backupRoot: string, exportResult: ExportedTable) {
-  zip.file(
-    `${backupRoot}/banco/${exportResult.table}.json`,
-    JSON.stringify(
-      {
-        table: exportResult.table,
-        exported_at: new Date().toISOString(),
-        error: exportResult.error,
-        rows: exportResult.rows,
-      },
-      null,
-      2,
-    ),
-  );
-}
-
-async function downloadStorageFiles({
+async function signStorageRefs({
   adminClient,
-  zip,
   backupRoot,
   refs,
 }: {
   adminClient: ReturnType<typeof createAdminClient>;
-  zip: JSZip;
   backupRoot: string;
   refs: StorageFileRef[];
 }) {
-  const errors: BackupManifest["storage"]["errors"] = [];
-  let downloadedFiles = 0;
+  const signedFiles: SignedStorageFile[] = [];
+  const refsByBucket = new Map<string, StorageFileRef[]>();
 
   for (const ref of refs) {
-    const { data, error } = await adminClient.storage
-      .from(ref.bucket)
-      .download(ref.path);
-
-    if (error || !data) {
-      errors.push({
-        bucket: ref.bucket,
-        path: ref.path,
-        source: ref.source,
-        error: error?.message ?? "Arquivo nao retornado pelo Storage.",
-      });
-      continue;
-    }
-
-    const buffer = Buffer.from(await data.arrayBuffer());
-    zip.file(
-      `${backupRoot}/arquivos/${ref.bucket}/${safeZipPath(ref.path)}`,
-      buffer,
-    );
-    downloadedFiles += 1;
+    const bucketRefs = refsByBucket.get(ref.bucket) ?? [];
+    bucketRefs.push(ref);
+    refsByBucket.set(ref.bucket, bucketRefs);
   }
 
-  return {
-    downloadedFiles,
-    errors,
-  };
+  for (const [bucket, bucketRefs] of refsByBucket) {
+    const paths = bucketRefs.map((ref) => ref.path);
+    const { data, error } = await adminClient.storage
+      .from(bucket)
+      .createSignedUrls(paths, signedUrlExpiresInSeconds);
+    const signedUrlByPath = new Map(
+      (data ?? []).map((item) => [item.path, item.signedUrl ?? null]),
+    );
+
+    for (const ref of bucketRefs) {
+      signedFiles.push({
+        ...ref,
+        zip_path: `${backupRoot}/arquivos/${ref.bucket}/${safeZipPath(ref.path)}`,
+        signed_url: signedUrlByPath.get(ref.path) ?? null,
+        error: error?.message ?? null,
+      });
+    }
+  }
+
+  return signedFiles;
 }
 
 export async function GET() {
@@ -255,7 +220,7 @@ export async function GET() {
 
   const { data: profile, error: profileError } = await supabase
     .from("user_profiles")
-    .select("id, company_id, role, full_name, email")
+    .select("id, company_id, role")
     .eq("auth_user_id", user.id)
     .maybeSingle();
 
@@ -286,13 +251,10 @@ export async function GET() {
   const backupName = `backup-grscrm-${backupStamp}`;
   const backupRoot = backupName;
   const adminClient = createAdminClient();
-  const zip = new JSZip();
   const exportedTables: ExportedTable[] = [];
 
   for (const table of companyScopedTables) {
-    const exportResult = await exportCompanyTable(adminClient, table, companyId);
-    exportedTables.push(exportResult);
-    writeTable(zip, backupRoot, exportResult);
+    exportedTables.push(await exportCompanyTable(adminClient, table, companyId));
   }
 
   const preSales =
@@ -302,24 +264,34 @@ export async function GET() {
     .filter((id): id is string => typeof id === "string");
 
   for (const table of preSaleChildTables) {
-    const exportResult = await exportPreSaleChildTable(adminClient, table, preSaleIds);
-    exportedTables.push(exportResult);
-    writeTable(zip, backupRoot, exportResult);
+    exportedTables.push(
+      await exportPreSaleChildTable(adminClient, table, preSaleIds),
+    );
   }
 
   const refs: StorageFileRef[] = [];
-  const companyRows = exportedTables.find((item) => item.table === "companies")?.rows ?? [];
+  const companyRows =
+    exportedTables.find((item) => item.table === "companies")?.rows ?? [];
   const templateRows =
-    exportedTables.find((item) => item.table === "document_templates")?.rows ?? [];
+    exportedTables.find((item) => item.table === "document_templates")?.rows ??
+    [];
   const generatedDocumentRows =
-    exportedTables.find((item) => item.table === "generated_documents")?.rows ?? [];
+    exportedTables.find((item) => item.table === "generated_documents")?.rows ??
+    [];
   const clientDocumentRows =
-    exportedTables.find((item) => item.table === "client_documents")?.rows ?? [];
+    exportedTables.find((item) => item.table === "client_documents")?.rows ??
+    [];
   const calculationRows =
-    exportedTables.find((item) => item.table === "financing_calculations")?.rows ?? [];
+    exportedTables.find((item) => item.table === "financing_calculations")
+      ?.rows ?? [];
 
   for (const row of companyRows) {
-    addStorageRef(refs, "documents", (row as { logo_path?: unknown }).logo_path, "companies.logo_path");
+    addStorageRef(
+      refs,
+      "documents",
+      (row as { logo_path?: unknown }).logo_path,
+      "companies.logo_path",
+    );
   }
 
   for (const row of templateRows) {
@@ -370,47 +342,31 @@ export async function GET() {
     );
   }
 
-  const uniqueStorageRefs = dedupeStorageRefs(refs);
-  const storageResult = await downloadStorageFiles({
+  const files = await signStorageRefs({
     adminClient,
-    zip,
     backupRoot,
-    refs: uniqueStorageRefs,
+    refs: dedupeStorageRefs(refs),
   });
 
-  const manifest: BackupManifest = {
-    generated_at: new Date().toISOString(),
-    backup_name: backupName,
-    company_id: companyId,
-    generated_by: profile.id as string,
-    includes_storage_files: true,
-    tables: exportedTables.map((item) => ({
-      table: item.table,
-      rows: item.rows.length,
-      error: item.error,
-    })),
-    storage: {
-      requested_files: uniqueStorageRefs.length,
-      downloaded_files: storageResult.downloadedFiles,
-      errors: storageResult.errors,
+  return NextResponse.json(
+    {
+      generated_at: new Date().toISOString(),
+      backup_name: backupName,
+      backup_root: backupRoot,
+      company_id: companyId,
+      generated_by: profile.id,
+      signed_url_expires_in_seconds: signedUrlExpiresInSeconds,
+      tables: exportedTables.map((item) => ({
+        table: item.table,
+        rows: item.rows,
+        error: item.error,
+      })),
+      files,
     },
-  };
-
-  zip.file(`${backupRoot}/manifest.json`, JSON.stringify(manifest, null, 2));
-
-  const zipContent = await zip.generateAsync({
-    type: "uint8array",
-    compression: "DEFLATE",
-    compressionOptions: {
-      level: 6,
+    {
+      headers: {
+        "Cache-Control": "no-store",
+      },
     },
-  });
-
-  return new Response(Buffer.from(zipContent), {
-    headers: {
-      "Content-Type": "application/zip",
-      "Content-Disposition": `attachment; filename="${backupName}.zip"`,
-      "Cache-Control": "no-store",
-    },
-  });
+  );
 }

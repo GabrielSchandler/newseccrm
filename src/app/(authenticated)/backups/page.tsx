@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/layout/page-header";
 import { getCurrentUserContext } from "@/lib/auth/current-user";
 import { getHomeForRole } from "@/lib/workspace";
+import { BackupGenerator } from "./backup-generator";
 
 const backupItems = [
   "Dados da empresa, usuarios, clientes, pre-vendas e pagamentos.",
@@ -40,17 +41,7 @@ export default async function BackupsPage() {
                 organizacao dos historicos.
               </p>
 
-              <div className="mt-6 flex flex-wrap gap-3">
-                <a
-                  href="/api/backups/manual"
-                  className="inline-flex items-center justify-center rounded-lg bg-teal-700 px-5 py-3 text-sm font-semibold text-white transition hover:bg-teal-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600 focus-visible:ring-offset-2"
-                >
-                  Gerar e baixar backup agora
-                </a>
-                <span className="inline-flex items-center rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-700">
-                  Acesso restrito a administradores
-                </span>
-              </div>
+              <BackupGenerator />
             </div>
 
             <div className="rounded-lg border border-teal-100 bg-teal-50 p-5">
