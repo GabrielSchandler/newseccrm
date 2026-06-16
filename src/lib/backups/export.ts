@@ -40,6 +40,7 @@ export type PreparedBackup = {
 
 export const backupBucketName = "backups";
 export const signedUrlExpiresInSeconds = 60 * 60;
+const calculationReportsBucketName = "calculation-reports";
 
 const companyScopedTables = backupRestoreOrder.filter(
   (table) =>
@@ -223,7 +224,7 @@ function collectStorageRefs(tables: ExportedTable[]) {
   for (const row of calculationRows) {
     addStorageRef(
       refs,
-      "documents",
+      calculationReportsBucketName,
       (row as { pdf_storage_path?: unknown }).pdf_storage_path,
       "financing_calculations.pdf_storage_path",
     );

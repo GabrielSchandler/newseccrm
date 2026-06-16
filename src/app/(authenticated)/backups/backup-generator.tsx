@@ -157,6 +157,18 @@ export function BackupGenerator() {
           ),
         );
       }
+      zip.file(
+        `${payload.backup_root}/storage-files.json`,
+        JSON.stringify(
+          payload.files.map((file) => ({
+            bucket: file.bucket,
+            path: file.path,
+            source: file.source,
+          })),
+          null,
+          2,
+        ),
+      );
 
       setState({
         stage: "downloading",

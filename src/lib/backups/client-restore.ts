@@ -47,7 +47,7 @@ export const clientRestoreStorageColumns = [
   },
   {
     table: "financing_calculations",
-    bucket: "documents",
+    bucket: "calculation-reports",
     columns: ["pdf_storage_path"],
   },
   {
@@ -60,6 +60,7 @@ export const clientRestoreStorageColumns = [
 export const clientRestoreAllowedBuckets = [
   "documents",
   "client-documents",
+  "calculation-reports",
 ] as const;
 
 export type ClientRestoreBucket = (typeof clientRestoreAllowedBuckets)[number];
