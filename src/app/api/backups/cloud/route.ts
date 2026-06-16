@@ -1,15 +1,12 @@
 import { NextResponse } from "next/server";
-import {
-  prepareBackupData,
-  signStorageRefs,
-} from "@/lib/backups/export";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { generateStoredBackup } from "@/lib/backups/jobs";
 import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
+export const maxDuration = 60;
 
-export async function GET() {
+export async function POST() {
   const supabase = await createClient();
   const {
     data: { user },
@@ -49,38 +46,23 @@ export async function GET() {
     );
   }
 
-  const adminClient = createAdminClient();
-  const preparedBackup = await prepareBackupData({
-    adminClient,
-    companyId,
-    generatedBy: profile.id as string,
-  });
-  const files = await signStorageRefs({
-    adminClient,
-    backupRoot: preparedBackup.backup_root,
-    refs: preparedBackup.storage_refs,
-  });
+  try {
+    const backup = await generateStoredBackup({
+      companyId,
+      requestedBy: profile.id as string,
+      triggerType: "manual",
+    });
 
-  return NextResponse.json(
-    {
-      generated_at: preparedBackup.generated_at,
-      backup_name: preparedBackup.backup_name,
-      backup_root: preparedBackup.backup_root,
-      company_id: preparedBackup.company_id,
-      generated_by: preparedBackup.generated_by,
-      signed_url_expires_in_seconds:
-        preparedBackup.signed_url_expires_in_seconds,
-      tables: preparedBackup.tables.map((item) => ({
-        table: item.table,
-        rows: item.rows,
-        error: item.error,
-      })),
-      files,
-    },
-    {
-      headers: {
-        "Cache-Control": "no-store",
+    return NextResponse.json({ backup });
+  } catch (error) {
+    return NextResponse.json(
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : "Nao foi possivel gerar o backup.",
       },
-    },
-  );
+      { status: 500 },
+    );
+  }
 }
