@@ -81,6 +81,7 @@ export function SidebarFrame({
           "/contratos",
           "/usuarios",
           "/empresa",
+          "/backups",
           "/logs",
         ].includes(item.href)) ||
         (currentWorkspace === "commercial" &&

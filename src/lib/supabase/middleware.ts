@@ -24,6 +24,7 @@ const protectedRoutes = [
   "/documentos",
   "/contratos",
   "/empresa",
+  "/backups",
   "/logs",
   "/usuarios",
   "/areas",

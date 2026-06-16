@@ -29,6 +29,7 @@ export type SidebarNavigationItem = {
     | "contracts"
     | "users"
     | "company"
+    | "backups"
     | "logs"
     | "email"
     | "integrations"
@@ -53,6 +54,7 @@ const icons = {
   contracts: FileSignature,
   users: BarChart3,
   company: Building2,
+  backups: ClipboardList,
   logs: ClipboardList,
   email: Mail,
   integrations: Mail,

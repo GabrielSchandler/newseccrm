@@ -36,6 +36,7 @@ const navigation: SidebarNavigationItem[] = [
   { href: "/contratos", label: "Contratos", icon: "contracts" },
   { href: "/usuarios", label: "Usuarios", icon: "users" },
   { href: "/empresa", label: "Empresa", icon: "company", adminOnly: true },
+  { href: "/backups", label: "Backups", icon: "backups", adminOnly: true },
   { href: "/logs", label: "Logs", icon: "logs", adminOnly: true },
   { href: "/juridico", label: "Esteira", icon: "legal" },
 ];

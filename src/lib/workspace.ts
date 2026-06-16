@@ -96,6 +96,7 @@ const managementPrefixes = [
   "/dashboard",
   "/usuarios",
   "/empresa",
+  "/backups",
   "/logs",
   "/contratos",
   "/documentos/templates",
