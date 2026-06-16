@@ -1,0 +1,27 @@
+export const grsBackupFormat = "grs-crm-backup";
+export const backupFormatVersion = 1;
+export const backupRetentionDays = 7;
+
+export const backupRestoreOrder = [
+  "companies",
+  "user_profiles",
+  "clients",
+  "pre_sales",
+  "pre_sale_client_snapshot",
+  "pre_sale_debt_holders",
+  "pre_sale_financial_cases",
+  "pre_sale_payments",
+  "financing_calculations",
+  "document_templates",
+  "generated_documents",
+  "client_documents",
+  "client_timeline_events",
+  "client_tracking_updates",
+  "email_templates",
+  "email_logs",
+  "email_integrations",
+  "company_audit_logs",
+  "legacy_rd_import",
+  "rd_crm_activity_import_batches",
+  "rd_crm_activity_import",
+] as const;

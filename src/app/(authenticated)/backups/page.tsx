@@ -5,6 +5,7 @@ import { getStoredBackupDownloadUrl, isMissingBackupTable } from "@/lib/backups/
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getHomeForRole } from "@/lib/workspace";
 import { BackupGenerator } from "./backup-generator";
+import { RestoreDiagnostics } from "./restore-diagnostics";
 import { StoredBackupRunner } from "./stored-backup-runner";
 
 const backupItems = [
@@ -96,7 +97,7 @@ export default async function BackupsPage() {
     <>
       <PageHeader
         title="Backups"
-        description="Gere um arquivo ZIP com uma copia dos dados e documentos essenciais do CRM."
+        description="Gere, baixe e valide copias padronizadas dos dados e documentos do CRM."
       />
 
       <div className="space-y-6 p-6">
@@ -111,8 +112,9 @@ export default async function BackupsPage() {
               </h2>
               <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
                 O sistema gera um backup diario de madrugada e salva o ZIP no
-                bucket privado backups. De manha, voce pode baixar o arquivo e
-                guardar na rede, no OneDrive ou em outro local seguro.
+                bucket privado backups. O arquivo segue o mesmo padrao do
+                backup manual, com dados, manifesto de restauracao e arquivos
+                vinculados ao CRM.
               </p>
 
               <div className="mt-6">
@@ -253,9 +255,10 @@ export default async function BackupsPage() {
                 Baixe uma copia completa com documentos para guardar fora da plataforma
               </h2>
               <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
-                Esse backup monta o ZIP no seu computador e inclui os arquivos
-                anexados. Use quando quiser guardar uma copia local completa
-                antes de uma mudanca importante ou para sua rotina mensal.
+                Esse backup monta o ZIP no seu computador e segue o mesmo
+                formato do backup automatico. Use quando quiser guardar uma
+                copia local completa antes de uma mudanca importante ou para
+                sua rotina mensal.
               </p>
               <BackupGenerator />
             </div>
@@ -268,6 +271,38 @@ export default async function BackupsPage() {
                 Se fechar a aba durante essa geracao, o processo manual e
                 interrompido. Para o backup salvo automaticamente, use a lista
                 de backups acima.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-teal-700">
+                Restauracao
+              </p>
+              <h2 className="mt-2 text-xl font-semibold text-slate-950">
+                Diagnosticar backup antes de restaurar
+              </h2>
+              <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
+                Esta primeira ferramenta confere se o ZIP esta no padrao GRS,
+                se o manifesto existe, se as tabelas esperadas estao presentes
+                e se os arquivos foram embutidos. Ela ainda nao altera dados do
+                CRM.
+              </p>
+              <RestoreDiagnostics />
+            </div>
+
+            <div className="rounded-lg border border-amber-200 bg-amber-50 p-5">
+              <h3 className="text-sm font-semibold text-amber-950">
+                Modo seguro
+              </h3>
+              <p className="mt-3 text-sm leading-6 text-amber-900">
+                A restauracao real sera implementada em uma etapa com
+                confirmacao forte, relatorio de impacto e travas para evitar
+                sobrescrever dados por engano. Por enquanto, esta tela valida
+                se o pacote esta pronto.
               </p>
             </div>
           </div>
@@ -289,8 +324,8 @@ export default async function BackupsPage() {
               Arquivo grande
             </h3>
             <p className="mt-2 text-sm leading-6 text-slate-600">
-              Se houver muitos documentos, o download pode demorar. Aguarde a
-              resposta do navegador antes de fechar a aba.
+              Se houver muitos documentos, o backup completo pode demorar e
+              gerar um ZIP pesado. Aguarde a conclusao antes de fechar a aba.
             </p>
           </div>
 

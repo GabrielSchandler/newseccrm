@@ -1,5 +1,11 @@
 import "server-only";
 import JSZip from "jszip";
+import {
+  backupFormatVersion,
+  backupRetentionDays,
+  backupRestoreOrder,
+  grsBackupFormat,
+} from "@/lib/backups/format";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export type ExportedTable = {
@@ -32,28 +38,17 @@ export type PreparedBackup = {
 };
 
 export const backupBucketName = "backups";
-export const backupRetentionDays = 7;
 export const signedUrlExpiresInSeconds = 60 * 60;
 
-const companyScopedTables = [
-  "companies",
-  "user_profiles",
-  "clients",
-  "pre_sales",
-  "client_documents",
-  "document_templates",
-  "generated_documents",
-  "financing_calculations",
-  "client_timeline_events",
-  "client_tracking_updates",
-  "email_templates",
-  "email_logs",
-  "email_integrations",
-  "company_audit_logs",
-  "legacy_rd_import",
-  "rd_crm_activity_import_batches",
-  "rd_crm_activity_import",
-] as const;
+const companyScopedTables = backupRestoreOrder.filter(
+  (table) =>
+    ![
+      "pre_sale_client_snapshot",
+      "pre_sale_debt_holders",
+      "pre_sale_financial_cases",
+      "pre_sale_payments",
+    ].includes(table),
+);
 
 const preSaleChildTables = [
   "pre_sale_client_snapshot",
@@ -327,31 +322,46 @@ export async function signStorageRefs({
   return signedFiles;
 }
 
-function buildManifest(prepared: PreparedBackup, storageErrors: unknown[] = []) {
+function buildManifest({
+  prepared,
+  storageMode,
+  downloadedFiles,
+  storageErrors = [],
+}: {
+  prepared: PreparedBackup;
+  storageMode: "embedded_binaries" | "inventory_only";
+  downloadedFiles: number;
+  storageErrors?: unknown[];
+}) {
   return {
+    backup_format: grsBackupFormat,
+    backup_format_version: backupFormatVersion,
     generated_at: prepared.generated_at,
     backup_name: prepared.backup_name,
+    backup_root: prepared.backup_root,
     company_id: prepared.company_id,
     generated_by: prepared.generated_by,
+    signed_url_expires_in_seconds: prepared.signed_url_expires_in_seconds,
     retention_days: backupRetentionDays,
+    restore_order: backupRestoreOrder,
     tables: prepared.tables.map((table) => ({
       table: table.table,
       rows: table.rows.length,
       error: table.error,
     })),
     storage: {
-      inventory_files: prepared.storage_refs.length,
+      mode: storageMode,
+      requested_files: prepared.storage_refs.length,
+      downloadable_files: prepared.storage_refs.length,
+      downloaded_files: downloadedFiles,
       backup_contains_storage_inventory: true,
-      backup_contains_storage_binaries: false,
-      note: "Este backup automatico salva os dados do CRM e o inventario dos arquivos. Os arquivos binarios seguem no Supabase Storage e entram no backup manual completo.",
+      backup_contains_storage_binaries: storageMode === "embedded_binaries",
       errors: storageErrors,
     },
   };
 }
 
-export async function buildDatabaseBackupZip(prepared: PreparedBackup) {
-  const zip = new JSZip();
-
+function writeDatabaseFiles(zip: JSZip, prepared: PreparedBackup) {
   for (const table of prepared.tables) {
     zip.file(
       `${prepared.backup_root}/banco/${table.table}.json`,
@@ -372,9 +382,72 @@ export async function buildDatabaseBackupZip(prepared: PreparedBackup) {
     `${prepared.backup_root}/storage-files.json`,
     JSON.stringify(prepared.storage_refs, null, 2),
   );
+}
+
+async function addStorageBinariesToZip({
+  adminClient,
+  zip,
+  prepared,
+}: {
+  adminClient: ReturnType<typeof createAdminClient>;
+  zip: JSZip;
+  prepared: PreparedBackup;
+}) {
+  const errors: Array<StorageFileRef & { error: string }> = [];
+  let downloadedFiles = 0;
+
+  for (const ref of prepared.storage_refs) {
+    const { data, error } = await adminClient.storage
+      .from(ref.bucket)
+      .download(ref.path);
+
+    if (error || !data) {
+      errors.push({
+        ...ref,
+        error: error?.message ?? "Arquivo nao retornado pelo Storage.",
+      });
+      continue;
+    }
+
+    zip.file(
+      `${prepared.backup_root}/arquivos/${ref.bucket}/${safeZipPath(ref.path)}`,
+      Buffer.from(await data.arrayBuffer()),
+    );
+    downloadedFiles += 1;
+  }
+
+  return {
+    downloadedFiles,
+    errors,
+  };
+}
+
+export async function buildFullBackupZip({
+  adminClient,
+  prepared,
+}: {
+  adminClient: ReturnType<typeof createAdminClient>;
+  prepared: PreparedBackup;
+}) {
+  const zip = new JSZip();
+
+  writeDatabaseFiles(zip, prepared);
+
+  const storageResult = await addStorageBinariesToZip({
+    adminClient,
+    zip,
+    prepared,
+  });
+  const manifest = buildManifest({
+    prepared,
+    storageMode: "embedded_binaries",
+    downloadedFiles: storageResult.downloadedFiles,
+    storageErrors: storageResult.errors,
+  });
+
   zip.file(
     `${prepared.backup_root}/manifest.json`,
-    JSON.stringify(buildManifest(prepared), null, 2),
+    JSON.stringify(manifest, null, 2),
   );
 
   return {
@@ -387,7 +460,37 @@ export async function buildDatabaseBackupZip(prepared: PreparedBackup) {
         },
       }),
     ),
-    manifest: buildManifest(prepared),
+    manifest,
+  };
+}
+
+export async function buildDatabaseBackupZip(prepared: PreparedBackup) {
+  const zip = new JSZip();
+
+  writeDatabaseFiles(zip, prepared);
+
+  const manifest = buildManifest({
+    prepared,
+    storageMode: "inventory_only",
+    downloadedFiles: 0,
+  });
+
+  zip.file(
+    `${prepared.backup_root}/manifest.json`,
+    JSON.stringify(manifest, null, 2),
+  );
+
+  return {
+    content: Buffer.from(
+      await zip.generateAsync({
+        type: "uint8array",
+        compression: "DEFLATE",
+        compressionOptions: {
+          level: 6,
+        },
+      }),
+    ),
+    manifest,
   };
 }
 

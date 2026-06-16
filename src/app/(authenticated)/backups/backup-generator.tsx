@@ -1,6 +1,12 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import {
+  backupFormatVersion,
+  backupRetentionDays,
+  backupRestoreOrder,
+  grsBackupFormat,
+} from "@/lib/backups/format";
 
 type BackupTable = {
   table: string;
@@ -210,20 +216,28 @@ export function BackupGenerator() {
         `${payload.backup_root}/manifest.json`,
         JSON.stringify(
           {
+            backup_format: grsBackupFormat,
+            backup_format_version: backupFormatVersion,
             generated_at: payload.generated_at,
             backup_name: payload.backup_name,
+            backup_root: payload.backup_root,
             company_id: payload.company_id,
             generated_by: payload.generated_by,
             signed_url_expires_in_seconds: payload.signed_url_expires_in_seconds,
+            retention_days: backupRetentionDays,
+            restore_order: backupRestoreOrder,
             tables: payload.tables.map((table) => ({
               table: table.table,
               rows: table.rows.length,
               error: table.error,
             })),
             storage: {
+              mode: "embedded_binaries",
               requested_files: payload.files.length,
               downloadable_files: downloadableFiles.length,
               downloaded_files: downloadedFiles,
+              backup_contains_storage_inventory: true,
+              backup_contains_storage_binaries: true,
               errors: downloadErrors,
             },
           },

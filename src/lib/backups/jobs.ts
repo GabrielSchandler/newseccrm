@@ -1,7 +1,7 @@
 import "server-only";
 import {
   backupBucketName,
-  buildDatabaseBackupZip,
+  buildFullBackupZip,
   getBackupExpirationDate,
   getBackupStoragePath,
   prepareBackupData,
@@ -105,7 +105,10 @@ export async function generateStoredBackup({
   }
 
   try {
-    const zip = await buildDatabaseBackupZip(preparedBackup);
+    const zip = await buildFullBackupZip({
+      adminClient,
+      prepared: preparedBackup,
+    });
     const { error: uploadError } = await adminClient.storage
       .from(backupBucketName)
       .upload(storagePath, zip.content, {

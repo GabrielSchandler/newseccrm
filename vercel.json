@@ -1,4 +1,10 @@
 {
+  "functions": {
+    "src/app/api/backups/**": {
+      "maxDuration": 300,
+      "memory": 1024
+    }
+  },
   "crons": [
     {
       "path": "/api/backups/scheduled",

@@ -3,7 +3,7 @@ values (
   'backups',
   'backups',
   false,
-  1073741824,
+  5368709120,
   array['application/zip']::text[]
 )
 on conflict (id) do update
