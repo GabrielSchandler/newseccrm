@@ -1,0 +1,48 @@
+name: Backup CRM
+
+on:
+  workflow_dispatch:
+  schedule:
+    # 03:10 UTC = 00:10 em Sao Paulo, quando estiver UTC-3.
+    - cron: "10 3 * * *"
+
+concurrency:
+  group: grscrm-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    name: Gerar backup completo
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+
+    steps:
+      - name: Baixar repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Gerar backup e salvar no Supabase Storage
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          npm run backup:stored -- \
+            --company-id "ef4f2233-f4e9-43e8-ab6d-1bb41513d39d" \
+            --created-by "f7f881c2-b56d-4411-8160-3d0c264d2dc2" \
+            --save-local-dir "./backup-output"
+
+      - name: Guardar copia no GitHub por 7 dias
+        uses: actions/upload-artifact@v4
+        with:
+          name: backup-grscrm
+          path: backup-output/*.zip
+          retention-days: 7
+          if-no-files-found: error
