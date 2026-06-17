@@ -15,6 +15,7 @@ const backupItems = [
   "Templates, documentos gerados, simulacoes e arquivos anexados aos clientes.",
   "Linha do tempo, acompanhamento do cliente, logs, emails e registros de importacao.",
 ];
+const runningTimeoutMinutes = 20;
 
 type BackupJob = {
   id: string;
@@ -59,6 +60,28 @@ function formatFileSize(value: number | null) {
   return `${size.toLocaleString("pt-BR", {
     maximumFractionDigits: unitIndex === 0 ? 0 : 1,
   })} ${units[unitIndex]}`;
+}
+
+function isStaleRunningJob(job: BackupJob) {
+  if (job.status !== "running") {
+    return false;
+  }
+
+  const startedAt = new Date(job.started_at).getTime();
+
+  if (!Number.isFinite(startedAt)) {
+    return false;
+  }
+
+  return Date.now() - startedAt > runningTimeoutMinutes * 60 * 1000;
+}
+
+function getJobDisplayStatus(job: BackupJob) {
+  if (isStaleRunningJob(job)) {
+    return "timeout";
+  }
+
+  return job.status;
 }
 
 export default async function BackupsPage() {
@@ -117,6 +140,11 @@ export default async function BackupsPage() {
                 bucket privado backups. O arquivo segue o mesmo padrao do
                 backup manual, com dados, manifesto de restauracao e arquivos
                 vinculados ao CRM.
+              </p>
+              <p className="mt-3 max-w-3xl text-sm leading-6 text-amber-800">
+                Se um backup salvo ficar gerando por mais de {runningTimeoutMinutes} minutos,
+                trate como tempo excedido e use o backup manual completo enquanto a
+                rotina automatica e ajustada para volumes maiores.
               </p>
 
               <div className="mt-6">
@@ -180,59 +208,71 @@ export default async function BackupsPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {jobs.map((job) => (
-                      <tr key={job.id} className="align-top">
-                        <td className="px-4 py-3 font-medium text-slate-950">
-                          {job.backup_name}
-                          {job.error_message ? (
-                            <p className="mt-1 max-w-md text-xs font-normal text-red-700">
-                              {job.error_message}
-                            </p>
-                          ) : null}
-                        </td>
-                        <td className="px-4 py-3 text-slate-700">
-                          {job.trigger_type === "scheduled" ? "Automatico" : "Manual"}
-                        </td>
-                        <td className="px-4 py-3">
-                          <span
-                            className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
-                              job.status === "completed"
-                                ? "bg-teal-50 text-teal-800"
-                                : job.status === "running"
-                                  ? "bg-amber-50 text-amber-800"
-                                  : "bg-red-50 text-red-800"
-                            }`}
-                          >
-                            {job.status === "completed"
-                              ? "Concluido"
-                              : job.status === "running"
-                                ? "Gerando"
-                                : "Erro"}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-slate-700">
-                          {formatFileSize(job.file_size_bytes)}
-                        </td>
-                        <td className="px-4 py-3 text-slate-700">
-                          {formatDateTime(job.completed_at ?? job.started_at)}
-                        </td>
-                        <td className="px-4 py-3 text-slate-700">
-                          {formatDateTime(job.expires_at)}
-                        </td>
-                        <td className="px-4 py-3">
-                          {downloadUrls.has(job.id) ? (
-                            <a
-                              href={downloadUrls.get(job.id)}
-                              className="inline-flex rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+                    {jobs.map((job) => {
+                      const displayStatus = getJobDisplayStatus(job);
+
+                      return (
+                        <tr key={job.id} className="align-top">
+                          <td className="px-4 py-3 font-medium text-slate-950">
+                            {job.backup_name}
+                            {job.error_message ? (
+                              <p className="mt-1 max-w-md text-xs font-normal text-red-700">
+                                {job.error_message}
+                              </p>
+                            ) : null}
+                            {displayStatus === "timeout" ? (
+                              <p className="mt-1 max-w-md text-xs font-normal text-red-700">
+                                A geracao passou de {runningTimeoutMinutes} minutos e
+                                provavelmente foi interrompida pela Vercel.
+                              </p>
+                            ) : null}
+                          </td>
+                          <td className="px-4 py-3 text-slate-700">
+                            {job.trigger_type === "scheduled" ? "Automatico" : "Manual"}
+                          </td>
+                          <td className="px-4 py-3">
+                            <span
+                              className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                                displayStatus === "completed"
+                                  ? "bg-teal-50 text-teal-800"
+                                  : displayStatus === "running"
+                                    ? "bg-amber-50 text-amber-800"
+                                    : "bg-red-50 text-red-800"
+                              }`}
                             >
-                              Baixar
-                            </a>
-                          ) : (
-                            <span className="text-xs text-slate-400">Indisponivel</span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
+                              {displayStatus === "completed"
+                                ? "Concluido"
+                                : displayStatus === "running"
+                                  ? "Gerando"
+                                  : displayStatus === "timeout"
+                                    ? "Tempo excedido"
+                                    : "Erro"}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-slate-700">
+                            {formatFileSize(job.file_size_bytes)}
+                          </td>
+                          <td className="px-4 py-3 text-slate-700">
+                            {formatDateTime(job.completed_at ?? job.started_at)}
+                          </td>
+                          <td className="px-4 py-3 text-slate-700">
+                            {formatDateTime(job.expires_at)}
+                          </td>
+                          <td className="px-4 py-3">
+                            {downloadUrls.has(job.id) ? (
+                              <a
+                                href={downloadUrls.get(job.id)}
+                                className="inline-flex rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+                              >
+                                Baixar
+                              </a>
+                            ) : (
+                              <span className="text-xs text-slate-400">Indisponivel</span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
                     {!jobs.length ? (
                       <tr>
                         <td className="px-4 py-6 text-center text-slate-500" colSpan={7}>

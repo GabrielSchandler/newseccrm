@@ -16,6 +16,8 @@ type BackupJobRow = {
   storage_path: string | null;
 };
 
+const staleRunningBackupMinutes = 20;
+
 function isMissingBackupTable(error: { message?: string; code?: string } | null) {
   return (
     error?.code === "PGRST205" ||
@@ -62,6 +64,31 @@ async function cleanupExpiredBackups(adminClient: ReturnType<typeof createAdminC
   }
 }
 
+async function markStaleRunningBackups(adminClient: ReturnType<typeof createAdminClient>) {
+  const staleBefore = new Date();
+  staleBefore.setMinutes(staleBefore.getMinutes() - staleRunningBackupMinutes);
+
+  const { error } = await adminClient
+    .from("backup_jobs")
+    .update({
+      status: "failed",
+      error_message:
+        "Geracao interrompida por tempo excedido. Gere um novo backup manual completo.",
+      completed_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq("status", "running")
+    .lt("started_at", staleBefore.toISOString());
+
+  if (isMissingBackupTable(error)) {
+    return;
+  }
+
+  if (error) {
+    throw new Error(`Nao foi possivel atualizar backups travados: ${error.message}`);
+  }
+}
+
 export async function generateStoredBackup({
   companyId,
   requestedBy,
@@ -73,6 +100,7 @@ export async function generateStoredBackup({
 }) {
   const adminClient = createAdminClient();
 
+  await markStaleRunningBackups(adminClient);
   await cleanupExpiredBackups(adminClient);
 
   const preparedBackup = await prepareBackupData({

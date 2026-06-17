@@ -58,6 +58,47 @@ const preSaleChildTables = [
   "pre_sale_financial_cases",
   "pre_sale_payments",
 ] as const;
+const backupQueryPageSize = 1000;
+
+type PagedSelectQuery = {
+  eq(column: string, value: unknown): PagedSelectQuery;
+  in(column: string, values: unknown[]): PagedSelectQuery;
+  range(
+    from: number,
+    to: number,
+  ): PromiseLike<{
+    data: unknown[] | null;
+    error: { message: string } | null;
+  }>;
+};
+
+async function fetchAllBackupRows(buildQuery: () => PagedSelectQuery) {
+  const rows: unknown[] = [];
+
+  for (let from = 0; ; from += backupQueryPageSize) {
+    const to = from + backupQueryPageSize - 1;
+    const { data, error } = await buildQuery().range(from, to);
+
+    if (error) {
+      return {
+        rows,
+        error: error.message,
+      };
+    }
+
+    const pageRows = data ?? [];
+    rows.push(...pageRows);
+
+    if (pageRows.length < backupQueryPageSize) {
+      break;
+    }
+  }
+
+  return {
+    rows,
+    error: null,
+  };
+}
 
 export function getBackupStamp(date = new Date()) {
   const parts = new Intl.DateTimeFormat("en-CA", {
@@ -116,17 +157,20 @@ async function exportCompanyTable(
   table: string,
   companyId: string,
 ) {
-  const query = adminClient.from(table).select("*");
-  const filteredQuery =
-    table === "companies"
+  const result = await fetchAllBackupRows(() => {
+    const query = adminClient
+      .from(table)
+      .select("*") as unknown as PagedSelectQuery;
+
+    return table === "companies"
       ? query.eq("id", companyId)
       : query.eq("company_id", companyId);
-  const { data, error } = await filteredQuery;
+  });
 
   return {
     table,
-    rows: data ?? [],
-    error: error?.message ?? null,
+    rows: result.rows,
+    error: result.error,
   } satisfies ExportedTable;
 }
 
@@ -147,20 +191,21 @@ async function exportPreSaleChildTable(
 
   for (let index = 0; index < preSaleIds.length; index += 500) {
     const chunk = preSaleIds.slice(index, index + 500);
-    const { data, error } = await adminClient
-      .from(table)
-      .select("*")
-      .in("pre_sale_id", chunk);
+    const result = await fetchAllBackupRows(() =>
+      (
+        adminClient.from(table).select("*") as unknown as PagedSelectQuery
+      ).in("pre_sale_id", chunk),
+    );
 
-    if (error) {
+    if (result.error) {
       return {
         table,
         rows,
-        error: error.message,
+        error: result.error,
       } satisfies ExportedTable;
     }
 
-    rows.push(...(data ?? []));
+    rows.push(...result.rows);
   }
 
   return {
