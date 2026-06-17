@@ -33,16 +33,27 @@ jobs:
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          NODE_OPTIONS: --max-old-space-size=6144
         run: |
+          mkdir -p ./backup-output
           npm run backup:stored -- \
             --company-id "ef4f2233-f4e9-43e8-ab6d-1bb41513d39d" \
             --created-by "f7f881c2-b56d-4411-8160-3d0c264d2dc2" \
-            --save-local-dir "./backup-output"
+            --save-local-dir "./backup-output" 2>&1 | tee ./backup-output/backup-log.txt
+          test ${PIPESTATUS[0]} -eq 0
+
+      - name: Listar arquivos gerados
+        if: always()
+        run: |
+          ls -lh ./backup-output || true
 
       - name: Guardar copia no GitHub por 7 dias
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: backup-grscrm
-          path: backup-output/*.zip
+          path: |
+            backup-output/*.zip
+            backup-output/backup-log.txt
           retention-days: 7
-          if-no-files-found: error
+          if-no-files-found: warn
