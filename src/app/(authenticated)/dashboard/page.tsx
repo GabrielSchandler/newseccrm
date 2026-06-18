@@ -728,12 +728,23 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
                 const owner = usersById.get(getPreSaleOwnerId(payment.preSale));
 
                 return (
-                  <div key={payment.id ?? `${payment.preSale.id}-${payment.installment_number}`} className="p-5">
+                  <Link
+                    key={payment.id ?? `${payment.preSale.id}-${payment.installment_number}`}
+                    href={`/clientes/${payment.preSale.client_id}`}
+                    className="block p-5 transition hover:bg-teal-50/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-teal-600"
+                    aria-label={`Abrir cadastro de ${payment.client?.full_name ?? "cliente sem nome"}`}
+                  >
                     <div className="flex items-start justify-between gap-3">
                       <div>
-                        <p className="font-semibold text-slate-950">
-                          {payment.client?.full_name ?? "Cliente sem nome"}
-                        </p>
+                        <div className="flex items-center gap-2">
+                          <p className="font-semibold text-slate-950">
+                            {payment.client?.full_name ?? "Cliente sem nome"}
+                          </p>
+                          <ArrowUpRight
+                            className="h-4 w-4 text-teal-700"
+                            aria-hidden="true"
+                          />
+                        </div>
                         <p className="mt-1 text-sm text-slate-600">
                           {resolveUserDisplayName(owner, "Sem consultor")} | Parcela {payment.installment_number ?? "-"} | {formatCurrency(payment.goal_amount ?? payment.amount)}
                         </p>
@@ -754,7 +765,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
                       <CalendarDays className="h-4 w-4" aria-hidden="true" />
                       {payment.payment_date ? formatYmdDate(payment.payment_date) : "Sem data"}
                     </div>
-                  </div>
+                  </Link>
                 );
               })}
               {!pendingPayments.length ? (
