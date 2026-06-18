@@ -64,6 +64,8 @@ const initialState: BackupState = {
   compressedPercent: 0,
   backupName: null,
 };
+const fileDownloadAttempts = 5;
+const retryBaseDelayMs = 1500;
 
 function formatNumber(value: number) {
   return new Intl.NumberFormat("pt-BR").format(value);
@@ -89,6 +91,34 @@ async function getErrorMessage(response: Response) {
   } catch {
     return "Nao foi possivel preparar o backup.";
   }
+}
+
+function wait(delayMs: number) {
+  return new Promise((resolve) => window.setTimeout(resolve, delayMs));
+}
+
+async function downloadFileWithRetry(url: string) {
+  let lastError = "Nao foi possivel baixar o arquivo.";
+
+  for (let attempt = 1; attempt <= fileDownloadAttempts; attempt += 1) {
+    try {
+      const response = await fetch(url);
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      return await response.blob();
+    } catch (error) {
+      lastError = error instanceof Error ? error.message : lastError;
+
+      if (attempt < fileDownloadAttempts) {
+        await wait(retryBaseDelayMs * attempt);
+      }
+    }
+  }
+
+  throw new Error(lastError);
 }
 
 export function BackupGenerator() {
@@ -129,6 +159,14 @@ export function BackupGenerator() {
       }
 
       const payload = (await response.json()) as BackupPayload;
+      const tableErrors = payload.tables.filter((table) => table.error);
+
+      if (tableErrors.length) {
+        throw new Error(
+          `Backup interrompido: ${formatNumber(tableErrors.length)} tabela(s) apresentaram erro. Nenhum ZIP incompleto foi gerado.`,
+        );
+      }
+
       const { default: JSZip } = await import("jszip");
       const zip = new JSZip();
       const downloadableFiles = payload.files.filter((file) => file.signed_url && !file.error);
@@ -189,13 +227,7 @@ export function BackupGenerator() {
         }));
 
         try {
-          const fileResponse = await fetch(file.signed_url as string);
-
-          if (!fileResponse.ok) {
-            throw new Error(`HTTP ${fileResponse.status}`);
-          }
-
-          const blob = await fileResponse.blob();
+          const blob = await downloadFileWithRetry(file.signed_url as string);
           zip.file(file.zip_path, blob);
           downloadedFiles += 1;
 
@@ -215,6 +247,12 @@ export function BackupGenerator() {
             failedFiles: downloadErrors.length,
           }));
         }
+      }
+
+      if (downloadErrors.length) {
+        throw new Error(
+          `Backup interrompido: ${formatNumber(downloadErrors.length)} arquivo(s) nao puderam ser baixados apos ${fileDownloadAttempts} tentativas. Nenhum ZIP incompleto foi gerado.`,
+        );
       }
 
       setState((current) => ({

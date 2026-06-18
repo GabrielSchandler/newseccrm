@@ -10,6 +10,8 @@ const backupQueryPageSize = 1000;
 const backupBucketName = "backups";
 const calculationReportsBucketName = "calculation-reports";
 const staleRunningBackupMinutes = 20;
+const storageDownloadAttempts = 5;
+const storageRetryBaseDelayMs = 2000;
 
 const backupRestoreOrder = [
   "companies",
@@ -143,6 +145,43 @@ function dedupeStorageRefs(refs) {
     seen.add(key);
     return true;
   });
+}
+
+function wait(delayMs) {
+  return new Promise((resolve) => setTimeout(resolve, delayMs));
+}
+
+async function downloadStorageFileWithRetry(supabase, ref) {
+  let lastError = "Arquivo nao retornado pelo Storage.";
+
+  for (let attempt = 1; attempt <= storageDownloadAttempts; attempt += 1) {
+    try {
+      const { data, error } = await supabase.storage
+        .from(ref.bucket)
+        .download(ref.path);
+
+      if (error || !data) {
+        throw new Error(error?.message ?? lastError);
+      }
+
+      return {
+        buffer: Buffer.from(await data.arrayBuffer()),
+        attempts: attempt,
+      };
+    } catch (error) {
+      lastError = error instanceof Error ? error.message : lastError;
+
+      if (attempt < storageDownloadAttempts) {
+        const delayMs = storageRetryBaseDelayMs * attempt;
+        console.log(
+          `falhou (${lastError}). Tentativa ${attempt + 1}/${storageDownloadAttempts} em ${delayMs / 1000}s...`,
+        );
+        await wait(delayMs);
+      }
+    }
+  }
+
+  throw new Error(lastError);
 }
 
 async function fetchAllRows(queryBuilder) {
@@ -361,23 +400,25 @@ async function addStorageBinariesToZip({ supabase, zip, prepared }) {
       `Baixando arquivo ${current}/${prepared.storage_refs.length}: ${ref.bucket}/${ref.path}... `,
     );
 
-    const { data, error } = await supabase.storage.from(ref.bucket).download(ref.path);
+    try {
+      const result = await downloadStorageFileWithRetry(supabase, ref);
 
-    if (error || !data) {
-      console.log(`erro: ${error?.message ?? "Arquivo nao retornado pelo Storage."}`);
+      zip.file(
+        `${prepared.backup_root}/arquivos/${ref.bucket}/${safeBackupPath(ref.path)}`,
+        result.buffer,
+      );
+      downloadedFiles += 1;
+      console.log(result.attempts > 1 ? `ok apos ${result.attempts} tentativas` : "ok");
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Arquivo nao retornado pelo Storage.";
+
+      console.log(`erro definitivo: ${message}`);
       errors.push({
         ...ref,
-        error: error?.message ?? "Arquivo nao retornado pelo Storage.",
+        error: message,
       });
-      continue;
     }
-
-    zip.file(
-      `${prepared.backup_root}/arquivos/${ref.bucket}/${safeBackupPath(ref.path)}`,
-      Buffer.from(await data.arrayBuffer()),
-    );
-    downloadedFiles += 1;
-    console.log("ok");
   }
 
   return {
@@ -425,6 +466,18 @@ async function buildFullBackupZip({ supabase, prepared }) {
     zip,
     prepared,
   });
+
+  if (storageResult.errors.length) {
+    const examples = storageResult.errors
+      .slice(0, 3)
+      .map((item) => `${item.bucket}/${item.path}: ${item.error}`)
+      .join("; ");
+
+    throw new Error(
+      `Backup incompleto: ${storageResult.errors.length} arquivo(s) nao puderam ser baixados apos ${storageDownloadAttempts} tentativas. ${examples}`,
+    );
+  }
+
   const manifest = buildManifest({
     prepared,
     downloadedFiles: storageResult.downloadedFiles,
@@ -539,6 +592,17 @@ async function main() {
     companyId,
     generatedBy: typeof requestedBy === "string" ? requestedBy : null,
   });
+  const tableErrors = prepared.tables.filter((table) => table.error);
+
+  if (tableErrors.length) {
+    throw new Error(
+      `Backup interrompido: ${tableErrors.length} tabela(s) apresentaram erro. ${tableErrors
+        .slice(0, 3)
+        .map((table) => `${table.table}: ${table.error}`)
+        .join("; ")}`,
+    );
+  }
+
   const zip = await buildFullBackupZip({
     supabase,
     prepared,

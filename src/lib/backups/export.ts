@@ -41,6 +41,8 @@ export type PreparedBackup = {
 export const backupBucketName = "backups";
 export const signedUrlExpiresInSeconds = 60 * 60;
 const calculationReportsBucketName = "calculation-reports";
+const storageDownloadAttempts = 5;
+const storageRetryBaseDelayMs = 2000;
 
 const companyScopedTables = backupRestoreOrder.filter(
   (table) =>
@@ -150,6 +152,42 @@ function dedupeStorageRefs(refs: StorageFileRef[]) {
     seen.add(key);
     return true;
   });
+}
+
+function wait(delayMs: number) {
+  return new Promise((resolve) => setTimeout(resolve, delayMs));
+}
+
+async function downloadStorageFileWithRetry({
+  adminClient,
+  ref,
+}: {
+  adminClient: ReturnType<typeof createAdminClient>;
+  ref: StorageFileRef;
+}) {
+  let lastError = "Arquivo nao retornado pelo Storage.";
+
+  for (let attempt = 1; attempt <= storageDownloadAttempts; attempt += 1) {
+    try {
+      const { data, error } = await adminClient.storage
+        .from(ref.bucket)
+        .download(ref.path);
+
+      if (error || !data) {
+        throw new Error(error?.message ?? lastError);
+      }
+
+      return Buffer.from(await data.arrayBuffer());
+    } catch (error) {
+      lastError = error instanceof Error ? error.message : lastError;
+
+      if (attempt < storageDownloadAttempts) {
+        await wait(storageRetryBaseDelayMs * attempt);
+      }
+    }
+  }
+
+  throw new Error(lastError);
 }
 
 async function exportCompanyTable(
@@ -440,23 +478,26 @@ async function addStorageBinariesToZip({
   let downloadedFiles = 0;
 
   for (const ref of prepared.storage_refs) {
-    const { data, error } = await adminClient.storage
-      .from(ref.bucket)
-      .download(ref.path);
+    try {
+      const buffer = await downloadStorageFileWithRetry({
+        adminClient,
+        ref,
+      });
 
-    if (error || !data) {
+      zip.file(
+        `${prepared.backup_root}/arquivos/${ref.bucket}/${safeZipPath(ref.path)}`,
+        buffer,
+      );
+      downloadedFiles += 1;
+    } catch (error) {
       errors.push({
         ...ref,
-        error: error?.message ?? "Arquivo nao retornado pelo Storage.",
+        error:
+          error instanceof Error
+            ? error.message
+            : "Arquivo nao retornado pelo Storage.",
       });
-      continue;
     }
-
-    zip.file(
-      `${prepared.backup_root}/arquivos/${ref.bucket}/${safeZipPath(ref.path)}`,
-      Buffer.from(await data.arrayBuffer()),
-    );
-    downloadedFiles += 1;
   }
 
   return {
@@ -473,6 +514,16 @@ export async function buildFullBackupZip({
   prepared: PreparedBackup;
 }) {
   const zip = new JSZip();
+  const tableErrors = prepared.tables.filter((table) => table.error);
+
+  if (tableErrors.length) {
+    throw new Error(
+      `Backup interrompido: ${tableErrors.length} tabela(s) apresentaram erro. ${tableErrors
+        .slice(0, 3)
+        .map((table) => `${table.table}: ${table.error}`)
+        .join("; ")}`,
+    );
+  }
 
   writeDatabaseFiles(zip, prepared);
 
@@ -481,6 +532,18 @@ export async function buildFullBackupZip({
     zip,
     prepared,
   });
+
+  if (storageResult.errors.length) {
+    const examples = storageResult.errors
+      .slice(0, 3)
+      .map((item) => `${item.bucket}/${item.path}: ${item.error}`)
+      .join("; ");
+
+    throw new Error(
+      `Backup incompleto: ${storageResult.errors.length} arquivo(s) nao puderam ser baixados apos ${storageDownloadAttempts} tentativas. ${examples}`,
+    );
+  }
+
   const manifest = buildManifest({
     prepared,
     storageMode: "embedded_binaries",
