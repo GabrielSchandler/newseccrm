@@ -8,7 +8,6 @@ import { BackupGenerator } from "./backup-generator";
 import { ClientRestoreTool } from "./client-restore-tool";
 import { FullRestoreTool } from "./full-restore-tool";
 import { RestoreDiagnostics } from "./restore-diagnostics";
-import { StoredBackupRunner } from "./stored-backup-runner";
 
 const backupItems = [
   "Dados da empresa, usuarios, clientes, pre-vendas e pagamentos.",
@@ -108,6 +107,14 @@ export default async function BackupsPage() {
       continue;
     }
 
+    if (
+      job.storage_bucket === "github-releases" &&
+      /^https:\/\/github\.com\//.test(job.storage_path)
+    ) {
+      downloadUrls.set(job.id, job.storage_path);
+      continue;
+    }
+
     const url = await getStoredBackupDownloadUrl({
       bucket: job.storage_bucket ?? "backups",
       path: job.storage_path,
@@ -130,26 +137,30 @@ export default async function BackupsPage() {
           <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-teal-700">
-                Backup salvo no Supabase Storage
+                Backup automatico fora da producao
               </p>
               <h2 className="mt-2 text-2xl font-semibold text-slate-950">
-                Backups automaticos guardados por 7 dias
+                Backups privados guardados no GitHub por 7 dias
               </h2>
               <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
-                O sistema gera um backup diario de madrugada e salva o ZIP no
-                bucket privado backups. O arquivo segue o mesmo padrao do
-                backup manual, com dados, manifesto de restauracao e arquivos
-                vinculados ao CRM.
+                O GitHub Actions gera o backup completo diariamente, publica o
+                ZIP em uma Release privada e registra o download nesta pagina.
+                O processo nao depende do navegador, do seu computador nem do
+                limite de execucao da Vercel.
               </p>
-              <p className="mt-3 max-w-3xl text-sm leading-6 text-amber-800">
-                Se um backup salvo ficar gerando por mais de {runningTimeoutMinutes} minutos,
-                trate como tempo excedido e use o backup manual completo enquanto a
-                rotina automatica e ajustada para volumes maiores.
+              <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
+                Para disparar fora do horario automatico, acesse o workflow
+                Backup CRM no GitHub e use Run workflow.
               </p>
 
-              <div className="mt-6">
-                <StoredBackupRunner />
-              </div>
+              <a
+                href="https://github.com/GabrielSchandler/GRSCRM/actions/workflows/backup.yml"
+                target="_blank"
+                rel="noreferrer"
+                className="mt-6 inline-flex rounded-lg bg-teal-700 px-5 py-3 text-sm font-semibold text-white transition hover:bg-teal-800"
+              >
+                Abrir rotina de backup no GitHub
+              </a>
             </div>
 
             <div className="rounded-lg border border-teal-100 bg-teal-50 p-5">
@@ -181,7 +192,8 @@ export default async function BackupsPage() {
                 Backups salvos
               </h2>
               <p className="mt-2 text-sm text-slate-600">
-                Os arquivos ficam disponiveis por 7 dias no Supabase Storage.
+                Os arquivos automaticos ficam disponiveis por 7 dias nas
+                Releases privadas do GitHub.
               </p>
             </div>
           </div>
@@ -262,9 +274,21 @@ export default async function BackupsPage() {
                             {downloadUrls.has(job.id) ? (
                               <a
                                 href={downloadUrls.get(job.id)}
+                                target={
+                                  job.storage_bucket === "github-releases"
+                                    ? "_blank"
+                                    : undefined
+                                }
+                                rel={
+                                  job.storage_bucket === "github-releases"
+                                    ? "noreferrer"
+                                    : undefined
+                                }
                                 className="inline-flex rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
                               >
-                                Baixar
+                                {job.storage_bucket === "github-releases"
+                                  ? "Baixar no GitHub"
+                                  : "Baixar"}
                               </a>
                             ) : (
                               <span className="text-xs text-slate-400">Indisponivel</span>

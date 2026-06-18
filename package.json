@@ -9,6 +9,7 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "backup:stored": "node ./scripts/generate-stored-backup.mjs",
+    "backup:register-external": "node ./scripts/register-external-backup.mjs",
     "import:legacy-rd": "node ./scripts/import-legacy-rd.mjs",
     "import:rd-crm-activities": "node ./scripts/import-rd-crm-activities.mjs"
   },

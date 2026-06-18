@@ -44,7 +44,7 @@ async function cleanupExpiredBackups(adminClient: ReturnType<typeof createAdminC
   const rows = (data ?? []) as BackupJobRow[];
 
   for (const row of rows) {
-    if (!row.storage_path) {
+    if (!row.storage_path || row.storage_bucket === "github-releases") {
       continue;
     }
 

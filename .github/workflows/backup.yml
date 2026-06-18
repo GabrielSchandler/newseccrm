@@ -10,6 +10,9 @@ concurrency:
   group: grscrm-backup
   cancel-in-progress: false
 
+permissions:
+  contents: write
+
 jobs:
   backup:
     name: Gerar backup completo
@@ -29,31 +32,76 @@ jobs:
       - name: Instalar dependencias
         run: npm ci
 
-      - name: Gerar backup e salvar no Supabase Storage
+      - name: Gerar backup completo
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           NODE_OPTIONS: --max-old-space-size=6144
+          BACKUP_TRIGGER_TYPE: ${{ github.event_name == 'schedule' && 'scheduled' || 'manual' }}
         run: |
           mkdir -p ./backup-output
           npm run backup:stored -- \
             --company-id "ef4f2233-f4e9-43e8-ab6d-1bb41513d39d" \
             --created-by "f7f881c2-b56d-4411-8160-3d0c264d2dc2" \
+            --destination "github-release" \
+            --trigger-type "$BACKUP_TRIGGER_TYPE" \
             --save-local-dir "./backup-output" 2>&1 | tee ./backup-output/backup-log.txt
           test ${PIPESTATUS[0]} -eq 0
 
-      - name: Listar arquivos gerados
-        if: always()
+      - name: Ler metadados do backup
         run: |
-          ls -lh ./backup-output || true
+          node -e '
+            const fs = require("fs");
+            const metadata = JSON.parse(fs.readFileSync("./backup-output/backup-metadata.json", "utf8"));
+            fs.appendFileSync(process.env.GITHUB_ENV, `BACKUP_NAME=${metadata.backup_name}\n`);
+            fs.appendFileSync(process.env.GITHUB_ENV, `BACKUP_FILE=${metadata.file_name}\n`);
+          '
 
-      - name: Guardar copia no GitHub por 7 dias
+      - name: Publicar backup em Release privada
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "$BACKUP_NAME" >/dev/null 2>&1; then
+            gh release upload "$BACKUP_NAME" "./backup-output/$BACKUP_FILE" --clobber
+          else
+            gh release create "$BACKUP_NAME" "./backup-output/$BACKUP_FILE" \
+              --title "$BACKUP_NAME" \
+              --notes "Backup completo e privado do CRM GRS."
+          fi
+
+      - name: Registrar backup concluido no CRM
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          npm run backup:register-external -- \
+            --metadata-file "./backup-output/backup-metadata.json" \
+            --external-url "https://github.com/${GITHUB_REPOSITORY}/releases/download/${BACKUP_NAME}/${BACKUP_FILE}"
+
+      - name: Remover Releases de backup com mais de 7 dias
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          node -e '
+            const { execFileSync } = require("child_process");
+            const releases = JSON.parse(execFileSync("gh", [
+              "release", "list", "--limit", "100", "--json", "tagName,createdAt"
+            ], { encoding: "utf8" }));
+            const cutoff = Date.now() - (7 * 24 * 60 * 60 * 1000);
+            for (const release of releases) {
+              if (!release.tagName.startsWith("backup-grscrm-")) continue;
+              if (new Date(release.createdAt).getTime() >= cutoff) continue;
+              execFileSync("gh", ["release", "delete", release.tagName, "--yes", "--cleanup-tag"], {
+                stdio: "inherit"
+              });
+            }
+          '
+
+      - name: Guardar log da execucao
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: backup-grscrm
-          path: |
-            backup-output/*.zip
-            backup-output/backup-log.txt
+          name: backup-log-${{ github.run_id }}
+          path: backup-output/backup-log.txt
           retention-days: 7
           if-no-files-found: warn

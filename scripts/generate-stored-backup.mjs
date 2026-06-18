@@ -464,7 +464,7 @@ async function cleanupExpiredBackups(supabase) {
   }
 
   for (const row of data ?? []) {
-    if (row.storage_path) {
+    if (row.storage_path && row.storage_bucket !== "github-releases") {
       await supabase.storage
         .from(row.storage_bucket ?? backupBucketName)
         .remove([row.storage_path]);
@@ -505,11 +505,23 @@ async function main() {
   const companyId = args["company-id"];
   const requestedBy = args["created-by"] ?? null;
   const saveLocalDir = args["save-local-dir"];
+  const destination = args.destination ?? "supabase";
+  const triggerType = args["trigger-type"] === "scheduled" ? "scheduled" : "manual";
   const supabaseUrl = requiredEnv("NEXT_PUBLIC_SUPABASE_URL");
   const serviceRoleKey = requiredEnv("SUPABASE_SERVICE_ROLE_KEY");
 
   if (!companyId || typeof companyId !== "string") {
     throw new Error("Informe --company-id.");
+  }
+
+  if (!["supabase", "github-release"].includes(destination)) {
+    throw new Error("Destino invalido. Use --destination supabase ou github-release.");
+  }
+
+  if (destination === "github-release" && typeof saveLocalDir !== "string") {
+    throw new Error(
+      "O destino github-release exige --save-local-dir para guardar o ZIP.",
+    );
   }
 
   const supabase = createClient(supabaseUrl, serviceRoleKey, {
@@ -527,13 +539,49 @@ async function main() {
     companyId,
     generatedBy: typeof requestedBy === "string" ? requestedBy : null,
   });
+  const zip = await buildFullBackupZip({
+    supabase,
+    prepared,
+  });
+
+  if (typeof saveLocalDir === "string") {
+    await fs.mkdir(saveLocalDir, { recursive: true });
+    await fs.writeFile(path.join(saveLocalDir, `${prepared.backup_name}.zip`), zip.content);
+  }
+
+  if (destination === "github-release") {
+    const metadataPath = path.join(saveLocalDir, "backup-metadata.json");
+
+    await fs.writeFile(
+      metadataPath,
+      JSON.stringify(
+        {
+          backup_name: prepared.backup_name,
+          file_name: `${prepared.backup_name}.zip`,
+          file_size_bytes: zip.content.byteLength,
+          company_id: companyId,
+          requested_by: typeof requestedBy === "string" ? requestedBy : null,
+          trigger_type: triggerType,
+          manifest: zip.manifest,
+        },
+        null,
+        2,
+      ),
+    );
+
+    console.log("");
+    console.log("Backup preparado para publicacao em uma Release privada do GitHub.");
+    console.log(`Metadados: ${metadataPath}`);
+    return;
+  }
+
   const storagePath = getBackupStoragePath(companyId, prepared.backup_name);
   const { data: job, error: createError } = await supabase
     .from("backup_jobs")
     .insert({
       company_id: companyId,
       requested_by: typeof requestedBy === "string" ? requestedBy : null,
-      trigger_type: "manual",
+      trigger_type: triggerType,
       status: "running",
       backup_name: prepared.backup_name,
       storage_bucket: backupBucketName,
@@ -548,16 +596,6 @@ async function main() {
   }
 
   try {
-    const zip = await buildFullBackupZip({
-      supabase,
-      prepared,
-    });
-
-    if (typeof saveLocalDir === "string") {
-      await fs.mkdir(saveLocalDir, { recursive: true });
-      await fs.writeFile(path.join(saveLocalDir, `${prepared.backup_name}.zip`), zip.content);
-    }
-
     console.log(`Enviando ZIP para Supabase Storage: ${storagePath}`);
     const { error: uploadError } = await supabase.storage
       .from(backupBucketName)
