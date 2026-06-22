@@ -14,6 +14,7 @@ export type DocumentTemplate = {
   name: string;
   document_type: DocumentTemplateType;
   legal_stage: LegalWorkflowStage | null;
+  legal_stage_id?: string | null;
   description: string | null;
   content_html: string;
   original_docx_path: string | null;

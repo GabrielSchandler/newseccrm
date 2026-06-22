@@ -61,6 +61,24 @@ const preSaleChildTables = [
   "pre_sale_payments",
 ] as const;
 const backupQueryPageSize = 1000;
+const optionalWorkflowTables = new Set([
+  "legal_workflow_stages",
+  "legal_workflow_bulk_moves",
+  "legal_workflow_bulk_move_items",
+]);
+
+function isMissingOptionalWorkflowTable(table: string, error: string | null) {
+  if (!optionalWorkflowTables.has(table) || !error) {
+    return false;
+  }
+
+  const normalized = error.toLowerCase();
+  return (
+    normalized.includes("does not exist") ||
+    normalized.includes("schema cache") ||
+    normalized.includes("could not find")
+  );
+}
 
 type PagedSelectQuery = {
   eq(column: string, value: unknown): PagedSelectQuery;
@@ -208,7 +226,9 @@ async function exportCompanyTable(
   return {
     table,
     rows: result.rows,
-    error: result.error,
+    error: isMissingOptionalWorkflowTable(table, result.error)
+      ? null
+      : result.error,
   } satisfies ExportedTable;
 }
 

@@ -18,6 +18,7 @@ export type CurrentUserProfile = {
   role: CompanyUserRole | null;
   business_area: CompanyBusinessArea | null;
   legal_role: LegalUserRole | null;
+  can_edit_legal_workflow?: boolean | null;
   nickname: string | null;
   username: string | null;
   email: string | null;
@@ -75,6 +76,8 @@ export async function getCurrentUserContext() {
     role: profile.role,
     businessArea: normalizeBusinessArea(profile.business_area),
     legalRole: profile.legal_role,
+    canEditLegalWorkflow:
+      profile.role === "admin" || Boolean(profile.can_edit_legal_workflow),
     nickname: profile.nickname,
     username: profile.username,
     email: profile.email,

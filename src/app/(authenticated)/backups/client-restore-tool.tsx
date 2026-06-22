@@ -264,6 +264,23 @@ function pickClientRows({
     ),
   );
 
+  const legalStageIds = new Set(
+    [
+      ...preSales.map((row) => getRowString(row, "legal_stage_id")),
+      ...(rows.document_templates ?? []).map((row) =>
+        getRowString(row, "legal_stage_id"),
+      ),
+      ...(rows.email_templates ?? []).map((row) =>
+        getRowString(row, "legal_stage_id"),
+      ),
+    ].filter(Boolean),
+  );
+  rows.legal_workflow_stages = cloneRows(
+    getRows(loaded.tables, "legal_workflow_stages").filter((row) =>
+      legalStageIds.has(getRowId(row)),
+    ),
+  );
+
   return rows;
 }
 

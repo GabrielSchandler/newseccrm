@@ -3,7 +3,11 @@ import { PageHeader } from "@/components/layout/page-header";
 import { getCurrentUserContext } from "@/lib/auth/current-user";
 import { displayValue, formatDateTime } from "@/lib/clients/formatters";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { legalWorkflowStages } from "@/lib/legal/workflow";
+import {
+  getLegalWorkflowStage,
+  legalWorkflowStages,
+  mapLegalWorkflowStageRow,
+} from "@/lib/legal/workflow";
 import {
   emailRecipientModes,
   formatEmailRecipientMode,
@@ -22,8 +26,11 @@ function canManageEmailTemplates(role: string | null) {
   return role === "admin" || role === "manager";
 }
 
-function getLegalStageLabel(stage: string | null) {
-  return legalWorkflowStages.find((item) => item.value === stage)?.shortLabel ?? "Geral";
+function getLegalStageLabel(
+  stage: string | null,
+  stages: typeof legalWorkflowStages,
+) {
+  return stage ? getLegalWorkflowStage(stage, stages).shortLabel : "Geral";
 }
 
 function getBanner(params: { success?: string; error?: string }) {
@@ -67,13 +74,26 @@ export default async function EmailTemplatesPage({
   }
 
   const adminClient = createAdminClient();
-  const { data, error } = await adminClient
-    .from("email_templates")
-    .select("*")
-    .eq("company_id", companyId)
-    .order("is_active", { ascending: false })
-    .order("name", { ascending: true });
+  const [
+    { data, error },
+    { data: stagesData, error: stagesError },
+  ] = await Promise.all([
+    adminClient
+      .from("email_templates")
+      .select("*")
+      .eq("company_id", companyId)
+      .order("is_active", { ascending: false })
+      .order("name", { ascending: true }),
+    adminClient
+      .from("legal_workflow_stages")
+      .select("id, legacy_key, title, short_title, description, color, expected_documents, position")
+      .eq("company_id", companyId)
+      .order("position"),
+  ]);
   const templates = (data ?? []) as EmailTemplate[];
+  const workflowStages = !stagesError && stagesData?.length
+    ? stagesData.map(mapLegalWorkflowStageRow)
+    : legalWorkflowStages;
   const banner = getBanner(params);
 
   return (
@@ -121,8 +141,8 @@ export default async function EmailTemplatesPage({
                 className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
               >
                 <option value="">Geral</option>
-                {legalWorkflowStages.map((stage) => (
-                  <option key={stage.value} value={stage.value}>
+                {workflowStages.map((stage) => (
+                  <option key={stage.id} value={stage.id}>
                     {stage.label}
                   </option>
                 ))}
@@ -239,7 +259,10 @@ export default async function EmailTemplatesPage({
                         </p>
                       </td>
                       <td className="px-6 py-4 text-slate-700">
-                        {getLegalStageLabel(template.legal_stage)}
+                        {getLegalStageLabel(
+                          template.legal_stage_id ?? template.legal_stage,
+                          workflowStages,
+                        )}
                       </td>
                       <td className="px-6 py-4 text-slate-700">
                         {formatEmailRecipientMode(template.recipient_mode)}

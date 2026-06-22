@@ -29,6 +29,7 @@ export type EmailTemplate = {
   name: string;
   business_area: "commercial" | "legal" | string;
   legal_stage: LegalWorkflowStage | null;
+  legal_stage_id?: string | null;
   recipient_mode: EmailRecipientMode;
   subject_template: string;
   body_template: string;
@@ -47,6 +48,7 @@ export type EmailLog = {
   pre_sale_id: string | null;
   template_id: string | null;
   legal_stage: LegalWorkflowStage | null;
+  legal_stage_id?: string | null;
   sender_user_profile_id: string | null;
   action_by_user_profile_id: string | null;
   sender_email: string;

@@ -303,31 +303,47 @@ function CreateUserForm({
         </div>
 
         {businessArea === "legal" ? (
-          <div className="space-y-2">
-            <FormFieldLabel
-              htmlFor="legal_role"
-              label="Funcao no juridico"
-              requirement="required"
-            />
-            <select
-              id="legal_role"
-              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
-              disabled={disabled}
-              {...register("legal_role")}
-            >
-              {legalUserRoles.map((item) => (
-                <option key={item.value} value={item.value}>
-                  {item.label}
-                </option>
-              ))}
-            </select>
-            <p className="text-xs text-slate-500">
-              Adms aparecem no campo Adm responsavel. Consultores aparecem no campo Consultor responsavel.
-            </p>
-            {errors.legal_role?.message ? (
-              <p className="text-sm text-red-600">{String(errors.legal_role.message)}</p>
-            ) : null}
-          </div>
+          <>
+            <div className="space-y-2">
+              <FormFieldLabel
+                htmlFor="legal_role"
+                label="Funcao no juridico"
+                requirement="required"
+              />
+              <select
+                id="legal_role"
+                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
+                disabled={disabled}
+                {...register("legal_role")}
+              >
+                {legalUserRoles.map((item) => (
+                  <option key={item.value} value={item.value}>
+                    {item.label}
+                  </option>
+                ))}
+              </select>
+              <p className="text-xs text-slate-500">
+                Adms aparecem no campo Adm responsavel. Consultores aparecem no campo Consultor responsavel.
+              </p>
+              {errors.legal_role?.message ? (
+                <p className="text-sm text-red-600">{String(errors.legal_role.message)}</p>
+              ) : null}
+            </div>
+            <label className="flex items-start gap-3 rounded-lg border border-teal-200 bg-teal-50 px-4 py-3 text-sm font-medium text-teal-950">
+              <input
+                type="checkbox"
+                className="mt-1 h-4 w-4 rounded border-teal-300 text-teal-700 focus:ring-teal-600"
+                disabled={disabled}
+                {...register("can_edit_legal_workflow")}
+              />
+              <span>
+                Editar esteira juridica
+                <span className="mt-1 block text-xs font-normal leading-5 text-teal-800">
+                  Permite criar, editar, ordenar e excluir colunas, alem de mover clientes em massa.
+                </span>
+              </span>
+            </label>
+          </>
         ) : null}
 
         {shouldShowMonthlyGoal ? (
@@ -545,31 +561,47 @@ function EditUserForm({
         </div>
 
         {businessArea === "legal" ? (
-          <div className="space-y-2">
-            <FormFieldLabel
-              htmlFor="legal_role"
-              label="Funcao no juridico"
-              requirement="required"
-            />
-            <select
-              id="legal_role"
-              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
-              disabled={disabled}
-              {...register("legal_role")}
-            >
-              {legalUserRoles.map((item) => (
-                <option key={item.value} value={item.value}>
-                  {item.label}
-                </option>
-              ))}
-            </select>
-            <p className="text-xs text-slate-500">
-              Adms aparecem no campo Adm responsavel. Consultores aparecem no campo Consultor responsavel.
-            </p>
-            {errors.legal_role?.message ? (
-              <p className="text-sm text-red-600">{String(errors.legal_role.message)}</p>
-            ) : null}
-          </div>
+          <>
+            <div className="space-y-2">
+              <FormFieldLabel
+                htmlFor="legal_role"
+                label="Funcao no juridico"
+                requirement="required"
+              />
+              <select
+                id="legal_role"
+                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
+                disabled={disabled}
+                {...register("legal_role")}
+              >
+                {legalUserRoles.map((item) => (
+                  <option key={item.value} value={item.value}>
+                    {item.label}
+                  </option>
+                ))}
+              </select>
+              <p className="text-xs text-slate-500">
+                Adms aparecem no campo Adm responsavel. Consultores aparecem no campo Consultor responsavel.
+              </p>
+              {errors.legal_role?.message ? (
+                <p className="text-sm text-red-600">{String(errors.legal_role.message)}</p>
+              ) : null}
+            </div>
+            <label className="flex items-start gap-3 rounded-lg border border-teal-200 bg-teal-50 px-4 py-3 text-sm font-medium text-teal-950">
+              <input
+                type="checkbox"
+                className="mt-1 h-4 w-4 rounded border-teal-300 text-teal-700 focus:ring-teal-600"
+                disabled={disabled}
+                {...register("can_edit_legal_workflow")}
+              />
+              <span>
+                Editar esteira juridica
+                <span className="mt-1 block text-xs font-normal leading-5 text-teal-800">
+                  Permite criar, editar, ordenar e excluir colunas, alem de mover clientes em massa.
+                </span>
+              </span>
+            </label>
+          </>
         ) : null}
 
         {shouldShowMonthlyGoal ? (

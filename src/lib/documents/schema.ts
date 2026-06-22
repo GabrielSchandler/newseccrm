@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { legalWorkflowStageOptions } from "@/lib/legal/workflow";
 
 export const defaultDocumentTemplateContentHtml =
   "<p>Documento oficial vinculado em DOCX ou PDF.</p>";
@@ -15,12 +14,9 @@ export const documentTemplateSchema = z.object({
   ),
   description: z.string().trim().nullable().optional(),
   legal_stage: z
-    .enum(
-      legalWorkflowStageOptions.map((item) => item.value) as [
-        string,
-        ...string[],
-      ],
-    )
+    .string()
+    .trim()
+    .max(100)
     .nullable()
     .optional(),
   content_html: z

@@ -15,6 +15,7 @@ export type CompanyUserProfile = {
   role: CompanyUserRole | null;
   business_area: CompanyBusinessArea | null;
   legal_role: LegalUserRole | null;
+  can_edit_legal_workflow?: boolean | null;
   is_active: boolean;
   password_must_change?: boolean | null;
   password_changed_at?: string | null;

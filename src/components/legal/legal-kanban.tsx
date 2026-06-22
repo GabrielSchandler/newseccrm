@@ -5,14 +5,19 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
 import {
   updateLegalArchiveStatusAction,
-  updateLegalWorkflowStageAction,
 } from "@/app/(authenticated)/juridico/actions";
+import {
+  moveLegalClientsBulkAction,
+  undoLegalClientsBulkAction,
+  updateLegalWorkflowStageAction,
+} from "@/app/(authenticated)/juridico/workflow-actions";
 import { GenerateDocumentModal } from "@/components/documents/generate-document-modal";
 import {
   SendClientEmailModal,
   type EmailAttachmentOption,
 } from "@/components/email/send-client-email-modal";
 import { LegalStageSelect } from "@/components/legal/legal-stage-select";
+import { LegalWorkflowEditor } from "@/components/legal/legal-workflow-editor";
 import {
   getPreSaleStatusLabel,
   PreSalesStatusBadge,
@@ -25,8 +30,7 @@ import {
 } from "@/lib/clients/formatters";
 import {
   getLegalWorkflowStage,
-  legalWorkflowStages,
-  type LegalWorkflowStage,
+  type LegalWorkflowStageDefinition,
 } from "@/lib/legal/workflow";
 import { formatCurrency, formatUserName } from "@/lib/pre-sales/formatters";
 import type { DocumentTemplate, GeneratedDocument } from "@/types/document";
@@ -45,7 +49,7 @@ export type LegalBoardPreSale = PreSale & {
   consultant: UserProfileOption | null;
   legalResponsibleUserId: string | null;
   legalConsultantUserId: string | null;
-  currentLegalStage: LegalWorkflowStage;
+  currentLegalStageId: string;
   stageUpdatedAt: string;
   financialCase: PreSaleFinancialCase | null;
   clientDocuments: EmailAttachmentOption[];
@@ -59,6 +63,9 @@ type LegalKanbanProps = {
   legalAdmins: UserProfileOption[];
   legalConsultants: UserProfileOption[];
   currentUserId: string;
+  stages: LegalWorkflowStageDefinition[];
+  canEditWorkflow: boolean;
+  workflowSchemaReady: boolean;
 };
 
 type LegalArchiveStatus = Extract<PreSaleStatus, "aprovado" | "inativo" | "distrato">;
@@ -84,9 +91,13 @@ function getStageAgeLabel(isoDate: string) {
 
 function getStageTemplates(
   templates: DocumentTemplate[],
-  stage: LegalWorkflowStage,
+  stage: LegalWorkflowStageDefinition,
 ) {
-  const explicitMatches = templates.filter((template) => template.legal_stage === stage);
+  const explicitMatches = templates.filter(
+    (template) =>
+      template.legal_stage_id === stage.id ||
+      (stage.legacyKey && template.legal_stage === stage.legacyKey),
+  );
 
   if (explicitMatches.length) {
     return explicitMatches;
@@ -98,7 +109,7 @@ function getStageTemplates(
       .replace(/[\u0300-\u036f]/g, "")
       .toLowerCase();
 
-  const stageKeywords: Record<LegalWorkflowStage, string[]> = {
+  const stageKeywords: Record<string, string[]> = {
     termo_pagamento_servico: ["recibo", "termo de pagamento", "prestacao de servico"],
     lgpd_hipossuficiencia_procuracao: ["lgpd", "hipossuficiencia", "procuracao"],
     diligencia_cobranca: ["notificacao", "protocolo", "designacao de perito", "perito"],
@@ -106,7 +117,7 @@ function getStageTemplates(
     pos_laudo_ciencia: ["ciencia e responsabilidade", "termo de ciencia", "concordancia"],
   };
 
-  const keywords = stageKeywords[stage];
+  const keywords = stage.legacyKey ? stageKeywords[stage.legacyKey] ?? [] : [];
 
   return templates.filter((template) => {
     const haystack = `${normalize(template.name)} ${normalize(template.description)}`;
@@ -129,13 +140,16 @@ export function LegalKanban({
   legalAdmins,
   legalConsultants,
   currentUserId,
+  stages,
+  canEditWorkflow,
+  workflowSchemaReady,
 }: LegalKanbanProps) {
   const router = useRouter();
   const [draggedId, setDraggedId] = useState<string | null>(null);
-  const [dropTarget, setDropTarget] = useState<LegalWorkflowStage | null>(null);
+  const [dropTarget, setDropTarget] = useState<string | null>(null);
   const [pendingStageChange, setPendingStageChange] = useState<{
     preSaleId: string;
-    stage: LegalWorkflowStage;
+    stage: string;
   } | null>(null);
   const [pendingArchiveChange, setPendingArchiveChange] = useState<{
     preSaleId: string;
@@ -157,12 +171,20 @@ export function LegalKanban({
       ? currentUserId
       : "all",
   );
+  const [selectedPreSaleIds, setSelectedPreSaleIds] = useState<string[]>([]);
+  const [bulkMoveOpen, setBulkMoveOpen] = useState(false);
+  const [bulkTargetStageId, setBulkTargetStageId] = useState(stages[0]?.id ?? "");
+  const [bulkMoveNote, setBulkMoveNote] = useState("");
+  const [lastBulkMove, setLastBulkMove] = useState<{
+    batchId: string;
+    undoExpiresAt: string;
+  } | null>(null);
 
   const stageTemplatesMap = useMemo(() => {
     return Object.fromEntries(
-      legalWorkflowStages.map((stage) => [stage.value, getStageTemplates(templates, stage.value)]),
-    ) as Record<LegalWorkflowStage, DocumentTemplate[]>;
-  }, [templates]);
+      stages.map((stage) => [stage.id, getStageTemplates(templates, stage)]),
+    ) as Record<string, DocumentTemplate[]>;
+  }, [stages, templates]);
 
   const filteredPreSales = useMemo(() => {
     return preSales.filter((preSale) => {
@@ -189,14 +211,14 @@ export function LegalKanban({
     });
   }, [adminFilter, consultantFilter, preSales, statusFilter]);
 
-  function handleDrop(stage: LegalWorkflowStage) {
+  function handleDrop(stage: string) {
     if (!draggedId) {
       return;
     }
 
     const draggedPreSale = preSales.find((preSale) => preSale.id === draggedId);
 
-    if (!draggedPreSale || draggedPreSale.currentLegalStage === stage) {
+    if (!draggedPreSale || draggedPreSale.currentLegalStageId === stage) {
       setDraggedId(null);
       setDropTarget(null);
       return;
@@ -264,6 +286,70 @@ export function LegalKanban({
     setPendingArchiveChange(null);
   }
 
+  function toggleSelected(preSaleId: string) {
+    setSelectedPreSaleIds((current) =>
+      current.includes(preSaleId)
+        ? current.filter((id) => id !== preSaleId)
+        : [...current, preSaleId],
+    );
+  }
+
+  function toggleStageSelection(stagePreSaleIds: string[]) {
+    const allSelected = stagePreSaleIds.every((id) => selectedPreSaleIds.includes(id));
+    setSelectedPreSaleIds((current) =>
+      allSelected
+        ? current.filter((id) => !stagePreSaleIds.includes(id))
+        : [...new Set([...current, ...stagePreSaleIds])],
+    );
+  }
+
+  function confirmBulkMove() {
+    if (!bulkTargetStageId || !bulkMoveNote.trim()) {
+      setMessageTone("error");
+      setMessage("Selecione a coluna de destino e descreva o motivo da movimentacao.");
+      return;
+    }
+
+    startTransition(async () => {
+      const result = await moveLegalClientsBulkAction(
+        selectedPreSaleIds,
+        bulkTargetStageId,
+        bulkMoveNote,
+      );
+      setMessageTone(result.ok ? "success" : "error");
+      setMessage(result.message);
+
+      if (result.ok) {
+        if (result.batchId && result.undoExpiresAt) {
+          setLastBulkMove({
+            batchId: result.batchId,
+            undoExpiresAt: result.undoExpiresAt,
+          });
+        }
+        setSelectedPreSaleIds([]);
+        setBulkMoveOpen(false);
+        setBulkMoveNote("");
+        router.refresh();
+      }
+    });
+  }
+
+  function undoLastBulkMove() {
+    if (!lastBulkMove) {
+      return;
+    }
+
+    startTransition(async () => {
+      const result = await undoLegalClientsBulkAction(lastBulkMove.batchId);
+      setMessageTone(result.ok ? "success" : "error");
+      setMessage(result.message);
+      if (result.ok) {
+        setLastBulkMove(null);
+        router.refresh();
+      }
+    });
+  }
+
   return (
     <div className="space-y-6">
       {message ? (
@@ -278,8 +364,54 @@ export function LegalKanban({
         </div>
       ) : null}
 
-      <section className="grid gap-4 md:grid-cols-3 xl:grid-cols-5">
-        <div className="md:col-span-3 xl:col-span-5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          {lastBulkMove && new Date(lastBulkMove.undoExpiresAt).getTime() > Date.now() ? (
+            <button
+              type="button"
+              disabled={isPending}
+              onClick={undoLastBulkMove}
+              className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-2.5 text-sm font-semibold text-amber-900 hover:bg-amber-100 disabled:opacity-60"
+            >
+              Desfazer ultima movimentacao em massa
+            </button>
+          ) : null}
+        </div>
+        {canEditWorkflow ? (
+          <LegalWorkflowEditor
+            stages={stages}
+            schemaReady={workflowSchemaReady}
+          />
+        ) : null}
+      </div>
+
+      {canEditWorkflow && selectedPreSaleIds.length ? (
+        <div className="sticky top-3 z-20 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-teal-300 bg-teal-50 px-4 py-3 shadow-lg">
+          <p className="text-sm font-semibold text-teal-950">
+            {selectedPreSaleIds.length} cliente(s) selecionado(s)
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => setSelectedPreSaleIds([])}
+              className="rounded-lg border border-teal-300 bg-white px-3 py-2 text-sm font-semibold text-teal-800"
+            >
+              Limpar selecao
+            </button>
+            <button
+              type="button"
+              disabled={!workflowSchemaReady}
+              onClick={() => setBulkMoveOpen(true)}
+              className="rounded-lg bg-teal-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+            >
+              Mover selecionados
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+      <section className="space-y-4">
+        <div>
           <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
             <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
               <div>
@@ -358,16 +490,21 @@ export function LegalKanban({
             </div>
           </div>
         </div>
-        {legalWorkflowStages.map((stage) => {
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+        {stages.map((stage) => {
           const total = filteredPreSales.filter(
-            (preSale) => preSale.currentLegalStage === stage.value,
+            (preSale) => preSale.currentLegalStageId === stage.id,
           ).length;
 
           return (
             <div
-              key={stage.value}
+              key={stage.id}
               className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm"
             >
+              <span
+                className="mb-3 block h-1.5 w-12 rounded-full"
+                style={{ backgroundColor: stage.color }}
+              />
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                 {stage.shortLabel}
               </p>
@@ -378,37 +515,46 @@ export function LegalKanban({
             </div>
           );
         })}
+        </div>
       </section>
 
-      <section className="grid gap-4 xl:grid-cols-5">
-        {legalWorkflowStages.map((stage) => {
-          const stageTemplates = stageTemplatesMap[stage.value];
+      <section className="overflow-x-auto pb-4">
+        <div className="flex min-w-max gap-4">
+        {stages.map((stage) => {
+          const stageTemplates = stageTemplatesMap[stage.id] ?? [];
+          const allStagePreSales = preSales.filter(
+            (preSale) => preSale.currentLegalStageId === stage.id,
+          );
           const stagePreSales = filteredPreSales.filter(
-            (preSale) => preSale.currentLegalStage === stage.value,
+            (preSale) => preSale.currentLegalStageId === stage.id,
           );
 
           return (
             <div
-              key={stage.value}
+              key={stage.id}
               onDragOver={(event) => {
                 event.preventDefault();
                 if (draggedId) {
-                  setDropTarget(stage.value);
+                  setDropTarget(stage.id);
                 }
               }}
               onDragLeave={() => {
-                if (dropTarget === stage.value) {
+                if (dropTarget === stage.id) {
                   setDropTarget(null);
                 }
               }}
-              onDrop={() => handleDrop(stage.value)}
-              className={`flex min-h-[520px] flex-col rounded-lg border shadow-sm transition ${
-                dropTarget === stage.value
+              onDrop={() => handleDrop(stage.id)}
+              className={`flex min-h-[520px] w-[340px] flex-none flex-col rounded-lg border shadow-sm transition ${
+                dropTarget === stage.id
                   ? "border-teal-400 bg-teal-50/50 ring-2 ring-teal-200"
                   : "border-slate-200 bg-white"
               }`}
             >
               <div className="border-b border-slate-200 px-4 py-4">
+                <span
+                  className="mb-3 block h-1.5 w-12 rounded-full"
+                  style={{ backgroundColor: stage.color }}
+                />
                 <h2 className="text-sm font-semibold text-slate-950">{stage.label}</h2>
                 <p className="mt-1 text-xs leading-5 text-slate-600">
                   {stage.description}
@@ -416,12 +562,30 @@ export function LegalKanban({
                 <p className="mt-2 text-xs font-medium text-slate-500">
                   Templates esperados: {stage.documents.join(" | ")}
                 </p>
+                {canEditWorkflow && allStagePreSales.length ? (
+                  <label className="mt-3 flex cursor-pointer items-center gap-2 text-xs font-semibold text-teal-800">
+                    <input
+                      type="checkbox"
+                      checked={allStagePreSales.every((preSale) =>
+                        selectedPreSaleIds.includes(preSale.id),
+                      )}
+                      onChange={() =>
+                        toggleStageSelection(allStagePreSales.map((preSale) => preSale.id))
+                      }
+                      className="h-4 w-4 rounded border-slate-300 text-teal-700"
+                    />
+                    Selecionar todos da coluna ({allStagePreSales.length})
+                  </label>
+                ) : null}
               </div>
 
               <div className="flex-1 space-y-3 p-4">
                 {stagePreSales.length ? (
                   stagePreSales.map((preSale) => {
-                    const stageMeta = getLegalWorkflowStage(preSale.currentLegalStage);
+                    const stageMeta = getLegalWorkflowStage(
+                      preSale.currentLegalStageId,
+                      stages,
+                    );
                     const stageDocuments = getPreSaleStageDocuments(
                       preSale.generatedDocuments,
                       stageTemplates,
@@ -443,13 +607,25 @@ export function LegalKanban({
                         }`}
                       >
                         <div className="flex items-start justify-between gap-3">
-                          <div>
+                          <div className="flex min-w-0 items-start gap-3">
+                            {canEditWorkflow ? (
+                              <input
+                                type="checkbox"
+                                checked={selectedPreSaleIds.includes(preSale.id)}
+                                onChange={() => toggleSelected(preSale.id)}
+                                onClick={(event) => event.stopPropagation()}
+                                className="mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300 text-teal-700"
+                                aria-label={`Selecionar ${displayValue(preSale.client?.full_name ?? null)}`}
+                              />
+                            ) : null}
+                            <div className="min-w-0">
                             <h3 className="text-sm font-semibold text-slate-950">
                               {displayValue(preSale.client?.full_name ?? null)}
                             </h3>
                             <p className="mt-1 text-xs text-slate-500">
                               {stageMeta.shortLabel} • {getStageAgeLabel(preSale.stageUpdatedAt)}
                             </p>
+                            </div>
                           </div>
                           <div className="flex flex-col items-end gap-2">
                             {isArchivedPreSaleStatus(preSale.status) ? (
@@ -499,7 +675,8 @@ export function LegalKanban({
                         <div className="mt-4">
                           <LegalStageSelect
                             preSaleId={preSale.id}
-                            currentStage={preSale.currentLegalStage}
+                            currentStageId={preSale.currentLegalStageId}
+                            stages={stages}
                           />
                         </div>
 
@@ -572,11 +749,15 @@ export function LegalKanban({
                             templates={[
                               ...emailTemplates.filter(
                                 (template) =>
-                                  template.legal_stage === preSale.currentLegalStage,
+                                  template.legal_stage_id === preSale.currentLegalStageId ||
+                                  (stageMeta.legacyKey &&
+                                    template.legal_stage === stageMeta.legacyKey),
                               ),
                               ...emailTemplates.filter(
                                 (template) =>
-                                  template.legal_stage !== preSale.currentLegalStage,
+                                  template.legal_stage_id !== preSale.currentLegalStageId &&
+                                  (!stageMeta.legacyKey ||
+                                    template.legal_stage !== stageMeta.legacyKey),
                               ),
                             ]}
                             documents={preSale.clientDocuments}
@@ -665,6 +846,7 @@ export function LegalKanban({
             </div>
           );
         })}
+        </div>
       </section>
       {isPending ? <p className="text-sm text-slate-500">Movendo cliente...</p> : null}
 
@@ -712,6 +894,67 @@ export function LegalKanban({
         }}
         onConfirm={confirmArchiveChange}
       />
+      {bulkMoveOpen ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="bulk-move-title"
+            className="w-full max-w-xl rounded-lg bg-white p-6 shadow-2xl"
+          >
+            <h2 id="bulk-move-title" className="text-lg font-semibold text-slate-950">
+              Mover {selectedPreSaleIds.length} cliente(s)
+            </h2>
+            <p className="mt-1 text-sm leading-6 text-slate-600">
+              A mesma justificativa sera registrada individualmente na linha do tempo de cada cliente.
+            </p>
+            <label className="mt-5 block space-y-1.5 text-sm font-semibold text-slate-700">
+              Coluna de destino
+              <select
+                value={bulkTargetStageId}
+                onChange={(event) => setBulkTargetStageId(event.target.value)}
+                disabled={isPending}
+                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 font-normal outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
+              >
+                {stages.map((stage) => (
+                  <option key={stage.id} value={stage.id}>
+                    {stage.shortLabel}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="mt-4 block space-y-1.5 text-sm font-semibold text-slate-700">
+              Anotacao obrigatoria
+              <textarea
+                rows={4}
+                value={bulkMoveNote}
+                onChange={(event) => setBulkMoveNote(event.target.value)}
+                disabled={isPending}
+                placeholder="Descreva o que foi feito e por que os clientes estao mudando de etapa."
+                className="w-full resize-y rounded-lg border border-slate-300 px-3 py-2.5 font-normal outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
+              />
+            </label>
+            <div className="mt-5 flex flex-wrap gap-3 border-t border-slate-200 pt-4">
+              <button
+                type="button"
+                disabled={isPending || !bulkMoveNote.trim()}
+                onClick={confirmBulkMove}
+                className="rounded-lg bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-teal-800 disabled:opacity-60"
+              >
+                {isPending ? "Movendo..." : "Mover com anotacao"}
+              </button>
+              <button
+                type="button"
+                disabled={isPending}
+                onClick={() => setBulkMoveOpen(false)}
+                className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

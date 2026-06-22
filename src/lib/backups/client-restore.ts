@@ -1,6 +1,7 @@
 export const clientRestoreConfirmationText = "RESTAURAR CLIENTE";
 
 export const clientRestoreTableOrder = [
+  "legal_workflow_stages",
   "document_templates",
   "email_templates",
   "rd_crm_activity_import_batches",
@@ -23,6 +24,7 @@ export const clientRestoreTableOrder = [
 export type ClientRestoreTable = (typeof clientRestoreTableOrder)[number];
 
 export const clientRestoreDataTables = [
+  "legal_workflow_stages",
   "clients",
   "pre_sales",
   "pre_sale_client_snapshot",

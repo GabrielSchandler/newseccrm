@@ -6,7 +6,11 @@ import { DocumentsNav } from "@/components/documents/documents-nav";
 import { PageHeader } from "@/components/layout/page-header";
 import { getCurrentUserContext } from "@/lib/auth/current-user";
 import { displayValue, formatDateTime } from "@/lib/clients/formatters";
-import { getLegalWorkflowStage } from "@/lib/legal/workflow";
+import {
+  getLegalWorkflowStage,
+  legalWorkflowStages,
+  mapLegalWorkflowStageRow,
+} from "@/lib/legal/workflow";
 import {
   documentTemplateTypes,
   type DocumentTemplate,
@@ -63,6 +67,14 @@ export default async function TemplatesPage({ searchParams }: TemplatesPageProps
 
   const { data, error } = await query;
   const templates = (data ?? []) as DocumentTemplate[];
+  const { data: stagesData, error: stagesError } = await supabase
+    .from("legal_workflow_stages")
+    .select("id, legacy_key, title, short_title, description, color, expected_documents, position")
+    .eq("company_id", companyId)
+    .order("position");
+  const workflowStages = !stagesError && stagesData?.length
+    ? stagesData.map(mapLegalWorkflowStageRow)
+    : legalWorkflowStages;
 
   return (
     <>
@@ -157,8 +169,11 @@ export default async function TemplatesPage({ searchParams }: TemplatesPageProps
                         {formatTemplateType(template.document_type)}
                       </td>
                       <td className="px-4 py-3 text-slate-700">
-                        {template.legal_stage
-                          ? getLegalWorkflowStage(template.legal_stage).shortLabel
+                        {template.legal_stage_id || template.legal_stage
+                          ? getLegalWorkflowStage(
+                              template.legal_stage_id ?? template.legal_stage,
+                              workflowStages,
+                            ).shortLabel
                           : "-"}
                       </td>
                       <td className="px-4 py-3">

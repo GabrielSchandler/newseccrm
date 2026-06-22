@@ -16,6 +16,7 @@ const storageRetryBaseDelayMs = 2000;
 const backupRestoreOrder = [
   "companies",
   "user_profiles",
+  "legal_workflow_stages",
   "clients",
   "pre_sales",
   "pre_sale_client_snapshot",
@@ -35,7 +36,14 @@ const backupRestoreOrder = [
   "legacy_rd_import",
   "rd_crm_activity_import_batches",
   "rd_crm_activity_import",
+  "legal_workflow_bulk_moves",
+  "legal_workflow_bulk_move_items",
 ];
+const optionalWorkflowTables = new Set([
+  "legal_workflow_stages",
+  "legal_workflow_bulk_moves",
+  "legal_workflow_bulk_move_items",
+]);
 
 const preSaleChildTables = [
   "pre_sale_client_snapshot",
@@ -224,7 +232,16 @@ async function exportCompanyTable(supabase, table, companyId) {
   return {
     table,
     rows: result.rows,
-    error: result.error,
+    error:
+      optionalWorkflowTables.has(table) &&
+      result.error &&
+      (
+        result.error.toLowerCase().includes("does not exist") ||
+        result.error.toLowerCase().includes("schema cache") ||
+        result.error.toLowerCase().includes("could not find")
+      )
+        ? null
+        : result.error,
   };
 }
 

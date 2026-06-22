@@ -13,7 +13,10 @@ import {
 } from "@/app/(authenticated)/documentos/actions";
 import { FormFieldLabel } from "@/components/form-field-label";
 import { documentVariableCatalog } from "@/lib/documents/template-engine";
-import { legalWorkflowStages } from "@/lib/legal/workflow";
+import {
+  legalWorkflowStages,
+  type LegalWorkflowStageDefinition,
+} from "@/lib/legal/workflow";
 import {
   defaultDocumentTemplateContentHtml,
   documentTemplateSchema,
@@ -39,6 +42,7 @@ type DocumentTemplateFormProps = {
   templates?: TemplateOption[];
   officialDocxUrl?: string | null;
   officialPdfUrl?: string | null;
+  workflowStages?: LegalWorkflowStageDefinition[];
 };
 
 function formatTemplateType(type: DocumentTemplate["document_type"]) {
@@ -60,6 +64,7 @@ export function DocumentTemplateForm({
   templates = [],
   officialDocxUrl = null,
   officialPdfUrl = null,
+  workflowStages = legalWorkflowStages,
 }: DocumentTemplateFormProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -73,7 +78,7 @@ export function DocumentTemplateForm({
     defaultValues: {
       name: defaultValues?.name ?? "",
       document_type: defaultValues?.document_type ?? "contrato",
-      legal_stage: defaultValues?.legal_stage ?? null,
+      legal_stage: defaultValues?.legal_stage_id ?? defaultValues?.legal_stage ?? null,
       description: defaultValues?.description ?? "",
       content_html: defaultValues?.content_html ?? defaultDocumentTemplateContentHtml,
       is_active: defaultValues?.is_active ?? true,
@@ -319,8 +324,8 @@ export function DocumentTemplateForm({
               })}
             >
               <option value="">Sem etapa juridica</option>
-              {legalWorkflowStages.map((stage) => (
-                <option key={stage.value} value={stage.value}>
+              {workflowStages.map((stage) => (
+                <option key={stage.id} value={stage.id}>
                   {stage.label}
                 </option>
               ))}

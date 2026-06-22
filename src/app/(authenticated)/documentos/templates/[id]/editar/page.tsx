@@ -4,6 +4,10 @@ import { DocumentTemplateForm } from "@/components/documents/document-template-f
 import { DocumentsNav } from "@/components/documents/documents-nav";
 import { PageHeader } from "@/components/layout/page-header";
 import { getCurrentUserContext } from "@/lib/auth/current-user";
+import {
+  legalWorkflowStages,
+  mapLegalWorkflowStageRow,
+} from "@/lib/legal/workflow";
 import type { DocumentTemplate } from "@/types/document";
 
 type EditTemplatePageProps = {
@@ -34,14 +38,25 @@ export default async function EditTemplatePage({ params }: EditTemplatePageProps
     notFound();
   }
 
-  const { data: templatesData } = await supabase
-    .from("document_templates")
-    .select("*")
-    .eq("company_id", companyId)
-    .order("updated_at", { ascending: false, nullsFirst: false })
-    .order("created_at", { ascending: false })
-    .limit(50);
+  const [{ data: templatesData }, { data: stagesData, error: stagesError }] =
+    await Promise.all([
+      supabase
+        .from("document_templates")
+        .select("*")
+        .eq("company_id", companyId)
+        .order("updated_at", { ascending: false, nullsFirst: false })
+        .order("created_at", { ascending: false })
+        .limit(50),
+      supabase
+        .from("legal_workflow_stages")
+        .select("id, legacy_key, title, short_title, description, color, expected_documents, position")
+        .eq("company_id", companyId)
+        .order("position"),
+    ]);
   const templates = (templatesData ?? []) as DocumentTemplate[];
+  const workflowStages = !stagesError && stagesData?.length
+    ? stagesData.map(mapLegalWorkflowStageRow)
+    : legalWorkflowStages;
   const updateAction = updateDocumentTemplateAction.bind(null, template.id);
   const [{ data: officialDocxSignedUrl }, { data: officialPdfSignedUrl }] =
     await Promise.all([
@@ -70,6 +85,7 @@ export default async function EditTemplatePage({ params }: EditTemplatePageProps
           submitLabel="Salvar template"
           onSubmitAction={updateAction}
           templates={templates}
+          workflowStages={workflowStages}
           officialDocxUrl={officialDocxSignedUrl?.signedUrl ?? null}
           officialPdfUrl={officialPdfSignedUrl?.signedUrl ?? null}
         />

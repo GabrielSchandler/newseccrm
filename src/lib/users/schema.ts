@@ -42,6 +42,11 @@ function normalizeMonthlyGoal<T extends { business_area: string; role: string; m
       values.business_area === "commercial" && values.role === "seller"
         ? values.monthly_goal
         : null,
+    can_edit_legal_workflow:
+      values.business_area === "legal" &&
+      "can_edit_legal_workflow" in values
+        ? Boolean(values.can_edit_legal_workflow)
+        : false,
   };
 }
 
@@ -60,6 +65,7 @@ const createCompanyUserBaseSchema = z.object({
     invalid_type_error: "Selecione o cargo.",
   }),
   legal_role: z.enum(["admin", "consultant"]).default("consultant"),
+  can_edit_legal_workflow: z.boolean().default(false),
   temporary_password: z
     .string()
     .trim()
@@ -85,6 +91,7 @@ const updateCompanyUserBaseSchema = z.object({
     invalid_type_error: "Selecione o cargo.",
   }),
   legal_role: z.enum(["admin", "consultant"]).default("consultant"),
+  can_edit_legal_workflow: z.boolean().default(false),
   is_active: z.boolean(),
   new_password: z
     .union([z.string(), z.null(), z.undefined()])
@@ -114,6 +121,7 @@ export const createCompanyUserDefaultValues: CreateCompanyUserFormValues = {
   business_area: "commercial",
   role: "seller",
   legal_role: "consultant",
+  can_edit_legal_workflow: false,
   temporary_password: "",
 };
 
@@ -129,6 +137,7 @@ export function companyUserToFormValues(
     business_area: user.business_area ?? "commercial",
     role: user.role ?? "seller",
     legal_role: user.legal_role ?? "consultant",
+    can_edit_legal_workflow: Boolean(user.can_edit_legal_workflow),
     is_active: user.is_active,
     new_password: "",
     force_password_change: true,

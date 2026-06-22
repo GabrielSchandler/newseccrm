@@ -424,6 +424,47 @@ function buildTemplateWritePayload(values: DocumentTemplatePayload) {
   };
 }
 
+async function resolveDocumentTemplateStage(
+  selectedStage: string | null | undefined,
+  companyId: string,
+) {
+  if (!selectedStage) {
+    return {
+      legal_stage: null,
+      legal_stage_id: null,
+    };
+  }
+
+  const { supabase } = await getCurrentUserContext();
+  const isUuid =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      selectedStage,
+    );
+
+  if (!isUuid) {
+    return {
+      legal_stage: selectedStage,
+      legal_stage_id: null,
+    };
+  }
+
+  const { data, error } = await supabase
+    .from("legal_workflow_stages")
+    .select("id, legacy_key")
+    .eq("id", selectedStage)
+    .eq("company_id", companyId)
+    .single();
+
+  if (error || !data) {
+    throw new Error("A etapa juridica selecionada nao foi encontrada.");
+  }
+
+  return {
+    legal_stage: data.legacy_key,
+    legal_stage_id: data.id,
+  };
+}
+
 export async function createDocumentTemplateAction(
   values: DocumentTemplatePayload,
 ): Promise<DocumentActionState> {
@@ -442,10 +483,16 @@ export async function createDocumentTemplateAction(
       return friendlyError("Apenas admin ou gerente podem criar templates.");
     }
 
+    const stagePayload = await resolveDocumentTemplateStage(
+      parsed.data.legal_stage,
+      companyId,
+    );
+
     const { data, error } = await supabase
       .from("document_templates")
       .insert({
         ...buildTemplateWritePayload(parsed.data),
+        ...stagePayload,
         company_id: companyId,
         created_by: userProfileId,
       })
@@ -503,10 +550,16 @@ export async function updateDocumentTemplateAction(
       return friendlyError("Apenas admin ou gerente podem editar templates.");
     }
 
+    const stagePayload = await resolveDocumentTemplateStage(
+      parsed.data.legal_stage,
+      companyId,
+    );
+
     const { error } = await supabase
       .from("document_templates")
       .update({
         ...buildTemplateWritePayload(parsed.data),
+        ...stagePayload,
         updated_at: new Date().toISOString(),
       })
       .eq("id", templateId)

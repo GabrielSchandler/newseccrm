@@ -1,7 +1,11 @@
 import { LegalKanban, type LegalBoardPreSale } from "@/components/legal/legal-kanban";
 import { PageHeader } from "@/components/layout/page-header";
 import { getCurrentUserContext } from "@/lib/auth/current-user";
-import { normalizeLegalWorkflowStage } from "@/lib/legal/workflow";
+import {
+  getLegalWorkflowStage,
+  legalWorkflowStages,
+  mapLegalWorkflowStageRow,
+} from "@/lib/legal/workflow";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { DocumentTemplate, GeneratedDocument } from "@/types/document";
 import type { EmailTemplate } from "@/types/email";
@@ -17,7 +21,14 @@ function canUseLegalArea(role: string | null, businessArea: string) {
 }
 
 export default async function JuridicoPage() {
-  const { supabase, companyId, role, businessArea, userProfileId } = await getCurrentUserContext();
+  const {
+    supabase,
+    companyId,
+    role,
+    businessArea,
+    userProfileId,
+    canEditLegalWorkflow,
+  } = await getCurrentUserContext();
   const adminClient = createAdminClient();
 
   if (!canUseLegalArea(role, businessArea)) {
@@ -29,6 +40,7 @@ export default async function JuridicoPage() {
     { data: clientsData },
     { data: consultantsData },
     { data: templatesData },
+    { data: workflowStagesData, error: workflowStagesError },
   ] = await Promise.all([
     supabase
       .from("pre_sales")
@@ -52,11 +64,20 @@ export default async function JuridicoPage() {
       .eq("company_id", companyId)
       .eq("is_active", true)
       .order("name", { ascending: true }),
+    supabase
+      .from("legal_workflow_stages")
+      .select("id, legacy_key, title, short_title, description, color, expected_documents, position")
+      .eq("company_id", companyId)
+      .order("position", { ascending: true })
+      .order("created_at", { ascending: true }),
   ]);
 
   const allPreSales = (preSalesData ?? []) as PreSale[];
   const legalPreSalesBase = allPreSales.filter(
-    (preSale) => preSale.status === "aprovado" || Boolean(preSale.legal_stage),
+    (preSale) =>
+      preSale.status === "aprovado" ||
+      Boolean(preSale.legal_stage_id) ||
+      Boolean(preSale.legal_stage),
   );
   const generatedPreSaleIds = legalPreSalesBase.map((preSale) => preSale.id);
 
@@ -135,9 +156,16 @@ export default async function JuridicoPage() {
     file_size: number;
   }>;
   const financialCases = (financialCasesData ?? []) as PreSaleFinancialCase[];
+  const workflowSchemaReady = !workflowStagesError && Boolean(workflowStagesData?.length);
+  const workflowStages = workflowSchemaReady
+    ? (workflowStagesData ?? []).map(mapLegalWorkflowStageRow)
+    : legalWorkflowStages;
 
   const legalPreSales: LegalBoardPreSale[] = legalPreSalesBase.map((preSale) => {
-    const currentLegalStage = normalizeLegalWorkflowStage(preSale.legal_stage);
+    const currentLegalStage = getLegalWorkflowStage(
+      preSale.legal_stage_id ?? preSale.legal_stage,
+      workflowStages,
+    );
     const client = clients.find((item) => item.id === preSale.client_id) ?? null;
     const stageUpdatedAt =
       preSale.legal_stage_updated_at ?? preSale.updated_at ?? preSale.created_at;
@@ -154,7 +182,7 @@ export default async function JuridicoPage() {
             consultant.id === preSale.created_by,
         ) ??
         null,
-      currentLegalStage,
+      currentLegalStageId: currentLegalStage.id,
       stageUpdatedAt,
       financialCase:
         financialCases.find((financialCase) => financialCase.pre_sale_id === preSale.id) ??
@@ -187,6 +215,9 @@ export default async function JuridicoPage() {
           legalAdmins={legalAdmins}
           legalConsultants={legalConsultants}
           currentUserId={userProfileId}
+          stages={workflowStages}
+          canEditWorkflow={canEditLegalWorkflow}
+          workflowSchemaReady={workflowSchemaReady}
         />
       </div>
     </>

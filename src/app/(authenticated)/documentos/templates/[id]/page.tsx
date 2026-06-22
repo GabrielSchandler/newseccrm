@@ -6,7 +6,11 @@ import { DocumentsNav } from "@/components/documents/documents-nav";
 import { PageHeader } from "@/components/layout/page-header";
 import { getCurrentUserContext } from "@/lib/auth/current-user";
 import { displayValue, formatDateTime } from "@/lib/clients/formatters";
-import { getLegalWorkflowStage } from "@/lib/legal/workflow";
+import {
+  getLegalWorkflowStage,
+  legalWorkflowStages,
+  mapLegalWorkflowStageRow,
+} from "@/lib/legal/workflow";
 import {
   documentTemplateTypes,
   type DocumentTemplate,
@@ -47,6 +51,15 @@ export default async function TemplatePage({
   if (error || !template) {
     notFound();
   }
+
+  const { data: stagesData, error: stagesError } = await supabase
+    .from("legal_workflow_stages")
+    .select("id, legacy_key, title, short_title, description, color, expected_documents, position")
+    .eq("company_id", companyId)
+    .order("position");
+  const workflowStages = !stagesError && stagesData?.length
+    ? stagesData.map(mapLegalWorkflowStageRow)
+    : legalWorkflowStages;
 
   const [{ data: officialDocxSignedUrl }, { data: officialPdfSignedUrl }] =
     await Promise.all([
@@ -163,8 +176,11 @@ export default async function TemplatePage({
               Etapa juridica
             </p>
             <p className="mt-1 text-sm font-medium text-slate-950">
-              {template.legal_stage
-                ? getLegalWorkflowStage(template.legal_stage).label
+              {template.legal_stage_id || template.legal_stage
+                ? getLegalWorkflowStage(
+                    template.legal_stage_id ?? template.legal_stage,
+                    workflowStages,
+                  ).label
                 : "Nao vinculada"}
             </p>
           </div>

@@ -96,6 +96,7 @@ export type PreSale = {
   legacy_source: string | null;
   legacy_external_id: string | null;
   legal_stage: LegalWorkflowStage | null;
+  legal_stage_id?: string | null;
   legal_stage_updated_at: string | null;
   tracking_protocol: string | null;
   created_by: string;

@@ -5,6 +5,7 @@ export const backupRetentionDays = 7;
 export const backupRestoreOrder = [
   "companies",
   "user_profiles",
+  "legal_workflow_stages",
   "clients",
   "pre_sales",
   "pre_sale_client_snapshot",
@@ -24,4 +25,6 @@ export const backupRestoreOrder = [
   "legacy_rd_import",
   "rd_crm_activity_import_batches",
   "rd_crm_activity_import",
+  "legal_workflow_bulk_moves",
+  "legal_workflow_bulk_move_items",
 ] as const;

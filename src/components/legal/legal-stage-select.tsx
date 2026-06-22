@@ -4,29 +4,31 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 import {
   updateLegalWorkflowStageAction,
-  type JuridicoActionState,
-} from "@/app/(authenticated)/juridico/actions";
+  type LegalWorkflowActionState,
+} from "@/app/(authenticated)/juridico/workflow-actions";
 import { ChangeNoteModal } from "@/components/shared/change-note-modal";
-import { legalWorkflowStages, type LegalWorkflowStage } from "@/lib/legal/workflow";
+import type { LegalWorkflowStageDefinition } from "@/lib/legal/workflow";
 
 type LegalStageSelectProps = {
   preSaleId: string;
-  currentStage: LegalWorkflowStage;
+  currentStageId: string;
+  stages: LegalWorkflowStageDefinition[];
 };
 
 export function LegalStageSelect({
   preSaleId,
-  currentStage,
+  currentStageId,
+  stages,
 }: LegalStageSelectProps) {
   const router = useRouter();
-  const [selectedStage, setSelectedStage] = useState<LegalWorkflowStage>(currentStage);
-  const [pendingStage, setPendingStage] = useState<LegalWorkflowStage | null>(null);
-  const [message, setMessage] = useState<JuridicoActionState | null>(null);
+  const [selectedStage, setSelectedStage] = useState(currentStageId);
+  const [pendingStage, setPendingStage] = useState<string | null>(null);
+  const [message, setMessage] = useState<LegalWorkflowActionState | null>(null);
   const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
-    setSelectedStage(currentStage);
-  }, [currentStage]);
+    setSelectedStage(currentStageId);
+  }, [currentStageId]);
 
   function confirmStageChange(note: string) {
     if (!pendingStage) {
@@ -35,10 +37,10 @@ export function LegalStageSelect({
 
     startTransition(async () => {
       const result = await updateLegalWorkflowStageAction(preSaleId, pendingStage, note);
-      setMessage(result);
+        setMessage(result);
 
       if (!result.ok) {
-        setSelectedStage(currentStage);
+        setSelectedStage(currentStageId);
         return;
       }
 
@@ -61,10 +63,10 @@ export function LegalStageSelect({
         disabled={isPending}
         className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
         onChange={(event) => {
-          const nextStage = event.target.value as LegalWorkflowStage;
+          const nextStage = event.target.value;
 
-          if (nextStage === currentStage) {
-            setSelectedStage(currentStage);
+          if (nextStage === currentStageId) {
+            setSelectedStage(currentStageId);
             return;
           }
 
@@ -73,8 +75,8 @@ export function LegalStageSelect({
           setPendingStage(nextStage);
         }}
       >
-        {legalWorkflowStages.map((stage) => (
-          <option key={stage.value} value={stage.value}>
+        {stages.map((stage) => (
+          <option key={stage.id} value={stage.id}>
             {stage.shortLabel}
           </option>
         ))}
@@ -101,7 +103,7 @@ export function LegalStageSelect({
           }
 
           setPendingStage(null);
-          setSelectedStage(currentStage);
+          setSelectedStage(currentStageId);
         }}
         onConfirm={confirmStageChange}
       />

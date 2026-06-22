@@ -248,6 +248,7 @@ export async function createCompanyUserAction(
         parsed.data.business_area,
         parsed.data.legal_role,
       ),
+      can_edit_legal_workflow: parsed.data.can_edit_legal_workflow,
       is_active: true,
       password_must_change: true,
       password_reset_at: new Date().toISOString(),
@@ -285,6 +286,7 @@ export async function createCompanyUserAction(
           parsed.data.business_area,
           parsed.data.legal_role,
         ),
+        can_edit_legal_workflow: parsed.data.can_edit_legal_workflow,
       },
     });
   } catch (error) {
@@ -419,6 +421,7 @@ export async function updateCompanyUserAction(
         parsed.data.business_area,
         parsed.data.legal_role,
       ),
+      can_edit_legal_workflow: parsed.data.can_edit_legal_workflow,
       is_active: parsed.data.is_active,
       ...(parsed.data.new_password
         ? {
@@ -474,6 +477,7 @@ export async function updateCompanyUserAction(
           parsed.data.business_area,
           parsed.data.legal_role,
         ),
+        can_edit_legal_workflow: parsed.data.can_edit_legal_workflow,
         is_active: parsed.data.is_active,
         password_reset: Boolean(parsed.data.new_password),
         force_password_change: parsed.data.new_password
