@@ -387,6 +387,9 @@ const styles = StyleSheet.create({
     padding: 14,
     marginTop: 12,
   },
+  guaranteePageStart: {
+    marginTop: 0,
+  },
   guaranteeTitle: {
     fontSize: 10.2,
     fontWeight: 700,
@@ -1036,14 +1039,15 @@ export function CalculationReportPdf({
             </View>
           </View>
         </View>
+      </Page>
 
+      <Page size="A4" style={styles.page}>
         <View
           style={
             isImovelSimulation
               ? [styles.section, styles.sectionDense]
               : styles.section
           }
-          break
           wrap={false}
         >
           <Text style={styles.sectionTitle}>Resumo da operação atual</Text>
@@ -1117,8 +1121,13 @@ export function CalculationReportPdf({
             próxima etapa.
           </Text>
         </View>
+      </Page>
 
-        <View style={styles.guaranteeBox} break wrap={false}>
+      <Page size="A4" style={styles.page}>
+        <View
+          style={[styles.guaranteeBox, styles.guaranteePageStart]}
+          wrap={false}
+        >
           <Text style={styles.guaranteeTitle}>Segurança contratual</Text>
           <Text style={styles.guaranteeLead}>
             Nossa prestação de serviço conta com proteção contratual específica,
