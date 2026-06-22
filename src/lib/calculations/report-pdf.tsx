@@ -120,6 +120,9 @@ const styles = StyleSheet.create({
   section: {
     marginBottom: 14,
   },
+  sectionDense: {
+    marginBottom: 9,
+  },
   sectionTitle: {
     fontSize: 10.5,
     fontWeight: 700,
@@ -256,6 +259,9 @@ const styles = StyleSheet.create({
     color: "#52525b",
     textTransform: "uppercase",
   },
+  compactHeaderCellDense: {
+    paddingVertical: 5.5,
+  },
   compactRow: {
     flexDirection: "row",
     borderTopWidth: 1,
@@ -267,6 +273,9 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     fontSize: 8.8,
     color: "#3f3f46",
+  },
+  compactCellDense: {
+    paddingVertical: 5.5,
   },
   compactCellValue: {
     flex: 0.95,
@@ -285,6 +294,9 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
     marginBottom: 14,
   },
+  opportunityCardDense: {
+    marginBottom: 8,
+  },
   opportunityRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -294,6 +306,9 @@ const styles = StyleSheet.create({
     paddingVertical: 9,
     borderTopWidth: 1,
     borderTopColor: "#e5e7eb",
+  },
+  opportunityRowDense: {
+    paddingVertical: 5.5,
   },
   opportunityFirstRow: {
     borderTopWidth: 0,
@@ -361,6 +376,9 @@ const styles = StyleSheet.create({
     padding: 14,
     marginTop: 2,
   },
+  nextStepBoxDense: {
+    padding: 11,
+  },
   guaranteeBox: {
     borderRadius: 10,
     borderWidth: 1,
@@ -400,17 +418,29 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     marginBottom: 7,
   },
+  nextStepTitleDense: {
+    marginBottom: 5,
+  },
   paragraph: {
     fontSize: 9.3,
     color: "#3f3f46",
     lineHeight: 1.6,
     marginBottom: 7,
   },
+  paragraphDense: {
+    fontSize: 8.8,
+    lineHeight: 1.4,
+    marginBottom: 5,
+  },
   cta: {
     fontSize: 9.3,
     fontWeight: 700,
     color: COLORS.accent,
     marginTop: 3,
+  },
+  ctaDense: {
+    fontSize: 8.8,
+    marginTop: 2,
   },
   footer: {
     marginTop: 14,
@@ -477,6 +507,19 @@ function isFilledDisplayValue(value: string | null | undefined) {
 
 function optionalText(value: string | null | undefined) {
   return isFilledDisplayValue(value) ? value?.trim() ?? null : null;
+}
+
+function optionalTextLimited(
+  value: string | null | undefined,
+  maxLength: number,
+) {
+  const text = optionalText(value);
+
+  if (!text || text.length <= maxLength) {
+    return text;
+  }
+
+  return `${text.slice(0, maxLength).trimEnd()}...`;
 }
 
 function displayDate(value: string | null | undefined) {
@@ -581,8 +624,10 @@ function InfoItem({
 
 function DataTable({
   rows,
+  dense = false,
 }: {
   rows: Array<{ label: string; value: string | null }>;
+  dense?: boolean;
 }) {
   const visibleRows = rows.filter(
     (row): row is { label: string; value: string } => isFilledDisplayValue(row.value),
@@ -595,13 +640,45 @@ function DataTable({
   return (
     <View style={styles.compactTable}>
       <View style={styles.compactHeader}>
-        <Text style={styles.compactHeaderCell}>Indicador</Text>
-        <Text style={styles.compactHeaderCell}>Valor</Text>
+        <Text
+          style={
+            dense
+              ? [styles.compactHeaderCell, styles.compactHeaderCellDense]
+              : styles.compactHeaderCell
+          }
+        >
+          Indicador
+        </Text>
+        <Text
+          style={
+            dense
+              ? [styles.compactHeaderCell, styles.compactHeaderCellDense]
+              : styles.compactHeaderCell
+          }
+        >
+          Valor
+        </Text>
       </View>
       {visibleRows.map((row) => (
         <View key={row.label} style={styles.compactRow} wrap={false}>
-          <Text style={styles.compactCellLabel}>{row.label}</Text>
-          <Text style={styles.compactCellValue}>{row.value}</Text>
+          <Text
+            style={
+              dense
+                ? [styles.compactCellLabel, styles.compactCellDense]
+                : styles.compactCellLabel
+            }
+          >
+            {row.label}
+          </Text>
+          <Text
+            style={
+              dense
+                ? [styles.compactCellValue, styles.compactCellDense]
+                : styles.compactCellValue
+            }
+          >
+            {row.value}
+          </Text>
         </View>
       ))}
     </View>
@@ -612,8 +689,10 @@ type OpportunityTone = "default" | "positive";
 
 function OpportunityTable({
   rows,
+  dense = false,
 }: {
   rows: Array<{ label: string; value: string | null; tone?: OpportunityTone }>;
+  dense?: boolean;
 }) {
   const visibleRows = rows.filter(
     (row): row is { label: string; value: string; tone?: OpportunityTone } =>
@@ -625,10 +704,16 @@ function OpportunityTable({
   }
 
   return (
-    <View style={styles.opportunityCard}>
+    <View
+      style={
+        dense
+          ? [styles.opportunityCard, styles.opportunityCardDense]
+          : styles.opportunityCard
+      }
+    >
       {visibleRows.map((row, index) => {
         const tone = row.tone ?? "default";
-        const rowStyles =
+        const toneRowStyles =
           tone === "positive"
             ? index === 0
               ? [
@@ -640,6 +725,9 @@ function OpportunityTable({
             : index === 0
               ? [styles.opportunityRow, styles.opportunityFirstRow]
               : [styles.opportunityRow];
+        const rowStyles = dense
+          ? [...toneRowStyles, styles.opportunityRowDense]
+          : toneRowStyles;
         const labelStyles =
           tone === "positive"
             ? [styles.opportunityLabel, styles.opportunityLabelPositive]
@@ -942,43 +1030,95 @@ export function CalculationReportPdf({
               ) : null}
               <InfoItem
                 label="Observacoes"
-                value={optionalText(calculation.notes)}
+                value={optionalTextLimited(calculation.notes, 240)}
                 full
               />
             </View>
           </View>
         </View>
 
-        <View style={styles.section}>
+        <View
+          style={
+            isImovelSimulation
+              ? [styles.section, styles.sectionDense]
+              : styles.section
+          }
+          break
+          wrap={false}
+        >
           <Text style={styles.sectionTitle}>Resumo da operação atual</Text>
-          <DataTable rows={operationRows} />
+          <DataTable rows={operationRows} dense={isImovelSimulation} />
         </View>
 
-        <View style={styles.section}>
+        <View
+          style={
+            isImovelSimulation
+              ? [styles.section, styles.sectionDense]
+              : styles.section
+          }
+        >
           <Text style={styles.sectionTitle}>Panorama da oportunidade</Text>
-          <OpportunityTable rows={opportunityRows} />
+          <OpportunityTable rows={opportunityRows} dense={isImovelSimulation} />
         </View>
 
-        <View style={styles.nextStepBox}>
-          <Text style={styles.nextStepTitle}>Como esta análise pode ajudar você</Text>
-          <Text style={styles.paragraph}>
+        <View
+          style={
+            isImovelSimulation
+              ? [styles.nextStepBox, styles.nextStepBoxDense]
+              : styles.nextStepBox
+          }
+        >
+          <Text
+            style={
+              isImovelSimulation
+                ? [styles.nextStepTitle, styles.nextStepTitleDense]
+                : styles.nextStepTitle
+            }
+          >
+            Como esta análise pode ajudar você
+          </Text>
+          <Text
+            style={
+              isImovelSimulation
+                ? [styles.paragraph, styles.paragraphDense]
+                : styles.paragraph
+            }
+          >
             A partir desta simulação, nossa equipe pode avaliar a documentação e
             indicar o caminho mais adequado para buscar uma condição mais
             vantajosa, com segurança e estratégia.
           </Text>
-          <Text style={styles.nextStepTitle}>Próximo passo recomendado</Text>
-          <Text style={styles.paragraph}>
+          <Text
+            style={
+              isImovelSimulation
+                ? [styles.nextStepTitle, styles.nextStepTitleDense]
+                : styles.nextStepTitle
+            }
+          >
+            Próximo passo recomendado
+          </Text>
+          <Text
+            style={
+              isImovelSimulation
+                ? [styles.paragraph, styles.paragraphDense]
+                : styles.paragraph
+            }
+          >
             Para avançarmos com segurança, o próximo passo é validar a
             documentação do contrato e definir a estratégia mais adequada para
             buscar a melhor condição possível junto à instituição financeira.
           </Text>
-          <Text style={styles.cta}>
+          <Text
+            style={
+              isImovelSimulation ? [styles.cta, styles.ctaDense] : styles.cta
+            }
+          >
             Fale com seu consultor para validar os documentos e avançar para a
             próxima etapa.
           </Text>
         </View>
 
-        <View style={styles.guaranteeBox}>
+        <View style={styles.guaranteeBox} break wrap={false}>
           <Text style={styles.guaranteeTitle}>Segurança contratual</Text>
           <Text style={styles.guaranteeLead}>
             Nossa prestação de serviço conta com proteção contratual específica,
