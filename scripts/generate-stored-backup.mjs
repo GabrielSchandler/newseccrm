@@ -17,6 +17,13 @@ const backupRestoreOrder = [
   "companies",
   "user_profiles",
   "legal_workflow_stages",
+  "finance_categories",
+  "finance_accounts",
+  "finance_transactions",
+  "finance_sales",
+  "finance_chargebacks",
+  "finance_import_batches",
+  "finance_import_rows",
   "clients",
   "pre_sales",
   "pre_sale_client_snapshot",
@@ -43,6 +50,13 @@ const optionalWorkflowTables = new Set([
   "legal_workflow_stages",
   "legal_workflow_bulk_moves",
   "legal_workflow_bulk_move_items",
+  "finance_categories",
+  "finance_accounts",
+  "finance_transactions",
+  "finance_sales",
+  "finance_chargebacks",
+  "finance_import_batches",
+  "finance_import_rows",
 ]);
 
 const preSaleChildTables = [

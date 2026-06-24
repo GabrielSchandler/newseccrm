@@ -6,6 +6,9 @@ import { getSellerHome, workspaceOptions } from "@/lib/workspace";
 
 export default async function AreasPage() {
   const { role, businessArea } = await getCurrentUserContext();
+  const visibleWorkspaces = workspaceOptions.filter(
+    (workspace) => workspace.value !== "finance" || role === "admin",
+  );
 
   if (role === "seller") {
     redirect(getSellerHome(businessArea));
@@ -19,8 +22,8 @@ export default async function AreasPage() {
       />
       <div className="p-6">
         <section className="mx-auto max-w-5xl rounded-lg border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-          <div className="grid gap-4 lg:grid-cols-3">
-            {workspaceOptions.map((workspace) => (
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {visibleWorkspaces.map((workspace) => (
               <Link
                 key={workspace.value}
                 href={`/areas/select?workspace=${workspace.value}`}

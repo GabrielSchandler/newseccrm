@@ -39,6 +39,7 @@ const navigation: SidebarNavigationItem[] = [
   { href: "/backups", label: "Backups", icon: "backups", adminOnly: true },
   { href: "/logs", label: "Logs", icon: "logs", adminOnly: true },
   { href: "/juridico", label: "Esteira", icon: "legal" },
+  { href: "/financeiro", label: "Financeiro", icon: "finance", adminOnly: true },
 ];
 
 function resolveCompanyDisplayName(company: {

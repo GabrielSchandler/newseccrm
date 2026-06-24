@@ -29,6 +29,7 @@ const protectedRoutes = [
   "/usuarios",
   "/areas",
   "/juridico",
+  "/financeiro",
   "/alterar-senha",
 ];
 

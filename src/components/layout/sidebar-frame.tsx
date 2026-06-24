@@ -48,7 +48,12 @@ export function SidebarFrame({
       .find((entry) => entry.startsWith(`${WORKSPACE_COOKIE_NAME}=`))
       ?.split("=")[1];
 
-    if (cookieValue === "management" || cookieValue === "commercial" || cookieValue === "legal") {
+    if (
+      cookieValue === "management" ||
+      cookieValue === "commercial" ||
+      cookieValue === "legal" ||
+      cookieValue === "finance"
+    ) {
       setWorkspacePreference(cookieValue);
     }
   }, [pathname]);
@@ -60,7 +65,11 @@ export function SidebarFrame({
       return pathWorkspace;
     }
 
-    if (workspacePreference === "commercial" || workspacePreference === "legal") {
+    if (
+      workspacePreference === "commercial" ||
+      workspacePreference === "legal" ||
+      workspacePreference === "finance"
+    ) {
       return workspacePreference;
     }
 
@@ -84,6 +93,8 @@ export function SidebarFrame({
           "/backups",
           "/logs",
         ].includes(item.href)) ||
+        (currentWorkspace === "finance" &&
+          ["/financeiro"].includes(item.href)) ||
         (currentWorkspace === "commercial" &&
           ["/comercial", "/clientes", "/pre-vendas", "/calculos", "/documentos"].includes(item.href)) ||
         (currentWorkspace === "legal" &&
@@ -93,6 +104,8 @@ export function SidebarFrame({
   const workspaceLabel =
     currentWorkspace === "management"
       ? "Gestao"
+      : currentWorkspace === "finance"
+        ? "Financeiro"
       : currentWorkspace === "legal"
         ? "Juridico"
         : "Comercial";

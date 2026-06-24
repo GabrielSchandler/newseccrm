@@ -10,6 +10,7 @@ import {
   Handshake,
   LayoutDashboard,
   Mail,
+  WalletCards,
   Users,
 } from "lucide-react";
 import Link from "next/link";
@@ -33,7 +34,8 @@ export type SidebarNavigationItem = {
     | "logs"
     | "email"
     | "integrations"
-    | "legal";
+    | "legal"
+    | "finance";
   managerOnly?: boolean;
   adminOnly?: boolean;
 };
@@ -59,6 +61,7 @@ const icons = {
   email: Mail,
   integrations: Mail,
   legal: FileText,
+  finance: WalletCards,
 };
 
 function isActivePath(pathname: string, href: string) {
