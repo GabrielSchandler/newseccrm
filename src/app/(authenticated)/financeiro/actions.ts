@@ -6,13 +6,28 @@ import { recordAuditLog } from "@/lib/audit/log";
 import { getCurrentUserContext } from "@/lib/auth/current-user";
 import { parseFinanceWorkbook } from "@/lib/finance/importer";
 
-function redirectWithMessage(type: "success" | "error", message: string) {
-  redirect(`/financeiro?${type}=${encodeURIComponent(message)}`);
+function redirectWithMessage(
+  type: "success" | "error",
+  message: string,
+  path = "/financeiro",
+) {
+  const separator = path.includes("?") ? "&" : "?";
+  redirect(`${path}${separator}${type}=${encodeURIComponent(message)}`);
 }
 
 function normalizeText(value: FormDataEntryValue | null) {
   const text = String(value ?? "").trim();
   return text.length ? text : null;
+}
+
+function resolveRedirectPath(formData?: FormData) {
+  const path = normalizeText(formData?.get("redirect_to") ?? null);
+
+  if (path?.startsWith("/financeiro")) {
+    return path;
+  }
+
+  return "/financeiro";
 }
 
 function requireDate(value: FormDataEntryValue | null, fieldName: string) {
@@ -110,6 +125,87 @@ function isRedirectError(error: unknown) {
   );
 }
 
+type FinanceContext = Awaited<ReturnType<typeof requireFinanceAdmin>>;
+type FinanceSupabaseClient = FinanceContext["supabase"];
+type FinanceAuditEntityType = "transaction" | "sale" | "chargeback";
+type FinanceAuditActionType = "create" | "update" | "delete" | "restore";
+
+const financeEntityTables: Record<FinanceAuditEntityType, string> = {
+  transaction: "finance_transactions",
+  sale: "finance_sales",
+  chargeback: "finance_chargebacks",
+};
+
+function getRecordId(record: Record<string, unknown> | null) {
+  const id = record?.id;
+  return typeof id === "string" ? id : null;
+}
+
+async function fetchFinanceEntity(
+  supabase: FinanceSupabaseClient,
+  table: string,
+  companyId: string,
+  id: string,
+) {
+  const { data, error } = await supabase
+    .from(table)
+    .select("*")
+    .eq("id", id)
+    .eq("company_id", companyId)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  if (!data) {
+    throw new Error("Registro financeiro nao encontrado.");
+  }
+
+  return data as Record<string, unknown>;
+}
+
+async function recordFinanceAuditLog({
+  supabase,
+  companyId,
+  userProfileId,
+  entityType,
+  actionType,
+  entityLabel,
+  beforeData,
+  afterData,
+}: {
+  supabase: FinanceSupabaseClient;
+  companyId: string;
+  userProfileId: string;
+  entityType: FinanceAuditEntityType;
+  actionType: FinanceAuditActionType;
+  entityLabel?: string | null;
+  beforeData: Record<string, unknown> | null;
+  afterData: Record<string, unknown> | null;
+}) {
+  const entityId = getRecordId(afterData) ?? getRecordId(beforeData);
+
+  if (!entityId) {
+    return;
+  }
+
+  const { error } = await supabase.from("finance_audit_logs").insert({
+    company_id: companyId,
+    entity_type: entityType,
+    entity_id: entityId,
+    action_type: actionType,
+    entity_label: entityLabel ?? null,
+    before_data: beforeData,
+    after_data: afterData,
+    changed_by: userProfileId,
+  });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+}
+
 export async function createFinanceTransactionAction(formData: FormData) {
   try {
     const { supabase, companyId, userProfileId } = await requireFinanceAdmin();
@@ -141,11 +237,26 @@ export async function createFinanceTransactionAction(formData: FormData) {
       updated_at: new Date().toISOString(),
     };
 
-    const { error } = await supabase.from("finance_transactions").insert(payload);
+    const { data: createdTransaction, error } = await supabase
+      .from("finance_transactions")
+      .insert(payload)
+      .select("*")
+      .single();
 
     if (error) {
       throw new Error(error.message);
     }
+
+    await recordFinanceAuditLog({
+      supabase,
+      companyId,
+      userProfileId,
+      entityType: "transaction",
+      actionType: "create",
+      entityLabel: description,
+      beforeData: null,
+      afterData: createdTransaction as Record<string, unknown>,
+    });
 
     await recordAuditLog({
       supabase,
@@ -158,6 +269,7 @@ export async function createFinanceTransactionAction(formData: FormData) {
     });
 
     revalidatePath("/financeiro");
+    revalidatePath("/financeiro/consultas");
     redirectWithMessage("success", "Lancamento financeiro cadastrado.");
   } catch (error) {
     if (isRedirectError(error)) {
@@ -171,6 +283,12 @@ export async function createFinanceTransactionAction(formData: FormData) {
 export async function updateFinanceTransactionAction(id: string, formData: FormData) {
   try {
     const { supabase, companyId, userProfileId } = await requireFinanceAdmin();
+    const beforeData = await fetchFinanceEntity(
+      supabase,
+      "finance_transactions",
+      companyId,
+      id,
+    );
     const description = normalizeText(formData.get("description"));
 
     if (!description) {
@@ -196,15 +314,28 @@ export async function updateFinanceTransactionAction(id: string, formData: FormD
       updated_at: new Date().toISOString(),
     };
 
-    const { error } = await supabase
+    const { data: updatedTransaction, error } = await supabase
       .from("finance_transactions")
       .update(payload)
       .eq("id", id)
-      .eq("company_id", companyId);
+      .eq("company_id", companyId)
+      .select("*")
+      .single();
 
     if (error) {
       throw new Error(error.message);
     }
+
+    await recordFinanceAuditLog({
+      supabase,
+      companyId,
+      userProfileId,
+      entityType: "transaction",
+      actionType: "update",
+      entityLabel: description,
+      beforeData,
+      afterData: updatedTransaction as Record<string, unknown>,
+    });
 
     await recordAuditLog({
       supabase,
@@ -218,6 +349,7 @@ export async function updateFinanceTransactionAction(id: string, formData: FormD
     });
 
     revalidatePath("/financeiro");
+    revalidatePath("/financeiro/consultas");
     redirectWithMessage("success", "Lancamento financeiro atualizado.");
   } catch (error) {
     if (isRedirectError(error)) {
@@ -228,9 +360,17 @@ export async function updateFinanceTransactionAction(id: string, formData: FormD
   }
 }
 
-export async function deleteFinanceTransactionAction(id: string) {
+export async function deleteFinanceTransactionAction(id: string, formData?: FormData) {
+  const redirectPath = resolveRedirectPath(formData);
+
   try {
     const { supabase, companyId, userProfileId } = await requireFinanceAdmin();
+    const beforeData = await fetchFinanceEntity(
+      supabase,
+      "finance_transactions",
+      companyId,
+      id,
+    );
     const { error } = await supabase
       .from("finance_transactions")
       .delete()
@@ -240,6 +380,17 @@ export async function deleteFinanceTransactionAction(id: string) {
     if (error) {
       throw new Error(error.message);
     }
+
+    await recordFinanceAuditLog({
+      supabase,
+      companyId,
+      userProfileId,
+      entityType: "transaction",
+      actionType: "delete",
+      entityLabel: String(beforeData.description ?? "Lancamento financeiro"),
+      beforeData,
+      afterData: null,
+    });
 
     await recordAuditLog({
       supabase,
@@ -251,13 +402,14 @@ export async function deleteFinanceTransactionAction(id: string) {
     });
 
     revalidatePath("/financeiro");
-    redirectWithMessage("success", "Lancamento removido.");
+    revalidatePath("/financeiro/consultas");
+    redirectWithMessage("success", "Lancamento removido.", redirectPath);
   } catch (error) {
     if (isRedirectError(error)) {
       throw error;
     }
 
-    redirectWithMessage("error", normalizeDatabaseError(error as Error));
+    redirectWithMessage("error", normalizeDatabaseError(error as Error), redirectPath);
   }
 }
 
@@ -299,11 +451,26 @@ export async function createFinanceSaleAction(formData: FormData) {
       updated_at: new Date().toISOString(),
     };
 
-    const { error } = await supabase.from("finance_sales").insert(payload);
+    const { data: createdSale, error } = await supabase
+      .from("finance_sales")
+      .insert(payload)
+      .select("*")
+      .single();
 
     if (error) {
       throw new Error(error.message);
     }
+
+    await recordFinanceAuditLog({
+      supabase,
+      companyId,
+      userProfileId,
+      entityType: "sale",
+      actionType: "create",
+      entityLabel: clientName,
+      beforeData: null,
+      afterData: createdSale as Record<string, unknown>,
+    });
 
     await recordAuditLog({
       supabase,
@@ -316,6 +483,7 @@ export async function createFinanceSaleAction(formData: FormData) {
     });
 
     revalidatePath("/financeiro");
+    revalidatePath("/financeiro/consultas");
     redirectWithMessage("success", "Venda cadastrada no financeiro.");
   } catch (error) {
     if (isRedirectError(error)) {
@@ -329,6 +497,12 @@ export async function createFinanceSaleAction(formData: FormData) {
 export async function updateFinanceSaleAction(id: string, formData: FormData) {
   try {
     const { supabase, companyId, userProfileId } = await requireFinanceAdmin();
+    const beforeData = await fetchFinanceEntity(
+      supabase,
+      "finance_sales",
+      companyId,
+      id,
+    );
     const clientName = normalizeText(formData.get("client_name"));
 
     if (!clientName) {
@@ -361,15 +535,28 @@ export async function updateFinanceSaleAction(id: string, formData: FormData) {
       updated_at: new Date().toISOString(),
     };
 
-    const { error } = await supabase
+    const { data: updatedSale, error } = await supabase
       .from("finance_sales")
       .update(payload)
       .eq("id", id)
-      .eq("company_id", companyId);
+      .eq("company_id", companyId)
+      .select("*")
+      .single();
 
     if (error) {
       throw new Error(error.message);
     }
+
+    await recordFinanceAuditLog({
+      supabase,
+      companyId,
+      userProfileId,
+      entityType: "sale",
+      actionType: "update",
+      entityLabel: clientName,
+      beforeData,
+      afterData: updatedSale as Record<string, unknown>,
+    });
 
     await recordAuditLog({
       supabase,
@@ -383,6 +570,7 @@ export async function updateFinanceSaleAction(id: string, formData: FormData) {
     });
 
     revalidatePath("/financeiro");
+    revalidatePath("/financeiro/consultas");
     redirectWithMessage("success", "Venda atualizada.");
   } catch (error) {
     if (isRedirectError(error)) {
@@ -393,9 +581,12 @@ export async function updateFinanceSaleAction(id: string, formData: FormData) {
   }
 }
 
-export async function deleteFinanceSaleAction(id: string) {
+export async function deleteFinanceSaleAction(id: string, formData?: FormData) {
+  const redirectPath = resolveRedirectPath(formData);
+
   try {
     const { supabase, companyId, userProfileId } = await requireFinanceAdmin();
+    const beforeData = await fetchFinanceEntity(supabase, "finance_sales", companyId, id);
     const { error } = await supabase
       .from("finance_sales")
       .delete()
@@ -405,6 +596,17 @@ export async function deleteFinanceSaleAction(id: string) {
     if (error) {
       throw new Error(error.message);
     }
+
+    await recordFinanceAuditLog({
+      supabase,
+      companyId,
+      userProfileId,
+      entityType: "sale",
+      actionType: "delete",
+      entityLabel: String(beforeData.client_name ?? "Venda"),
+      beforeData,
+      afterData: null,
+    });
 
     await recordAuditLog({
       supabase,
@@ -416,13 +618,14 @@ export async function deleteFinanceSaleAction(id: string) {
     });
 
     revalidatePath("/financeiro");
-    redirectWithMessage("success", "Venda removida.");
+    revalidatePath("/financeiro/consultas");
+    redirectWithMessage("success", "Venda removida.", redirectPath);
   } catch (error) {
     if (isRedirectError(error)) {
       throw error;
     }
 
-    redirectWithMessage("error", normalizeDatabaseError(error as Error));
+    redirectWithMessage("error", normalizeDatabaseError(error as Error), redirectPath);
   }
 }
 
@@ -450,11 +653,26 @@ export async function createFinanceChargebackAction(formData: FormData) {
       updated_at: new Date().toISOString(),
     };
 
-    const { error } = await supabase.from("finance_chargebacks").insert(payload);
+    const { data: createdChargeback, error } = await supabase
+      .from("finance_chargebacks")
+      .insert(payload)
+      .select("*")
+      .single();
 
     if (error) {
       throw new Error(error.message);
     }
+
+    await recordFinanceAuditLog({
+      supabase,
+      companyId,
+      userProfileId,
+      entityType: "chargeback",
+      actionType: "create",
+      entityLabel: clientName,
+      beforeData: null,
+      afterData: createdChargeback as Record<string, unknown>,
+    });
 
     await recordAuditLog({
       supabase,
@@ -467,6 +685,7 @@ export async function createFinanceChargebackAction(formData: FormData) {
     });
 
     revalidatePath("/financeiro");
+    revalidatePath("/financeiro/consultas");
     redirectWithMessage("success", "Chargeback cadastrado.");
   } catch (error) {
     if (isRedirectError(error)) {
@@ -480,6 +699,12 @@ export async function createFinanceChargebackAction(formData: FormData) {
 export async function updateFinanceChargebackAction(id: string, formData: FormData) {
   try {
     const { supabase, companyId, userProfileId } = await requireFinanceAdmin();
+    const beforeData = await fetchFinanceEntity(
+      supabase,
+      "finance_chargebacks",
+      companyId,
+      id,
+    );
     const clientName = normalizeText(formData.get("client_name"));
 
     if (!clientName) {
@@ -498,15 +723,28 @@ export async function updateFinanceChargebackAction(id: string, formData: FormDa
       updated_at: new Date().toISOString(),
     };
 
-    const { error } = await supabase
+    const { data: updatedChargeback, error } = await supabase
       .from("finance_chargebacks")
       .update(payload)
       .eq("id", id)
-      .eq("company_id", companyId);
+      .eq("company_id", companyId)
+      .select("*")
+      .single();
 
     if (error) {
       throw new Error(error.message);
     }
+
+    await recordFinanceAuditLog({
+      supabase,
+      companyId,
+      userProfileId,
+      entityType: "chargeback",
+      actionType: "update",
+      entityLabel: clientName,
+      beforeData,
+      afterData: updatedChargeback as Record<string, unknown>,
+    });
 
     await recordAuditLog({
       supabase,
@@ -520,6 +758,7 @@ export async function updateFinanceChargebackAction(id: string, formData: FormDa
     });
 
     revalidatePath("/financeiro");
+    revalidatePath("/financeiro/consultas");
     redirectWithMessage("success", "Chargeback atualizado.");
   } catch (error) {
     if (isRedirectError(error)) {
@@ -530,9 +769,17 @@ export async function updateFinanceChargebackAction(id: string, formData: FormDa
   }
 }
 
-export async function deleteFinanceChargebackAction(id: string) {
+export async function deleteFinanceChargebackAction(id: string, formData?: FormData) {
+  const redirectPath = resolveRedirectPath(formData);
+
   try {
     const { supabase, companyId, userProfileId } = await requireFinanceAdmin();
+    const beforeData = await fetchFinanceEntity(
+      supabase,
+      "finance_chargebacks",
+      companyId,
+      id,
+    );
     const { error } = await supabase
       .from("finance_chargebacks")
       .delete()
@@ -542,6 +789,17 @@ export async function deleteFinanceChargebackAction(id: string) {
     if (error) {
       throw new Error(error.message);
     }
+
+    await recordFinanceAuditLog({
+      supabase,
+      companyId,
+      userProfileId,
+      entityType: "chargeback",
+      actionType: "delete",
+      entityLabel: String(beforeData.client_name ?? "Chargeback"),
+      beforeData,
+      afterData: null,
+    });
 
     await recordAuditLog({
       supabase,
@@ -553,7 +811,128 @@ export async function deleteFinanceChargebackAction(id: string) {
     });
 
     revalidatePath("/financeiro");
-    redirectWithMessage("success", "Chargeback removido.");
+    revalidatePath("/financeiro/consultas");
+    redirectWithMessage("success", "Chargeback removido.", redirectPath);
+  } catch (error) {
+    if (isRedirectError(error)) {
+      throw error;
+    }
+
+    redirectWithMessage("error", normalizeDatabaseError(error as Error), redirectPath);
+  }
+}
+
+export async function restoreFinanceAuditLogAction(id: string) {
+  try {
+    const { supabase, companyId, userProfileId } = await requireFinanceAdmin();
+    const { data: auditLog, error: auditError } = await supabase
+      .from("finance_audit_logs")
+      .select("*")
+      .eq("id", id)
+      .eq("company_id", companyId)
+      .maybeSingle();
+
+    if (auditError) {
+      throw new Error(auditError.message);
+    }
+
+    if (!auditLog) {
+      throw new Error("Log financeiro nao encontrado.");
+    }
+
+    if (auditLog.restored_at) {
+      throw new Error("Esta alteracao ja foi restaurada.");
+    }
+
+    const entityType = auditLog.entity_type as FinanceAuditEntityType;
+    const table = financeEntityTables[entityType];
+
+    if (!table) {
+      throw new Error("Tipo de registro financeiro invalido.");
+    }
+
+    const beforeData = auditLog.before_data as Record<string, unknown> | null;
+    const afterData = auditLog.after_data as Record<string, unknown> | null;
+    const entityId = getRecordId(afterData) ?? getRecordId(beforeData);
+
+    if (!entityId) {
+      throw new Error("Nao foi possivel identificar o registro para restaurar.");
+    }
+
+    if (auditLog.action_type === "create") {
+      const { error } = await supabase
+        .from(table)
+        .delete()
+        .eq("id", entityId)
+        .eq("company_id", companyId);
+
+      if (error) {
+        throw new Error(error.message);
+      }
+    } else {
+      if (!beforeData) {
+        throw new Error("Este log nao possui dados anteriores para restaurar.");
+      }
+
+      const { error } = await supabase
+        .from(table)
+        .upsert(
+          {
+            ...beforeData,
+            company_id: companyId,
+            updated_by: userProfileId,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "id" },
+        );
+
+      if (error) {
+        throw new Error(error.message);
+      }
+    }
+
+    const { error: updateLogError } = await supabase
+      .from("finance_audit_logs")
+      .update({
+        restored_at: new Date().toISOString(),
+        restored_by: userProfileId,
+      })
+      .eq("id", id)
+      .eq("company_id", companyId);
+
+    if (updateLogError) {
+      throw new Error(updateLogError.message);
+    }
+
+    await recordFinanceAuditLog({
+      supabase,
+      companyId,
+      userProfileId,
+      entityType,
+      actionType: "restore",
+      entityLabel: auditLog.entity_label,
+      beforeData: afterData,
+      afterData: beforeData,
+    });
+
+    await recordAuditLog({
+      supabase,
+      companyId,
+      userProfileId,
+      action: "finance.audit.restored",
+      entityType: "finance_audit_log",
+      entityId: id,
+      entityLabel: auditLog.entity_label,
+      details: {
+        entity_type: entityType,
+        entity_id: entityId,
+        restored_action: auditLog.action_type,
+      },
+    });
+
+    revalidatePath("/financeiro");
+    revalidatePath("/financeiro/consultas");
+    redirectWithMessage("success", "Alteracao financeira restaurada.");
   } catch (error) {
     if (isRedirectError(error)) {
       throw error;

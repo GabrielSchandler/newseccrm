@@ -1,13 +1,10 @@
 import {
-  ArrowDownRight,
-  ArrowUpRight,
-  CalendarDays,
-  FileSpreadsheet,
-  Landmark,
+  History,
   Pencil,
   Plus,
+  Search,
   Trash2,
-  WalletCards,
+  Undo2,
 } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -22,6 +19,7 @@ import {
   deleteFinanceSaleAction,
   deleteFinanceTransactionAction,
   importFinanceFilesAction,
+  restoreFinanceAuditLogAction,
   updateFinanceChargebackAction,
   updateFinanceSaleAction,
   updateFinanceTransactionAction,
@@ -30,6 +28,7 @@ import {
   financeModalityOptions,
   financePaymentMethods,
   type FinanceAccount,
+  type FinanceAuditLog,
   type FinanceCategory,
   type FinanceChargeback,
   type FinanceImportBatch,
@@ -66,8 +65,6 @@ const currencyFormatter = new Intl.NumberFormat("pt-BR", {
 
 const numberFormatter = new Intl.NumberFormat("pt-BR");
 
-const timeZone = "America/Sao_Paulo";
-
 function toNumber(value: string | number | null | undefined) {
   const parsed = Number(value ?? 0);
   return Number.isFinite(parsed) ? parsed : 0;
@@ -86,69 +83,6 @@ function formatDate(value: string | null | undefined) {
   return year && month && day ? `${day}/${month}/${year}` : "-";
 }
 
-function getSaoPauloDateParts(date = new Date()) {
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(date);
-
-  return {
-    year: Number(parts.find((part) => part.type === "year")?.value ?? "0"),
-    month: Number(parts.find((part) => part.type === "month")?.value ?? "1"),
-    day: Number(parts.find((part) => part.type === "day")?.value ?? "1"),
-  };
-}
-
-function toYmd(year: number, month: number, day: number) {
-  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-}
-
-function getDateRanges() {
-  const today = getSaoPauloDateParts();
-  const todayYmd = toYmd(today.year, today.month, today.day);
-  const todayDate = new Date(Date.UTC(today.year, today.month - 1, today.day));
-  const weekStart = new Date(todayDate);
-  const weekDay = todayDate.getUTCDay() || 7;
-  weekStart.setUTCDate(todayDate.getUTCDate() - weekDay + 1);
-  const weekEnd = new Date(weekStart);
-  weekEnd.setUTCDate(weekStart.getUTCDate() + 6);
-  const nextMonth = today.month === 12 ? 1 : today.month + 1;
-  const nextMonthYear = today.month === 12 ? today.year + 1 : today.year;
-  const monthEnd = new Date(Date.UTC(nextMonthYear, nextMonth - 1, 1));
-  monthEnd.setUTCDate(monthEnd.getUTCDate() - 1);
-
-  return {
-    today: { start: todayYmd, end: todayYmd },
-    week: {
-      start: toYmd(
-        weekStart.getUTCFullYear(),
-        weekStart.getUTCMonth() + 1,
-        weekStart.getUTCDate(),
-      ),
-      end: toYmd(
-        weekEnd.getUTCFullYear(),
-        weekEnd.getUTCMonth() + 1,
-        weekEnd.getUTCDate(),
-      ),
-    },
-    month: {
-      start: toYmd(today.year, today.month, 1),
-      end: toYmd(
-        monthEnd.getUTCFullYear(),
-        monthEnd.getUTCMonth() + 1,
-        monthEnd.getUTCDate(),
-      ),
-    },
-  };
-}
-
-function isDateInRange(value: string | null | undefined, start: string, end: string) {
-  const date = value?.slice(0, 10);
-  return Boolean(date && date >= start && date <= end);
-}
-
 function transactionEffectiveDate(transaction: FinanceTransaction) {
   return transaction.status === "paid" && transaction.paid_at
     ? transaction.paid_at
@@ -157,137 +91,6 @@ function transactionEffectiveDate(transaction: FinanceTransaction) {
 
 function transactionAmount(transaction: FinanceTransaction) {
   return toNumber(transaction.amount_paid ?? transaction.amount_expected);
-}
-
-function summarizeRange({
-  transactions,
-  sales,
-  chargebacks,
-  start,
-  end,
-}: {
-  transactions: FinanceTransaction[];
-  sales: FinanceSale[];
-  chargebacks: FinanceChargeback[];
-  start: string;
-  end: string;
-}) {
-  const rangeTransactions = transactions.filter((transaction) =>
-    isDateInRange(transactionEffectiveDate(transaction), start, end),
-  );
-  const rangeSales = sales.filter(
-    (sale) => sale.status === "confirmed" && isDateInRange(sale.sale_date, start, end),
-  );
-  const rangeChargebacks = chargebacks.filter(
-    (chargeback) =>
-      chargeback.status !== "canceled" &&
-      isDateInRange(chargeback.chargeback_date, start, end),
-  );
-  const manualIncome = rangeTransactions
-    .filter((item) => item.direction === "income" && item.status === "paid")
-    .reduce((total, item) => total + transactionAmount(item), 0);
-  const salesIncome = rangeSales.reduce(
-    (total, item) => total + toNumber(item.goal_amount || item.gross_amount),
-    0,
-  );
-  const paidExpense = rangeTransactions
-    .filter((item) => item.direction === "expense" && item.status === "paid")
-    .reduce((total, item) => total + transactionAmount(item), 0);
-  const chargebackAmount = rangeChargebacks.reduce(
-    (total, item) => total + toNumber(item.amount),
-    0,
-  );
-  const pendingPayable = rangeTransactions
-    .filter((item) => item.direction === "expense" && item.status !== "paid" && item.status !== "canceled")
-    .reduce((total, item) => total + toNumber(item.amount_expected), 0);
-  const pendingReceivable = rangeTransactions
-    .filter((item) => item.direction === "income" && item.status !== "paid" && item.status !== "canceled")
-    .reduce((total, item) => total + toNumber(item.amount_expected), 0);
-  const income = manualIncome + salesIncome;
-  const expense = paidExpense + chargebackAmount;
-
-  return {
-    income,
-    expense,
-    result: income - expense,
-    pendingPayable,
-    pendingReceivable,
-    saleCount: rangeSales.length,
-    transactionCount: rangeTransactions.length,
-    chargebackCount: rangeChargebacks.length,
-  };
-}
-
-function createAllRange(transactions: FinanceTransaction[], sales: FinanceSale[], chargebacks: FinanceChargeback[]) {
-  const dates = [
-    ...transactions.map(transactionEffectiveDate),
-    ...sales.map((sale) => sale.sale_date),
-    ...chargebacks.map((chargeback) => chargeback.chargeback_date),
-  ].filter((date): date is string => Boolean(date));
-
-  if (!dates.length) {
-    const today = getDateRanges().today.start;
-    return { start: today, end: today };
-  }
-
-  return {
-    start: dates.sort()[0],
-    end: dates.sort().at(-1) ?? dates[0],
-  };
-}
-
-function normalizeRange(start: string | undefined, end: string | undefined) {
-  const ranges = getDateRanges();
-  const safeStart = start?.match(/^\d{4}-\d{2}-\d{2}$/) ? start : ranges.month.start;
-  const safeEnd = end?.match(/^\d{4}-\d{2}-\d{2}$/) ? end : ranges.month.end;
-
-  if (safeStart > safeEnd) {
-    return {
-      start: safeEnd,
-      end: safeStart,
-    };
-  }
-
-  return {
-    start: safeStart,
-    end: safeEnd,
-  };
-}
-
-function StatCard({
-  label,
-  value,
-  detail,
-  tone = "default",
-  icon: Icon,
-}: {
-  label: string;
-  value: string;
-  detail: string;
-  tone?: "default" | "success" | "warning" | "danger";
-  icon: typeof WalletCards;
-}) {
-  const toneClasses = {
-    default: "border-slate-200 bg-white",
-    success: "border-emerald-200 bg-emerald-50",
-    warning: "border-amber-200 bg-amber-50",
-    danger: "border-red-200 bg-red-50",
-  }[tone];
-
-  return (
-    <section className={`rounded-lg border p-5 shadow-sm ${toneClasses}`}>
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <p className="text-sm font-semibold text-slate-600">{label}</p>
-          <p className="mt-2 text-2xl font-semibold text-slate-950">{value}</p>
-        </div>
-        <span className="rounded-lg bg-white/80 p-2 text-teal-700">
-          <Icon className="h-5 w-5" aria-hidden="true" />
-        </span>
-      </div>
-      <p className="mt-3 text-sm leading-5 text-slate-600">{detail}</p>
-    </section>
-  );
 }
 
 function MessageBox({
@@ -425,6 +228,31 @@ function formatFileSize(value: number | string | null | undefined) {
   return `${numberFormatter.format(size / 1024)} KB`;
 }
 
+function formatAuditEntity(entity: FinanceAuditLog["entity_type"]) {
+  const labels = {
+    transaction: "Lancamento",
+    sale: "Venda",
+    chargeback: "Chargeback",
+  };
+
+  return labels[entity] ?? entity;
+}
+
+function formatAuditAction(action: FinanceAuditLog["action_type"]) {
+  const labels = {
+    create: "Criado",
+    update: "Alterado",
+    delete: "Removido",
+    restore: "Restaurado",
+  };
+
+  return labels[action] ?? action;
+}
+
+function canRestoreAuditLog(log: FinanceAuditLog) {
+  return !log.restored_at && log.action_type !== "restore";
+}
+
 export default async function FinanceiroPage({ searchParams }: FinancePageProps) {
   const params = await searchParams;
   const { supabase, companyId, role } = await getCurrentUserContext();
@@ -433,9 +261,6 @@ export default async function FinanceiroPage({ searchParams }: FinancePageProps)
     redirect("/areas");
   }
 
-  const selectedRange = normalizeRange(params.start, params.end);
-  const ranges = getDateRanges();
-
   const [
     categoriesResult,
     accountsResult,
@@ -443,6 +268,7 @@ export default async function FinanceiroPage({ searchParams }: FinancePageProps)
     salesResult,
     chargebacksResult,
     importsResult,
+    auditLogsResult,
     usersResult,
   ] = await Promise.all([
     supabase
@@ -480,6 +306,12 @@ export default async function FinanceiroPage({ searchParams }: FinancePageProps)
       .order("created_at", { ascending: false })
       .limit(8),
     supabase
+      .from("finance_audit_logs")
+      .select("*")
+      .eq("company_id", companyId)
+      .order("created_at", { ascending: false })
+      .limit(20),
+    supabase
       .from("user_profiles")
       .select("id, full_name, nickname, username, role, business_area, is_active")
       .eq("company_id", companyId)
@@ -493,6 +325,7 @@ export default async function FinanceiroPage({ searchParams }: FinancePageProps)
     salesResult.error,
     chargebacksResult.error,
     importsResult.error,
+    auditLogsResult.error,
   ].find(Boolean);
   const categories = (categoriesResult.data ?? []) as FinanceCategory[];
   const accounts = (accountsResult.data ?? []) as FinanceAccount[];
@@ -500,48 +333,14 @@ export default async function FinanceiroPage({ searchParams }: FinancePageProps)
   const sales = (salesResult.data ?? []) as FinanceSale[];
   const chargebacks = (chargebacksResult.data ?? []) as FinanceChargeback[];
   const imports = (importsResult.data ?? []) as FinanceImportBatch[];
-  const users = ((usersResult.data ?? []) as CommercialUser[]).filter(
+  const auditLogs = (auditLogsResult.data ?? []) as FinanceAuditLog[];
+  const allUsers = (usersResult.data ?? []) as CommercialUser[];
+  const users = allUsers.filter(
     (user) => user.business_area === "commercial" && user.role === "seller",
   );
-  const usersById = new Map(users.map((user) => [user.id, user]));
+  const usersById = new Map(allUsers.map((user) => [user.id, user]));
   const categoriesById = new Map(categories.map((category) => [category.id, category]));
   const accountsById = new Map(accounts.map((account) => [account.id, account]));
-  const allRange = createAllRange(transactions, sales, chargebacks);
-  const todaySummary = summarizeRange({
-    transactions,
-    sales,
-    chargebacks,
-    start: ranges.today.start,
-    end: ranges.today.end,
-  });
-  const weekSummary = summarizeRange({
-    transactions,
-    sales,
-    chargebacks,
-    start: ranges.week.start,
-    end: ranges.week.end,
-  });
-  const monthSummary = summarizeRange({
-    transactions,
-    sales,
-    chargebacks,
-    start: ranges.month.start,
-    end: ranges.month.end,
-  });
-  const selectedSummary = summarizeRange({
-    transactions,
-    sales,
-    chargebacks,
-    start: selectedRange.start,
-    end: selectedRange.end,
-  });
-  const totalSummary = summarizeRange({
-    transactions,
-    sales,
-    chargebacks,
-    start: allRange.start,
-    end: allRange.end,
-  });
   const editingTransaction = transactions.find((item) => item.id === params.editTransaction);
   const editingSale = sales.find((item) => item.id === params.editSale);
   const editingChargeback = chargebacks.find((item) => item.id === params.editChargeback);
@@ -563,115 +362,27 @@ export default async function FinanceiroPage({ searchParams }: FinancePageProps)
         ) : null}
 
         <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
+          <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
             <div>
               <p className="text-sm font-semibold uppercase text-teal-700">
-                Visao executiva
+                Mesa de lancamento
               </p>
               <h2 className="mt-2 text-2xl font-semibold text-slate-950">
-                Resultado por periodo
+                Registrar, importar e corrigir dados
               </h2>
-              <p className="mt-2 text-sm leading-6 text-slate-600">
-                Use o periodo para auditar o caixa. O total considera todas as linhas ja cadastradas
-                ou importadas para o financeiro.
+              <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
+                Esta tela fica para cadastro e manutencao dos dados. Resultado consolidado,
+                consulta por consultor e planilha filtrada ficam separados na tela de consultas.
               </p>
             </div>
-            <form className="grid gap-3 sm:grid-cols-[160px_160px_auto_auto]">
-              <input
-                type="date"
-                name="start"
-                defaultValue={selectedRange.start}
-                className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
-              />
-              <input
-                type="date"
-                name="end"
-                defaultValue={selectedRange.end}
-                className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
-              />
-              <button
-                type="submit"
-                className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-              >
-                Filtrar
-              </button>
-              <Link
-                href="/financeiro"
-                className="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-100"
-              >
-                Mes atual
-              </Link>
-            </form>
+            <Link
+              href="/financeiro/consultas"
+              className="inline-flex items-center justify-center gap-2 rounded-lg bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-800"
+            >
+              <Search className="h-4 w-4" aria-hidden="true" />
+              Consultar resultados
+            </Link>
           </div>
-        </section>
-
-        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-          <StatCard
-            icon={CalendarDays}
-            label="Hoje"
-            value={formatCurrency(todaySummary.result)}
-            detail={`${formatCurrency(todaySummary.income)} entrada | ${formatCurrency(todaySummary.expense)} saida.`}
-            tone={todaySummary.result >= 0 ? "success" : "danger"}
-          />
-          <StatCard
-            icon={CalendarDays}
-            label="Semana"
-            value={formatCurrency(weekSummary.result)}
-            detail={`${formatDate(ranges.week.start)} a ${formatDate(ranges.week.end)}.`}
-            tone={weekSummary.result >= 0 ? "success" : "danger"}
-          />
-          <StatCard
-            icon={WalletCards}
-            label="Mes"
-            value={formatCurrency(monthSummary.result)}
-            detail={`${monthSummary.saleCount} venda(s), ${monthSummary.chargebackCount} chargeback(s).`}
-            tone={monthSummary.result >= 0 ? "success" : "danger"}
-          />
-          <StatCard
-            icon={Landmark}
-            label="Periodo selecionado"
-            value={formatCurrency(selectedSummary.result)}
-            detail={`${formatDate(selectedRange.start)} a ${formatDate(selectedRange.end)}.`}
-            tone={selectedSummary.result >= 0 ? "success" : "danger"}
-          />
-          <StatCard
-            icon={FileSpreadsheet}
-            label="Total historico"
-            value={formatCurrency(totalSummary.result)}
-            detail={`${numberFormatter.format(transactions.length + sales.length + chargebacks.length)} registro(s).`}
-            tone={totalSummary.result >= 0 ? "success" : "danger"}
-          />
-        </section>
-
-        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <StatCard
-            icon={ArrowUpRight}
-            label="Entradas do periodo"
-            value={formatCurrency(selectedSummary.income)}
-            detail="Vendas confirmadas e receitas pagas."
-            tone="success"
-          />
-          <StatCard
-            icon={ArrowDownRight}
-            label="Saidas do periodo"
-            value={formatCurrency(selectedSummary.expense)}
-            detail="Despesas pagas e chargebacks nao cancelados."
-            tone={selectedSummary.expense > 0 ? "warning" : "success"}
-          />
-          <StatCard
-            icon={WalletCards}
-            label="A pagar"
-            value={formatCurrency(selectedSummary.pendingPayable)}
-            detail="Lancamentos de despesa ainda nao pagos."
-            tone={selectedSummary.pendingPayable > 0 ? "warning" : "success"}
-          />
-          <StatCard
-            icon={Landmark}
-            label="A receber"
-            value={formatCurrency(selectedSummary.pendingReceivable)}
-            detail="Receitas previstas ainda nao pagas."
-            tone={selectedSummary.pendingReceivable > 0 ? "warning" : "success"}
-          />
         </section>
 
         <section className="grid gap-6 xl:grid-cols-[minmax(0,1.2fr)_minmax(360px,0.8fr)]">
@@ -835,7 +546,7 @@ export default async function FinanceiroPage({ searchParams }: FinancePageProps)
                   label="Ano das datas curtas"
                   name="default_year"
                   type="number"
-                  defaultValue={getSaoPauloDateParts().year}
+                  defaultValue={new Date().getFullYear()}
                   required
                 />
                 <input
@@ -1087,6 +798,91 @@ export default async function FinanceiroPage({ searchParams }: FinancePageProps)
                 </tbody>
               </table>
             </div>
+          </div>
+        </section>
+
+        <section className="rounded-lg border border-slate-200 bg-white shadow-sm">
+          <div className="flex flex-col gap-3 border-b border-slate-200 px-5 py-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <h2 className="flex items-center gap-2 text-base font-semibold text-slate-950">
+                <History className="h-4 w-4 text-teal-700" aria-hidden="true" />
+                Historico de alteracoes financeiras
+              </h2>
+              <p className="mt-1 text-sm text-slate-600">
+                Ultimas alteracoes com opcao de restaurar criacao, edicao ou remocao.
+              </p>
+            </div>
+            <Link
+              href="/financeiro/consultas"
+              className="inline-flex items-center justify-center rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+            >
+              Ver consulta consolidada
+            </Link>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[820px] border-collapse text-left text-sm">
+              <thead className="bg-slate-50 text-slate-500">
+                <tr>
+                  <th className="px-5 py-3 font-semibold">Data</th>
+                  <th className="px-5 py-3 font-semibold">Registro</th>
+                  <th className="px-5 py-3 font-semibold">Acao</th>
+                  <th className="px-5 py-3 font-semibold">Usuario</th>
+                  <th className="px-5 py-3 font-semibold">Restauracao</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {auditLogs.map((log) => (
+                  <tr key={log.id} className="transition hover:bg-slate-50">
+                    <td className="px-5 py-3">{formatDate(log.created_at)}</td>
+                    <td className="px-5 py-3">
+                      <p className="font-semibold text-slate-950">
+                        {formatAuditEntity(log.entity_type)}
+                      </p>
+                      <p className="text-xs text-slate-500">
+                        {log.entity_label ?? log.entity_id}
+                      </p>
+                    </td>
+                    <td className="px-5 py-3">{formatAuditAction(log.action_type)}</td>
+                    <td className="px-5 py-3">
+                      {resolveUserDisplayName(
+                        usersById.get(log.changed_by ?? "") ?? {
+                          full_name: null,
+                          nickname: null,
+                          username: null,
+                        },
+                        "Sistema",
+                      )}
+                    </td>
+                    <td className="px-5 py-3">
+                      {log.restored_at ? (
+                        <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+                          Restaurado em {formatDate(log.restored_at)}
+                        </span>
+                      ) : canRestoreAuditLog(log) ? (
+                        <form action={restoreFinanceAuditLogAction.bind(null, log.id)}>
+                          <button
+                            type="submit"
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800 transition hover:bg-amber-100"
+                          >
+                            <Undo2 className="h-3.5 w-3.5" aria-hidden="true" />
+                            Restaurar
+                          </button>
+                        </form>
+                      ) : (
+                        <span className="text-xs text-slate-500">Sem acao</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+                {!auditLogs.length ? (
+                  <tr>
+                    <td colSpan={5} className="px-5 py-8 text-center text-slate-500">
+                      Nenhuma alteracao financeira registrada ainda.
+                    </td>
+                  </tr>
+                ) : null}
+              </tbody>
+            </table>
           </div>
         </section>
       </div>

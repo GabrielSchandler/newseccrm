@@ -199,6 +199,29 @@ create table if not exists public.finance_import_rows (
 create index if not exists finance_import_rows_batch_idx
   on public.finance_import_rows (company_id, batch_id, row_type);
 
+create table if not exists public.finance_audit_logs (
+  id uuid primary key default gen_random_uuid(),
+  company_id uuid not null references public.companies(id) on delete cascade,
+  entity_type text not null
+    check (entity_type in ('transaction', 'sale', 'chargeback')),
+  entity_id uuid not null,
+  action_type text not null
+    check (action_type in ('create', 'update', 'delete', 'restore')),
+  entity_label text null,
+  before_data jsonb null,
+  after_data jsonb null,
+  changed_by uuid null references public.user_profiles(id) on delete set null,
+  restored_at timestamptz null,
+  restored_by uuid null references public.user_profiles(id) on delete set null,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists finance_audit_logs_company_created_idx
+  on public.finance_audit_logs (company_id, created_at desc);
+
+create index if not exists finance_audit_logs_company_entity_idx
+  on public.finance_audit_logs (company_id, entity_type, entity_id, created_at desc);
+
 insert into public.finance_categories (company_id, name, kind)
 select companies.id, seed.name, seed.kind
 from public.companies
@@ -243,6 +266,7 @@ alter table public.finance_sales enable row level security;
 alter table public.finance_chargebacks enable row level security;
 alter table public.finance_import_batches enable row level security;
 alter table public.finance_import_rows enable row level security;
+alter table public.finance_audit_logs enable row level security;
 
 do $$
 declare
@@ -256,7 +280,8 @@ begin
     'finance_sales',
     'finance_chargebacks',
     'finance_import_batches',
-    'finance_import_rows'
+    'finance_import_rows',
+    'finance_audit_logs'
   ]
   loop
     qualified_table := format('public.%I', target_table);
@@ -298,5 +323,6 @@ grant select, insert, update, delete on public.finance_sales to authenticated;
 grant select, insert, update, delete on public.finance_chargebacks to authenticated;
 grant select, insert, update, delete on public.finance_import_batches to authenticated;
 grant select, insert, update, delete on public.finance_import_rows to authenticated;
+grant select, insert, update, delete on public.finance_audit_logs to authenticated;
 
 commit;

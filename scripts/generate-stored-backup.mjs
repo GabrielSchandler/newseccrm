@@ -24,6 +24,7 @@ const backupRestoreOrder = [
   "finance_chargebacks",
   "finance_import_batches",
   "finance_import_rows",
+  "finance_audit_logs",
   "clients",
   "pre_sales",
   "pre_sale_client_snapshot",
@@ -57,6 +58,7 @@ const optionalWorkflowTables = new Set([
   "finance_chargebacks",
   "finance_import_batches",
   "finance_import_rows",
+  "finance_audit_logs",
 ]);
 
 const preSaleChildTables = [

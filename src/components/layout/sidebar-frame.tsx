@@ -94,7 +94,7 @@ export function SidebarFrame({
           "/logs",
         ].includes(item.href)) ||
         (currentWorkspace === "finance" &&
-          ["/financeiro"].includes(item.href)) ||
+          ["/financeiro", "/financeiro/consultas"].includes(item.href)) ||
         (currentWorkspace === "commercial" &&
           ["/comercial", "/clientes", "/pre-vendas", "/calculos", "/documentos"].includes(item.href)) ||
         (currentWorkspace === "legal" &&

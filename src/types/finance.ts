@@ -88,6 +88,21 @@ export type FinanceImportBatch = {
   created_at: string;
 };
 
+export type FinanceAuditLog = {
+  id: string;
+  company_id: string;
+  entity_type: "transaction" | "sale" | "chargeback";
+  entity_id: string;
+  action_type: "create" | "update" | "delete" | "restore";
+  entity_label: string | null;
+  before_data: Record<string, unknown> | null;
+  after_data: Record<string, unknown> | null;
+  changed_by: string | null;
+  restored_at: string | null;
+  restored_by: string | null;
+  created_at: string;
+};
+
 export const financePaymentMethods = [
   "Pix",
   "Boleto",
