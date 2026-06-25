@@ -166,7 +166,7 @@ function calculateCommission(sales: FinanceSale[]) {
   const grouped = new Map<string, number>();
 
   sales.forEach((sale) => {
-    const key = sale.consultant_user_id ?? sale.consultant_name ?? "sem-consultor";
+    const key = sale.consultant_name?.trim() || sale.consultant_user_id || "sem-consultor";
     grouped.set(key, (grouped.get(key) ?? 0) + saleGoalAmount(sale));
   });
 
@@ -338,25 +338,20 @@ export default async function ConsultaFinanceiraPage({
     (user) => user.business_area === "commercial" && user.role === "seller",
   );
   const usersById = new Map(users.map((user) => [user.id, user]));
-  const historicalConsultants = Array.from(
+  const salesConsultants = Array.from(
     new Set(
       sales
         .map((sale) => sale.consultant_name?.trim())
         .filter((name): name is string => Boolean(name)),
     ),
-  ).filter(
-    (name) =>
-      !users.some(
-        (user) =>
-          resolveUserDisplayName(user, "").toUpperCase() === name.toUpperCase(),
-      ),
-  );
+  ).sort((a, b) => a.localeCompare(b, "pt-BR"));
+  const normalizedSelectedConsultant = selectedConsultant.trim().toUpperCase();
   const filteredSales = sales.filter((sale) => {
     const inRange = isDateInRange(sale.sale_date, range.start, range.end);
+    const saleConsultantName = sale.consultant_name?.trim().toUpperCase() ?? "";
     const consultantMatches =
       selectedConsultant === "todos" ||
-      sale.consultant_user_id === selectedConsultant ||
-      sale.consultant_name === selectedConsultant;
+      saleConsultantName === normalizedSelectedConsultant;
     const statusMatches = selectedStatus === "todos" || sale.status === selectedStatus;
 
     return inRange && consultantMatches && statusMatches;
@@ -480,12 +475,7 @@ export default async function ConsultaFinanceiraPage({
               className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
             >
               <option value="todos">Todos os consultores</option>
-              {users.map((user) => (
-                <option key={user.id} value={user.id}>
-                  {resolveUserDisplayName(user, "Sem nome")}
-                </option>
-              ))}
-              {historicalConsultants.map((name) => (
+              {salesConsultants.map((name) => (
                 <option key={name} value={name}>
                   {name}
                 </option>
@@ -582,14 +572,11 @@ export default async function ConsultaFinanceiraPage({
                           <p className="text-xs text-slate-500">{sale.client_cpf ?? "-"}</p>
                         </td>
                         <td className="px-5 py-3">
-                          {resolveUserDisplayName(
-                            usersById.get(sale.consultant_user_id ?? "") ?? {
-                              full_name: sale.consultant_name,
-                              nickname: null,
-                              username: null,
-                            },
-                            "Sem consultor",
-                          )}
+                          {sale.consultant_name?.trim() ||
+                            resolveUserDisplayName(
+                              usersById.get(sale.consultant_user_id ?? "") ?? null,
+                              "Sem consultor",
+                            )}
                         </td>
                         <td className="px-5 py-3">{formatCurrency(sale.gross_amount)}</td>
                         <td className="px-5 py-3 font-semibold">{formatCurrency(saleGoalAmount(sale))}</td>
