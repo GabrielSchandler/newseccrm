@@ -8,6 +8,7 @@ import { resolveUserDisplayName } from "@/lib/users/account";
 import {
   assignSelectedLeadsAction,
   autoDistributeLeadsAction,
+  syncDistributedLeadClientsAction,
   verifyLeadSourcesAction,
 } from "./actions";
 
@@ -18,6 +19,7 @@ type LeadsPageProps = {
     errors?: string;
     assigned?: string;
     auto_assigned?: string;
+    synced_clients?: string;
     error?: string;
     error_message?: string;
   }>;
@@ -37,6 +39,7 @@ type LeadRecord = {
   assigned_to: string | null;
   assigned_at: string | null;
   imported_at: string | null;
+  raw_data: Record<string, unknown> | null;
 };
 
 type LeadSource = {
@@ -70,6 +73,7 @@ function getBannerMessage(params: Awaited<LeadsPageProps["searchParams"]>) {
       assign_failed: "Nao foi possivel distribuir os leads selecionados.",
       lead_query_failed: "Nao foi possivel carregar os leads para distribuicao.",
       no_new_leads: "Nao ha leads novos para distribuir.",
+      sync_clients_failed: "Nao foi possivel criar os clientes dos leads distribuidos.",
     };
 
     return {
@@ -103,6 +107,13 @@ function getBannerMessage(params: Awaited<LeadsPageProps["searchParams"]>) {
     };
   }
 
+  if (params.synced_clients) {
+    return {
+      tone: "success" as const,
+      text: `${params.synced_clients} cliente(s) criado(s) a partir de leads ja distribuidos.`,
+    };
+  }
+
   return null;
 }
 
@@ -126,6 +137,11 @@ function getSourceName(sourceMap: Map<string, LeadSource>, sourceId: string | nu
   }
 
   return sourceMap.get(sourceId)?.name ?? "Fonte removida";
+}
+
+function getLeadClientId(lead: Pick<LeadRecord, "raw_data">) {
+  const value = lead.raw_data?.crm_client_id;
+  return typeof value === "string" && value.trim() ? value.trim() : null;
 }
 
 export default async function LeadsPage({ searchParams }: LeadsPageProps) {
@@ -234,15 +250,25 @@ export default async function LeadsPage({ searchParams }: LeadsPageProps) {
                 linhas novas das planilhas cadastradas em Gestao.
               </p>
             </div>
-            <form action={verifyLeadSourcesAction}>
-              <button
-                type="submit"
-                className="inline-flex items-center justify-center gap-2 rounded-lg bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-800"
-              >
-                <RefreshCw className="h-4 w-4" />
-                Verificar planilhas
-              </button>
-            </form>
+            <div className="flex flex-wrap gap-2">
+              <form action={syncDistributedLeadClientsAction}>
+                <button
+                  type="submit"
+                  className="inline-flex items-center justify-center rounded-lg border border-teal-200 bg-teal-50 px-4 py-2.5 text-sm font-semibold text-teal-800 transition hover:bg-teal-100"
+                >
+                  Sincronizar clientes
+                </button>
+              </form>
+              <form action={verifyLeadSourcesAction}>
+                <button
+                  type="submit"
+                  className="inline-flex items-center justify-center gap-2 rounded-lg bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-800"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                  Verificar planilhas
+                </button>
+              </form>
+            </div>
           </div>
         </section>
 
@@ -428,7 +454,7 @@ export default async function LeadsPage({ searchParams }: LeadsPageProps) {
               {distributedLeads.map((lead) => (
                 <div
                   key={lead.id}
-                  className="grid gap-3 p-4 text-sm md:grid-cols-[1.2fr_1fr_1fr_auto]"
+                  className="grid gap-3 p-4 text-sm md:grid-cols-[1.2fr_1fr_1fr_auto_auto]"
                 >
                   <div>
                     <p className="font-semibold text-slate-950">{lead.full_name}</p>
@@ -444,6 +470,16 @@ export default async function LeadsPage({ searchParams }: LeadsPageProps) {
                     )}
                   </p>
                   <p className="text-slate-500">{formatDateTime(lead.assigned_at)}</p>
+                  {getLeadClientId(lead) ? (
+                    <a
+                      href={`/clientes/${getLeadClientId(lead)}`}
+                      className="inline-flex items-center justify-center rounded-lg border border-teal-200 bg-teal-50 px-3 py-2 text-xs font-semibold text-teal-800 transition hover:bg-teal-100"
+                    >
+                      Abrir cliente
+                    </a>
+                  ) : (
+                    <span className="text-xs text-slate-400">Cliente pendente</span>
+                  )}
                 </div>
               ))}
             </div>

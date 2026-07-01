@@ -16,6 +16,17 @@ type LeadIdentity = {
   cpf: string | null;
 };
 
+type LeadToAssign = {
+  id: string;
+  full_name: string;
+  phone: string | null;
+  email: string | null;
+  cpf: string | null;
+  campaign: string | null;
+  notes: string | null;
+  raw_data: Record<string, unknown> | null;
+};
+
 function canManageLeadDistribution(role: string | null, isPlatformOwner: boolean) {
   return isPlatformOwner || role === "admin" || role === "manager";
 }
@@ -68,6 +79,21 @@ function shuffleItems<T>(items: T[]) {
   }
 
   return shuffled;
+}
+
+function getLeadClientId(lead: Pick<LeadToAssign, "raw_data">) {
+  const value = lead.raw_data?.crm_client_id;
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+function buildLeadClientNotes(lead: Pick<LeadToAssign, "campaign" | "notes">) {
+  return [
+    "Cliente criado automaticamente pela distribuicao de leads.",
+    lead.campaign ? `Origem/campanha: ${lead.campaign}` : null,
+    lead.notes ? `Observacao da planilha: ${lead.notes}` : null,
+  ]
+    .filter(Boolean)
+    .join("\n");
 }
 
 async function requireLeadDistributionManager() {
@@ -156,6 +182,189 @@ async function loadSourceRowKeys(
       .map((row) => row.source_row_key)
       .filter((value): value is string => Boolean(value)),
   );
+}
+
+async function findExistingClientForLead(
+  supabase: ReturnType<typeof createAdminClient>,
+  companyId: string,
+  lead: Pick<LeadToAssign, "cpf" | "phone" | "email">,
+) {
+  const cpf = onlyDigits(lead.cpf);
+  const phone = onlyDigits(lead.phone);
+  const email = lead.email?.trim().toLowerCase() ?? null;
+  const filters = [];
+
+  if (cpf) {
+    filters.push(`cpf.eq.${cpf}`, `cpf.eq.${cpf.replace(
+      /^(\d{3})(\d{3})(\d{3})(\d{2})$/,
+      "$1.$2.$3-$4",
+    )}`);
+  }
+
+  if (phone) {
+    filters.push(`phone_mobile.eq.${phone}`);
+  }
+
+  if (email) {
+    filters.push(`email.ilike.${email}`);
+  }
+
+  if (!filters.length) {
+    return null;
+  }
+
+  const { data, error } = await supabase
+    .from("clients")
+    .select("id")
+    .eq("company_id", companyId)
+    .is("deleted_at", null)
+    .or(filters.join(","))
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  return (data as { id: string } | null)?.id ?? null;
+}
+
+async function ensureClientForLead({
+  supabase,
+  companyId,
+  userProfileId,
+  consultantId,
+  lead,
+}: {
+  supabase: ReturnType<typeof createAdminClient>;
+  companyId: string;
+  userProfileId: string;
+  consultantId: string;
+  lead: LeadToAssign;
+}) {
+  const existingClientId = getLeadClientId(lead);
+
+  if (existingClientId) {
+    return existingClientId;
+  }
+
+  const matchedClientId = await findExistingClientForLead(supabase, companyId, lead);
+
+  if (matchedClientId) {
+    await supabase
+      .from("clients")
+      .update({
+        commercial_consultant_user_id: consultantId,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", matchedClientId)
+      .eq("company_id", companyId);
+
+    return matchedClientId;
+  }
+
+  const placeholderCpf = `LEAD-${lead.id.slice(0, 8)}`;
+  const { data, error } = await supabase
+    .from("clients")
+    .insert({
+      company_id: companyId,
+      full_name: lead.full_name,
+      cpf: onlyDigits(lead.cpf) ?? placeholderCpf,
+      rg: null,
+      nationality: null,
+      birth_date: null,
+      marital_status: null,
+      profession: null,
+      email: lead.email,
+      phone_mobile: onlyDigits(lead.phone) ?? "",
+      phone_secondary: null,
+      zip_code: null,
+      street: null,
+      number: null,
+      district: null,
+      city: null,
+      state: null,
+      notes: buildLeadClientNotes(lead),
+      commercial_consultant_user_id: consultantId,
+      created_by: userProfileId,
+    })
+    .select("id")
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return (data as { id: string }).id;
+}
+
+async function assignLeadsToConsultant({
+  supabase,
+  companyId,
+  userProfileId,
+  leadIds,
+  consultantId,
+  assignedAt,
+}: {
+  supabase: ReturnType<typeof createAdminClient>;
+  companyId: string;
+  userProfileId: string;
+  leadIds: string[];
+  consultantId: string;
+  assignedAt: string;
+}) {
+  if (!leadIds.length) {
+    return 0;
+  }
+
+  const { data, error } = await supabase
+    .from("leads")
+    .select("id, full_name, phone, email, cpf, campaign, notes, raw_data")
+    .eq("company_id", companyId)
+    .in("id", leadIds);
+
+  if (error) {
+    throw error;
+  }
+
+  const leads = (data ?? []) as LeadToAssign[];
+  let assigned = 0;
+
+  for (const lead of leads) {
+    const clientId = await ensureClientForLead({
+      supabase,
+      companyId,
+      userProfileId,
+      consultantId,
+      lead,
+    });
+    const nextRawData = {
+      ...(lead.raw_data ?? {}),
+      crm_client_id: clientId,
+      distributed_to_client_at: assignedAt,
+    };
+    const { error: updateError } = await supabase
+      .from("leads")
+      .update({
+        status: "distribuido",
+        assigned_to: consultantId,
+        assigned_by: userProfileId,
+        assigned_at: assignedAt,
+        updated_at: assignedAt,
+        raw_data: nextRawData,
+      })
+      .eq("company_id", companyId)
+      .eq("id", lead.id);
+
+    if (updateError) {
+      throw updateError;
+    }
+
+    assigned += 1;
+  }
+
+  return assigned;
 }
 
 export async function verifyLeadSourcesAction() {
@@ -311,19 +520,18 @@ export async function assignSelectedLeadsAction(formData: FormData) {
   }
 
   const now = new Date().toISOString();
-  const { error } = await adminClient
-    .from("leads")
-    .update({
-      status: "distribuido",
-      assigned_to: consultantId,
-      assigned_by: userProfileId,
-      assigned_at: now,
-      updated_at: now,
-    })
-    .eq("company_id", companyId)
-    .in("id", leadIds);
+  let assigned = 0;
 
-  if (error) {
+  try {
+    assigned = await assignLeadsToConsultant({
+      supabase: adminClient,
+      companyId,
+      userProfileId,
+      leadIds,
+      consultantId,
+      assignedAt: now,
+    });
+  } catch {
     redirect(buildRedirectUrl({ error: "assign_failed" }));
   }
 
@@ -334,13 +542,14 @@ export async function assignSelectedLeadsAction(formData: FormData) {
     action: "leads.assigned",
     entityType: "lead",
     details: {
-      lead_count: leadIds.length,
+      lead_count: assigned,
       assigned_to: consultantId,
     },
   });
 
   revalidatePath("/leads");
-  redirect(buildRedirectUrl({ assigned: leadIds.length }));
+  revalidatePath("/clientes");
+  redirect(buildRedirectUrl({ assigned }));
 }
 
 export async function autoDistributeLeadsAction(formData: FormData) {
@@ -400,23 +609,20 @@ export async function autoDistributeLeadsAction(formData: FormData) {
       continue;
     }
 
-    const { error } = await adminClient
-      .from("leads")
-      .update({
-        status: "distribuido",
-        assigned_to: consultant.id,
-        assigned_by: userProfileId,
-        assigned_at: now,
-        updated_at: now,
-      })
-      .eq("company_id", companyId)
-      .in("id", consultantLeadIds);
+    try {
+      const consultantAssigned = await assignLeadsToConsultant({
+        supabase: adminClient,
+        companyId,
+        userProfileId,
+        leadIds: consultantLeadIds,
+        consultantId: consultant.id,
+        assignedAt: now,
+      });
 
-    if (error) {
+      assigned += consultantAssigned;
+    } catch {
       redirect(buildRedirectUrl({ error: "assign_failed" }));
     }
-
-    assigned += consultantLeadIds.length;
   }
 
   await recordAuditLog({
@@ -433,5 +639,82 @@ export async function autoDistributeLeadsAction(formData: FormData) {
   });
 
   revalidatePath("/leads");
+  revalidatePath("/clientes");
   redirect(buildRedirectUrl({ auto_assigned: assigned }));
+}
+
+export async function syncDistributedLeadClientsAction() {
+  const { companyId, userProfileId } = await requireLeadDistributionManager();
+  const adminClient = createAdminClient();
+  const { data, error } = await adminClient
+    .from("leads")
+    .select("id, full_name, phone, email, cpf, campaign, notes, raw_data, assigned_to")
+    .eq("company_id", companyId)
+    .eq("status", "distribuido")
+    .not("assigned_to", "is", null)
+    .order("assigned_at", { ascending: false })
+    .limit(500);
+
+  if (error) {
+    redirect(buildRedirectUrl({ error: "lead_query_failed" }));
+  }
+
+  const leads = ((data ?? []) as Array<LeadToAssign & { assigned_to: string | null }>)
+    .filter((lead) => lead.assigned_to && !getLeadClientId(lead));
+  const now = new Date().toISOString();
+  let synced = 0;
+
+  try {
+    for (const lead of leads) {
+      const consultantId = lead.assigned_to;
+
+      if (!consultantId) {
+        continue;
+      }
+
+      const clientId = await ensureClientForLead({
+        supabase: adminClient,
+        companyId,
+        userProfileId,
+        consultantId,
+        lead,
+      });
+      const { error: updateError } = await adminClient
+        .from("leads")
+        .update({
+          raw_data: {
+            ...(lead.raw_data ?? {}),
+            crm_client_id: clientId,
+            distributed_to_client_at: now,
+            synced_existing_distribution_at: now,
+          },
+          updated_at: now,
+        })
+        .eq("company_id", companyId)
+        .eq("id", lead.id);
+
+      if (updateError) {
+        throw updateError;
+      }
+
+      synced += 1;
+    }
+  } catch {
+    redirect(buildRedirectUrl({ error: "sync_clients_failed" }));
+  }
+
+  await recordAuditLog({
+    supabase: adminClient,
+    companyId,
+    userProfileId,
+    action: "leads.distributed_clients_synced",
+    entityType: "lead",
+    details: {
+      lead_count: synced,
+    },
+  });
+
+  revalidatePath("/leads");
+  revalidatePath("/clientes");
+  redirect(buildRedirectUrl({ synced_clients: synced }));
 }
