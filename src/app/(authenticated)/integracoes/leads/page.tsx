@@ -154,6 +154,8 @@ export default async function LeadSourcesPage({ searchParams }: LeadSourcesPageP
             <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
               A planilha precisa estar compartilhada para leitura por link. O CRM
               importa apenas linhas novas e guarda a origem para evitar duplicidade.
+              O GID e o numero interno da aba no link do Google Sheets; se ficar
+              em branco, o CRM tenta usar a primeira aba ou a aba presente no link.
             </p>
           </div>
 
@@ -173,7 +175,7 @@ export default async function LeadSourcesPage({ searchParams }: LeadSourcesPageP
             <Field
               label="GID da aba"
               name="sheet_gid"
-              placeholder="Opcional. O CRM tenta capturar pelo link."
+              placeholder="Opcional. Ex.: 0 ou o numero depois de #gid="
             />
             <Field
               label="Primeira linha com lead"
@@ -190,6 +192,11 @@ export default async function LeadSourcesPage({ searchParams }: LeadSourcesPageP
               <Field label="Coluna da campanha" name="campaign_column" placeholder="Ex.: E" />
               <Field label="Coluna de observacoes" name="notes_column" placeholder="Ex.: F" />
             </div>
+            <p className="text-sm leading-6 text-slate-600 lg:col-span-2">
+              Dica: se a planilha tiver cabecalhos como Nome, Telefone, Midia e
+              Observacao, o CRM tenta identificar as colunas automaticamente,
+              mesmo que a configuracao acima esteja diferente.
+            </p>
             <div className="lg:col-span-2">
               <button
                 type="submit"

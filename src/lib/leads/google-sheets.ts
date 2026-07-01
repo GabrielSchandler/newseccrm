@@ -67,6 +67,77 @@ function getCell(row: string[], column: string | null | undefined) {
   return index === null ? null : normalizeText(row[index]);
 }
 
+function normalizeHeader(value: string | null | undefined) {
+  return (value ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ");
+}
+
+function buildHeaderIndex(headers: string[]) {
+  const map = new Map<string, number>();
+
+  headers.forEach((header, index) => {
+    const normalized = normalizeHeader(header);
+
+    if (normalized && !map.has(normalized)) {
+      map.set(normalized, index);
+    }
+  });
+
+  return map;
+}
+
+function findHeaderColumn(
+  headerIndex: Map<string, number>,
+  candidates: string[],
+) {
+  for (const candidate of candidates) {
+    const index = headerIndex.get(normalizeHeader(candidate));
+
+    if (index !== undefined) {
+      return index;
+    }
+  }
+
+  return null;
+}
+
+function getCellByHeaderOrColumn(
+  row: string[],
+  headers: string[],
+  headerIndex: Map<string, number>,
+  configuredColumn: string | null | undefined,
+  headerCandidates: string[],
+) {
+  const configuredIndex = columnIndex(configuredColumn);
+  const headerIndexMatch = findHeaderColumn(headerIndex, headerCandidates);
+  const configuredHeader = configuredIndex === null ? null : headers[configuredIndex];
+  const configuredHeaderMatches =
+    configuredHeader !== null &&
+    headerCandidates.some(
+      (candidate) => normalizeHeader(candidate) === normalizeHeader(configuredHeader),
+    );
+
+  if (configuredHeaderMatches || headerIndexMatch === null) {
+    return getCell(row, configuredColumn);
+  }
+
+  return normalizeText(row[headerIndexMatch]);
+}
+
+function getRawData(row: string[], headers: string[]) {
+  return Object.fromEntries(
+    row.map((cell, cellIndex) => {
+      const header = normalizeText(headers[cellIndex]);
+      const key = header || String(cellIndex + 1);
+      return [key, cell];
+    }),
+  );
+}
+
 export function extractGoogleSheetInfo(sheetUrl: string, fallbackGid?: string | null) {
   const idMatch = sheetUrl.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
   const spreadsheetId = idMatch?.[1] ?? null;
@@ -179,16 +250,60 @@ export async function fetchSheetLeads(source: SheetLeadSource) {
 
   const rows = parseCsv(csv);
   const startRow = Math.max(Number(source.start_row ?? 2), 1);
+  const headers = rows[Math.max(startRow - 2, 0)] ?? [];
+  const headerIndex = buildHeaderIndex(headers);
   const dataRows = rows.slice(startRow - 1);
 
   return dataRows.flatMap((row, index) => {
     const rowNumber = startRow + index;
-    const fullName = getCell(row, source.name_column) ?? "";
-    const phone = onlyDigits(getCell(row, source.phone_column));
-    const email = normalizeEmail(getCell(row, source.email_column));
-    const cpf = onlyDigits(getCell(row, source.cpf_column));
-    const campaign = getCell(row, source.campaign_column);
-    const notes = getCell(row, source.notes_column);
+    const fullName =
+      getCellByHeaderOrColumn(row, headers, headerIndex, source.name_column, [
+        "nome",
+        "nome completo",
+        "cliente",
+        "lead",
+      ]) ?? "";
+    const phone = onlyDigits(
+      getCellByHeaderOrColumn(row, headers, headerIndex, source.phone_column, [
+        "telefone",
+        "telefone celular",
+        "celular",
+        "whatsapp",
+        "whats",
+      ]),
+    );
+    const email = normalizeEmail(
+      getCellByHeaderOrColumn(row, headers, headerIndex, source.email_column, [
+        "email",
+        "e-mail",
+        "melhor email",
+      ]),
+    );
+    const cpf = onlyDigits(
+      getCellByHeaderOrColumn(row, headers, headerIndex, source.cpf_column, [
+        "cpf",
+        "documento",
+      ]),
+    );
+    const campaign =
+      getCellByHeaderOrColumn(row, headers, headerIndex, source.campaign_column, [
+        "midia",
+        "mídia",
+        "origem",
+        "campanha",
+        "fonte",
+      ]) ??
+      getCellByHeaderOrColumn(row, headers, headerIndex, null, [
+        "tipo de financiamento",
+        "produto",
+      ]);
+    const notes = getCellByHeaderOrColumn(
+      row,
+      headers,
+      headerIndex,
+      source.notes_column,
+      ["observacao", "observação", "obs", "comentario", "comentário"],
+    );
 
     if (!fullName && !phone && !email && !cpf) {
       return [];
@@ -204,7 +319,7 @@ export async function fetchSheetLeads(source: SheetLeadSource) {
         cpf,
         campaign,
         notes,
-        rawData: Object.fromEntries(row.map((cell, cellIndex) => [String(cellIndex + 1), cell])),
+        rawData: getRawData(row, headers),
       },
     ] satisfies ParsedSheetLead[];
   });

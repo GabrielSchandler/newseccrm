@@ -19,6 +19,7 @@ type LeadsPageProps = {
     assigned?: string;
     auto_assigned?: string;
     error?: string;
+    error_message?: string;
   }>;
 };
 
@@ -78,9 +79,13 @@ function getBannerMessage(params: Awaited<LeadsPageProps["searchParams"]>) {
   }
 
   if (params.imported || params.skipped || params.errors) {
+    const errors = Number(params.errors ?? 0);
+    const errorSuffix =
+      errors > 0 && params.error_message ? ` Detalhe: ${params.error_message}` : "";
+
     return {
-      tone: "success" as const,
-      text: `${params.imported ?? 0} lead(s) importado(s), ${params.skipped ?? 0} ignorado(s), ${params.errors ?? 0} fonte(s) com erro.`,
+      tone: errors > 0 ? ("error" as const) : ("success" as const),
+      text: `${params.imported ?? 0} lead(s) importado(s), ${params.skipped ?? 0} ignorado(s), ${params.errors ?? 0} fonte(s) com erro.${errorSuffix}`,
     };
   }
 

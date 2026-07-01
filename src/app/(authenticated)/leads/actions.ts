@@ -35,10 +35,14 @@ function normalizeIds(values: FormDataEntryValue[]) {
   );
 }
 
-function buildRedirectUrl(params: Record<string, string | number>) {
+function buildRedirectUrl(params: Record<string, string | number | null | undefined>) {
   const query = new URLSearchParams();
 
   Object.entries(params).forEach(([key, value]) => {
+    if (value === null || value === undefined || value === "") {
+      return;
+    }
+
     query.set(key, String(value));
   });
 
@@ -177,6 +181,7 @@ export async function verifyLeadSourcesAction() {
   let imported = 0;
   let skipped = 0;
   let errors = 0;
+  const errorMessages: string[] = [];
   const companyIdentitySet = await loadCompanyLeadIdentitySet(adminClient, companyId);
 
   for (const source of sources) {
@@ -240,6 +245,8 @@ export async function verifyLeadSourcesAction() {
         .eq("company_id", companyId);
     } catch (error) {
       errors += 1;
+      const errorMessage = error instanceof Error ? error.message : "Erro desconhecido.";
+      errorMessages.push(`${source.name}: ${errorMessage}`);
       await recordAuditLog({
         supabase: adminClient,
         companyId,
@@ -249,7 +256,7 @@ export async function verifyLeadSourcesAction() {
         entityId: source.id,
         entityLabel: source.name,
         details: {
-          error: error instanceof Error ? error.message : "Erro desconhecido.",
+          error: errorMessage,
         },
       });
     }
@@ -271,7 +278,14 @@ export async function verifyLeadSourcesAction() {
 
   revalidatePath("/leads");
   revalidatePath("/integracoes/leads");
-  redirect(buildRedirectUrl({ imported, skipped, errors }));
+  redirect(
+    buildRedirectUrl({
+      imported,
+      skipped,
+      errors,
+      error_message: errorMessages[0],
+    }),
+  );
 }
 
 export async function assignSelectedLeadsAction(formData: FormData) {
