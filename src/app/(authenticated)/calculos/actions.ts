@@ -45,6 +45,10 @@ function normalizeCalculationErrorMessage(message: string) {
     return "A tabela public.financing_calculations ainda nao existe no Supabase desta instancia. Rode o SQL do modulo de simulacoes e tente novamente.";
   }
 
+  if (message.toLowerCase().includes("row-level security policy")) {
+    return "A politica de seguranca do Supabase bloqueou esta operacao. Atualize a pagina e tente novamente. Se continuar, revise as permissoes de Storage e simulacoes.";
+  }
+
   return message;
 }
 
@@ -642,9 +646,10 @@ export async function deleteFinancingCalculationAction(
     }
 
     const calculation = await assertCalculationAccess(calculationId);
+    const adminClient = createAdminClient();
 
     if (calculation.pdf_storage_path) {
-      const { error: storageError } = await supabase.storage
+      const { error: storageError } = await adminClient.storage
         .from(calculationReportsBucket)
         .remove([calculation.pdf_storage_path]);
 
@@ -652,7 +657,7 @@ export async function deleteFinancingCalculationAction(
         storageError &&
         !storageError.message.toLowerCase().includes("not found")
       ) {
-        return friendlyError(storageError.message);
+        return friendlyError(normalizeCalculationErrorMessage(storageError.message));
       }
     }
 
@@ -755,18 +760,19 @@ export async function generateCalculationPdfAction(
     const fileName =
       calculation.pdf_file_name ??
       createCalculationPdfFileName(resolveCalculationClientLabel(calculation.client_name));
-    const { error: uploadError } = await supabase.storage
+    const adminClient = createAdminClient();
+    const { error: uploadError } = await adminClient.storage
       .from(calculationReportsBucket)
       .upload(filePath, pdfBuffer, {
         contentType: "application/pdf",
         upsert: true,
-      });
+    });
 
     if (uploadError) {
-      return friendlyError(uploadError.message);
+      return friendlyError(normalizeCalculationErrorMessage(uploadError.message));
     }
 
-    const { error: updateError } = await supabase
+    const { error: updateError } = await adminClient
       .from("financing_calculations")
       .update({
         pdf_storage_path: filePath,
@@ -823,14 +829,14 @@ export async function createSignedCalculationPdfUrlAction(
       return bucketError;
     }
 
-    const { supabase } = await getCurrentUserContext();
     const calculation = await assertCalculationAccess(calculationId);
 
     if (!calculation.pdf_storage_path) {
       return friendlyError("Esta simulacao ainda nao possui PDF gerado.");
     }
 
-    const { data, error } = await supabase.storage
+    const adminClient = createAdminClient();
+    const { data, error } = await adminClient.storage
       .from(calculationReportsBucket)
       .createSignedUrl(
         calculation.pdf_storage_path,
@@ -845,7 +851,11 @@ export async function createSignedCalculationPdfUrlAction(
       );
 
     if (error || !data?.signedUrl) {
-      return friendlyError(error?.message || "Nao foi possivel gerar o link do PDF.");
+      return friendlyError(
+        normalizeCalculationErrorMessage(
+          error?.message || "Nao foi possivel gerar o link do PDF.",
+        ),
+      );
     }
 
     return {
