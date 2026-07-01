@@ -8,6 +8,7 @@ import {
   createLeadSourceAction,
   deleteLeadSourceAction,
   toggleLeadSourceAction,
+  updateLeadSourceAction,
 } from "./actions";
 
 type LeadSourcesPageProps = {
@@ -154,8 +155,9 @@ export default async function LeadSourcesPage({ searchParams }: LeadSourcesPageP
             <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
               A planilha precisa estar compartilhada para leitura por link. O CRM
               importa apenas linhas novas e guarda a origem para evitar duplicidade.
-              O GID e o numero interno da aba no link do Google Sheets; se ficar
-              em branco, o CRM tenta usar a primeira aba ou a aba presente no link.
+              Voce nao precisa preencher o ID da aba na maioria dos casos: se o
+              link estiver aberto na aba correta, o CRM tenta identificar isso
+              automaticamente.
             </p>
           </div>
 
@@ -173,17 +175,30 @@ export default async function LeadSourcesPage({ searchParams }: LeadSourcesPageP
               placeholder="https://docs.google.com/spreadsheets/d/..."
             />
             <Field
-              label="GID da aba"
-              name="sheet_gid"
-              placeholder="Opcional. Ex.: 0 ou o numero depois de #gid="
-            />
-            <Field
               label="Primeira linha com lead"
               name="start_row"
               type="number"
               defaultValue={2}
               placeholder="2"
             />
+            <details className="rounded-lg border border-slate-200 bg-slate-50 p-4 lg:col-span-2">
+              <summary className="cursor-pointer text-sm font-semibold text-slate-800">
+                Configuracao avancada da aba
+              </summary>
+              <div className="mt-4 grid gap-3 lg:grid-cols-[minmax(0,360px)_1fr]">
+                <Field
+                  label="ID numerico da aba"
+                  name="sheet_gid"
+                  placeholder="Opcional. Ex.: 0 ou 123456789"
+                />
+                <p className="text-sm leading-6 text-slate-600">
+                  Este campo nao e o nome da pagina/aba. Ele e o numero que aparece
+                  no final do link como <span className="font-mono">#gid=...</span>.
+                  Se ficar em branco, o CRM usa a primeira aba ou a aba que ja esta
+                  no link informado.
+                </p>
+              </div>
+            </details>
             <div className="grid gap-4 sm:grid-cols-3 lg:col-span-2">
               <Field label="Coluna do nome" name="name_column" defaultValue="A" required />
               <Field label="Coluna do telefone" name="phone_column" defaultValue="B" />
@@ -261,8 +276,8 @@ export default async function LeadSourcesPage({ searchParams }: LeadSourcesPageP
                           Aba / linha
                         </dt>
                         <dd className="mt-1 text-slate-950">
-                          GID {displayValue(source.sheet_gid)} / linha{" "}
-                          {source.start_row ?? 2}
+                          {source.sheet_gid ? `GID ${source.sheet_gid}` : "Aba automatica"} /
+                          linha {source.start_row ?? 2}
                         </dd>
                       </div>
                       <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
@@ -291,6 +306,91 @@ export default async function LeadSourcesPage({ searchParams }: LeadSourcesPageP
                         </dd>
                       </div>
                     </dl>
+
+                    <details className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                      <summary className="cursor-pointer text-sm font-semibold text-slate-800">
+                        Editar conexao
+                      </summary>
+                      <form
+                        action={updateLeadSourceAction}
+                        className="mt-4 grid gap-4 lg:grid-cols-2"
+                      >
+                        <input type="hidden" name="source_id" value={source.id} />
+                        <Field
+                          label="Nome da fonte"
+                          name="name"
+                          required
+                          defaultValue={source.name}
+                        />
+                        <Field
+                          label="Link da planilha"
+                          name="sheet_url"
+                          required
+                          defaultValue={source.sheet_url}
+                        />
+                        <Field
+                          label="Primeira linha com lead"
+                          name="start_row"
+                          type="number"
+                          defaultValue={source.start_row ?? 2}
+                        />
+                        <Field
+                          label="ID numerico da aba"
+                          name="sheet_gid"
+                          defaultValue={source.sheet_gid ?? ""}
+                          placeholder="Opcional. Nao use o nome da aba."
+                        />
+                        <div className="grid gap-4 sm:grid-cols-3 lg:col-span-2">
+                          <Field
+                            label="Coluna do nome"
+                            name="name_column"
+                            defaultValue={source.name_column ?? "A"}
+                            required
+                          />
+                          <Field
+                            label="Coluna do telefone"
+                            name="phone_column"
+                            defaultValue={source.phone_column ?? "B"}
+                          />
+                          <Field
+                            label="Coluna do email"
+                            name="email_column"
+                            defaultValue={source.email_column ?? ""}
+                            placeholder="Ex.: C"
+                          />
+                          <Field
+                            label="Coluna do CPF"
+                            name="cpf_column"
+                            defaultValue={source.cpf_column ?? ""}
+                            placeholder="Ex.: D"
+                          />
+                          <Field
+                            label="Coluna da campanha"
+                            name="campaign_column"
+                            defaultValue={source.campaign_column ?? ""}
+                            placeholder="Ex.: E"
+                          />
+                          <Field
+                            label="Coluna de observacoes"
+                            name="notes_column"
+                            defaultValue={source.notes_column ?? ""}
+                            placeholder="Ex.: F"
+                          />
+                        </div>
+                        <p className="text-sm leading-6 text-slate-600 lg:col-span-2">
+                          Se voce colocou o nome da aba no campo ID, deixe em branco
+                          e salve. O CRM vai tentar identificar a aba pelo link.
+                        </p>
+                        <div className="lg:col-span-2">
+                          <button
+                            type="submit"
+                            className="rounded-lg bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-800"
+                          >
+                            Salvar alteracoes
+                          </button>
+                        </div>
+                      </form>
+                    </details>
                   </div>
 
                   <div className="flex flex-wrap items-start gap-2 lg:justify-end">

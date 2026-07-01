@@ -157,6 +157,10 @@ export function extractGoogleSheetInfo(sheetUrl: string, fallbackGid?: string | 
     }
   }
 
+  if (gid && !/^\d+$/.test(gid)) {
+    gid = null;
+  }
+
   if (!spreadsheetId) {
     throw new Error("Link da planilha invalido. Use um link do Google Sheets.");
   }

@@ -111,6 +111,84 @@ export async function createLeadSourceAction(formData: FormData) {
   redirect("/integracoes/leads?success=created");
 }
 
+export async function updateLeadSourceAction(formData: FormData) {
+  const { companyId, userProfileId, role, isPlatformOwner } =
+    await requireLeadSourceManager();
+  const adminClient = createAdminClient();
+  const sourceId = normalizeText(formData.get("source_id"));
+  const name = normalizeText(formData.get("name"));
+  const sheetUrl = normalizeText(formData.get("sheet_url"));
+  const rawGid = normalizeText(formData.get("sheet_gid"));
+
+  if (!sourceId) {
+    redirect("/integracoes/leads?error=missing_source");
+  }
+
+  if (!name || !sheetUrl) {
+    redirect("/integracoes/leads?error=required");
+  }
+
+  let sheetGid = rawGid;
+
+  try {
+    sheetGid = extractGoogleSheetInfo(sheetUrl, rawGid).gid;
+  } catch {
+    redirect("/integracoes/leads?error=invalid_sheet");
+  }
+
+  const payload = {
+    name,
+    sheet_url: sheetUrl,
+    sheet_gid: sheetGid,
+    start_row: parseStartRow(formData.get("start_row")),
+    name_column: normalizeColumn(formData.get("name_column"), "A"),
+    phone_column: normalizeColumn(formData.get("phone_column"), "B") || null,
+    email_column: normalizeColumn(formData.get("email_column")) || null,
+    cpf_column: normalizeColumn(formData.get("cpf_column")) || null,
+    campaign_column: normalizeColumn(formData.get("campaign_column")) || null,
+    notes_column: normalizeColumn(formData.get("notes_column")) || null,
+    updated_at: new Date().toISOString(),
+  };
+
+  const { error } = await adminClient
+    .from("lead_sources")
+    .update(payload)
+    .eq("id", sourceId)
+    .eq("company_id", companyId);
+
+  if (error) {
+    const code = error.code === "23505" ? "duplicated" : "save_failed";
+    redirect(`/integracoes/leads?error=${code}`);
+  }
+
+  await recordAuditLog({
+    supabase: adminClient,
+    companyId,
+    userProfileId,
+    action: "lead_source.updated",
+    entityType: "lead_source",
+    entityId: sourceId,
+    entityLabel: name,
+    details: {
+      role,
+      is_platform_owner: isPlatformOwner,
+      start_row: payload.start_row,
+      columns: {
+        name: payload.name_column,
+        phone: payload.phone_column,
+        email: payload.email_column,
+        cpf: payload.cpf_column,
+        campaign: payload.campaign_column,
+        notes: payload.notes_column,
+      },
+    },
+  });
+
+  revalidatePath("/integracoes/leads");
+  revalidatePath("/leads");
+  redirect("/integracoes/leads?success=updated");
+}
+
 export async function toggleLeadSourceAction(formData: FormData) {
   const { companyId, userProfileId } = await requireLeadSourceManager();
   const adminClient = createAdminClient();
