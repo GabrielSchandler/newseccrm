@@ -201,7 +201,12 @@ export async function sendClientEmailAction(
       return friendlyError("Voce nao tem permissao para enviar emails juridicos.");
     }
 
-    const [{ data: clientData }, { data: templateData }, { data: preSaleData }] =
+    const [
+      { data: clientData },
+      { data: templateData },
+      { data: preSaleData },
+      { data: companyData },
+    ] =
       await Promise.all([
         adminClient
           .from("clients")
@@ -226,6 +231,11 @@ export async function sendClientEmailAction(
               .eq("company_id", companyId)
               .single()
           : Promise.resolve({ data: null }),
+        adminClient
+          .from("companies")
+          .select("trade_name, legal_name, website")
+          .eq("id", companyId)
+          .maybeSingle(),
       ]);
     const client = clientData as Client | null;
     const template = templateData as EmailTemplate | null;
@@ -273,6 +283,14 @@ export async function sendClientEmailAction(
       sender: senderProfile,
       senderEmail: integration.email,
       senderDisplayName: integration.display_name,
+      companyName:
+        (companyData as { trade_name?: string | null; legal_name?: string | null } | null)
+          ?.trade_name ||
+        (companyData as { trade_name?: string | null; legal_name?: string | null } | null)
+          ?.legal_name ||
+        null,
+      companyWebsite:
+        (companyData as { website?: string | null } | null)?.website ?? null,
     });
     const { graphAttachments, logAttachments } = await getClientDocumentAttachments(
       companyId,

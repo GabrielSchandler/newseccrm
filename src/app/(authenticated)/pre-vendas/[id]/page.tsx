@@ -257,7 +257,7 @@ export default async function PreVendaPage({ params, searchParams }: PreVendaPag
             copyValue={formatPreSaleType(preSale.pre_sale_type)}
           />
           <DetailItem
-            label="Protocolo GRS"
+            label="Protocolo"
             value={displayValue(preSale.tracking_protocol)}
             copyValue={copyableValue(preSale.tracking_protocol)}
           />

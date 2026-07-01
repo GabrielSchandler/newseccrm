@@ -21,6 +21,10 @@ type CompanyProfileFormDefaults = {
   district: string;
   city: string;
   state: string;
+  simulation_guarantee_title: string;
+  simulation_guarantee_lead: string;
+  simulation_guarantee_clause_label: string;
+  simulation_guarantee_clause_text: string;
 };
 
 type CompanyProfileFormProps = {
@@ -54,6 +58,18 @@ export function CompanyProfileForm({ defaultValues }: CompanyProfileFormProps) {
             district: String(formData.get("district") ?? ""),
             city: String(formData.get("city") ?? ""),
             state: String(formData.get("state") ?? ""),
+            simulation_guarantee_title: String(
+              formData.get("simulation_guarantee_title") ?? "",
+            ),
+            simulation_guarantee_lead: String(
+              formData.get("simulation_guarantee_lead") ?? "",
+            ),
+            simulation_guarantee_clause_label: String(
+              formData.get("simulation_guarantee_clause_label") ?? "",
+            ),
+            simulation_guarantee_clause_text: String(
+              formData.get("simulation_guarantee_clause_text") ?? "",
+            ),
           });
 
           setState(result);
@@ -167,6 +183,61 @@ export function CompanyProfileForm({ defaultValues }: CompanyProfileFormProps) {
             maxLength={2}
             defaultValue={defaultValues.state}
             className="w-full rounded-lg border border-slate-300 px-3 py-2.5 uppercase outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
+          />
+        </div>
+      </section>
+
+      <section className="space-y-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
+        <div>
+          <h3 className="text-base font-semibold text-slate-950">
+            Texto da simulação
+          </h3>
+          <p className="mt-1 text-sm text-slate-600">
+            Configure o bloco de segurança contratual exibido no PDF da simulação.
+            Cada empresa deve usar a sua própria cláusula ou condição.
+          </p>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="space-y-2 text-sm text-slate-700">
+            <FormFieldLabel label="Título do bloco" requirement="optional" />
+            <input
+              name="simulation_guarantee_title"
+              defaultValue={defaultValues.simulation_guarantee_title}
+              placeholder="Ex.: Segurança contratual"
+              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
+            />
+          </div>
+          <div className="space-y-2 text-sm text-slate-700">
+            <FormFieldLabel label="Rótulo da cláusula" requirement="optional" />
+            <input
+              name="simulation_guarantee_clause_label"
+              defaultValue={defaultValues.simulation_guarantee_clause_label}
+              placeholder="Ex.: Cláusula de garantia do contrato"
+              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
+            />
+          </div>
+        </div>
+
+        <div className="space-y-2 text-sm text-slate-700">
+          <FormFieldLabel label="Texto introdutório" requirement="optional" />
+          <textarea
+            name="simulation_guarantee_lead"
+            defaultValue={defaultValues.simulation_guarantee_lead}
+            rows={3}
+            placeholder="Texto curto explicando a segurança da prestação do serviço."
+            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
+          />
+        </div>
+
+        <div className="space-y-2 text-sm text-slate-700">
+          <FormFieldLabel label="Texto da cláusula" requirement="optional" />
+          <textarea
+            name="simulation_guarantee_clause_text"
+            defaultValue={defaultValues.simulation_guarantee_clause_text}
+            rows={6}
+            placeholder="Cole aqui a cláusula ou condição contratual que deve aparecer na simulação desta empresa."
+            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
           />
         </div>
       </section>

@@ -212,7 +212,7 @@ function resolveCalculationClientLabel(value: string | null | undefined) {
 
 function resolveCompanyDisplayName(companyRecord: Record<string, unknown> | null) {
   if (!companyRecord) {
-    return "GRS CRM";
+    return "CRM";
   }
 
   return (
@@ -220,8 +220,24 @@ function resolveCompanyDisplayName(companyRecord: Record<string, unknown> | null
     stringFromUnknown(companyRecord.legal_name) ||
     stringFromUnknown(companyRecord.nome_fantasia) ||
     stringFromUnknown(companyRecord.razao_social) ||
-    "GRS CRM"
+    "CRM"
   );
+}
+
+function resolveSimulationGuarantee(companyRecord: Record<string, unknown> | null) {
+  const title = stringFromUnknown(companyRecord?.simulation_guarantee_title);
+  const lead = stringFromUnknown(companyRecord?.simulation_guarantee_lead);
+  const clauseLabel = stringFromUnknown(companyRecord?.simulation_guarantee_clause_label);
+  const clauseText = stringFromUnknown(companyRecord?.simulation_guarantee_clause_text);
+
+  return {
+    title: title || "Seguranca contratual",
+    lead:
+      lead ||
+      "A prestacao de servico segue as condicoes definidas no contrato assinado entre as partes, com analise documental e orientacao de proximos passos conforme o caso.",
+    clauseLabel: clauseText ? clauseLabel || "Condicao contratual" : null,
+    clauseText: clauseText || null,
+  };
 }
 
 function formatCompanyZipCode(value: string) {
@@ -733,6 +749,7 @@ export async function generateCalculationPdfAction(
         companyPhone: stringFromUnknown(companyRecord?.phone) || null,
         companyWebsite: stringFromUnknown(companyRecord?.website) || null,
         companyAddress: resolveCompanyFooterAddress(companyRecord),
+        simulationGuarantee: resolveSimulationGuarantee(companyRecord),
       }),
     );
     const fileName =

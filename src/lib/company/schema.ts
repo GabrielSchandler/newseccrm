@@ -38,6 +38,10 @@ export const companyProfileSchema = z.object({
   district: optionalText,
   city: optionalText,
   state: optionalText.transform((value) => (value ? value.toUpperCase() : null)),
+  simulation_guarantee_title: optionalText,
+  simulation_guarantee_lead: optionalText,
+  simulation_guarantee_clause_label: optionalText,
+  simulation_guarantee_clause_text: optionalText,
 });
 
 export type CompanyProfilePayload = z.output<typeof companyProfileSchema>;
@@ -56,6 +60,10 @@ export const companyProfileDefaultValues: CompanyProfileFormValues = {
   district: "",
   city: "",
   state: "",
+  simulation_guarantee_title: "",
+  simulation_guarantee_lead: "",
+  simulation_guarantee_clause_label: "",
+  simulation_guarantee_clause_text: "",
 };
 
 export function companyProfileToFormValues(
@@ -74,5 +82,9 @@ export function companyProfileToFormValues(
     district: company.district ?? "",
     city: company.city ?? "",
     state: company.state ?? "",
+    simulation_guarantee_title: company.simulation_guarantee_title ?? "",
+    simulation_guarantee_lead: company.simulation_guarantee_lead ?? "",
+    simulation_guarantee_clause_label: company.simulation_guarantee_clause_label ?? "",
+    simulation_guarantee_clause_text: company.simulation_guarantee_clause_text ?? "",
   };
 }

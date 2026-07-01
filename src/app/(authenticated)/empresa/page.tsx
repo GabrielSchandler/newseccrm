@@ -49,7 +49,7 @@ export default async function EmpresaPage({ searchParams }: EmpresaPageProps) {
   const { data, error } = await supabase
     .from("companies")
     .select(
-      "id, legal_name, trade_name, cnpj, email, phone, website, zip_code, street, number, district, city, state, logo_path, logo_file_name, user_license_limit, created_at, updated_at",
+      "id, legal_name, trade_name, cnpj, email, phone, website, zip_code, street, number, district, city, state, logo_path, logo_file_name, simulation_guarantee_title, simulation_guarantee_lead, simulation_guarantee_clause_label, simulation_guarantee_clause_text, user_license_limit, created_at, updated_at",
     )
     .eq("id", companyId)
     .single();
@@ -101,6 +101,14 @@ export default async function EmpresaPage({ searchParams }: EmpresaPageProps) {
                 district: formValues.district ?? "",
                 city: formValues.city ?? "",
                 state: formValues.state ?? "",
+                simulation_guarantee_title:
+                  formValues.simulation_guarantee_title ?? "",
+                simulation_guarantee_lead:
+                  formValues.simulation_guarantee_lead ?? "",
+                simulation_guarantee_clause_label:
+                  formValues.simulation_guarantee_clause_label ?? "",
+                simulation_guarantee_clause_text:
+                  formValues.simulation_guarantee_clause_text ?? "",
               }}
             />
 

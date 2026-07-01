@@ -46,15 +46,49 @@ function getProtocolDateStamp() {
   return `${year}${month}${day}`;
 }
 
+function buildProtocolPrefix(company: {
+  trade_name?: string | null;
+  legal_name?: string | null;
+} | null) {
+  const source = company?.trade_name?.trim() || company?.legal_name?.trim() || "CRM";
+  const words = source
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toUpperCase()
+    .replace(/[^A-Z0-9\s]/g, " ")
+    .split(/\s+/)
+    .filter(Boolean);
+
+  if (!words.length) {
+    return "CRM";
+  }
+
+  const prefix = words.length === 1
+    ? words[0]
+    : words
+        .filter((word) => !["LTDA", "ME", "SA", "S", "EIRELI"].includes(word))
+        .slice(0, 3)
+        .map((word) => word[0])
+        .join("");
+
+  return (prefix || words[0] || "CRM").slice(0, 10);
+}
+
 async function generateTrackingProtocol(
   supabase: Awaited<ReturnType<typeof getCurrentUserContext>>["supabase"],
   companyId: string,
 ) {
   const stamp = getProtocolDateStamp();
+  const { data: companyData } = await supabase
+    .from("companies")
+    .select("trade_name, legal_name")
+    .eq("id", companyId)
+    .maybeSingle();
+  const prefix = buildProtocolPrefix(companyData);
 
   for (let attempt = 0; attempt < 8; attempt += 1) {
     const suffix = Math.floor(1000 + Math.random() * 9000).toString();
-    const protocol = `GRS-${stamp}-${suffix}`;
+    const protocol = `${prefix}-${stamp}-${suffix}`;
     const { data, error } = await supabase
       .from("pre_sales")
       .select("id")
@@ -75,7 +109,7 @@ async function generateTrackingProtocol(
     }
   }
 
-  return `GRS-${stamp}-${Date.now().toString().slice(-6)}`;
+  return `${prefix}-${stamp}-${Date.now().toString().slice(-6)}`;
 }
 
 async function assertClientBelongsToCompany(clientId: string, companyId: string) {

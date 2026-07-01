@@ -14,6 +14,10 @@ export type CompanyProfile = {
   state: string | null;
   logo_path: string | null;
   logo_file_name: string | null;
+  simulation_guarantee_title: string | null;
+  simulation_guarantee_lead: string | null;
+  simulation_guarantee_clause_label: string | null;
+  simulation_guarantee_clause_text: string | null;
   user_license_limit: number | null;
   created_at: string | null;
   updated_at: string | null;

@@ -330,7 +330,7 @@ export function SendClientEmailModal({
                     placeholder="Escreva o email aqui. Voce tambem pode usar tags como {{nome_cliente}}, {{cpf}} e {{numero_contrato}}."
                   />
                   <p className="text-xs text-slate-500">
-                    A assinatura GRS sera adicionada automaticamente no final do email.
+                    A assinatura da empresa sera adicionada automaticamente no final do email.
                   </p>
                 </div>
               </div>

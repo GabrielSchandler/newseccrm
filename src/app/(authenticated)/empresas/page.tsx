@@ -234,7 +234,7 @@ export default async function EmpresasPage({ searchParams }: EmpresasPageProps) 
                   name="trade_name"
                   required
                   className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
-                  placeholder="Ex.: GRS Solucoes"
+                  placeholder="Ex.: Kairos Solucoes"
                 />
               </label>
               <label className="block text-sm font-medium text-slate-700">

@@ -161,7 +161,7 @@ export default async function AcompanhamentoPage({
   const companyName =
     result?.company?.trade_name?.trim() ||
     result?.company?.legal_name?.trim() ||
-    "GRS Soluções";
+    "a empresa";
 
   return (
     <main className="min-h-screen bg-[#f5f7f6] text-slate-950">
@@ -169,7 +169,7 @@ export default async function AcompanhamentoPage({
         <div className="mx-auto flex w-full max-w-6xl flex-col gap-10 px-5 py-10 md:px-8 lg:flex-row lg:items-end lg:justify-between lg:py-16">
           <div className="max-w-2xl">
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-teal-700">
-              Acompanhamento GRS
+              Acompanhamento do contrato
             </p>
             <h1 className="mt-4 text-3xl font-semibold leading-tight text-slate-950 md:text-5xl">
               Consulte o andamento do seu contrato com segurança.
@@ -220,12 +220,12 @@ export default async function AcompanhamentoPage({
 
               <label className="block">
                 <span className="text-xs font-semibold uppercase tracking-wide text-slate-600">
-                  Protocolo GRS
+                  Protocolo
                 </span>
                 <input
                   name="protocolo"
                   defaultValue={params.protocolo ?? ""}
-                  placeholder="GRS-20260615-0000"
+                  placeholder="Ex.: 20260615-0000"
                   className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-3 text-sm uppercase text-slate-950 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
                 />
               </label>
@@ -251,7 +251,7 @@ export default async function AcompanhamentoPage({
                 </h2>
                 <p className="mt-3 max-w-md text-sm leading-6 text-slate-600">
                   Assim que CPF e protocolo forem informados, exibiremos uma
-                  linha do tempo objetiva com as movimentações publicadas pela GRS.
+                  linha do tempo objetiva com as movimentações publicadas pela equipe.
                 </p>
               </div>
             ) : result ? (

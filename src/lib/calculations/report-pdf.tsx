@@ -760,6 +760,7 @@ export function CalculationReportPdf({
   companyPhone,
   companyWebsite,
   companyAddress,
+  simulationGuarantee,
 }: {
   calculation: FinancingCalculation;
   companyName: string;
@@ -769,6 +770,12 @@ export function CalculationReportPdf({
   companyPhone?: string | null;
   companyWebsite?: string | null;
   companyAddress?: string | null;
+  simulationGuarantee?: {
+    title?: string | null;
+    lead?: string | null;
+    clauseLabel?: string | null;
+    clauseText?: string | null;
+  } | null;
 }): React.ReactElement<DocumentProps> {
   const issueDate = displayDate(new Date().toISOString().slice(0, 10));
   const specialist = displayText(calculation.specialist_name || "A definir");
@@ -927,7 +934,7 @@ export function CalculationReportPdf({
           ) : null}
           <View style={styles.headerTop}>
             <View style={styles.brandBlock}>
-              <Text style={styles.companyName}>{displayText(companyName, "GRS")}</Text>
+              <Text style={styles.companyName}>{displayText(companyName, "CRM")}</Text>
               {companyCnpj ? (
                 <Text style={styles.companyMeta}>{`CNPJ: ${companyCnpj}`}</Text>
               ) : null}
@@ -1128,21 +1135,25 @@ export function CalculationReportPdf({
           style={[styles.guaranteeBox, styles.guaranteePageStart]}
           wrap={false}
         >
-          <Text style={styles.guaranteeTitle}>Segurança contratual</Text>
+          <Text style={styles.guaranteeTitle}>
+            {displayText(simulationGuarantee?.title, "Seguranca contratual")}
+          </Text>
           <Text style={styles.guaranteeLead}>
-            Nossa prestação de serviço conta com proteção contratual específica,
-            com previsão de devolução integral do valor investido nas hipóteses
-            previstas em contrato.
+            {displayText(
+              simulationGuarantee?.lead,
+              "A prestacao de servico segue as condicoes definidas no contrato assinado entre as partes, com analise documental e orientacao de proximos passos conforme o caso.",
+            )}
           </Text>
-          <Text style={styles.guaranteeClauseLabel}>Cláusula 3.6 do contrato</Text>
-          <Text style={styles.guaranteeClause}>
-            3.6 – A CONTRATADA garante a plena execução dos serviços
-            contratados, comprometendo-se a promover, conforme o caso, a redução
-            das parcelas, a quitação do débito, a restituição de encargos
-            eventualmente cobrados de forma indevida, ou, não sendo apresentada
-            qualquer uma das opções mencionadas, a devolução integral do valor
-            investido pela CONTRATANTE a título de contratação dos serviços.
-          </Text>
+          {isFilledDisplayValue(simulationGuarantee?.clauseText) ? (
+            <>
+              <Text style={styles.guaranteeClauseLabel}>
+                {displayText(simulationGuarantee?.clauseLabel, "Condicao contratual")}
+              </Text>
+              <Text style={styles.guaranteeClause}>
+                {simulationGuarantee?.clauseText}
+              </Text>
+            </>
+          ) : null}
         </View>
 
         <View style={styles.footer}>
@@ -1155,7 +1166,7 @@ export function CalculationReportPdf({
           </Text>
           <View style={styles.footerMeta}>
             <Text style={styles.footerText}>Emitido em {issueDate}</Text>
-            <Text style={styles.footerText}>{displayText(companyName, "GRS")}</Text>
+            <Text style={styles.footerText}>{displayText(companyName, "CRM")}</Text>
           </View>
           <View style={styles.footerContacts}>
             {optionalText(companyAddress) ? (

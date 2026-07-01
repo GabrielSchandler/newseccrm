@@ -3,11 +3,22 @@ alter table public.pre_sales
 
 update public.pre_sales
 set tracking_protocol =
-  'GRS-' ||
+  left(
+    regexp_replace(
+      upper(coalesce(companies.trade_name, companies.legal_name, 'CRM')),
+      '[^A-Z0-9]+',
+      '',
+      'g'
+    ),
+    10
+  ) ||
+  '-' ||
   to_char(coalesce(created_at, now()) at time zone 'America/Sao_Paulo', 'YYYYMMDD') ||
   '-' ||
   upper(substr(replace(id::text, '-', ''), 1, 8))
-where tracking_protocol is null;
+from public.companies
+where pre_sales.company_id = companies.id
+  and tracking_protocol is null;
 
 create unique index if not exists pre_sales_company_tracking_protocol_idx
   on public.pre_sales (company_id, tracking_protocol)
