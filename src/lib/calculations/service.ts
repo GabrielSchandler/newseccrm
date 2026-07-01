@@ -1,10 +1,12 @@
 import { randomUUID } from "node:crypto";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { getCurrentUserContext } from "@/lib/auth/current-user";
 import { parseBrazilianDecimalInput } from "@/lib/calculations/currency";
 import {
   assertPreSaleAccess,
   listAccessiblePreSaleIdsForCurrentUser,
 } from "@/lib/pre-sales/access";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { resolveUserDisplayName } from "@/lib/users/account";
 import { formatPreSaleType } from "@/lib/pre-sales/formatters";
 import type {
@@ -14,6 +16,16 @@ import type {
 } from "@/types/calculation";
 
 export const calculationReportsBucket = "calculation-reports";
+
+type CurrentUserContext = Awaited<ReturnType<typeof getCurrentUserContext>>;
+
+function getCompanyScopedClient(context: CurrentUserContext): SupabaseClient {
+  if (context.isPlatformOwner) {
+    return createAdminClient();
+  }
+
+  return context.supabase as SupabaseClient;
+}
 
 function normalizeNullableMoney(value: number | string | null | undefined) {
   const parsed = parseBrazilianDecimalInput(value);
@@ -30,7 +42,9 @@ export function canManageCalculations(role: string | null) {
 }
 
 export async function assertCalculationAccess(calculationId: string) {
-  const { supabase, companyId, role, userProfileId } = await getCurrentUserContext();
+  const context = await getCurrentUserContext();
+  const { companyId, role, userProfileId } = context;
+  const supabase = getCompanyScopedClient(context);
 
   if (!canManageCalculations(role)) {
     throw new Error("Voce nao tem permissao para acessar simulacoes.");
@@ -66,7 +80,8 @@ export async function assertCalculationAccess(calculationId: string) {
 }
 
 export async function assertClientBelongsToCompany(clientId: string, companyId: string) {
-  const { supabase } = await getCurrentUserContext();
+  const context = await getCurrentUserContext();
+  const supabase = getCompanyScopedClient(context);
   const { data, error } = await supabase
     .from("clients")
     .select("id")
@@ -121,7 +136,9 @@ export async function listCalculationCreators(userIds: string[]) {
     return [];
   }
 
-  const { supabase, companyId } = await getCurrentUserContext();
+  const context = await getCurrentUserContext();
+  const { companyId } = context;
+  const supabase = getCompanyScopedClient(context);
   const { data, error } = await supabase
     .from("user_profiles")
     .select("id, full_name, nickname, username, email")
@@ -142,7 +159,9 @@ export async function listCalculationCreators(userIds: string[]) {
 }
 
 export async function listClientCalculations(clientId: string) {
-  const { supabase, companyId, role, userProfileId } = await getCurrentUserContext();
+  const context = await getCurrentUserContext();
+  const { companyId, role, userProfileId } = context;
+  const supabase = getCompanyScopedClient(context);
 
   if (!canManageCalculations(role)) {
     return [];
@@ -179,7 +198,9 @@ export async function listClientCalculations(clientId: string) {
 }
 
 export async function listCalculationClients() {
-  const { supabase, companyId } = await getCurrentUserContext();
+  const context = await getCurrentUserContext();
+  const { companyId } = context;
+  const supabase = getCompanyScopedClient(context);
   const { data, error } = await supabase
     .from("clients")
     .select("id, full_name, cpf, phone_mobile")
@@ -195,7 +216,9 @@ export async function listCalculationClients() {
 }
 
 export async function listCalculationPreSales() {
-  const { supabase, companyId, role, userProfileId } = await getCurrentUserContext();
+  const context = await getCurrentUserContext();
+  const { companyId, role, userProfileId } = context;
+  const supabase = getCompanyScopedClient(context);
   let query = supabase
     .from("pre_sales")
     .select("id, client_id, consultant_user_id, created_by, pre_sale_type, created_at")

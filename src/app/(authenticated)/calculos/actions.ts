@@ -53,8 +53,8 @@ function normalizeCalculationErrorMessage(message: string) {
 }
 
 async function ensureCalculationReportsBucketAvailable() {
-  const { supabase } = await getCurrentUserContext();
-  const { error } = await supabase.storage
+  const adminClient = createAdminClient();
+  const { error } = await adminClient.storage
     .from(calculationReportsBucket)
     .list("", { limit: 1 });
 
@@ -425,6 +425,30 @@ async function ensureCalculationProtocolNumber(
   return buildFallbackProtocolNumber(companyId, supabase);
 }
 
+async function calculationPdfExists(filePath: string) {
+  const adminClient = createAdminClient();
+  const pathParts = filePath.split("/");
+  const fileName = pathParts.pop();
+  const folder = pathParts.join("/");
+
+  if (!fileName) {
+    return false;
+  }
+
+  const { data, error } = await adminClient.storage
+    .from(calculationReportsBucket)
+    .list(folder, {
+      limit: 10,
+      search: fileName,
+    });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return (data ?? []).some((item) => item.name === fileName);
+}
+
 async function revalidateCalculationPages(
   calculationId: string,
   clientId?: string | null,
@@ -734,11 +758,12 @@ export async function generateCalculationPdfAction(
     }
 
     const companyRecord = (companyData ?? null) as Record<string, unknown> | null;
+    const adminClient = createAdminClient();
     const protocolNumber = await ensureCalculationProtocolNumber(
       calculationId,
       companyId,
       calculation.protocol_number,
-      supabase,
+      adminClient as unknown as Awaited<ReturnType<typeof getCurrentUserContext>>["supabase"],
     );
     const companyLogoSrc = await resolveCompanyLogoDataUrl(
       stringFromUnknown(companyRecord?.logo_path) || null,
@@ -760,7 +785,6 @@ export async function generateCalculationPdfAction(
     const fileName =
       calculation.pdf_file_name ??
       createCalculationPdfFileName(resolveCalculationClientLabel(calculation.client_name));
-    const adminClient = createAdminClient();
     const { error: uploadError } = await adminClient.storage
       .from(calculationReportsBucket)
       .upload(filePath, pdfBuffer, {
@@ -836,6 +860,14 @@ export async function createSignedCalculationPdfUrlAction(
     }
 
     const adminClient = createAdminClient();
+    const fileExists = await calculationPdfExists(calculation.pdf_storage_path);
+
+    if (!fileExists) {
+      return friendlyError(
+        "O arquivo PDF nao foi encontrado no Storage. Clique em Gerar PDF para recriar a simulacao.",
+      );
+    }
+
     const { data, error } = await adminClient.storage
       .from(calculationReportsBucket)
       .createSignedUrl(

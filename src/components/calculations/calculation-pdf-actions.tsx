@@ -21,6 +21,20 @@ export function CalculationPdfActions({
   const [state, setState] = useState<CalculationActionState | null>(null);
   const [isPending, startTransition] = useTransition();
 
+  function openPdfWindow() {
+    const nextWindow = window.open("about:blank", "_blank");
+
+    if (!nextWindow) {
+      return null;
+    }
+
+    nextWindow.document.title = "Preparando PDF";
+    nextWindow.document.body.innerHTML =
+      '<div style="font-family: Arial, sans-serif; padding: 32px; color: #0f172a;"><h1 style="font-size: 20px; margin: 0 0 8px;">Preparando PDF...</h1><p style="font-size: 14px; margin: 0; color: #475569;">Aguarde enquanto o CRM libera o link seguro do documento.</p></div>';
+
+    return nextWindow;
+  }
+
   function handleGenerate() {
     setState(null);
     startTransition(async () => {
@@ -35,6 +49,8 @@ export function CalculationPdfActions({
 
   function handleDownload() {
     setState(null);
+    const pdfWindow = openPdfWindow();
+
     startTransition(async () => {
       const result = await createSignedCalculationPdfUrlAction(
         calculationId,
@@ -43,13 +59,23 @@ export function CalculationPdfActions({
       setState(result);
 
       if (result.ok && result.url) {
+        if (pdfWindow) {
+          pdfWindow.location.href = result.url;
+          return;
+        }
+
         window.open(result.url, "_blank", "noopener,noreferrer");
+        return;
       }
+
+      pdfWindow?.close();
     });
   }
 
   function handleView() {
     setState(null);
+    const pdfWindow = openPdfWindow();
+
     startTransition(async () => {
       const result = await createSignedCalculationPdfUrlAction(
         calculationId,
@@ -58,8 +84,16 @@ export function CalculationPdfActions({
       setState(result);
 
       if (result.ok && result.url) {
+        if (pdfWindow) {
+          pdfWindow.location.href = result.url;
+          return;
+        }
+
         window.open(result.url, "_blank", "noopener,noreferrer");
+        return;
       }
+
+      pdfWindow?.close();
     });
   }
 
