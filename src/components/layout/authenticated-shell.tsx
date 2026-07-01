@@ -14,7 +14,7 @@ export function AuthenticatedShell({
   sidebar,
 }: AuthenticatedShellProps) {
   const pathname = usePathname();
-  const hideSidebar = pathname === "/areas";
+  const hideSidebar = pathname === "/areas" || pathname.startsWith("/empresas");
 
   if (hideSidebar) {
     return (

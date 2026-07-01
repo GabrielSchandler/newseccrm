@@ -43,5 +43,22 @@
     "eslint-config-next": "^15.3.0",
     "tailwindcss": "^4.1.3",
     "typescript": "^5.8.3"
-  }
+  },
+  "description": "Projeto base em Next.js com App Router, TypeScript, Tailwind CSS e Supabase Auth.",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GabrielSchandler/GRSCRM.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/GabrielSchandler/GRSCRM/issues"
+  },
+  "homepage": "https://github.com/GabrielSchandler/GRSCRM#readme"
 }

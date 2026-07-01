@@ -1,7 +1,6 @@
-import { redirect } from "next/navigation";
 import { AuthenticatedShell } from "@/components/layout/authenticated-shell";
 import { AppSidebar } from "@/components/layout/app-sidebar";
-import { createClient } from "@/lib/supabase/server";
+import { getCurrentUserContext } from "@/lib/auth/current-user";
 import packageJson from "../../../package.json";
 
 export default async function AuthenticatedLayout({
@@ -9,14 +8,7 @@ export default async function AuthenticatedLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect("/login");
-  }
+  await getCurrentUserContext();
 
   return (
     <AuthenticatedShell

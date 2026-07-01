@@ -224,6 +224,16 @@ function resolveCompanyDisplayName(companyRecord: Record<string, unknown> | null
   );
 }
 
+function formatCompanyZipCode(value: string) {
+  const digits = value.replace(/\D/g, "");
+
+  if (digits.length !== 8) {
+    return value;
+  }
+
+  return `${digits.slice(0, 5)}-${digits.slice(5)}`;
+}
+
 function resolveCompanyFooterAddress(companyRecord: Record<string, unknown> | null) {
   if (!companyRecord) {
     return null;
@@ -234,14 +244,15 @@ function resolveCompanyFooterAddress(companyRecord: Record<string, unknown> | nu
   const district = stringFromUnknown(companyRecord.district);
   const city = stringFromUnknown(companyRecord.city);
   const state = stringFromUnknown(companyRecord.state);
+  const zipCode = stringFromUnknown(companyRecord.zip_code);
 
   const segments = [
-    [street, number].filter(Boolean).join(", "),
-    district,
-    [city, state].filter(Boolean).join("/"),
+    [[street, number].filter(Boolean).join(", "), district].filter(Boolean).join(" - "),
+    [city, state].filter(Boolean).join(" - "),
+    zipCode ? formatCompanyZipCode(zipCode) : "",
   ].filter(Boolean);
 
-  return segments.length ? segments.join(" • ") : null;
+  return segments.length ? segments.join(", ") : null;
 }
 
 function isMissingProtocolColumnError(error: { code?: string; message?: string } | null) {

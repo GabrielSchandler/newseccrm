@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import type { CookieOptions } from "@supabase/ssr";
 import {
+  ACTIVE_COMPANY_COOKIE_NAME,
   classifyWorkspacePath,
   getHomeForRole,
   isSharedOperationalPath,
@@ -25,6 +26,7 @@ const protectedRoutes = [
   "/contratos",
   "/empresa",
   "/backups",
+  "/empresas",
   "/logs",
   "/usuarios",
   "/areas",
@@ -84,21 +86,40 @@ export async function updateSession(request: NextRequest) {
   let profileRole: string | null = null;
   let profileBusinessArea: string | null = null;
   let profilePasswordMustChange = false;
+  let profileIsPlatformOwner = false;
 
   if (user && (isLoginRoute || isDashboardRoute || isProtectedRoute)) {
-    const { data: profile } = await supabase
+    let profile:
+      | {
+          role?: string | null;
+          business_area?: string | null;
+          password_must_change?: boolean | null;
+          is_platform_owner?: boolean | null;
+        }
+      | null = null;
+
+    const { data, error: profileError } = await supabase
       .from("user_profiles")
-      .select("role, business_area, password_must_change")
+      .select("role, business_area, password_must_change, is_platform_owner")
       .eq("auth_user_id", user.id)
       .maybeSingle();
 
-    profileRole = (profile as { role?: string | null } | null)?.role ?? null;
-    profileBusinessArea =
-      (profile as { business_area?: string | null } | null)?.business_area ?? null;
-    profilePasswordMustChange = Boolean(
-      (profile as { password_must_change?: boolean | null } | null)
-        ?.password_must_change,
-    );
+    profile = data;
+
+    if (profileError?.code === "42703") {
+      const { data: fallbackProfile } = await supabase
+        .from("user_profiles")
+        .select("role, business_area, password_must_change")
+        .eq("auth_user_id", user.id)
+        .maybeSingle();
+
+      profile = fallbackProfile;
+    }
+
+    profileRole = profile?.role ?? null;
+    profileBusinessArea = profile?.business_area ?? null;
+    profilePasswordMustChange = Boolean(profile?.password_must_change);
+    profileIsPlatformOwner = Boolean(profile?.is_platform_owner);
   }
 
   if (user && isLoginRoute) {
@@ -108,6 +129,7 @@ export async function updateSession(request: NextRequest) {
       : getHomeForRole(
           profileRole,
           normalizeBusinessArea(profileBusinessArea),
+          profileIsPlatformOwner,
         );
     url.search = "";
     return NextResponse.redirect(url);
@@ -130,12 +152,43 @@ export async function updateSession(request: NextRequest) {
     url.pathname = getHomeForRole(
       profileRole,
       normalizeBusinessArea(profileBusinessArea),
+      profileIsPlatformOwner,
     );
     url.search = "";
     return NextResponse.redirect(url);
   }
 
   const routeWorkspace = classifyWorkspacePath(request.nextUrl.pathname);
+  const activeCompanyCookie =
+    request.cookies.get(ACTIVE_COMPANY_COOKIE_NAME)?.value ?? null;
+
+  if (
+    user &&
+    profileIsPlatformOwner &&
+    isProtectedRoute &&
+    !request.nextUrl.pathname.startsWith("/empresas") &&
+    !isPasswordChangeRoute
+  ) {
+    if (!activeCompanyCookie) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/empresas";
+      url.search = "";
+      return NextResponse.redirect(url);
+    }
+
+    const { data: selectedCompany } = await supabase
+      .from("companies")
+      .select("id")
+      .eq("id", activeCompanyCookie)
+      .maybeSingle();
+
+    if (!selectedCompany?.id) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/empresas";
+      url.searchParams.set("error", "empresa_indisponivel");
+      return NextResponse.redirect(url);
+    }
+  }
 
   if (user && routeWorkspace) {
     if (profileRole === null || profileBusinessArea === null) {
@@ -185,6 +238,7 @@ export async function updateSession(request: NextRequest) {
     url.pathname = getHomeForRole(
       profileRole,
       normalizeBusinessArea(profileBusinessArea),
+      profileIsPlatformOwner,
     );
     url.search = "";
     return NextResponse.redirect(url);
@@ -198,6 +252,7 @@ export async function updateSession(request: NextRequest) {
       url.pathname = getHomeForRole(
         profileRole,
         normalizeBusinessArea(profileBusinessArea),
+        profileIsPlatformOwner,
       );
       url.search = "";
       return NextResponse.redirect(url);

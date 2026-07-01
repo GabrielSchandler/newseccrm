@@ -1,9 +1,14 @@
 "use server";
 
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { normalizeUsername } from "@/lib/users/account";
 import { createClient } from "@/lib/supabase/server";
+import {
+  ACTIVE_COMPANY_COOKIE_NAME,
+  WORKSPACE_COOKIE_NAME,
+} from "@/lib/workspace";
 
 export type LoginActionState = {
   ok: boolean;
@@ -11,22 +16,46 @@ export type LoginActionState = {
   redirectTo?: string;
 };
 
-async function userMustChangePassword(authUserId: string) {
+async function getUserLoginState(authUserId: string) {
   const adminClient = createAdminClient();
   const { data, error } = await adminClient
     .from("user_profiles")
-    .select("password_must_change")
+    .select("password_must_change, is_platform_owner")
     .eq("auth_user_id", authUserId)
     .maybeSingle();
 
-  if (error) {
-    return false;
+  if (error?.code === "42703") {
+    const { data: fallbackData } = await adminClient
+      .from("user_profiles")
+      .select("password_must_change")
+      .eq("auth_user_id", authUserId)
+      .maybeSingle();
+
+    return {
+      mustChangePassword: Boolean(
+        (fallbackData as { password_must_change?: boolean | null } | null)
+          ?.password_must_change,
+      ),
+      isPlatformOwner: false,
+    };
   }
 
-  return Boolean(
-    (data as { password_must_change?: boolean | null } | null)
-      ?.password_must_change,
-  );
+  if (error) {
+    return {
+      mustChangePassword: false,
+      isPlatformOwner: false,
+    };
+  }
+
+  const profile = data as {
+    password_must_change?: boolean | null;
+    is_platform_owner?: boolean | null;
+  } | null;
+
+  return {
+    mustChangePassword: Boolean(profile?.password_must_change),
+    isPlatformOwner: Boolean(profile?.is_platform_owner),
+  };
 }
 
 export async function signInWithLoginAction(
@@ -86,18 +115,22 @@ export async function signInWithLoginAction(
       };
     }
 
-    const mustChangePassword = signInData.user
-      ? await userMustChangePassword(signInData.user.id)
-      : false;
+    const loginState = signInData.user
+      ? await getUserLoginState(signInData.user.id)
+      : { mustChangePassword: false, isPlatformOwner: false };
+
+    const redirectTo = loginState.mustChangePassword
+      ? "/alterar-senha"
+      : loginState.isPlatformOwner
+        ? "/empresas"
+        : redirectedFrom.startsWith("/") && !redirectedFrom.startsWith("//")
+          ? redirectedFrom
+          : "/";
 
     return {
       ok: true,
       message: "Acesso liberado.",
-      redirectTo: mustChangePassword
-        ? "/alterar-senha"
-        : redirectedFrom.startsWith("/") && !redirectedFrom.startsWith("//")
-          ? redirectedFrom
-          : "/",
+      redirectTo,
     };
   } catch {
     return {
@@ -110,5 +143,8 @@ export async function signInWithLoginAction(
 export async function signOut() {
   const supabase = await createClient();
   await supabase.auth.signOut();
+  const cookieStore = await cookies();
+  cookieStore.delete(ACTIVE_COMPANY_COOKIE_NAME);
+  cookieStore.delete(WORKSPACE_COOKIE_NAME);
   redirect("/login");
 }

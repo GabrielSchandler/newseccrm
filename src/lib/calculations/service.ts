@@ -124,7 +124,7 @@ export async function listCalculationCreators(userIds: string[]) {
   const { supabase, companyId } = await getCurrentUserContext();
   const { data, error } = await supabase
     .from("user_profiles")
-    .select("*")
+    .select("id, full_name, nickname, username, email")
     .eq("company_id", companyId)
     .in("id", uniqueIds);
 
@@ -150,7 +150,9 @@ export async function listClientCalculations(clientId: string) {
 
   const { data, error } = await supabase
     .from("financing_calculations")
-    .select("*")
+    .select(
+      "id, financial_institution, financed_value, estimated_savings, status, created_at, created_by, pre_sale_id",
+    )
     .eq("company_id", companyId)
     .eq("client_id", clientId)
     .order("created_at", { ascending: false });
@@ -235,7 +237,7 @@ export async function listCalculationPreSales() {
       .from("pre_sale_client_snapshot")
       .select("pre_sale_id, full_name, cpf, phone_mobile")
       .in("pre_sale_id", preSaleIds),
-    supabase
+      supabase
       .from("pre_sale_financial_cases")
       .select(
         "pre_sale_id, financer_name, financed_amount, installment_amount, paid_installments, asset_brand_model, asset_year",
@@ -243,7 +245,7 @@ export async function listCalculationPreSales() {
       .in("pre_sale_id", preSaleIds),
     supabase
       .from("user_profiles")
-      .select("*")
+      .select("id, full_name, nickname, username, email")
       .eq("company_id", companyId),
   ]);
 

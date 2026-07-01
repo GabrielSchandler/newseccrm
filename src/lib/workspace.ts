@@ -1,6 +1,7 @@
 import type { CompanyUserRole } from "@/types/user";
 
 export const WORKSPACE_COOKIE_NAME = "grscrm-workspace";
+export const ACTIVE_COMPANY_COOKIE_NAME = "grscrm-active-company";
 
 export type CompanyBusinessArea = "commercial" | "legal";
 export type WorkspaceView = "management" | "finance" | CompanyBusinessArea;
@@ -70,7 +71,15 @@ export function getSellerHome(area: CompanyBusinessArea) {
   return area === "legal" ? "/juridico" : "/comercial";
 }
 
-export function getHomeForRole(role: CompanyUserRole | string | null, area: CompanyBusinessArea) {
+export function getHomeForRole(
+  role: CompanyUserRole | string | null,
+  area: CompanyBusinessArea,
+  isPlatformOwner = false,
+) {
+  if (isPlatformOwner) {
+    return "/empresas";
+  }
+
   return role === "seller" ? getSellerHome(area) : "/areas";
 }
 
@@ -103,6 +112,7 @@ const managementPrefixes = [
   "/usuarios",
   "/empresa",
   "/backups",
+  "/empresas",
   "/logs",
   "/contratos",
   "/documentos/templates",

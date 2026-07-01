@@ -15,7 +15,7 @@ import type {
 } from "@/types/pre-sale";
 
 const clientOptionSelect =
-  "id, full_name, cpf, rg, birth_date, marital_status, profession, email, phone_mobile, phone_secondary, zip_code, street, number, district, city, state";
+  "id, full_name, cpf, phone_mobile";
 
 type PreVendasPageProps = {
   searchParams: Promise<{
@@ -29,15 +29,17 @@ function attachRelations(
   clients: ClientOption[],
   consultants: UserProfileOption[],
 ): PreSaleWithRelations[] {
+  const clientsMap = new Map(clients.map((client) => [client.id, client]));
+  const consultantsMap = new Map(
+    consultants.map((consultant) => [consultant.id, consultant]),
+  );
+
   return preSales.map((preSale) => ({
     ...preSale,
-    client: clients.find((client) => client.id === preSale.client_id) ?? null,
+    client: clientsMap.get(preSale.client_id) ?? null,
     consultant:
-      consultants.find(
-        (consultant) =>
-          consultant.id === preSale.consultant_user_id ||
-          consultant.id === preSale.created_by,
-      ) ??
+      consultantsMap.get(preSale.consultant_user_id ?? "") ??
+      consultantsMap.get(preSale.created_by) ??
       null,
   }));
 }
@@ -69,7 +71,9 @@ export default async function PreVendasPage({ searchParams }: PreVendasPageProps
 
   let preSalesQuery = supabase
     .from("pre_sales")
-    .select("*")
+    .select(
+      "id, client_id, consultant_user_id, created_by, status, pre_sale_type, service_type, contract_value, created_at",
+    )
     .eq("company_id", companyId)
     .order("created_at", { ascending: false });
 
@@ -78,7 +82,6 @@ export default async function PreVendasPage({ searchParams }: PreVendasPageProps
       `consultant_user_id.eq.${userProfileId},created_by.eq.${userProfileId}`,
     );
   }
-
 
   if (selectedConsultantId) {
     preSalesQuery = preSalesQuery.or(
@@ -119,11 +122,7 @@ export default async function PreVendasPage({ searchParams }: PreVendasPageProps
         <div className="flex flex-col gap-4 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
           {canFilterCommercialConsultant ? (
             <form className="grid gap-3 md:grid-cols-[minmax(240px,420px)_auto]">
-              <label className="sr-only" htmlFor="commercial-consultant-filter">
-                Consultor comercial
-              </label>
               <select
-                id="commercial-consultant-filter"
                 name="consultant"
                 defaultValue={selectedConsultantId}
                 className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"

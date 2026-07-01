@@ -111,6 +111,9 @@ export default async function DocumentosPage({ searchParams }: DocumentosPagePro
   const clients = (clientsData ?? []) as Pick<Client, "id" | "full_name">[];
   const creators = (creatorsData ?? []) as UserProfileOption[];
   const clientOptions = (clientOptionsData ?? []) as Pick<Client, "id" | "full_name">[];
+  const templatesMap = new Map(templates.map((template) => [template.id, template]));
+  const clientsMap = new Map(clients.map((client) => [client.id, client]));
+  const creatorsMap = new Map(creators.map((creator) => [creator.id, creator]));
 
   return (
     <>
@@ -189,11 +192,15 @@ export default async function DocumentosPage({ searchParams }: DocumentosPagePro
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {documents.map((document) => {
-                    const template = templates.find(
-                      (item) => item.id === document.template_id,
-                    );
-                    const client = clients.find((item) => item.id === document.client_id);
-                    const creator = creators.find((item) => item.id === document.created_by);
+                    const template = document.template_id
+                      ? templatesMap.get(document.template_id)
+                      : undefined;
+                    const client = document.client_id
+                      ? clientsMap.get(document.client_id)
+                      : undefined;
+                    const creator = document.created_by
+                      ? creatorsMap.get(document.created_by)
+                      : undefined;
 
                     return (
                       <tr key={document.id} className="transition hover:bg-slate-50">

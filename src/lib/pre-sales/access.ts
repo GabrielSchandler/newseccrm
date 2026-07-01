@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { getCurrentUserContext } from "@/lib/auth/current-user";
 import type { CompanyBusinessArea } from "@/lib/workspace";
 import type { PreSale } from "@/types/pre-sale";
@@ -65,7 +66,7 @@ export function canEditPreSaleRecord(
   );
 }
 
-export async function assertPreSaleAccess(preSaleId: string) {
+const assertPreSaleAccessCached = cache(async (preSaleId: string) => {
   const { supabase, companyId, role, businessArea, userProfileId } =
     await getCurrentUserContext();
   const { data, error } = await supabase
@@ -90,9 +91,13 @@ export async function assertPreSaleAccess(preSaleId: string) {
   }
 
   return preSale;
+});
+
+export async function assertPreSaleAccess(preSaleId: string) {
+  return assertPreSaleAccessCached(preSaleId);
 }
 
-export async function listAccessiblePreSaleIdsForCurrentUser() {
+const listAccessiblePreSaleIdsForCurrentUserCached = cache(async () => {
   const { supabase, companyId, role, businessArea, userProfileId } =
     await getCurrentUserContext();
 
@@ -115,4 +120,8 @@ export async function listAccessiblePreSaleIdsForCurrentUser() {
   }
 
   return (data ?? []).map((item) => item.id as string);
+});
+
+export async function listAccessiblePreSaleIdsForCurrentUser() {
+  return listAccessiblePreSaleIdsForCurrentUserCached();
 }

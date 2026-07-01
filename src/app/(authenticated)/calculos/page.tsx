@@ -57,7 +57,9 @@ export default async function CalculosPage({ searchParams }: CalculosPageProps) 
 
   let query = supabase
     .from("financing_calculations")
-    .select("*")
+    .select(
+      "id, client_name, client_cpf, financial_institution, financed_value, current_installment_value, installment_count, estimated_savings, status, created_at, created_by, pdf_storage_path, pre_sale_id",
+    )
     .eq("company_id", companyId)
     .order("created_at", { ascending: false });
 

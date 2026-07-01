@@ -51,14 +51,15 @@ function resolveCompanyDisplayName(company: {
 }
 
 export async function AppSidebar() {
-  const { role, supabase, companyId, businessArea } = await getCurrentUserContext();
+  const { role, supabase, companyId, businessArea, isPlatformOwner } =
+    await getCurrentUserContext();
   const cookieStore = await cookies();
   const workspaceCookie = cookieStore.get(WORKSPACE_COOKIE_NAME)?.value ?? null;
   const canManageTemplates = role === "admin" || role === "manager";
   const canAccessUsers = role === "admin" || role === "manager";
   const canAccessDashboard = role !== "seller";
-  const canAccessAdminOnly = role === "admin";
-  const homeHref = getHomeForRole(role, businessArea);
+  const canAccessAdminOnly = role === "admin" || isPlatformOwner;
+  const homeHref = getHomeForRole(role, businessArea, isPlatformOwner);
   const resolvedWorkspace = resolveCurrentWorkspace(role, businessArea, workspaceCookie);
   const { data: companyData } = await supabase
     .from("companies")

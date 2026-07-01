@@ -1,8 +1,14 @@
+import { cache } from "react";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import type { CompanyUserRole } from "@/types/user";
 import type { LegalUserRole } from "@/types/user";
-import { normalizeBusinessArea, type CompanyBusinessArea } from "@/lib/workspace";
+import {
+  ACTIVE_COMPANY_COOKIE_NAME,
+  normalizeBusinessArea,
+  type CompanyBusinessArea,
+} from "@/lib/workspace";
 
 export class UserProfileContextError extends Error {
   constructor(message: string) {
@@ -19,6 +25,7 @@ export type CurrentUserProfile = {
   business_area: CompanyBusinessArea | null;
   legal_role: LegalUserRole | null;
   can_edit_legal_workflow?: boolean | null;
+  is_platform_owner?: boolean | null;
   nickname: string | null;
   username: string | null;
   email: string | null;
@@ -27,7 +34,13 @@ export type CurrentUserProfile = {
   is_active: boolean;
 };
 
-export async function getCurrentUserContext() {
+export type ActiveCompanySummary = {
+  id: string;
+  legal_name: string | null;
+  trade_name: string | null;
+};
+
+const loadCurrentUserContext = cache(async () => {
   const supabase = await createClient();
   const {
     data: { user },
@@ -67,12 +80,37 @@ export async function getCurrentUserContext() {
     redirect("/conta-inativa");
   }
 
+  const isPlatformOwner = Boolean(profile.is_platform_owner);
+  const cookieStore = await cookies();
+  const selectedCompanyId = isPlatformOwner
+    ? cookieStore.get(ACTIVE_COMPANY_COOKIE_NAME)?.value ?? null
+    : null;
+  let activeCompany: ActiveCompanySummary | null = null;
+  let activeCompanyId = profile.company_id;
+
+  if (isPlatformOwner && selectedCompanyId) {
+    const { data: selectedCompany } = await supabase
+      .from("companies")
+      .select("id, legal_name, trade_name")
+      .eq("id", selectedCompanyId)
+      .maybeSingle();
+
+    if (selectedCompany?.id) {
+      activeCompany = selectedCompany as ActiveCompanySummary;
+      activeCompanyId = selectedCompany.id;
+    }
+  }
+
   return {
     supabase,
     user,
     authUserId: user.id,
     userProfileId: profile.id,
-    companyId: profile.company_id,
+    companyId: activeCompanyId,
+    profileCompanyId: profile.company_id,
+    selectedCompanyId,
+    activeCompany,
+    isPlatformOwner,
     role: profile.role,
     businessArea: normalizeBusinessArea(profile.business_area),
     legalRole: profile.legal_role,
@@ -86,4 +124,8 @@ export async function getCurrentUserContext() {
     isActive: profile.is_active,
     profile,
   };
+});
+
+export async function getCurrentUserContext() {
+  return loadCurrentUserContext();
 }
