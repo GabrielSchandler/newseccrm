@@ -115,6 +115,7 @@ const managementPrefixes = [
   "/empresas",
   "/logs",
   "/contratos",
+  "/integracoes",
   "/documentos/templates",
   "/emails/templates",
   "/areas",
@@ -124,7 +125,7 @@ const financePrefixes = ["/financeiro"];
 
 const legalPrefixes = ["/juridico"];
 
-const commercialPrefixes = ["/comercial", "/calculos"];
+const commercialPrefixes = ["/comercial", "/calculos", "/leads"];
 
 const sharedOperationalPrefixes = ["/clientes", "/pre-vendas", "/documentos"];
 

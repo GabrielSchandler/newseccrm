@@ -87,6 +87,7 @@ export function SidebarFrame({
           "/documentos/templates",
           "/emails/templates",
           "/integracoes",
+          "/integracoes/leads",
           "/contratos",
           "/usuarios",
           "/empresa",
@@ -96,7 +97,14 @@ export function SidebarFrame({
         (currentWorkspace === "finance" &&
           ["/financeiro", "/financeiro/consultas"].includes(item.href)) ||
         (currentWorkspace === "commercial" &&
-          ["/comercial", "/clientes", "/pre-vendas", "/calculos", "/documentos"].includes(item.href)) ||
+          [
+            "/comercial",
+            "/leads",
+            "/clientes",
+            "/pre-vendas",
+            "/calculos",
+            "/documentos",
+          ].includes(item.href)) ||
         (currentWorkspace === "legal" &&
           ["/juridico", "/clientes", "/pre-vendas", "/documentos", "/integracoes"].includes(item.href))),
   );

@@ -73,6 +73,8 @@ const optionalWorkflowTables = new Set([
   "finance_import_batches",
   "finance_import_rows",
   "finance_audit_logs",
+  "lead_sources",
+  "leads",
 ]);
 
 function isMissingOptionalWorkflowTable(table: string, error: string | null) {

@@ -34,6 +34,7 @@ export type SidebarNavigationItem = {
     | "logs"
     | "email"
     | "integrations"
+    | "leads"
     | "legal"
     | "finance";
   managerOnly?: boolean;
@@ -60,6 +61,7 @@ const icons = {
   logs: ClipboardList,
   email: Mail,
   integrations: Mail,
+  leads: ClipboardList,
   legal: FileText,
   finance: WalletCards,
 };

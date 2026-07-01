@@ -14,6 +14,8 @@ export const backupRestoreOrder = [
   "finance_import_batches",
   "finance_import_rows",
   "finance_audit_logs",
+  "lead_sources",
+  "leads",
   "clients",
   "pre_sales",
   "pre_sale_client_snapshot",
