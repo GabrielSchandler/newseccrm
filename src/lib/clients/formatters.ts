@@ -29,7 +29,8 @@ export function displayValue(value: string | null) {
 }
 
 export function displayCpf(value: string | null) {
-  return value ? formatCpf(value) : "-";
+  const formatted = formatCpf(value);
+  return formatted || "-";
 }
 
 export function displayPhone(value: string | null) {

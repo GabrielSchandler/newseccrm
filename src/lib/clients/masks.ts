@@ -2,7 +2,16 @@ export function onlyDigits(value: string | null | undefined) {
   return value?.replace(/\D/g, "") ?? "";
 }
 
+export function isInternalLeadCpf(value: string | null | undefined) {
+  const normalized = value?.trim().toUpperCase() ?? "";
+  return normalized.startsWith("LEAD-") || normalized.startsWith("NAO-INFORMADO-");
+}
+
 export function formatCpf(value: string | null | undefined) {
+  if (isInternalLeadCpf(value)) {
+    return "";
+  }
+
   const digits = onlyDigits(value).slice(0, 11);
 
   if (digits.length <= 3) {

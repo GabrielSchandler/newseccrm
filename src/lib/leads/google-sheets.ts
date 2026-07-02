@@ -164,6 +164,26 @@ function getCellByHeaderOrColumn(
   return normalizeText(row[headerIndexMatch]);
 }
 
+function getOptionalConfiguredCell(
+  row: string[],
+  headers: string[],
+  headerIndex: Map<string, number>,
+  configuredColumn: string | null | undefined,
+  headerCandidates: string[],
+) {
+  if (columnIndex(configuredColumn) === null) {
+    return null;
+  }
+
+  return getCellByHeaderOrColumn(
+    row,
+    headers,
+    headerIndex,
+    configuredColumn,
+    headerCandidates,
+  );
+}
+
 function getRawData(row: string[], headers: string[]) {
   return Object.fromEntries(
     row.map((cell, cellIndex) => {
@@ -313,14 +333,14 @@ export async function fetchSheetLeads(source: SheetLeadSource) {
       ]),
     );
     const email = normalizeEmail(
-      getCellByHeaderOrColumn(row, headers, headerIndex, source.email_column, [
+      getOptionalConfiguredCell(row, headers, headerIndex, source.email_column, [
         "email",
         "e-mail",
         "melhor email",
       ]),
     );
     const cpf = normalizeCpf(
-      getCellByHeaderOrColumn(row, headers, headerIndex, source.cpf_column, [
+      getOptionalConfiguredCell(row, headers, headerIndex, source.cpf_column, [
         "cpf",
         "documento",
       ]),
@@ -337,7 +357,7 @@ export async function fetchSheetLeads(source: SheetLeadSource) {
         "tipo de financiamento",
         "produto",
       ]);
-    const notes = getCellByHeaderOrColumn(
+    const notes = getOptionalConfiguredCell(
       row,
       headers,
       headerIndex,

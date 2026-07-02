@@ -101,6 +101,36 @@ function buildLeadClientNotes(lead: Pick<LeadToAssign, "campaign" | "notes">) {
     .join("\n");
 }
 
+function buildInternalLeadCpf(leadId: string) {
+  const letterMap: Record<string, string> = {
+    "0": "A",
+    "1": "B",
+    "2": "C",
+    "3": "D",
+    "4": "E",
+    "5": "F",
+    "6": "G",
+    "7": "H",
+    "8": "I",
+    "9": "J",
+    a: "K",
+    b: "L",
+    c: "M",
+    d: "N",
+    e: "O",
+    f: "P",
+  };
+  const encoded = leadId
+    .replace(/[^a-f0-9]/gi, "")
+    .toLowerCase()
+    .split("")
+    .map((char) => letterMap[char] ?? "")
+    .join("")
+    .slice(0, 24);
+
+  return `LEAD-${encoded || "SEMCPF"}`;
+}
+
 async function requireLeadDistributionManager() {
   const context = await getCurrentUserContext();
 
@@ -273,7 +303,7 @@ async function ensureClientForLead({
     return matchedClientId;
   }
 
-  const placeholderCpf = `LEAD-${lead.id.slice(0, 8)}`;
+  const placeholderCpf = buildInternalLeadCpf(lead.id);
   const { data, error } = await supabase
     .from("clients")
     .insert({
