@@ -6,6 +6,10 @@ import packageJson from "../../../package.json";
 import { signOut } from "@/app/actions/auth";
 import { getCurrentUserContext } from "@/lib/auth/current-user";
 import {
+  isModuleEnabled,
+  loadCompanyPlatformSettings,
+} from "@/lib/company/platform-settings";
+import {
   getHomeForRole,
   resolveCurrentWorkspace,
   WORKSPACE_COOKIE_NAME,
@@ -51,7 +55,7 @@ const navigation: SidebarNavigationItem[] = [
     icon: "leads",
     managerOnly: true,
   },
-  { href: "/financeiro", label: "Lançamentos", icon: "finance", adminOnly: true },
+  { href: "/financeiro", label: "Lancamentos", icon: "finance", adminOnly: true },
   { href: "/financeiro/consultas", label: "Consultas", icon: "finance", adminOnly: true },
 ];
 
@@ -84,6 +88,46 @@ export async function AppSidebar() {
     logo_path?: string | null;
   } | null;
   const companyName = resolveCompanyDisplayName(company);
+  const { settings } = await loadCompanyPlatformSettings(supabase, companyId);
+  const featureFilteredNavigation = navigation.filter((item) => {
+    if (item.href === "/comercial") {
+      return isModuleEnabled(settings, "commercial");
+    }
+
+    if (item.href === "/juridico") {
+      return isModuleEnabled(settings, "legal");
+    }
+
+    if (item.href.startsWith("/financeiro")) {
+      return isModuleEnabled(settings, "finance");
+    }
+
+    if (item.href === "/leads" || item.href === "/integracoes/leads") {
+      return isModuleEnabled(settings, "lead_distribution");
+    }
+
+    if (item.href === "/integracoes") {
+      return isModuleEnabled(settings, "outlook_email");
+    }
+
+    if (item.href === "/backups") {
+      return isModuleEnabled(settings, "backups");
+    }
+
+    if (item.href === "/calculos") {
+      return isModuleEnabled(settings, "simulations");
+    }
+
+    if (item.href === "/documentos" || item.href === "/contratos") {
+      return isModuleEnabled(settings, "documents");
+    }
+
+    if (item.href === "/documentos/templates" || item.href === "/emails/templates") {
+      return isModuleEnabled(settings, "custom_templates");
+    }
+
+    return true;
+  });
   let companyLogoUrl: string | null = null;
 
   if (company?.logo_path) {
@@ -105,7 +149,7 @@ export async function AppSidebar() {
       homeHref={homeHref}
       resolvedWorkspace={resolvedWorkspace}
       footer={<>Versao {packageJson.version}</>}
-      navigation={navigation}
+      navigation={featureFilteredNavigation}
       logoutNode={
         <form action={signOut}>
           <button

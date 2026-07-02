@@ -22,3 +22,25 @@ export type CompanyProfile = {
   created_at: string | null;
   updated_at: string | null;
 };
+
+export type CompanyPlatformStatus = "active" | "trial" | "suspended" | "cancelled";
+
+export type CompanyPlatformSettings = {
+  company_id: string;
+  status: CompanyPlatformStatus | string | null;
+  storage_limit_mb: number | null;
+  enable_commercial: boolean | null;
+  enable_legal: boolean | null;
+  enable_finance: boolean | null;
+  enable_academy: boolean | null;
+  enable_lead_distribution: boolean | null;
+  enable_client_portal: boolean | null;
+  enable_backups: boolean | null;
+  enable_outlook_email: boolean | null;
+  enable_simulations: boolean | null;
+  enable_documents: boolean | null;
+  enable_custom_templates: boolean | null;
+  notes: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+};

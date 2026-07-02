@@ -2,14 +2,31 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/layout/page-header";
 import { getCurrentUserContext } from "@/lib/auth/current-user";
+import {
+  isModuleEnabled,
+  loadCompanyPlatformSettings,
+} from "@/lib/company/platform-settings";
 import { getSellerHome, workspaceOptions } from "@/lib/workspace";
 
 export default async function AreasPage() {
-  const { role, businessArea, isPlatformOwner, activeCompany } =
+  const { role, businessArea, isPlatformOwner, activeCompany, companyId, supabase } =
     await getCurrentUserContext();
-  const visibleWorkspaces = workspaceOptions.filter(
-    (workspace) => workspace.value !== "finance" || role === "admin" || isPlatformOwner,
-  );
+  const { settings } = await loadCompanyPlatformSettings(supabase, companyId);
+  const visibleWorkspaces = workspaceOptions.filter((workspace) => {
+    if (workspace.value === "commercial") {
+      return isModuleEnabled(settings, "commercial");
+    }
+
+    if (workspace.value === "legal") {
+      return isModuleEnabled(settings, "legal");
+    }
+
+    if (workspace.value === "finance") {
+      return (role === "admin" || isPlatformOwner) && isModuleEnabled(settings, "finance");
+    }
+
+    return true;
+  });
 
   if (role === "seller") {
     redirect(getSellerHome(businessArea));
