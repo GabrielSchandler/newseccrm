@@ -4,7 +4,12 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { recordAuditLog } from "@/lib/audit/log";
 import { getCurrentUserContext } from "@/lib/auth/current-user";
-import { fetchSheetLeads, onlyDigits, type SheetLeadSource } from "@/lib/leads/google-sheets";
+import {
+  fetchSheetLeads,
+  normalizeBrazilianPhone,
+  normalizeCpf,
+  type SheetLeadSource,
+} from "@/lib/leads/google-sheets";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 type LeadSourceRecord = SheetLeadSource & {
@@ -154,8 +159,8 @@ async function loadCompanyLeadIdentitySet(
 
   for (const row of (data ?? []) as LeadIdentity[]) {
     addIdentityKeys(identitySet, {
-      phone: onlyDigits(row.phone),
-      cpf: onlyDigits(row.cpf),
+      phone: normalizeBrazilianPhone(row.phone),
+      cpf: normalizeCpf(row.cpf),
     });
   }
 
@@ -189,8 +194,8 @@ async function findExistingClientForLead(
   companyId: string,
   lead: Pick<LeadToAssign, "cpf" | "phone" | "email">,
 ) {
-  const cpf = onlyDigits(lead.cpf);
-  const phone = onlyDigits(lead.phone);
+  const cpf = normalizeCpf(lead.cpf);
+  const phone = normalizeBrazilianPhone(lead.phone);
   const email = lead.email?.trim().toLowerCase() ?? null;
   const filters = [];
 
@@ -203,6 +208,10 @@ async function findExistingClientForLead(
 
   if (phone) {
     filters.push(`phone_mobile.eq.${phone}`);
+
+    if (phone.length === 10 || phone.length === 11) {
+      filters.push(`phone_mobile.eq.55${phone}`);
+    }
   }
 
   if (email) {
@@ -270,14 +279,14 @@ async function ensureClientForLead({
     .insert({
       company_id: companyId,
       full_name: lead.full_name,
-      cpf: onlyDigits(lead.cpf) ?? placeholderCpf,
+      cpf: normalizeCpf(lead.cpf) ?? placeholderCpf,
       rg: null,
       nationality: null,
       birth_date: null,
       marital_status: null,
       profession: null,
       email: lead.email,
-      phone_mobile: onlyDigits(lead.phone) ?? "",
+      phone_mobile: normalizeBrazilianPhone(lead.phone) ?? "",
       phone_secondary: null,
       zip_code: null,
       street: null,
@@ -402,8 +411,8 @@ export async function verifyLeadSourcesAction() {
       const newLeads = [];
 
       for (const lead of sheetLeads) {
-        const phone = onlyDigits(lead.phone);
-        const cpf = onlyDigits(lead.cpf);
+        const phone = normalizeBrazilianPhone(lead.phone);
+        const cpf = normalizeCpf(lead.cpf);
         const identityKeys = [
           phone ? `phone:${phone}` : null,
           cpf ? `cpf:${cpf}` : null,

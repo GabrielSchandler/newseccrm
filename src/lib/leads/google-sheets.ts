@@ -33,6 +33,42 @@ export function onlyDigits(value: string | null | undefined) {
   return digits || null;
 }
 
+export function normalizeBrazilianPhone(value: string | null | undefined) {
+  let digits = onlyDigits(value);
+
+  if (!digits) {
+    return null;
+  }
+
+  if (digits.startsWith("00")) {
+    digits = digits.replace(/^00+/, "");
+  }
+
+  if (digits.startsWith("0") && (digits.length === 11 || digits.length === 12)) {
+    digits = digits.slice(1);
+  }
+
+  if (digits.startsWith("55") && (digits.length === 12 || digits.length === 13)) {
+    const withoutCountryCode = digits.slice(2);
+
+    if (withoutCountryCode.length === 10 || withoutCountryCode.length === 11) {
+      return withoutCountryCode;
+    }
+  }
+
+  return digits;
+}
+
+export function normalizeCpf(value: string | null | undefined) {
+  const digits = onlyDigits(value);
+
+  if (!digits || digits.length !== 11 || /^(\d)\1{10}$/.test(digits)) {
+    return null;
+  }
+
+  return digits;
+}
+
 function normalizeEmail(value: string | null | undefined) {
   const text = normalizeText(value);
   return text ? text.toLowerCase() : null;
@@ -267,7 +303,7 @@ export async function fetchSheetLeads(source: SheetLeadSource) {
         "cliente",
         "lead",
       ]) ?? "";
-    const phone = onlyDigits(
+    const phone = normalizeBrazilianPhone(
       getCellByHeaderOrColumn(row, headers, headerIndex, source.phone_column, [
         "telefone",
         "telefone celular",
@@ -283,7 +319,7 @@ export async function fetchSheetLeads(source: SheetLeadSource) {
         "melhor email",
       ]),
     );
-    const cpf = onlyDigits(
+    const cpf = normalizeCpf(
       getCellByHeaderOrColumn(row, headers, headerIndex, source.cpf_column, [
         "cpf",
         "documento",
