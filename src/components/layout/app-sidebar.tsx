@@ -24,6 +24,7 @@ const navigation: SidebarNavigationItem[] = [
   { href: "/pre-vendas", label: "Pre-vendas", icon: "preSales" },
   { href: "/calculos", label: "Simulacoes", icon: "calculations" },
   { href: "/documentos", label: "Documentos", icon: "documents" },
+  { href: "/academy", label: "Academy", icon: "academy" },
   {
     href: "/documentos/templates",
     label: "Templates",
@@ -46,6 +47,12 @@ const navigation: SidebarNavigationItem[] = [
   { href: "/contratos", label: "Contratos", icon: "contracts" },
   { href: "/usuarios", label: "Usuarios", icon: "users" },
   { href: "/empresa", label: "Empresa", icon: "company", adminOnly: true },
+  {
+    href: "/academy/gestao",
+    label: "Academy",
+    icon: "academy",
+    managerOnly: true,
+  },
   { href: "/backups", label: "Backups", icon: "backups", adminOnly: true },
   { href: "/logs", label: "Logs", icon: "logs", adminOnly: true },
   { href: "/juridico", label: "Esteira", icon: "legal" },
@@ -71,8 +78,8 @@ export async function AppSidebar() {
     await getCurrentUserContext();
   const cookieStore = await cookies();
   const workspaceCookie = cookieStore.get(WORKSPACE_COOKIE_NAME)?.value ?? null;
-  const canManageTemplates = role === "admin" || role === "manager";
-  const canAccessUsers = role === "admin" || role === "manager";
+  const canManageTemplates = role === "admin" || role === "manager" || isPlatformOwner;
+  const canAccessUsers = role === "admin" || role === "manager" || isPlatformOwner;
   const canAccessDashboard = role !== "seller";
   const canAccessAdminOnly = role === "admin" || isPlatformOwner;
   const homeHref = getHomeForRole(role, businessArea, isPlatformOwner);
@@ -100,6 +107,10 @@ export async function AppSidebar() {
 
     if (item.href.startsWith("/financeiro")) {
       return isModuleEnabled(settings, "finance");
+    }
+
+    if (item.href.startsWith("/academy")) {
+      return isModuleEnabled(settings, "academy");
     }
 
     if (item.href === "/leads" || item.href === "/integracoes/leads") {

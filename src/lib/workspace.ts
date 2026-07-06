@@ -4,7 +4,7 @@ export const WORKSPACE_COOKIE_NAME = "grscrm-workspace";
 export const ACTIVE_COMPANY_COOKIE_NAME = "grscrm-active-company";
 
 export type CompanyBusinessArea = "commercial" | "legal";
-export type WorkspaceView = "management" | "finance" | CompanyBusinessArea;
+export type WorkspaceView = "management" | "finance" | "academy" | CompanyBusinessArea;
 
 export const businessAreaOptions: Array<{
   value: CompanyBusinessArea;
@@ -60,7 +60,12 @@ export function normalizeBusinessArea(value: string | null | undefined): Company
 }
 
 export function normalizeWorkspaceView(value: string | null | undefined): WorkspaceView {
-  if (value === "management" || value === "legal" || value === "finance") {
+  if (
+    value === "management" ||
+    value === "legal" ||
+    value === "finance" ||
+    value === "academy"
+  ) {
     return value;
   }
 
@@ -118,10 +123,13 @@ const managementPrefixes = [
   "/integracoes",
   "/documentos/templates",
   "/emails/templates",
+  "/academy/gestao",
   "/areas",
 ];
 
 const financePrefixes = ["/financeiro"];
+
+const academyPrefixes = ["/academy"];
 
 const legalPrefixes = ["/juridico"];
 
@@ -140,6 +148,10 @@ export function classifyWorkspacePath(pathname: string): WorkspaceView | null {
 
   if (legalPrefixes.some((prefix) => pathname.startsWith(prefix))) {
     return "legal";
+  }
+
+  if (academyPrefixes.some((prefix) => pathname.startsWith(prefix))) {
+    return "academy";
   }
 
   if (commercialPrefixes.some((prefix) => pathname.startsWith(prefix))) {

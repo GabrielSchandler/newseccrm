@@ -52,7 +52,8 @@ export function SidebarFrame({
       cookieValue === "management" ||
       cookieValue === "commercial" ||
       cookieValue === "legal" ||
-      cookieValue === "finance"
+      cookieValue === "finance" ||
+      cookieValue === "academy"
     ) {
       setWorkspacePreference(cookieValue);
     }
@@ -68,7 +69,8 @@ export function SidebarFrame({
     if (
       workspacePreference === "commercial" ||
       workspacePreference === "legal" ||
-      workspacePreference === "finance"
+      workspacePreference === "finance" ||
+      workspacePreference === "academy"
     ) {
       return workspacePreference;
     }
@@ -93,9 +95,11 @@ export function SidebarFrame({
           "/empresa",
           "/backups",
           "/logs",
+          "/academy/gestao",
         ].includes(item.href)) ||
         (currentWorkspace === "finance" &&
           ["/financeiro", "/financeiro/consultas"].includes(item.href)) ||
+        (currentWorkspace === "academy" && ["/academy"].includes(item.href)) ||
         (currentWorkspace === "commercial" &&
           [
             "/comercial",
@@ -104,9 +108,17 @@ export function SidebarFrame({
             "/pre-vendas",
             "/calculos",
             "/documentos",
+            "/academy",
           ].includes(item.href)) ||
         (currentWorkspace === "legal" &&
-          ["/juridico", "/clientes", "/pre-vendas", "/documentos", "/integracoes"].includes(item.href))),
+          [
+            "/juridico",
+            "/clientes",
+            "/pre-vendas",
+            "/documentos",
+            "/integracoes",
+            "/academy",
+          ].includes(item.href))),
   );
 
   const workspaceLabel =
@@ -114,9 +126,11 @@ export function SidebarFrame({
       ? "Gestao"
       : currentWorkspace === "finance"
         ? "Financeiro"
-      : currentWorkspace === "legal"
-        ? "Juridico"
-        : "Comercial";
+        : currentWorkspace === "academy"
+          ? "Academy"
+          : currentWorkspace === "legal"
+            ? "Juridico"
+            : "Comercial";
 
   return (
     <>

@@ -7,6 +7,7 @@ import {
   ClipboardList,
   FileSignature,
   FileText,
+  GraduationCap,
   Handshake,
   LayoutDashboard,
   Mail,
@@ -36,7 +37,8 @@ export type SidebarNavigationItem = {
     | "integrations"
     | "leads"
     | "legal"
-    | "finance";
+    | "finance"
+    | "academy";
   managerOnly?: boolean;
   adminOnly?: boolean;
 };
@@ -64,6 +66,7 @@ const icons = {
   leads: ClipboardList,
   legal: FileText,
   finance: WalletCards,
+  academy: GraduationCap,
 };
 
 function isActivePath(pathname: string, href: string) {

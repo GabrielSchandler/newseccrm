@@ -5,6 +5,8 @@ export const backupRetentionDays = 7;
 export const backupRestoreOrder = [
   "companies",
   "user_profiles",
+  "academy_chapter_progress",
+  "academy_exam_attempts",
   "legal_workflow_stages",
   "finance_categories",
   "finance_accounts",

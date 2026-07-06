@@ -12,7 +12,7 @@ create table if not exists public.company_platform_settings (
   enable_commercial boolean not null default true,
   enable_legal boolean not null default true,
   enable_finance boolean not null default true,
-  enable_academy boolean not null default false,
+  enable_academy boolean not null default true,
   enable_lead_distribution boolean not null default true,
   enable_client_portal boolean not null default true,
   enable_backups boolean not null default true,
