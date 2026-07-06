@@ -3,6 +3,7 @@ import { academyCourse } from "@/lib/academy/course";
 import type {
   AcademyAttemptRow,
   AcademyChapterStatus,
+  AcademyCourse,
   AcademyProgressRow,
   AcademyReportRow,
 } from "@/types/academy";
@@ -40,13 +41,15 @@ function latestDate(values: Array<string | null | undefined>) {
 }
 
 export function buildAcademyChapterStatuses({
+  course = academyCourse,
   progressRows,
   attemptRows,
 }: {
+  course?: AcademyCourse;
   progressRows: AcademyProgressRow[];
   attemptRows: AcademyAttemptRow[];
 }): AcademyChapterStatus[] {
-  return academyCourse.chapters.map((chapter) => {
+  return course.chapters.map((chapter) => {
     const progress =
       progressRows.find((row) => row.chapter_id === chapter.id) ?? null;
     const attempts = attemptRows.filter((row) => row.chapter_id === chapter.id);
@@ -76,7 +79,7 @@ export function summarizeAcademyProgress(statuses: AcademyChapterStatus[]) {
     .map((status) => status.score)
     .filter((score): score is number => typeof score === "number");
   const progressPercent = Math.round(
-    (completedChapters / Math.max(academyCourse.chapters.length, 1)) * 100,
+    (completedChapters / Math.max(statuses.length, 1)) * 100,
   );
 
   return {
@@ -85,7 +88,7 @@ export function summarizeAcademyProgress(statuses: AcademyChapterStatus[]) {
     approvedChapters,
     averageScore: average(scores),
     status:
-      approvedChapters === academyCourse.chapters.length
+      approvedChapters === statuses.length && statuses.length > 0
         ? "approved"
         : completedChapters > 0
           ? "in_progress"
@@ -97,10 +100,12 @@ export async function loadAcademyUserProgress({
   supabase,
   companyId,
   userProfileId,
+  course = academyCourse,
 }: {
   supabase: SupabaseClient;
   companyId: string;
   userProfileId: string;
+  course?: AcademyCourse;
 }) {
   const [progressResult, attemptsResult] = await Promise.all([
     supabase
@@ -108,13 +113,13 @@ export async function loadAcademyUserProgress({
       .select("*")
       .eq("company_id", companyId)
       .eq("user_profile_id", userProfileId)
-      .eq("course_slug", academyCourse.slug),
+      .eq("course_slug", course.slug),
     supabase
       .from("academy_exam_attempts")
       .select("*")
       .eq("company_id", companyId)
       .eq("user_profile_id", userProfileId)
-      .eq("course_slug", academyCourse.slug)
+      .eq("course_slug", course.slug)
       .order("submitted_at", { ascending: false }),
   ]);
 
@@ -126,6 +131,7 @@ export async function loadAcademyUserProgress({
         tableReady: false,
         errorMessage: null,
         statuses: buildAcademyChapterStatuses({
+          course,
           progressRows: [],
           attemptRows: [],
         }),
@@ -136,6 +142,7 @@ export async function loadAcademyUserProgress({
       tableReady: true,
       errorMessage: error?.message ?? "Nao foi possivel carregar o Academy.",
       statuses: buildAcademyChapterStatuses({
+        course,
         progressRows: [],
         attemptRows: [],
       }),
@@ -146,6 +153,7 @@ export async function loadAcademyUserProgress({
     tableReady: true,
     errorMessage: null,
     statuses: buildAcademyChapterStatuses({
+      course,
       progressRows: (progressResult.data ?? []) as AcademyProgressRow[],
       attemptRows: (attemptsResult.data ?? []) as AcademyAttemptRow[],
     }),
@@ -155,9 +163,11 @@ export async function loadAcademyUserProgress({
 export async function loadAcademyReport({
   supabase,
   companyId,
+  course = academyCourse,
 }: {
   supabase: SupabaseClient;
   companyId: string;
+  course?: AcademyCourse;
 }) {
   const usersResult = await supabase
     .from("user_profiles")
@@ -185,13 +195,13 @@ export async function loadAcademyReport({
       .from("academy_chapter_progress")
       .select("*")
       .eq("company_id", companyId)
-      .eq("course_slug", academyCourse.slug)
+      .eq("course_slug", course.slug)
       .in("user_profile_id", userIds),
     supabase
       .from("academy_exam_attempts")
       .select("*")
       .eq("company_id", companyId)
-      .eq("course_slug", academyCourse.slug)
+      .eq("course_slug", course.slug)
       .in("user_profile_id", userIds),
   ]);
 
@@ -213,6 +223,7 @@ export async function loadAcademyReport({
   const attemptRows = (attemptsResult.data ?? []) as AcademyAttemptRow[];
   const rows: AcademyReportRow[] = (usersResult.data ?? []).map((user) => {
     const statuses = buildAcademyChapterStatuses({
+      course,
       progressRows: progressRows.filter((row) => row.user_profile_id === user.id),
       attemptRows: attemptRows.filter((row) => row.user_profile_id === user.id),
     });

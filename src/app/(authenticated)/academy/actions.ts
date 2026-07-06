@@ -3,8 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import {
-  academyCourse,
   getAcademyChapter,
+  getAcademyCourse,
   getAcademyQuestionAnswer,
 } from "@/lib/academy/course";
 import { isAcademyMissingTableError } from "@/lib/academy/service";
@@ -15,23 +15,25 @@ function getString(formData: FormData, key: string) {
   return typeof value === "string" ? value : "";
 }
 
-function redirectWithAcademyError(chapterId: string, error: string) {
-  redirect(`/academy/capitulos/${chapterId}?error=${error}`);
+function redirectWithAcademyError(courseSlug: string, chapterId: string, error: string) {
+  redirect(`/academy/cursos/${courseSlug}/capitulos/${chapterId}?error=${error}`);
 }
 
 export async function completeAcademyChapterAction(formData: FormData) {
+  const courseSlug = getString(formData, "course_slug");
   const chapterId = getString(formData, "chapter_id");
   const optionId = getString(formData, "checkpoint_option_id");
-  const chapter = getAcademyChapter(chapterId);
+  const course = getAcademyCourse(courseSlug);
+  const chapter = course ? getAcademyChapter(course.slug, chapterId) : null;
 
-  if (!chapter) {
+  if (!course || !chapter) {
     redirect("/academy?error=chapter_not_found");
   }
 
   const answer = getAcademyQuestionAnswer(chapter.checkpoint, optionId);
 
   if (!answer?.isCorrect) {
-    redirectWithAcademyError(chapter.id, "checkpoint");
+    redirectWithAcademyError(course.slug, chapter.id, "checkpoint");
   }
 
   const { supabase, companyId, userProfileId } = await getCurrentUserContext();
@@ -41,7 +43,7 @@ export async function completeAcademyChapterAction(formData: FormData) {
     .select("status, best_score, completed_at")
     .eq("company_id", companyId)
     .eq("user_profile_id", userProfileId)
-    .eq("course_slug", academyCourse.slug)
+    .eq("course_slug", course.slug)
     .eq("chapter_id", chapter.id)
     .maybeSingle();
   const keepApproved =
@@ -50,7 +52,7 @@ export async function completeAcademyChapterAction(formData: FormData) {
     {
       company_id: companyId,
       user_profile_id: userProfileId,
-      course_slug: academyCourse.slug,
+      course_slug: course.slug,
       chapter_id: chapter.id,
       status: keepApproved ? "approved" : "completed",
       progress_percent: 100,
@@ -70,23 +72,26 @@ export async function completeAcademyChapterAction(formData: FormData) {
 
   if (error) {
     if (isAcademyMissingTableError(error)) {
-      redirectWithAcademyError(chapter.id, "sql");
+      redirectWithAcademyError(course.slug, chapter.id, "sql");
     }
 
-    redirectWithAcademyError(chapter.id, "save");
+    redirectWithAcademyError(course.slug, chapter.id, "save");
   }
 
   revalidatePath("/academy");
-  revalidatePath(`/academy/capitulos/${chapter.id}`);
+  revalidatePath(`/academy/cursos/${course.slug}`);
+  revalidatePath(`/academy/cursos/${course.slug}/capitulos/${chapter.id}`);
   revalidatePath("/academy/gestao");
-  redirect(`/academy/capitulos/${chapter.id}?status=completed`);
+  redirect(`/academy/cursos/${course.slug}/capitulos/${chapter.id}?status=completed`);
 }
 
 export async function submitAcademyExamAction(formData: FormData) {
+  const courseSlug = getString(formData, "course_slug");
   const chapterId = getString(formData, "chapter_id");
-  const chapter = getAcademyChapter(chapterId);
+  const course = getAcademyCourse(courseSlug);
+  const chapter = course ? getAcademyChapter(course.slug, chapterId) : null;
 
-  if (!chapter) {
+  if (!course || !chapter) {
     redirect("/academy?error=chapter_not_found");
   }
 
@@ -99,7 +104,7 @@ export async function submitAcademyExamAction(formData: FormData) {
   const missingAnswer = chapter.exam.some((question) => !answers[question.id]);
 
   if (missingAnswer) {
-    redirectWithAcademyError(chapter.id, "missing_answers");
+    redirectWithAcademyError(course.slug, chapter.id, "missing_answers");
   }
 
   const total = chapter.exam.length;
@@ -108,7 +113,7 @@ export async function submitAcademyExamAction(formData: FormData) {
     return option?.isCorrect;
   }).length;
   const score = Math.round((correct / Math.max(total, 1)) * 100);
-  const passed = score >= academyCourse.passingScore;
+  const passed = score >= course.passingScore;
   const { supabase, companyId, userProfileId } = await getCurrentUserContext();
   const now = new Date().toISOString();
   const { data: existingProgress } = await supabase
@@ -116,14 +121,14 @@ export async function submitAcademyExamAction(formData: FormData) {
     .select("status, best_score, completed_at")
     .eq("company_id", companyId)
     .eq("user_profile_id", userProfileId)
-    .eq("course_slug", academyCourse.slug)
+    .eq("course_slug", course.slug)
     .eq("chapter_id", chapter.id)
     .maybeSingle();
 
   const { error: attemptError } = await supabase.from("academy_exam_attempts").insert({
     company_id: companyId,
     user_profile_id: userProfileId,
-    course_slug: academyCourse.slug,
+    course_slug: course.slug,
     chapter_id: chapter.id,
     score,
     passed,
@@ -133,10 +138,10 @@ export async function submitAcademyExamAction(formData: FormData) {
 
   if (attemptError) {
     if (isAcademyMissingTableError(attemptError)) {
-      redirectWithAcademyError(chapter.id, "sql");
+      redirectWithAcademyError(course.slug, chapter.id, "sql");
     }
 
-    redirectWithAcademyError(chapter.id, "save");
+    redirectWithAcademyError(course.slug, chapter.id, "save");
   }
 
   const previousProgress = existingProgress as {
@@ -152,7 +157,7 @@ export async function submitAcademyExamAction(formData: FormData) {
       {
         company_id: companyId,
         user_profile_id: userProfileId,
-        course_slug: academyCourse.slug,
+        course_slug: course.slug,
         chapter_id: chapter.id,
         status: keepApproved ? "approved" : "completed",
         progress_percent: 100,
@@ -167,13 +172,14 @@ export async function submitAcademyExamAction(formData: FormData) {
     );
 
   if (progressError) {
-    redirectWithAcademyError(chapter.id, "save");
+    redirectWithAcademyError(course.slug, chapter.id, "save");
   }
 
   revalidatePath("/academy");
-  revalidatePath(`/academy/capitulos/${chapter.id}`);
+  revalidatePath(`/academy/cursos/${course.slug}`);
+  revalidatePath(`/academy/cursos/${course.slug}/capitulos/${chapter.id}`);
   revalidatePath("/academy/gestao");
   redirect(
-    `/academy/capitulos/${chapter.id}?status=exam&score=${score}&passed=${passed ? "1" : "0"}`,
+    `/academy/cursos/${course.slug}/capitulos/${chapter.id}?status=exam&score=${score}&passed=${passed ? "1" : "0"}`,
   );
 }
