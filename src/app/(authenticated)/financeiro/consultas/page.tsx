@@ -21,6 +21,7 @@ import type {
   FinanceSale,
   FinanceTransaction,
 } from "@/types/finance";
+import type { LegalCommissionTier } from "@/types/legal-payment";
 
 type ConsultaFinanceiraPageProps = {
   searchParams: Promise<{
@@ -55,7 +56,12 @@ const currencyFormatter = new Intl.NumberFormat("pt-BR", {
 const numberFormatter = new Intl.NumberFormat("pt-BR");
 const timeZone = "America/Sao_Paulo";
 
-const commissionBrackets = [
+type CommissionBracket = {
+  goal: number;
+  rate: number;
+};
+
+const commissionBrackets: CommissionBracket[] = [
   { goal: 40000, rate: 0.25 },
   { goal: 35000, rate: 0.25 },
   { goal: 30000, rate: 0.25 },
@@ -158,35 +164,68 @@ function saleGoalAmount(sale: FinanceSale) {
   return toNumber(sale.goal_amount || sale.gross_amount);
 }
 
-function commissionRate(goalAmount: number) {
-  return commissionBrackets.find((bracket) => goalAmount >= bracket.goal)?.rate ?? 0;
+function isLegalSale(sale: FinanceSale) {
+  const source = sale.source?.toLowerCase() ?? "";
+  const modality = sale.modality?.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase() ?? "";
+
+  return source === "legal_payment" || modality.includes("juridico");
 }
 
-function calculateCommission(sales: FinanceSale[]) {
-  const grouped = new Map<string, number>();
+function normalizeLegalCommissionBrackets(
+  tiers: LegalCommissionTier[],
+): CommissionBracket[] {
+  return tiers
+    .filter((tier) => tier.is_active !== false)
+    .map((tier) => ({
+      goal: toNumber(tier.min_goal_amount),
+      rate: toNumber(tier.commission_percent) / 100,
+    }))
+    .filter((tier) => tier.goal > 0 && tier.rate > 0)
+    .sort((a, b) => b.goal - a.goal);
+}
+
+function commissionRate(goalAmount: number, brackets: CommissionBracket[]) {
+  return brackets.find((bracket) => goalAmount >= bracket.goal)?.rate ?? 0;
+}
+
+function calculateCommission(
+  sales: FinanceSale[],
+  legalCommissionBrackets: CommissionBracket[],
+) {
+  const grouped = new Map<string, { area: "commercial" | "legal"; goalAmount: number }>();
 
   sales.forEach((sale) => {
-    const key = sale.consultant_name?.trim() || sale.consultant_user_id || "sem-consultor";
-    grouped.set(key, (grouped.get(key) ?? 0) + saleGoalAmount(sale));
+    const area = isLegalSale(sale) ? "legal" : "commercial";
+    const key = `${area}:${sale.consultant_name?.trim() || sale.consultant_user_id || "sem-consultor"}`;
+    const current = grouped.get(key) ?? { area, goalAmount: 0 };
+
+    grouped.set(key, {
+      area,
+      goalAmount: current.goalAmount + saleGoalAmount(sale),
+    });
   });
 
   let total = 0;
 
-  grouped.forEach((goalAmount) => {
-    total += goalAmount * commissionRate(goalAmount);
+  grouped.forEach((group) => {
+    const brackets = group.area === "legal" ? legalCommissionBrackets : commissionBrackets;
+    total += group.goalAmount * commissionRate(group.goalAmount, brackets);
   });
 
   return total;
 }
 
-function summarizeSales(sales: FinanceSale[]) {
+function summarizeSales(
+  sales: FinanceSale[],
+  legalCommissionBrackets: CommissionBracket[],
+) {
   const goalTotal = sales.reduce((total, sale) => total + saleGoalAmount(sale), 0);
   const grossTotal = sales.reduce((total, sale) => total + toNumber(sale.gross_amount), 0);
 
   return {
     goalTotal,
     grossTotal,
-    commissionTotal: calculateCommission(sales),
+    commissionTotal: calculateCommission(sales, legalCommissionBrackets),
     count: sales.length,
   };
 }
@@ -298,7 +337,13 @@ export default async function ConsultaFinanceiraPage({
   const selectedConsultant = params.consultant ?? "todos";
   const selectedStatus = params.status ?? "todos";
 
-  const [salesResult, transactionsResult, chargebacksResult, usersResult] =
+  const [
+    salesResult,
+    transactionsResult,
+    chargebacksResult,
+    usersResult,
+    legalCommissionTiersResult,
+  ] =
     await Promise.all([
       supabase
         .from("finance_sales")
@@ -323,6 +368,12 @@ export default async function ConsultaFinanceiraPage({
         .select("id, full_name, nickname, username, role, business_area")
         .eq("company_id", companyId)
         .order("full_name", { ascending: true }),
+      supabase
+        .from("legal_commission_tiers")
+        .select("*")
+        .eq("company_id", companyId)
+        .eq("is_active", true)
+        .order("min_goal_amount", { ascending: false }),
     ]);
 
   const firstError = [
@@ -334,6 +385,11 @@ export default async function ConsultaFinanceiraPage({
   const sales = (salesResult.data ?? []) as FinanceSale[];
   const transactions = (transactionsResult.data ?? []) as FinanceTransaction[];
   const chargebacks = (chargebacksResult.data ?? []) as FinanceChargeback[];
+  const legalCommissionTiers = legalCommissionTiersResult.error
+    ? []
+    : ((legalCommissionTiersResult.data ?? []) as LegalCommissionTier[]);
+  const legalCommissionBrackets =
+    normalizeLegalCommissionBrackets(legalCommissionTiers);
   const users = ((usersResult.data ?? []) as CommercialUser[]).filter(
     (user) => user.business_area === "commercial" && user.role === "seller",
   );
@@ -391,7 +447,7 @@ export default async function ConsultaFinanceiraPage({
 
     return dateB.localeCompare(dateA);
   });
-  const salesSummary = summarizeSales(filteredSales);
+  const salesSummary = summarizeSales(filteredSales, legalCommissionBrackets);
   const financeSummary = summarizeFinance(filteredFinanceRows);
   const currentQuery = new URLSearchParams({
     tipo: queryType,

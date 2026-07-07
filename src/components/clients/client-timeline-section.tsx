@@ -55,6 +55,10 @@ function getEventConfig(eventType: ClientTimelineEventType): TimelineEventConfig
         iconClassName: "border-emerald-200 bg-emerald-50 text-emerald-700",
       };
     case "legal_stage_updated":
+    case "legal_payment_created":
+    case "legal_payment_updated":
+    case "legal_payment_deleted":
+    case "legal_payment_receipt_generated":
       return {
         label: "Juridico",
         icon: ShieldCheck,

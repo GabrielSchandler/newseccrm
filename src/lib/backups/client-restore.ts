@@ -2,6 +2,7 @@ export const clientRestoreConfirmationText = "RESTAURAR CLIENTE";
 
 export const clientRestoreTableOrder = [
   "legal_workflow_stages",
+  "legal_payment_types",
   "document_templates",
   "email_templates",
   "rd_crm_activity_import_batches",
@@ -13,6 +14,7 @@ export const clientRestoreTableOrder = [
   "pre_sale_payments",
   "financing_calculations",
   "generated_documents",
+  "legal_payments",
   "client_documents",
   "client_timeline_events",
   "client_tracking_updates",
@@ -25,6 +27,7 @@ export type ClientRestoreTable = (typeof clientRestoreTableOrder)[number];
 
 export const clientRestoreDataTables = [
   "legal_workflow_stages",
+  "legal_payment_types",
   "clients",
   "pre_sales",
   "pre_sale_client_snapshot",
@@ -33,6 +36,7 @@ export const clientRestoreDataTables = [
   "pre_sale_payments",
   "financing_calculations",
   "generated_documents",
+  "legal_payments",
   "client_documents",
   "client_timeline_events",
   "client_tracking_updates",

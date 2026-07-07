@@ -7,6 +7,7 @@ import { ClientToast } from "@/components/clients/client-toast";
 import { WhatsAppLink } from "@/components/clients/whatsapp-link";
 import { ClientDocumentsSection } from "@/components/client-documents/client-documents-section";
 import { GenerateDocumentModal } from "@/components/documents/generate-document-modal";
+import { LegalPaymentsPanel } from "@/components/legal/legal-payments-panel";
 import { PageHeader } from "@/components/layout/page-header";
 import { PreSaleDeleteButton } from "@/components/pre-sales/pre-sale-delete-button";
 import { PreSalesStatusBadge } from "@/components/pre-sales/pre-sales-status-badge";
@@ -27,7 +28,8 @@ import {
   formatUserName,
 } from "@/lib/pre-sales/formatters";
 import { canAccessPreSaleRecord, canEditPreSaleRecord } from "@/lib/pre-sales/access";
-import type { DocumentTemplate } from "@/types/document";
+import type { DocumentTemplate, GeneratedDocument } from "@/types/document";
+import type { LegalPayment, LegalPaymentType } from "@/types/legal-payment";
 import type {
   ClientOption,
   PreSale,
@@ -40,7 +42,11 @@ import type {
 
 type PreVendaPageProps = {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ success?: string }>;
+  searchParams: Promise<{
+    success?: string;
+    legalPaymentSuccess?: string;
+    legalPaymentError?: string;
+  }>;
 };
 
 type DetailSectionProps = {
@@ -128,6 +134,10 @@ export default async function PreVendaPage({ params, searchParams }: PreVendaPag
     { data: financialCaseData },
     { data: paymentsData },
     { data: templatesData },
+    { data: legalPaymentTypesData },
+    { data: legalPaymentsData },
+    { data: legalUsersData },
+    { data: receiptDocumentsData },
   ] = await Promise.all([
     supabase
       .from("clients")
@@ -173,6 +183,32 @@ export default async function PreVendaPage({ params, searchParams }: PreVendaPag
       .eq("company_id", companyId)
       .eq("is_active", true)
       .order("name", { ascending: true }),
+    supabase
+      .from("legal_payment_types")
+      .select("*")
+      .eq("company_id", companyId)
+      .eq("is_active", true)
+      .order("sort_order", { ascending: true })
+      .order("name", { ascending: true }),
+    supabase
+      .from("legal_payments")
+      .select("*")
+      .eq("company_id", companyId)
+      .eq("pre_sale_id", preSale.id)
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("user_profiles")
+      .select("id, full_name, nickname, username, email, role, business_area, legal_role")
+      .eq("company_id", companyId)
+      .eq("business_area", "legal")
+      .eq("is_active", true)
+      .order("full_name", { ascending: true }),
+    supabase
+      .from("generated_documents")
+      .select("*")
+      .eq("company_id", companyId)
+      .eq("pre_sale_id", preSale.id)
+      .not("legal_payment_id", "is", null),
   ]);
 
   const client = clientData as ClientOption | null;
@@ -185,8 +221,35 @@ export default async function PreVendaPage({ params, searchParams }: PreVendaPag
   const financialCase = financialCaseData as PreSaleFinancialCase | null;
   const payments = (paymentsData ?? []) as PreSalePayment[];
   const templates = (templatesData ?? []) as DocumentTemplate[];
+  const legalPaymentTypes = (legalPaymentTypesData ?? []) as LegalPaymentType[];
+  const legalPayments = (legalPaymentsData ?? []) as LegalPayment[];
+  const legalUsers = (legalUsersData ?? []) as UserProfileOption[];
+  const receiptDocuments = (receiptDocumentsData ?? []) as GeneratedDocument[];
+  const legalPaymentTypesById = new Map(
+    legalPaymentTypes.map((type) => [type.id, type]),
+  );
+  const legalUsersById = new Map(legalUsers.map((user) => [user.id, user]));
+  const receiptDocumentsByLegalPaymentId = new Map(
+    receiptDocuments
+      .filter((document) => document.legal_payment_id)
+      .map((document) => [document.legal_payment_id as string, document]),
+  );
+  const legalPaymentsWithRelations = legalPayments.map((payment) => ({
+    ...payment,
+    type: legalPaymentTypesById.get(payment.legal_payment_type_id) ?? null,
+    responsible: payment.responsible_user_id
+      ? legalUsersById.get(payment.responsible_user_id) ?? null
+      : null,
+    receiptDocument: payment.receipt_generated_document_id
+      ? receiptDocuments.find(
+          (document) => document.id === payment.receipt_generated_document_id,
+        ) ?? receiptDocumentsByLegalPaymentId.get(payment.id) ?? null
+      : receiptDocumentsByLegalPaymentId.get(payment.id) ?? null,
+  }));
   const canEdit = canEditPreSaleRecord(role, businessArea, userProfileId, preSale);
   const canDelete = role === "admin" || role === "manager";
+  const canManageLegalPayments =
+    role === "admin" || role === "manager" || businessArea === "legal";
   const successMessage =
     queryParams.success === "created"
       ? "Pre-venda cadastrada com sucesso."
@@ -474,6 +537,17 @@ export default async function PreVendaPage({ params, searchParams }: PreVendaPag
             </p>
           )}
         </DetailSection>
+
+        <LegalPaymentsPanel
+          preSaleId={preSale.id}
+          legalPayments={legalPaymentsWithRelations}
+          legalPaymentTypes={legalPaymentTypes}
+          legalUsers={legalUsers}
+          templates={templates}
+          canManage={canManageLegalPayments}
+          successMessage={queryParams.legalPaymentSuccess ?? null}
+          errorMessage={queryParams.legalPaymentError ?? null}
+        />
 
         <ClientDocumentsSection
           clientId={preSale.client_id}

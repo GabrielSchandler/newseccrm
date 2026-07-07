@@ -57,6 +57,7 @@ const preSaleChildTables = [
   "pre_sale_debt_holders",
   "pre_sale_financial_cases",
   "pre_sale_payments",
+  "legal_payments",
 ] as const satisfies readonly FullRestoreTable[];
 
 function jsonError(message: string, status = 400) {

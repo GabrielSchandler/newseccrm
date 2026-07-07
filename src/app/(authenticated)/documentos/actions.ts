@@ -36,6 +36,7 @@ import type {
   PreSalePayment,
   UserProfileOption,
 } from "@/types/pre-sale";
+import type { LegalPayment, LegalPaymentType } from "@/types/legal-payment";
 
 export type DocumentActionState = {
   ok: boolean;
@@ -293,7 +294,11 @@ async function getGeneratedDocument(documentId: string, companyId: string) {
   return data as import("@/types/document").GeneratedDocument | null;
 }
 
-async function getDocumentContext(preSaleId: string, companyId: string) {
+async function getDocumentContext(
+  preSaleId: string,
+  companyId: string,
+  legalPaymentId?: string | null,
+) {
   await assertPreSaleAccess(preSaleId);
   const { supabase } = await getCurrentUserContext();
   const [
@@ -360,6 +365,10 @@ async function getDocumentContext(preSaleId: string, companyId: string) {
       : Promise.resolve({ data: null }),
   ]);
 
+  const legalPayment = legalPaymentId
+    ? await getLegalPaymentDocumentContext(legalPaymentId, preSaleId, companyId)
+    : null;
+
   return {
     preSale,
     client: clientData as Client | null,
@@ -369,6 +378,55 @@ async function getDocumentContext(preSaleId: string, companyId: string) {
     payments: (paymentsData ?? []) as PreSalePayment[],
     company: companyData as Record<string, unknown> | null,
     consultant: consultantData as UserProfileOption | null,
+    legalPayment,
+  };
+}
+
+async function getLegalPaymentDocumentContext(
+  legalPaymentId: string,
+  preSaleId: string,
+  companyId: string,
+) {
+  const { supabase } = await getCurrentUserContext();
+  const { data: paymentData, error: paymentError } = await supabase
+    .from("legal_payments")
+    .select("*")
+    .eq("id", legalPaymentId)
+    .eq("pre_sale_id", preSaleId)
+    .eq("company_id", companyId)
+    .maybeSingle();
+
+  if (paymentError) {
+    throw paymentError;
+  }
+
+  const payment = paymentData as LegalPayment | null;
+
+  if (!payment) {
+    throw new Error("Pagamento juridico nao encontrado para gerar o documento.");
+  }
+
+  const [{ data: typeData }, { data: responsibleData }] = await Promise.all([
+    supabase
+      .from("legal_payment_types")
+      .select("*")
+      .eq("id", payment.legal_payment_type_id)
+      .eq("company_id", companyId)
+      .maybeSingle(),
+    payment.responsible_user_id
+      ? supabase
+          .from("user_profiles")
+          .select("id, full_name, nickname, username, email, role, business_area, legal_role")
+          .eq("id", payment.responsible_user_id)
+          .eq("company_id", companyId)
+          .maybeSingle()
+      : Promise.resolve({ data: null }),
+  ]);
+
+  return {
+    payment,
+    type: typeData as LegalPaymentType | null,
+    responsible: responsibleData as UserProfileOption | null,
   };
 }
 
@@ -1287,6 +1345,7 @@ async function uploadGeneratedFile(
 export async function generateOfficialDocumentAction(
   preSaleId: string,
   templateId: string,
+  options: { legalPaymentId?: string | null } = {},
 ): Promise<DocumentActionState> {
   try {
     const schemaError = await ensureOfficialDocumentSchema({
@@ -1308,7 +1367,7 @@ export async function generateOfficialDocumentAction(
     const storageAdmin = createAdminClient();
     const [template, context] = await Promise.all([
       getTemplate(templateId, companyId, true),
-      getDocumentContext(preSaleId, companyId),
+      getDocumentContext(preSaleId, companyId, options.legalPaymentId ?? null),
     ]);
 
     if (!template) {
@@ -1410,6 +1469,9 @@ export async function generateOfficialDocumentAction(
         pdf_error_message: pdfErrorMessage,
         status: "gerado",
         created_by: userProfileId,
+        ...(context.legalPayment
+          ? { legal_payment_id: context.legalPayment.payment.id }
+          : {}),
       })
       .select("id")
       .single();
@@ -1465,6 +1527,7 @@ export async function generateOfficialDocumentAction(
 export async function generateOfficialPdfDocumentAction(
   preSaleId: string,
   templateId: string,
+  options: { legalPaymentId?: string | null } = {},
 ): Promise<DocumentActionState> {
   try {
     const schemaError = await ensureOfficialDocumentSchema({
@@ -1486,7 +1549,7 @@ export async function generateOfficialPdfDocumentAction(
     const storageAdmin = createAdminClient();
     const [template, context] = await Promise.all([
       getTemplate(templateId, companyId, true),
-      getDocumentContext(preSaleId, companyId),
+      getDocumentContext(preSaleId, companyId, options.legalPaymentId ?? null),
     ]);
 
     if (!template) {
@@ -1566,6 +1629,9 @@ export async function generateOfficialPdfDocumentAction(
         pdf_error_message: null,
         status: "gerado",
         created_by: userProfileId,
+        ...(context.legalPayment
+          ? { legal_payment_id: context.legalPayment.payment.id }
+          : {}),
       })
       .select("id")
       .single();

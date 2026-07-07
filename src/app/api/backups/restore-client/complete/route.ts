@@ -180,6 +180,7 @@ function assertClientScope(rows: ClientRestoreRows, clientId: string) {
   for (const table of [
     "financing_calculations",
     "generated_documents",
+    "legal_payments",
     "client_documents",
     "client_timeline_events",
     "client_tracking_updates",

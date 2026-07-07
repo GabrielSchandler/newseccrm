@@ -20,6 +20,7 @@ import type {
   PreSalePayment,
   UserProfileOption,
 } from "@/types/pre-sale";
+import type { LegalPayment, LegalPaymentType } from "@/types/legal-payment";
 
 export type DocumentCompany = {
   id?: string;
@@ -49,6 +50,11 @@ export type DocumentTemplateContext = {
   company: DocumentCompany | null;
   consultant: UserProfileOption | null;
   payments: PreSalePayment[];
+  legalPayment?: {
+    payment: LegalPayment;
+    type: LegalPaymentType | null;
+    responsible: UserProfileOption | null;
+  } | null;
 };
 
 export type RenderedDocument = {
@@ -226,6 +232,24 @@ export const documentVariableCatalog = [
       "pagamento_total_com_extenso",
       "pagamentos_resumo",
       ...paymentDocumentVariables,
+    ],
+  },
+  {
+    group: "Pagamento juridico",
+    variables: [
+      "juridico_pagamento_id",
+      "juridico_pagamento_tipo",
+      "juridico_pagamento_descricao",
+      "juridico_pagamento_valor",
+      "juridico_pagamento_valor_extenso",
+      "juridico_pagamento_valor_com_extenso",
+      "juridico_pagamento_meta",
+      "juridico_pagamento_forma",
+      "juridico_pagamento_vencimento",
+      "juridico_pagamento_data_pagamento",
+      "juridico_pagamento_status",
+      "juridico_pagamento_responsavel",
+      "juridico_pagamento_observacoes",
     ],
   },
   {
@@ -729,10 +753,12 @@ export function buildDocumentVariables(context: DocumentTemplateContext) {
     company,
     consultant,
     payments,
+    legalPayment,
   } = context;
   const now = new Date();
   const companyRecord = (company ?? {}) as Record<string, unknown>;
   const paymentVariables = buildPaymentVariables(payments, preSale.contract_value);
+  const legalPaymentRecord = legalPayment?.payment ?? null;
 
   const variables = {
     cliente_id: client?.id ?? "",
@@ -876,6 +902,27 @@ export function buildDocumentVariables(context: DocumentTemplateContext) {
       minute: "2-digit",
     }).format(now),
     ...paymentVariables,
+    juridico_pagamento_id: legalPaymentRecord?.id ?? "",
+    juridico_pagamento_tipo: formatText(legalPayment?.type?.name),
+    juridico_pagamento_descricao: formatText(legalPaymentRecord?.description),
+    juridico_pagamento_valor: formatCurrencyValue(legalPaymentRecord?.amount),
+    juridico_pagamento_valor_extenso: formatCurrencyWordsOnly(
+      legalPaymentRecord?.amount,
+    ),
+    juridico_pagamento_valor_com_extenso: formatCurrencyWithWords(
+      legalPaymentRecord?.amount,
+    ),
+    juridico_pagamento_meta: formatCurrencyValue(legalPaymentRecord?.goal_amount),
+    juridico_pagamento_forma: formatText(legalPaymentRecord?.payment_method),
+    juridico_pagamento_vencimento: formatDateValue(legalPaymentRecord?.due_date),
+    juridico_pagamento_data_pagamento: formatDateValue(legalPaymentRecord?.paid_at),
+    juridico_pagamento_status: formatText(legalPaymentRecord?.status),
+    juridico_pagamento_responsavel: formatText(
+      legalPayment?.responsible?.full_name ??
+        legalPayment?.responsible?.username ??
+        legalPayment?.responsible?.email,
+    ),
+    juridico_pagamento_observacoes: formatText(legalPaymentRecord?.notes),
   } satisfies Record<string, string>;
 
   return variables as Record<string, string>;

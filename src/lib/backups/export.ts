@@ -51,6 +51,7 @@ const companyScopedTables = backupRestoreOrder.filter(
       "pre_sale_debt_holders",
       "pre_sale_financial_cases",
       "pre_sale_payments",
+      "legal_payments",
     ].includes(table),
 );
 
@@ -59,12 +60,16 @@ const preSaleChildTables = [
   "pre_sale_debt_holders",
   "pre_sale_financial_cases",
   "pre_sale_payments",
+  "legal_payments",
 ] as const;
 const backupQueryPageSize = 1000;
 const optionalWorkflowTables = new Set([
   "legal_workflow_stages",
   "legal_workflow_bulk_moves",
   "legal_workflow_bulk_move_items",
+  "legal_payment_types",
+  "legal_commission_tiers",
+  "legal_payments",
   "finance_categories",
   "finance_accounts",
   "finance_transactions",
@@ -271,7 +276,9 @@ async function exportPreSaleChildTable(
       return {
         table,
         rows,
-        error: result.error,
+        error: isMissingOptionalWorkflowTable(table, result.error)
+          ? null
+          : result.error,
       } satisfies ExportedTable;
     }
 

@@ -16,7 +16,11 @@ const storageRetryBaseDelayMs = 2000;
 const backupRestoreOrder = [
   "companies",
   "user_profiles",
+  "academy_chapter_progress",
+  "academy_exam_attempts",
   "legal_workflow_stages",
+  "legal_payment_types",
+  "legal_commission_tiers",
   "finance_categories",
   "finance_accounts",
   "finance_transactions",
@@ -25,6 +29,8 @@ const backupRestoreOrder = [
   "finance_import_batches",
   "finance_import_rows",
   "finance_audit_logs",
+  "lead_sources",
+  "leads",
   "clients",
   "pre_sales",
   "pre_sale_client_snapshot",
@@ -34,6 +40,7 @@ const backupRestoreOrder = [
   "financing_calculations",
   "document_templates",
   "generated_documents",
+  "legal_payments",
   "client_documents",
   "client_timeline_events",
   "client_tracking_updates",
@@ -51,6 +58,13 @@ const optionalWorkflowTables = new Set([
   "legal_workflow_stages",
   "legal_workflow_bulk_moves",
   "legal_workflow_bulk_move_items",
+  "legal_payment_types",
+  "legal_commission_tiers",
+  "legal_payments",
+  "lead_sources",
+  "leads",
+  "academy_chapter_progress",
+  "academy_exam_attempts",
   "finance_categories",
   "finance_accounts",
   "finance_transactions",
@@ -66,6 +80,7 @@ const preSaleChildTables = [
   "pre_sale_debt_holders",
   "pre_sale_financial_cases",
   "pre_sale_payments",
+  "legal_payments",
 ];
 
 const companyScopedTables = backupRestoreOrder.filter(
@@ -175,6 +190,19 @@ function wait(delayMs) {
   return new Promise((resolve) => setTimeout(resolve, delayMs));
 }
 
+function isMissingOptionalWorkflowTable(table, error) {
+  if (!optionalWorkflowTables.has(table) || !error) {
+    return false;
+  }
+
+  const normalized = error.toLowerCase();
+  return (
+    normalized.includes("does not exist") ||
+    normalized.includes("schema cache") ||
+    normalized.includes("could not find")
+  );
+}
+
 async function downloadStorageFileWithRetry(supabase, ref) {
   let lastError = "Arquivo nao retornado pelo Storage.";
 
@@ -248,16 +276,9 @@ async function exportCompanyTable(supabase, table, companyId) {
   return {
     table,
     rows: result.rows,
-    error:
-      optionalWorkflowTables.has(table) &&
-      result.error &&
-      (
-        result.error.toLowerCase().includes("does not exist") ||
-        result.error.toLowerCase().includes("schema cache") ||
-        result.error.toLowerCase().includes("could not find")
-      )
-        ? null
-        : result.error,
+    error: isMissingOptionalWorkflowTable(table, result.error)
+      ? null
+      : result.error,
   };
 }
 
@@ -282,7 +303,9 @@ async function exportPreSaleChildTable(supabase, table, preSaleIds) {
       return {
         table,
         rows,
-        error: result.error,
+        error: isMissingOptionalWorkflowTable(table, result.error)
+          ? null
+          : result.error,
       };
     }
 

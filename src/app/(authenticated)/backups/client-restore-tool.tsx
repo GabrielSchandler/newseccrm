@@ -196,6 +196,7 @@ function pickClientRows({
   for (const table of [
     "financing_calculations",
     "generated_documents",
+    "legal_payments",
     "client_documents",
     "client_timeline_events",
     "client_tracking_updates",
@@ -210,6 +211,17 @@ function pickClientRows({
       }),
     );
   }
+
+  const legalPaymentTypeIds = new Set(
+    (rows.legal_payments ?? [])
+      .map((row) => getRowString(row, "legal_payment_type_id"))
+      .filter(Boolean),
+  );
+  rows.legal_payment_types = cloneRows(
+    getRows(loaded.tables, "legal_payment_types").filter((row) =>
+      legalPaymentTypeIds.has(getRowId(row)),
+    ),
+  );
 
   rows.legacy_rd_import = cloneRows(
     getRows(loaded.tables, "legacy_rd_import").filter((row) => {

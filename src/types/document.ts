@@ -47,6 +47,7 @@ export type GeneratedDocument = {
   pre_sale_id: string;
   client_id: string | null;
   template_id: string;
+  legal_payment_id?: string | null;
   document_type: DocumentTemplateType;
   title: string;
   rendered_content_html: string;
