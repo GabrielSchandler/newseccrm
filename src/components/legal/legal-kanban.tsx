@@ -364,7 +364,7 @@ export function LegalKanban({
         </div>
       ) : null}
 
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
         <div>
           {lastBulkMove && new Date(lastBulkMove.undoExpiresAt).getTime() > Date.now() ? (
             <button
@@ -412,7 +412,21 @@ export function LegalKanban({
 
       <section className="space-y-4">
         <div>
-          <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="rounded-lg border border-slate-200 bg-white shadow-sm">
+            <div className="border-b border-slate-200 bg-gradient-to-br from-white via-slate-50 to-teal-50/50 px-4 py-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-teal-700">
+                Controle juridico
+              </p>
+              <h2 className="mt-2 text-xl font-semibold text-slate-950">
+                Esteira ativa da empresa
+              </h2>
+              <p className="mt-1 max-w-4xl text-sm leading-6 text-slate-600">
+                As colunas abaixo respeitam a configuracao atual do juridico.
+                Use os filtros para localizar responsaveis, pendencias e
+                clientes sem dono definido.
+              </p>
+            </div>
+            <div className="p-4">
             <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
               <div>
                 <p className="text-sm font-semibold text-slate-950">
@@ -488,6 +502,7 @@ export function LegalKanban({
                 </div>
               </div>
             </div>
+            </div>
           </div>
         </div>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
@@ -499,7 +514,7 @@ export function LegalKanban({
           return (
             <div
               key={stage.id}
-              className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm"
+              className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
             >
               <span
                 className="mb-3 block h-1.5 w-12 rounded-full"
@@ -509,7 +524,7 @@ export function LegalKanban({
                 {stage.shortLabel}
               </p>
               <p className="mt-3 text-3xl font-semibold text-slate-950">{total}</p>
-              <p className="mt-2 text-sm leading-6 text-slate-600">
+              <p className="mt-2 line-clamp-3 text-sm leading-6 text-slate-600">
                 {stage.documents.join(", ")}
               </p>
             </div>
@@ -600,10 +615,10 @@ export function LegalKanban({
                           setDraggedId(null);
                           setDropTarget(null);
                         }}
-                        className={`rounded-lg border p-4 transition ${
+                        className={`rounded-lg border p-4 shadow-sm transition ${
                           draggedId === preSale.id
-                            ? "cursor-grabbing border-teal-300 bg-white opacity-70"
-                            : "cursor-grab border-slate-200 bg-slate-50"
+                            ? "cursor-grabbing border-teal-300 bg-white opacity-70 ring-2 ring-teal-100"
+                            : "cursor-grab border-slate-200 bg-slate-50 hover:border-teal-200 hover:bg-white hover:shadow-md"
                         }`}
                       >
                         <div className="flex items-start justify-between gap-3">
@@ -623,7 +638,7 @@ export function LegalKanban({
                               {displayValue(preSale.client?.full_name ?? null)}
                             </h3>
                             <p className="mt-1 text-xs text-slate-500">
-                              {stageMeta.shortLabel} • {getStageAgeLabel(preSale.stageUpdatedAt)}
+                              {stageMeta.shortLabel} - {getStageAgeLabel(preSale.stageUpdatedAt)}
                             </p>
                             </div>
                           </div>

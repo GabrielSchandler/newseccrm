@@ -350,14 +350,13 @@ export default async function ClientePage({
           <div className="space-y-8">
             <div>
               <h2 className="text-base font-semibold text-slate-950">Dados pessoais</h2>
-              <div className="mt-4 grid gap-5 md:grid-cols-2">
+              <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                 {personalDetails.map(([label, key]) => (
-                  <div key={key}>
+                  <div key={key} className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3">
                     <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                       {label}
                     </p>
                     <p className="mt-1 text-sm font-medium text-slate-950">
-                      {key === "birth_date" ? formatDate(client[key]) : null}
                       {key === "cpf" ? (
                         renderCopyableValue(
                           displayCpf(client[key]),
@@ -384,9 +383,9 @@ export default async function ClientePage({
 
             <div>
               <h2 className="text-base font-semibold text-slate-950">Contato</h2>
-              <div className="mt-4 grid gap-5 md:grid-cols-2">
+              <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                 {contactDetails.map(([label, key]) => (
-                  <div key={key}>
+                  <div key={key} className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3">
                     <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                       {label}
                     </p>
@@ -412,9 +411,9 @@ export default async function ClientePage({
 
             <div>
               <h2 className="text-base font-semibold text-slate-950">Endereco</h2>
-              <div className="mt-4 grid gap-5 md:grid-cols-2">
+              <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                 {addressDetails.map(([label, key]) => (
-                  <div key={key}>
+                  <div key={key} className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3">
                     <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                       {label}
                     </p>
@@ -431,8 +430,8 @@ export default async function ClientePage({
 
             <div>
               <h2 className="text-base font-semibold text-slate-950">Auditoria</h2>
-              <div className="mt-4 grid gap-5 md:grid-cols-2">
-                <div>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3">
                   <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                     Criado em
                   </p>
@@ -440,7 +439,7 @@ export default async function ClientePage({
                     {formatDateTime(client.created_at)}
                   </p>
                 </div>
-                <div>
+                <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3">
                   <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                     Criado por
                   </p>
@@ -448,7 +447,7 @@ export default async function ClientePage({
                     {displayValue(resolveUserDisplayName(createdByProfile, ""))}
                   </p>
                 </div>
-                <div>
+                <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3">
                   <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                     Ultima atualizacao
                   </p>
@@ -461,8 +460,8 @@ export default async function ClientePage({
 
             <div>
               <h2 className="text-base font-semibold text-slate-950">Comercial</h2>
-              <div className="mt-4 grid gap-5 md:grid-cols-2">
-                <div>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3">
                   <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                     Consultor comercial responsavel
                   </p>
@@ -475,8 +474,8 @@ export default async function ClientePage({
 
             <div>
               <h2 className="text-base font-semibold text-slate-950">Juridico</h2>
-              <div className="mt-4 grid gap-5 md:grid-cols-2">
-                <div>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3">
                   <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                     Adm responsavel
                   </p>
@@ -484,7 +483,7 @@ export default async function ClientePage({
                     {displayValue(resolveUserDisplayName(legalResponsibleProfile, ""))}
                   </p>
                 </div>
-                <div>
+                <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3">
                   <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                     Consultor responsavel
                   </p>

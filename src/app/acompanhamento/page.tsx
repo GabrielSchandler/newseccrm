@@ -164,8 +164,8 @@ export default async function AcompanhamentoPage({
     "a empresa";
 
   return (
-    <main className="min-h-screen bg-[#f5f7f6] text-slate-950">
-      <section className="border-b border-slate-200 bg-[linear-gradient(180deg,#ffffff_0%,#f5f7f6_100%)]">
+    <main className="min-h-screen bg-[#f6f8f7] text-slate-950">
+      <section className="border-b border-slate-200 bg-[linear-gradient(180deg,#ffffff_0%,#f6f8f7_100%)]">
         <div className="mx-auto flex w-full max-w-6xl flex-col gap-10 px-5 py-10 md:px-8 lg:flex-row lg:items-end lg:justify-between lg:py-16">
           <div className="max-w-2xl">
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-teal-700">
@@ -256,7 +256,7 @@ export default async function AcompanhamentoPage({
               </div>
             ) : result ? (
               <div>
-                <div className="border-b border-slate-200 bg-[linear-gradient(135deg,#f8fbfa_0%,#eef8f5_100%)] px-6 py-6">
+                <div className="border-b border-slate-200 bg-[linear-gradient(135deg,#ffffff_0%,#eef8f5_100%)] px-6 py-6">
                   <p className="text-xs font-semibold uppercase tracking-wide text-teal-700">
                     {companyName}
                   </p>

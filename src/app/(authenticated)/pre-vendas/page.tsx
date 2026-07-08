@@ -110,6 +110,12 @@ export default async function PreVendasPage({ searchParams }: PreVendasPageProps
 
   const successMessage =
     params.success === "deleted" ? "Pre-venda excluida com sucesso." : null;
+  const approvedPreSales = preSales.filter((preSale) => preSale.status === "aprovado").length;
+  const activeConsultants = new Set(
+    preSales
+      .map((preSale) => preSale.consultant_user_id ?? preSale.created_by)
+      .filter(Boolean),
+  ).size;
 
   return (
     <>
@@ -119,31 +125,21 @@ export default async function PreVendasPage({ searchParams }: PreVendasPageProps
       />
       <div className="space-y-6 p-6">
         {successMessage ? <ClientToast message={successMessage} /> : null}
-        <div className="flex flex-col gap-4 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-          {canFilterCommercialConsultant ? (
-            <form className="grid gap-3 md:grid-cols-[minmax(240px,420px)_auto]">
-              <select
-                name="consultant"
-                defaultValue={selectedConsultantId}
-                className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
-              >
-                <option value="">Todos os consultores comerciais</option>
-                {commercialConsultants.map((consultant) => (
-                  <option key={consultant.id} value={consultant.id}>
-                    {resolveUserDisplayName(consultant, "Sem nome")}
-                  </option>
-                ))}
-              </select>
-              <button
-                type="submit"
-                className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-              >
-                Filtrar
-              </button>
-            </form>
-          ) : null}
-          {canCreatePreSale ? (
+        <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+          <div className="grid gap-4 border-b border-slate-200 bg-gradient-to-br from-white via-slate-50 to-teal-50/50 p-5 lg:grid-cols-[1fr_auto] lg:items-center">
             <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-teal-700">
+                Operacao comercial
+              </p>
+              <h2 className="mt-2 text-xl font-semibold text-slate-950">
+                Pipeline de oportunidades
+              </h2>
+              <p className="mt-1 text-sm leading-6 text-slate-600">
+                {preSales.length} pre-venda(s) ativa(s), {approvedPreSales} aprovada(s)
+                {activeConsultants ? ` e ${activeConsultants} consultor(es) com oportunidades.` : "."}
+              </p>
+            </div>
+            {canCreatePreSale ? (
               <Link
                 href="/pre-vendas/novo"
                 className="inline-flex items-center justify-center gap-2 rounded-lg bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-800"
@@ -151,9 +147,34 @@ export default async function PreVendasPage({ searchParams }: PreVendasPageProps
                 <Plus className="h-4 w-4" />
                 Nova pre-venda
               </Link>
-            </div>
+            ) : null}
+          </div>
+          {canFilterCommercialConsultant ? (
+            <form className="grid gap-3 p-5 md:grid-cols-[minmax(240px,420px)_auto]">
+              <label className="space-y-1.5 text-sm font-medium text-slate-700">
+                <span>Consultor comercial</span>
+                <select
+                  name="consultant"
+                  defaultValue={selectedConsultantId}
+                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
+                >
+                  <option value="">Todos os consultores comerciais</option>
+                  {commercialConsultants.map((consultant) => (
+                    <option key={consultant.id} value={consultant.id}>
+                      {resolveUserDisplayName(consultant, "Sem nome")}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <button
+                type="submit"
+                className="self-end rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+              >
+                Filtrar
+              </button>
+            </form>
           ) : null}
-        </div>
+        </section>
 
         {error ? (
           <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
