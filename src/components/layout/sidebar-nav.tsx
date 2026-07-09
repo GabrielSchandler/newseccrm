@@ -104,17 +104,15 @@ export function SidebarNav({
             href={item.href}
             aria-current={active ? "page" : undefined}
             onClick={persistWorkspacePreference}
-            className={`group inline-flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600 focus-visible:ring-offset-2 ${
+            className={`inline-flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600 focus-visible:ring-offset-2 ${
               active
-                ? "bg-teal-50 text-teal-950 shadow-[inset_3px_0_0_#0f766e]"
-                : "text-slate-600 hover:bg-slate-100 hover:text-slate-950"
+                ? "bg-teal-50 text-teal-900"
+                : "text-slate-700 hover:bg-slate-100 hover:text-slate-950"
             }`}
           >
             <Icon
               aria-hidden="true"
-              className={`h-4 w-4 transition ${
-                active ? "text-teal-800" : "text-slate-500 group-hover:text-teal-700"
-              }`}
+              className={`h-4 w-4 ${active ? "text-teal-800" : "text-teal-700"}`}
             />
             {item.label}
           </Link>

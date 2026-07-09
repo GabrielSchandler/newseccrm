@@ -86,12 +86,7 @@ export function PreSalesKanban({ preSales, canDelete = false }: PreSalesKanbanPr
   return (
     <section className="space-y-3">
       <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-lg font-semibold text-slate-950">Pipeline</h2>
-          <p className="mt-1 text-sm text-slate-600">
-            Arraste um card para atualizar o status com uma anotacao de historico.
-          </p>
-        </div>
+        <h2 className="text-lg font-semibold text-slate-950">Pipeline</h2>
         {isPending ? <p className="text-sm text-slate-500">Atualizando...</p> : null}
       </div>
       {message ? (
@@ -105,8 +100,7 @@ export function PreSalesKanban({ preSales, canDelete = false }: PreSalesKanbanPr
           {message}
         </div>
       ) : null}
-      <div className="overflow-x-auto pb-2">
-        <div className="flex min-w-max gap-4">
+      <div className="grid gap-4 overflow-x-auto lg:grid-cols-6">
         {(preSales.some((preSale) =>
           preSale.status === "inativo" || preSale.status === "distrato",
         )
@@ -132,7 +126,7 @@ export function PreSalesKanban({ preSales, canDelete = false }: PreSalesKanbanPr
                 }
               }}
               onDrop={() => handleDrop(status.value)}
-              className={`min-h-[460px] w-[272px] flex-none rounded-lg border p-3 transition ${
+              className={`min-h-56 rounded-lg border p-3 transition ${
                 dropTarget === status.value
                   ? "border-teal-400 bg-teal-50/60 ring-2 ring-teal-200"
                   : "border-slate-200 bg-slate-50"
@@ -145,7 +139,7 @@ export function PreSalesKanban({ preSales, canDelete = false }: PreSalesKanbanPr
                 </span>
               </div>
               <div className="space-y-3">
-                {columnPreSales.length ? columnPreSales.map((preSale) => (
+                {columnPreSales.map((preSale) => (
                   <article
                     key={preSale.id}
                     draggable
@@ -156,13 +150,13 @@ export function PreSalesKanban({ preSales, canDelete = false }: PreSalesKanbanPr
                     }}
                     className={`rounded-lg border bg-white p-3 shadow-sm transition ${
                       draggedId === preSale.id
-                        ? "cursor-grabbing border-teal-300 opacity-70 ring-2 ring-teal-100"
-                        : "cursor-grab border-slate-200 hover:border-teal-200 hover:shadow-md"
+                        ? "cursor-grabbing border-teal-300 opacity-70"
+                        : "cursor-grab border-slate-200"
                     }`}
                   >
                     <Link
                       href={`/pre-vendas/${preSale.id}`}
-                      className="block text-sm font-semibold leading-5 text-slate-950 hover:text-teal-700"
+                      className="text-sm font-semibold text-slate-950 hover:text-teal-700"
                     >
                       {preSale.client?.full_name ?? "Cliente nao encontrado"}
                     </Link>
@@ -199,16 +193,11 @@ export function PreSalesKanban({ preSales, canDelete = false }: PreSalesKanbanPr
                       ) : null}
                     </div>
                   </article>
-                )) : (
-                  <div className="rounded-lg border border-dashed border-slate-300 bg-white/70 px-4 py-8 text-center text-sm text-slate-500">
-                    Nenhuma oportunidade nesta etapa.
-                  </div>
-                )}
+                ))}
               </div>
             </div>
           );
         })}
-        </div>
       </div>
 
       <ChangeNoteModal
