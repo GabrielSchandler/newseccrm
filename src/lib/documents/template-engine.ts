@@ -167,6 +167,7 @@ export const documentVariableCatalog = [
       "pre_venda_servico",
       "pre_venda_midia",
       "pre_venda_data_abertura",
+      "pre_venda_protocolo",
       "pre_venda_observacoes",
     ],
   },
@@ -204,7 +205,14 @@ export const documentVariableCatalog = [
   },
   {
     group: "Contratacao",
-    variables: ["valor_contrato", "descricao_pagamento", "data_contrato"],
+    variables: [
+      "numero_contrato",
+      "numero_protocolo",
+      "protocolo",
+      "valor_contrato",
+      "descricao_pagamento",
+      "data_contrato",
+    ],
   },
   {
     group: "Juridico",
@@ -759,6 +767,7 @@ export function buildDocumentVariables(context: DocumentTemplateContext) {
   const companyRecord = (company ?? {}) as Record<string, unknown>;
   const paymentVariables = buildPaymentVariables(payments, preSale.contract_value);
   const legalPaymentRecord = legalPayment?.payment ?? null;
+  const trackingProtocol = formatText(preSale.tracking_protocol);
 
   const variables = {
     cliente_id: client?.id ?? "",
@@ -821,6 +830,7 @@ export function buildDocumentVariables(context: DocumentTemplateContext) {
     pre_venda_servico: formatText(preSale.service_type),
     pre_venda_midia: formatText(preSale.media),
     pre_venda_data_abertura: emptyDash(formatDateTime(preSale.created_at)),
+    pre_venda_protocolo: trackingProtocol,
     pre_venda_observacoes: formatText(preSale.negotiation_details),
     financeira: formatText(financialCase?.financer_name),
     financeira_razao_social: formatText(financialCase?.financer_legal_name),
@@ -864,6 +874,9 @@ export function buildDocumentVariables(context: DocumentTemplateContext) {
         : String(financialCase.asset_year),
     ),
     veiculo_placa: formatText(financialCase?.asset_plate),
+    numero_contrato: trackingProtocol,
+    numero_protocolo: trackingProtocol,
+    protocolo: trackingProtocol,
     valor_contrato: formatCurrencyWithWords(preSale.contract_value),
     descricao_pagamento: formatText(preSale.payment_description),
     data_contrato: formatLongDatePtBr(now),

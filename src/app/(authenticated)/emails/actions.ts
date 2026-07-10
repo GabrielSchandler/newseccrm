@@ -97,7 +97,10 @@ function buildVariables(
     financeira: financialCase?.financer_name || "Nao informado",
     financeira_razao_social: financialCase?.financer_legal_name || "Nao informado",
     financeira_cnpj: financialCase?.financer_cnpj || "Nao informado",
-    numero_contrato: financialCase?.contract_number || "Nao informado",
+    numero_contrato: preSale?.tracking_protocol || "Nao informado",
+    numero_protocolo: preSale?.tracking_protocol || "Nao informado",
+    protocolo: preSale?.tracking_protocol || "Nao informado",
+    numero_contrato_financiamento: financialCase?.contract_number || "Nao informado",
     valor_contrato: currency(preSale?.contract_value),
   };
 }

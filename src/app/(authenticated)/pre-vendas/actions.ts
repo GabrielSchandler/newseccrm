@@ -46,59 +46,19 @@ function getProtocolDateStamp() {
   return `${year}${month}${day}`;
 }
 
-function buildProtocolPrefix(company: {
-  trade_name?: string | null;
-  legal_name?: string | null;
-} | null) {
-  const source = company?.trade_name?.trim() || company?.legal_name?.trim() || "CRM";
-  const words = source
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toUpperCase()
-    .replace(/[^A-Z0-9\s]/g, " ")
-    .split(/\s+/)
-    .filter(Boolean);
-
-  if (!words.length) {
-    return "CRM";
-  }
-
-  const prefix = words.length === 1
-    ? words[0]
-    : words
-        .filter((word) => !["LTDA", "ME", "SA", "S", "EIRELI"].includes(word))
-        .slice(0, 3)
-        .map((word) => word[0])
-        .join("");
-
-  return (prefix || words[0] || "CRM").slice(0, 10);
-}
-
 async function generateTrackingProtocol(
   supabase: Awaited<ReturnType<typeof getCurrentUserContext>>["supabase"],
-  companyId: string,
 ) {
   const stamp = getProtocolDateStamp();
-  const { data: companyData } = await supabase
-    .from("companies")
-    .select("trade_name, legal_name")
-    .eq("id", companyId)
-    .maybeSingle();
-  const prefix = buildProtocolPrefix(companyData);
 
-  for (let attempt = 0; attempt < 8; attempt += 1) {
-    const suffix = Math.floor(1000 + Math.random() * 9000).toString();
-    const protocol = `${prefix}-${stamp}-${suffix}`;
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    const suffix = Math.floor(100000 + Math.random() * 900000).toString();
+    const protocol = `${stamp}${suffix}`;
     const { data, error } = await supabase
       .from("pre_sales")
       .select("id")
-      .eq("company_id", companyId)
       .eq("tracking_protocol", protocol)
       .maybeSingle();
-
-    if (error && error.message.includes("tracking_protocol")) {
-      return null;
-    }
 
     if (error) {
       throw error;
@@ -109,7 +69,34 @@ async function generateTrackingProtocol(
     }
   }
 
-  return `${prefix}-${stamp}-${Date.now().toString().slice(-6)}`;
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const protocol = `${stamp}${Date.now().toString().slice(-8)}${attempt}`;
+    const { data, error } = await supabase
+      .from("pre_sales")
+      .select("id")
+      .eq("tracking_protocol", protocol)
+      .maybeSingle();
+
+    if (error) {
+      throw error;
+    }
+
+    if (!data) {
+      return protocol;
+    }
+  }
+
+  throw new Error("Nao foi possivel gerar um protocolo numerico unico.");
+}
+
+function isTrackingProtocolConflict(error: { code?: string | null; message?: string | null } | null) {
+  if (!error) {
+    return false;
+  }
+
+  const message = error.message?.toLowerCase() ?? "";
+
+  return error.code === "23505" || message.includes("tracking_protocol");
 }
 
 async function assertClientBelongsToCompany(clientId: string, companyId: string) {
@@ -493,78 +480,79 @@ export async function createPreSaleAction(
       }
     }
 
-    const trackingProtocol = await generateTrackingProtocol(supabase, companyId);
-    const preSaleInsertValues = {
-      ...preSaleValues,
-      consultant_user_id: consultantUserId,
-      company_id: companyId,
-      created_by: userProfileId,
-      ...(trackingProtocol ? { tracking_protocol: trackingProtocol } : {}),
-    };
+    let createdPreSale: { id: string } | null = null;
+    let insertError: { code?: string | null; message?: string | null } | null = null;
 
-    let { data, error } = await supabase
-      .from("pre_sales")
-      .insert(preSaleInsertValues)
-      .select("id")
-      .single();
-
-    if (error && error.message.includes("tracking_protocol")) {
-      const retry = await supabase
+    for (let attempt = 0; attempt < 4; attempt += 1) {
+      const trackingProtocol = await generateTrackingProtocol(supabase);
+      const { data, error } = await supabase
         .from("pre_sales")
         .insert({
           ...preSaleValues,
           consultant_user_id: consultantUserId,
           company_id: companyId,
           created_by: userProfileId,
+          tracking_protocol: trackingProtocol,
         })
         .select("id")
         .single();
 
-      data = retry.data;
-      error = retry.error;
+      if (!error) {
+        createdPreSale = data as { id: string };
+        insertError = null;
+        break;
+      }
+
+      insertError = error;
+
+      if (!isTrackingProtocolConflict(error)) {
+        break;
+      }
     }
 
-    if (error) {
-      return friendlyError(error.message);
+    if (insertError || !createdPreSale) {
+      return friendlyError(
+        insertError?.message ?? "Nao foi possivel gerar um protocolo numerico unico.",
+      );
     }
 
-      preSaleId = (data as { id: string }).id;
-      await savePreSaleChildRecord("pre_sale_client_snapshot", preSaleId, snapshotValues, true);
-      await savePreSaleChildRecord("pre_sale_debt_holders", preSaleId, debtHolderValues, true);
-      await savePreSaleChildRecord("pre_sale_financial_cases", preSaleId, financialCaseValues, true);
-      await savePayments(preSaleId, payments);
+    preSaleId = createdPreSale.id;
+    await savePreSaleChildRecord("pre_sale_client_snapshot", preSaleId, snapshotValues, true);
+    await savePreSaleChildRecord("pre_sale_debt_holders", preSaleId, debtHolderValues, true);
+    await savePreSaleChildRecord("pre_sale_financial_cases", preSaleId, financialCaseValues, true);
+    await savePayments(preSaleId, payments);
 
-      await recordAuditLog({
-        supabase,
-        companyId,
-        userProfileId,
-        action: "pre_sale.created",
-        entityType: "pre_sale",
-        entityId: preSaleId,
-        entityLabel: parsed.data.snapshot_full_name,
-        details: {
-          status: parsed.data.status,
-          type: parsed.data.pre_sale_type,
-          client_id: parsed.data.client_id,
-        },
-      });
+    await recordAuditLog({
+      supabase,
+      companyId,
+      userProfileId,
+      action: "pre_sale.created",
+      entityType: "pre_sale",
+      entityId: preSaleId,
+      entityLabel: parsed.data.snapshot_full_name,
+      details: {
+        status: parsed.data.status,
+        type: parsed.data.pre_sale_type,
+        client_id: parsed.data.client_id,
+      },
+    });
 
-      await recordClientTimelineEvent({
-        companyId,
-        clientId: parsed.data.client_id,
-        preSaleId,
-        eventType: "pre_sale_created",
-        title: "Pre-venda criada",
-        actorUserProfileId: userProfileId,
-        actorRole: role,
-        actorBusinessArea: businessArea,
-        actor: profile,
-        details: {
-          status: parsed.data.status,
-          type: parsed.data.pre_sale_type,
-        },
-      });
-    } catch (error) {
+    await recordClientTimelineEvent({
+      companyId,
+      clientId: parsed.data.client_id,
+      preSaleId,
+      eventType: "pre_sale_created",
+      title: "Pre-venda criada",
+      actorUserProfileId: userProfileId,
+      actorRole: role,
+      actorBusinessArea: businessArea,
+      actor: profile,
+      details: {
+        status: parsed.data.status,
+        type: parsed.data.pre_sale_type,
+      },
+    });
+  } catch (error) {
     return friendlyError(
       error instanceof Error ? error.message : "Nao foi possivel criar a pre-venda.",
     );

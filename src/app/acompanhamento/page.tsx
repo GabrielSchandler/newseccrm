@@ -37,7 +37,7 @@ function onlyDigits(value: string | null | undefined) {
 }
 
 function normalizeProtocol(value: string | null | undefined) {
-  return (value ?? "").trim().toUpperCase();
+  return onlyDigits(value);
 }
 
 function getFirstName(fullName: string) {

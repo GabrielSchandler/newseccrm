@@ -331,7 +331,11 @@ export default async function ClientePage({
                 financeira_razao_social:
                   emailFinancialCase?.financer_legal_name ?? "Nao informado",
                 financeira_cnpj: emailFinancialCase?.financer_cnpj ?? "Nao informado",
-                numero_contrato: emailFinancialCase?.contract_number ?? "Nao informado",
+                numero_contrato: primaryEmailPreSale?.tracking_protocol ?? "Nao informado",
+                numero_protocolo: primaryEmailPreSale?.tracking_protocol ?? "Nao informado",
+                protocolo: primaryEmailPreSale?.tracking_protocol ?? "Nao informado",
+                numero_contrato_financiamento:
+                  emailFinancialCase?.contract_number ?? "Nao informado",
               }}
             />
           ) : null}

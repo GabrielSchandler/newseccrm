@@ -782,6 +782,12 @@ export function LegalKanban({
                                 preSale.financialCase?.financer_cnpj ??
                                 "Nao informado",
                               numero_contrato:
+                                preSale.tracking_protocol ?? "Nao informado",
+                              numero_protocolo:
+                                preSale.tracking_protocol ?? "Nao informado",
+                              protocolo:
+                                preSale.tracking_protocol ?? "Nao informado",
+                              numero_contrato_financiamento:
                                 preSale.financialCase?.contract_number ??
                                 "Nao informado",
                             }}
