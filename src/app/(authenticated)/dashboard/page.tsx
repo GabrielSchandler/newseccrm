@@ -583,7 +583,6 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   );
   const analysisDates = createDateRange(monthStartYmd, monthEndYmd);
   const analysisCountsByDate = new Map<string, Map<string, number>>();
-  const analysisTotalsByDate = new Map<string, number>();
   const analysisTotalsByConsultant = new Map<string, number>();
 
   visibleConsultants.forEach((consultant) => {
@@ -608,15 +607,17 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
 
     dateCounts.set(consultantId, currentDateConsultantCount + 1);
     analysisCountsByDate.set(createdYmd, dateCounts);
-    analysisTotalsByDate.set(createdYmd, (analysisTotalsByDate.get(createdYmd) ?? 0) + 1);
     analysisTotalsByConsultant.set(
       consultantId,
       (analysisTotalsByConsultant.get(consultantId) ?? 0) + 1,
     );
   });
 
-  const analysisGrandTotal = [...analysisTotalsByDate.values()].reduce(
-    (total, value) => total + value,
+  const analysisConsultants = visibleConsultants.filter(
+    (consultant) => (analysisTotalsByConsultant.get(consultant.id) ?? 0) > 1,
+  );
+  const analysisGrandTotal = analysisConsultants.reduce(
+    (total, consultant) => total + (analysisTotalsByConsultant.get(consultant.id) ?? 0),
     0,
   );
   const scopeLabel = selectedConsultant
@@ -915,7 +916,8 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
               </h2>
               <p className="mt-1 text-sm text-slate-600">
                 Quantidade de analises criadas entre {formatYmdDate(monthStartYmd)} e{" "}
-                {formatYmdDate(monthEndYmd)}, respeitando o filtro de consultor.
+                {formatYmdDate(monthEndYmd)}. Sao exibidos apenas consultores com
+                pelo menos 2 analises no periodo.
               </p>
             </div>
             <div className="rounded-lg border border-teal-100 bg-teal-50 px-4 py-3 text-sm">
@@ -926,74 +928,78 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
             </div>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[760px] border-collapse text-left">
-              <thead className="bg-slate-50 text-xs uppercase tracking-[0.08em] text-slate-500">
-                <tr>
-                  <th className="sticky left-0 z-10 min-w-[132px] bg-slate-50 px-5 py-3 font-semibold">
-                    Data
-                  </th>
-                  {visibleConsultants.map((consultant) => (
-                    <th
-                      key={consultant.id}
-                      className="min-w-[150px] border-l border-slate-100 px-4 py-3 text-center font-semibold"
-                    >
-                      {resolveUserDisplayName(consultant, "Sem nome")}
+          {analysisConsultants.length ? (
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[760px] border-collapse text-left">
+                <thead className="bg-slate-50 text-xs uppercase tracking-[0.08em] text-slate-500">
+                  <tr>
+                    <th className="sticky left-0 z-10 min-w-[132px] bg-slate-50 px-5 py-3 font-semibold">
+                      Data
                     </th>
-                  ))}
-                  <th className="sticky right-0 z-10 min-w-[104px] border-l border-slate-200 bg-slate-100 px-4 py-3 text-center font-semibold text-slate-700">
-                    Total dia
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {analysisDates.map((date) => {
-                  const dateCounts = analysisCountsByDate.get(date);
-                  const dateTotal = analysisTotalsByDate.get(date) ?? 0;
-
-                  return (
-                    <tr key={date} className="transition hover:bg-slate-50">
-                      <th className="sticky left-0 z-10 bg-white px-5 py-3 text-sm font-semibold text-slate-700">
-                        {formatYmdDate(date)}
+                    {analysisConsultants.map((consultant) => (
+                      <th
+                        key={consultant.id}
+                        className="min-w-[150px] border-l border-slate-100 px-4 py-3 text-center font-semibold"
+                      >
+                        {resolveUserDisplayName(consultant, "Sem nome")}
                       </th>
-                      {visibleConsultants.map((consultant) => (
-                        <AnalysisCountCell
-                          key={consultant.id}
-                          value={dateCounts?.get(consultant.id) ?? 0}
-                        />
-                      ))}
-                      <td className="sticky right-0 z-10 border-l border-slate-200 bg-slate-50 px-4 py-3 text-center text-sm font-semibold text-slate-950">
-                        {numberFormatter.format(dateTotal)}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-              <tfoot>
-                <tr className="border-t border-slate-200 bg-slate-100">
-                  <th className="sticky left-0 z-10 bg-slate-100 px-5 py-3 text-sm font-semibold text-slate-950">
-                    Total consultor
-                  </th>
-                  {visibleConsultants.map((consultant) => (
-                    <AnalysisCountCell
-                      key={consultant.id}
-                      value={analysisTotalsByConsultant.get(consultant.id) ?? 0}
-                      strong
-                    />
-                  ))}
-                  <td className="sticky right-0 z-10 border-l border-slate-200 bg-slate-200 px-4 py-3 text-center text-sm font-semibold text-slate-950">
-                    {numberFormatter.format(analysisGrandTotal)}
-                  </td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
+                    ))}
+                    <th className="sticky right-0 z-10 min-w-[104px] border-l border-slate-200 bg-slate-100 px-4 py-3 text-center font-semibold text-slate-700">
+                      Total dia
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {analysisDates.map((date) => {
+                    const dateCounts = analysisCountsByDate.get(date);
+                    const dateTotal = analysisConsultants.reduce(
+                      (total, consultant) =>
+                        total + (dateCounts?.get(consultant.id) ?? 0),
+                      0,
+                    );
 
-          {!visibleConsultants.length ? (
-            <div className="border-t border-slate-100 px-5 py-6 text-sm text-slate-500">
-              Nenhum consultor comercial encontrado para montar a planilha.
+                    return (
+                      <tr key={date} className="transition hover:bg-slate-50">
+                        <th className="sticky left-0 z-10 bg-white px-5 py-3 text-sm font-semibold text-slate-700">
+                          {formatYmdDate(date)}
+                        </th>
+                        {analysisConsultants.map((consultant) => (
+                          <AnalysisCountCell
+                            key={consultant.id}
+                            value={dateCounts?.get(consultant.id) ?? 0}
+                          />
+                        ))}
+                        <td className="sticky right-0 z-10 border-l border-slate-200 bg-slate-50 px-4 py-3 text-center text-sm font-semibold text-slate-950">
+                          {numberFormatter.format(dateTotal)}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+                <tfoot>
+                  <tr className="border-t border-slate-200 bg-slate-100">
+                    <th className="sticky left-0 z-10 bg-slate-100 px-5 py-3 text-sm font-semibold text-slate-950">
+                      Total consultor
+                    </th>
+                    {analysisConsultants.map((consultant) => (
+                      <AnalysisCountCell
+                        key={consultant.id}
+                        value={analysisTotalsByConsultant.get(consultant.id) ?? 0}
+                        strong
+                      />
+                    ))}
+                    <td className="sticky right-0 z-10 border-l border-slate-200 bg-slate-200 px-4 py-3 text-center text-sm font-semibold text-slate-950">
+                      {numberFormatter.format(analysisGrandTotal)}
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
             </div>
-          ) : null}
+          ) : (
+            <div className="border-t border-slate-100 px-5 py-6 text-sm text-slate-500">
+              Nenhum consultor comercial teve mais de 1 analise no periodo filtrado.
+            </div>
+          )}
         </section>
       </div>
     </>
