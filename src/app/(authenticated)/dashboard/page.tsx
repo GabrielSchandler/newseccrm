@@ -59,6 +59,12 @@ type PendingPayment = PreSalePayment & {
   client: ClientSummary | null;
 };
 
+type CalculationSummary = {
+  id: string;
+  created_by: string | null;
+  created_at: string;
+};
+
 const timeZone = "America/Sao_Paulo";
 
 const currencyFormatter = new Intl.NumberFormat("pt-BR", {
@@ -135,6 +141,57 @@ function toYmd(year: number, month: number, day: number) {
 function dateFromYmd(ymd: string) {
   const [year, month, day] = ymd.split("-").map(Number);
   return new Date(Date.UTC(year, month - 1, day));
+}
+
+function formatDateTimeToSaoPauloYmd(value: string | null | undefined) {
+  if (!value) {
+    return null;
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+  const year = parts.find((part) => part.type === "year")?.value;
+  const month = parts.find((part) => part.type === "month")?.value;
+  const day = parts.find((part) => part.type === "day")?.value;
+
+  return year && month && day ? `${year}-${month}-${day}` : null;
+}
+
+function saoPauloDayStartToUtcIso(ymd: string) {
+  const [year, month, day] = ymd.split("-").map(Number);
+  return new Date(Date.UTC(year, month - 1, day, 3, 0, 0)).toISOString();
+}
+
+function createDateRange(startYmd: string, endYmd: string) {
+  const dates: string[] = [];
+  const start = dateFromYmd(startYmd);
+  const end = dateFromYmd(endYmd);
+
+  for (
+    let cursor = new Date(start);
+    cursor.getTime() <= end.getTime();
+    cursor.setUTCDate(cursor.getUTCDate() + 1)
+  ) {
+    dates.push(
+      toYmd(
+        cursor.getUTCFullYear(),
+        cursor.getUTCMonth() + 1,
+        cursor.getUTCDate(),
+      ),
+    );
+  }
+
+  return dates;
 }
 
 function getMonthRange() {
@@ -314,6 +371,20 @@ function SegmentList({
   );
 }
 
+function AnalysisCountCell({ value, strong = false }: { value: number; strong?: boolean }) {
+  const hasValue = value > 0;
+
+  return (
+    <td
+      className={`border-l border-slate-100 px-4 py-3 text-center text-sm ${
+        strong ? "font-semibold" : "font-medium"
+      } ${hasValue ? "text-slate-950" : "text-slate-400"}`}
+    >
+      {numberFormatter.format(value)}
+    </td>
+  );
+}
+
 export default async function DashboardPage({ searchParams }: DashboardPageProps) {
   const params = await searchParams;
   const { supabase, companyId, role, businessArea } = await getCurrentUserContext();
@@ -324,8 +395,14 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
 
   const { todayYmd, monthStartYmd, nextMonthStartYmd, monthEndYmd } = getMonthRange();
   const remainingBusinessDays = Math.max(countBusinessDays(todayYmd, monthEndYmd), 1);
+  const analysisPeriodStartIso = saoPauloDayStartToUtcIso(monthStartYmd);
+  const analysisPeriodEndIso = saoPauloDayStartToUtcIso(nextMonthStartYmd);
 
-  const [{ data: usersData }, { data: preSalesData, error: preSalesError }] =
+  const [
+    { data: usersData },
+    { data: preSalesData, error: preSalesError },
+    { data: calculationsData, error: calculationsError },
+  ] =
     await Promise.all([
       supabase
         .from("user_profiles")
@@ -339,6 +416,13 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         .eq("company_id", companyId)
         .eq("status", "aprovado")
         .order("created_at", { ascending: false }),
+      supabase
+        .from("financing_calculations")
+        .select("id, created_by, created_at")
+        .eq("company_id", companyId)
+        .gte("created_at", analysisPeriodStartIso)
+        .lt("created_at", analysisPeriodEndIso)
+        .order("created_at", { ascending: true }),
     ]);
 
   const commercialConsultants = ((usersData ?? []) as CommercialUser[])
@@ -497,6 +581,44 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   const consultantSegments = [...consultantBuckets.values()].sort(
     (left, right) => right.value - left.value,
   );
+  const analysisDates = createDateRange(monthStartYmd, monthEndYmd);
+  const analysisCountsByDate = new Map<string, Map<string, number>>();
+  const analysisTotalsByDate = new Map<string, number>();
+  const analysisTotalsByConsultant = new Map<string, number>();
+
+  visibleConsultants.forEach((consultant) => {
+    analysisTotalsByConsultant.set(consultant.id, 0);
+  });
+
+  ((calculationsData ?? []) as CalculationSummary[]).forEach((calculation) => {
+    const consultantId = calculation.created_by;
+
+    if (!consultantId || !visibleConsultantIds.has(consultantId)) {
+      return;
+    }
+
+    const createdYmd = formatDateTimeToSaoPauloYmd(calculation.created_at);
+
+    if (!createdYmd || createdYmd < monthStartYmd || createdYmd > monthEndYmd) {
+      return;
+    }
+
+    const dateCounts = analysisCountsByDate.get(createdYmd) ?? new Map<string, number>();
+    const currentDateConsultantCount = dateCounts.get(consultantId) ?? 0;
+
+    dateCounts.set(consultantId, currentDateConsultantCount + 1);
+    analysisCountsByDate.set(createdYmd, dateCounts);
+    analysisTotalsByDate.set(createdYmd, (analysisTotalsByDate.get(createdYmd) ?? 0) + 1);
+    analysisTotalsByConsultant.set(
+      consultantId,
+      (analysisTotalsByConsultant.get(consultantId) ?? 0) + 1,
+    );
+  });
+
+  const analysisGrandTotal = [...analysisTotalsByDate.values()].reduce(
+    (total, value) => total + value,
+    0,
+  );
   const scopeLabel = selectedConsultant
     ? resolveUserDisplayName(selectedConsultant, "Consultor")
     : "Toda a equipe comercial";
@@ -511,6 +633,11 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         {preSalesError ? (
           <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             {preSalesError.message}
+          </div>
+        ) : null}
+        {calculationsError ? (
+          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {calculationsError.message}
           </div>
         ) : null}
 
@@ -775,6 +902,98 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
               ) : null}
             </div>
           </div>
+        </section>
+
+        <section className="rounded-lg border border-slate-200 bg-white shadow-sm">
+          <div className="flex flex-col gap-3 border-b border-slate-200 px-5 py-4 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-teal-700">
+                Analises por dia
+              </p>
+              <h2 className="mt-2 text-base font-semibold text-slate-950">
+                Simulacoes feitas por consultor
+              </h2>
+              <p className="mt-1 text-sm text-slate-600">
+                Quantidade de analises criadas entre {formatYmdDate(monthStartYmd)} e{" "}
+                {formatYmdDate(monthEndYmd)}, respeitando o filtro de consultor.
+              </p>
+            </div>
+            <div className="rounded-lg border border-teal-100 bg-teal-50 px-4 py-3 text-sm">
+              <span className="font-semibold text-teal-900">
+                {numberFormatter.format(analysisGrandTotal)}
+              </span>{" "}
+              <span className="text-teal-800">analise(s) no periodo</span>
+            </div>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[760px] border-collapse text-left">
+              <thead className="bg-slate-50 text-xs uppercase tracking-[0.08em] text-slate-500">
+                <tr>
+                  <th className="sticky left-0 z-10 min-w-[132px] bg-slate-50 px-5 py-3 font-semibold">
+                    Data
+                  </th>
+                  {visibleConsultants.map((consultant) => (
+                    <th
+                      key={consultant.id}
+                      className="min-w-[150px] border-l border-slate-100 px-4 py-3 text-center font-semibold"
+                    >
+                      {resolveUserDisplayName(consultant, "Sem nome")}
+                    </th>
+                  ))}
+                  <th className="sticky right-0 z-10 min-w-[104px] border-l border-slate-200 bg-slate-100 px-4 py-3 text-center font-semibold text-slate-700">
+                    Total dia
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {analysisDates.map((date) => {
+                  const dateCounts = analysisCountsByDate.get(date);
+                  const dateTotal = analysisTotalsByDate.get(date) ?? 0;
+
+                  return (
+                    <tr key={date} className="transition hover:bg-slate-50">
+                      <th className="sticky left-0 z-10 bg-white px-5 py-3 text-sm font-semibold text-slate-700">
+                        {formatYmdDate(date)}
+                      </th>
+                      {visibleConsultants.map((consultant) => (
+                        <AnalysisCountCell
+                          key={consultant.id}
+                          value={dateCounts?.get(consultant.id) ?? 0}
+                        />
+                      ))}
+                      <td className="sticky right-0 z-10 border-l border-slate-200 bg-slate-50 px-4 py-3 text-center text-sm font-semibold text-slate-950">
+                        {numberFormatter.format(dateTotal)}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+              <tfoot>
+                <tr className="border-t border-slate-200 bg-slate-100">
+                  <th className="sticky left-0 z-10 bg-slate-100 px-5 py-3 text-sm font-semibold text-slate-950">
+                    Total consultor
+                  </th>
+                  {visibleConsultants.map((consultant) => (
+                    <AnalysisCountCell
+                      key={consultant.id}
+                      value={analysisTotalsByConsultant.get(consultant.id) ?? 0}
+                      strong
+                    />
+                  ))}
+                  <td className="sticky right-0 z-10 border-l border-slate-200 bg-slate-200 px-4 py-3 text-center text-sm font-semibold text-slate-950">
+                    {numberFormatter.format(analysisGrandTotal)}
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+
+          {!visibleConsultants.length ? (
+            <div className="border-t border-slate-100 px-5 py-6 text-sm text-slate-500">
+              Nenhum consultor comercial encontrado para montar a planilha.
+            </div>
+          ) : null}
         </section>
       </div>
     </>
