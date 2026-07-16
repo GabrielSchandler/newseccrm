@@ -97,6 +97,7 @@ export const financingCalculationFormSchema = z.object({
   paid_installments: optionalInteger,
   remaining_installments: optionalInteger,
   installment_reduction_percentage: optionalPercentage,
+  settlement_discount_percentage: optionalPercentage,
 });
 
 export type FinancingCalculationFormValues = z.input<
@@ -131,6 +132,7 @@ export const financingCalculationDefaultValues: FinancingCalculationFormValues =
   paid_installments: "",
   remaining_installments: "",
   installment_reduction_percentage: "30",
+  settlement_discount_percentage: "",
 };
 
 function numberToInput(value: number | string | null | undefined) {
@@ -185,6 +187,9 @@ export function financingCalculationToFormValues(
     remaining_installments: integerToInput(calculation.remaining_installments),
     installment_reduction_percentage: numberToInput(
       calculation.installment_reduction_percentage ?? 30,
+    ),
+    settlement_discount_percentage: numberToInput(
+      calculation.settlement_discount_percentage,
     ),
   };
 }

@@ -36,6 +36,8 @@ export type FinancingCalculation = {
   abusive_interest_paid: number | string | null;
   remaining_amount_to_pay: number | string | null;
   real_debt: number | string | null;
+  settlement_discount_percentage: number | string | null;
+  settlement_amount: number | string | null;
   estimated_savings: number | string | null;
   installment_reduction_remaining: number | string | null;
   discount_30_value: number | string | null;
@@ -90,6 +92,7 @@ export type FinancingCalculationComputedValues = {
   abusive_interest_paid: number;
   remaining_amount_to_pay: number;
   real_debt: number;
+  settlement_amount: number | null;
   estimated_savings: number;
   installment_reduction_remaining: number;
   discount_30_value: number;

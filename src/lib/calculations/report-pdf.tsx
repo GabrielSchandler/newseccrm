@@ -921,6 +921,18 @@ export function CalculationReportPdf({
       label: "Saldo devedor pós correção",
       value: optionalCurrency(calculation.real_debt),
     },
+    ...(calculation.settlement_discount_percentage !== null &&
+    calculation.settlement_discount_percentage !== undefined &&
+    calculation.settlement_amount !== null &&
+    calculation.settlement_amount !== undefined
+      ? [
+          {
+            label: "Valor para quitação",
+            value: optionalCurrency(calculation.settlement_amount),
+            tone: "positive" as const,
+          },
+        ]
+      : []),
   ];
 
   return (
@@ -1184,4 +1196,3 @@ export function CalculationReportPdf({
     </Document>
   );
 }
-

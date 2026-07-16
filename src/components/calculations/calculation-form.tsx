@@ -822,6 +822,27 @@ export function CalculationForm({
           </div>
           <div className="space-y-2">
             <FormFieldLabel
+              htmlFor="settlement_discount_percentage"
+              label="Quitacao (%)"
+              requirement="optional"
+              hint="Desconto aplicado sobre o saldo devedor pos correcao. Se ficar em branco, o indicador nao aparece no PDF."
+            />
+            <input
+              id="settlement_discount_percentage"
+              disabled={disabled}
+              inputMode="decimal"
+              placeholder="Ex.: 30"
+              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
+              {...register("settlement_discount_percentage")}
+            />
+            {errors.settlement_discount_percentage?.message ? (
+              <p className="text-sm text-red-600">
+                {String(errors.settlement_discount_percentage.message)}
+              </p>
+            ) : null}
+          </div>
+          <div className="space-y-2">
+            <FormFieldLabel
               htmlFor="installment_count"
               label="Quantidade de parcelas"
               requirement="optional"

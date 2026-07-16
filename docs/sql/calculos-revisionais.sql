@@ -32,6 +32,8 @@ create table if not exists public.financing_calculations (
   abusive_interest_paid numeric(14,2) null,
   remaining_amount_to_pay numeric(14,2) null,
   real_debt numeric(14,2) null,
+  settlement_discount_percentage numeric(5,2) null,
+  settlement_amount numeric(14,2) null,
   estimated_savings numeric(14,2) null,
   installment_reduction_remaining numeric(14,2) null,
   discount_30_value numeric(14,2) null,
@@ -81,6 +83,8 @@ alter table public.financing_calculations
   add column if not exists abusive_interest_paid numeric(14,2),
   add column if not exists remaining_amount_to_pay numeric(14,2),
   add column if not exists real_debt numeric(14,2),
+  add column if not exists settlement_discount_percentage numeric(5,2),
+  add column if not exists settlement_amount numeric(14,2),
   add column if not exists estimated_savings numeric(14,2),
   add column if not exists installment_reduction_remaining numeric(14,2),
   add column if not exists discount_30_value numeric(14,2),
@@ -116,6 +120,31 @@ begin
       );
   end if;
 end $$;
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'financing_calculations_settlement_discount_percentage_check'
+  ) then
+    alter table public.financing_calculations
+      add constraint financing_calculations_settlement_discount_percentage_check
+      check (
+        settlement_discount_percentage is null
+        or (
+          settlement_discount_percentage >= 0
+          and settlement_discount_percentage <= 100
+        )
+      );
+  end if;
+end $$;
+
+comment on column public.financing_calculations.settlement_discount_percentage is
+  'Percentual opcional de desconto aplicado sobre o saldo devedor pos correcao para estimar quitacao.';
+
+comment on column public.financing_calculations.settlement_amount is
+  'Valor calculado para quitacao apos aplicar o percentual opcional sobre o saldo devedor pos correcao.';
 
 create index if not exists financing_calculations_company_idx
   on public.financing_calculations (company_id, created_at desc);

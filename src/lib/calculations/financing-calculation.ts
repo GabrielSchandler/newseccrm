@@ -12,6 +12,7 @@ type CalculationInput = {
   paid_installments?: number | string | null;
   remaining_installments?: number | string | null;
   installment_reduction_percentage?: number | string | null;
+  settlement_discount_percentage?: number | string | null;
 };
 
 function toNumber(value: number | string | null | undefined) {
@@ -38,6 +39,16 @@ function resolveInstallmentReductionPercentage(value: number | string | null | u
   return Math.min(Math.max(parsed, 0), 100);
 }
 
+function resolveOptionalPercentage(value: number | string | null | undefined) {
+  const parsed = parseBrazilianDecimalInput(value);
+
+  if (parsed === null || !Number.isFinite(parsed)) {
+    return null;
+  }
+
+  return Math.min(Math.max(parsed, 0), 100);
+}
+
 export function calculateFinancingRevision(
   input: CalculationInput,
 ): FinancingCalculationComputedValues {
@@ -47,6 +58,9 @@ export function calculateFinancingRevision(
   const remainingInstallments = toNumber(input.remaining_installments);
   const installmentReductionPercentage = resolveInstallmentReductionPercentage(
     input.installment_reduction_percentage,
+  );
+  const settlementDiscountPercentage = resolveOptionalPercentage(
+    input.settlement_discount_percentage,
   );
   const installmentAdjustmentFactor = 1 - installmentReductionPercentage / 100;
 
@@ -60,6 +74,10 @@ export function calculateFinancingRevision(
   const abusiveInterestPaid = abusiveInterestPerInstallment * paidInstallments;
   const remainingAmountToPay = remainingInstallments * currentInstallmentValue;
   const realDebt = correctedTotalFinancing - paidAmountUntilNow;
+  const settlementAmount =
+    settlementDiscountPercentage === null
+      ? null
+      : Math.max(realDebt * (1 - settlementDiscountPercentage / 100), 0);
   const estimatedSavings = currentTotalFinancing - correctedTotalFinancing;
   const installmentReductionRemaining =
     remainingInstallments > 0 ? realDebt / remainingInstallments : 0;
@@ -80,6 +98,8 @@ export function calculateFinancingRevision(
     abusive_interest_paid: roundCurrency(abusiveInterestPaid),
     remaining_amount_to_pay: roundCurrency(remainingAmountToPay),
     real_debt: roundCurrency(realDebt),
+    settlement_amount:
+      settlementAmount === null ? null : roundCurrency(settlementAmount),
     estimated_savings: roundCurrency(estimatedSavings),
     installment_reduction_remaining: roundCurrency(
       installmentReductionRemaining,

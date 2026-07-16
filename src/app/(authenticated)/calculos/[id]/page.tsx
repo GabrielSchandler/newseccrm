@@ -211,6 +211,13 @@ export default async function CalculoPage({
             label="Divida real"
             value={formatCalculationCurrency(calculation.real_debt)}
           />
+          {calculation.settlement_amount !== null &&
+          calculation.settlement_amount !== undefined ? (
+            <DetailItem
+              label="Valor para quitacao"
+              value={formatCalculationCurrency(calculation.settlement_amount)}
+            />
+          ) : null}
           <DetailItem
             label="Reducao estimada por parcela restante"
             value={formatCalculationCurrency(

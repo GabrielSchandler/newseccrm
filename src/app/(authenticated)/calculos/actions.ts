@@ -45,6 +45,10 @@ function normalizeCalculationErrorMessage(message: string) {
     return "A tabela public.financing_calculations ainda nao existe no Supabase desta instancia. Rode o SQL do modulo de simulacoes e tente novamente.";
   }
 
+  if (message.includes("settlement_")) {
+    return "As colunas de quitacao da simulacao ainda nao existem no Supabase desta instancia. Rode o SQL de quitacao e tente novamente.";
+  }
+
   if (message.toLowerCase().includes("row-level security policy")) {
     return "A politica de seguranca do Supabase bloqueou esta operacao. Atualize a pagina e tente novamente. Se continuar, revise as permissoes de Storage e simulacoes.";
   }
@@ -123,6 +127,9 @@ function normalizeCalculationPayload(values: FinancingCalculationPayload) {
     ),
     installment_reduction_percentage:
       parseBrazilianDecimalInput(values.installment_reduction_percentage) ?? 30,
+    settlement_discount_percentage: parseBrazilianDecimalInput(
+      values.settlement_discount_percentage,
+    ),
     installment_count:
       values.installment_count === null || values.installment_count === undefined
         ? null
