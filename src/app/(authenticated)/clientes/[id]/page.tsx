@@ -1,10 +1,15 @@
 import { Edit } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import type { ReactNode } from "react";
 import { DeleteClientButton } from "@/components/clients/delete-client-button";
 import { ClientStatusBadge } from "@/components/clients/client-status-badge";
 import { ClientToast } from "@/components/clients/client-toast";
 import { CopyButton } from "@/components/clients/copy-button";
+import {
+  ClientDetailTabs,
+  ClientTabPanel,
+} from "@/components/clients/client-detail-tabs";
 import { ReactivateClientButton } from "@/components/clients/reactivate-client-button";
 import { WhatsAppLink } from "@/components/clients/whatsapp-link";
 import { ClientDocumentsSection } from "@/components/client-documents/client-documents-section";
@@ -87,6 +92,26 @@ function renderCopyableValue(display: string, copyValue?: string | null) {
       {display}
       {copyValue ? <CopyButton value={copyValue} label="Copiar" /> : null}
     </span>
+  );
+}
+
+function SummaryMetric({
+  label,
+  value,
+  detail,
+}: {
+  label: string;
+  value: ReactNode;
+  detail?: string;
+}) {
+  return (
+    <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
+      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+        {label}
+      </p>
+      <div className="mt-1 text-sm font-semibold text-slate-950">{value}</div>
+      {detail ? <p className="mt-1 text-xs text-slate-500">{detail}</p> : null}
+    </div>
   );
 }
 
@@ -282,6 +307,11 @@ export default async function ClientePage({
           ? "Cliente reativado com sucesso."
           : null;
   const canUseLegalEmail = role !== "seller" || businessArea === "legal";
+  const generatedDocumentsCount = generatedDocuments.length;
+  const attachedDocumentsCount = clientEmailDocuments.length;
+  const trackingUpdatesCount = trackingUpdates.length;
+  const timelineEventsCount = timelineEvents.length;
+  const latestPreSale = clientPreSales[0] ?? null;
 
   return (
     <>
@@ -347,6 +377,128 @@ export default async function ClientePage({
           ) : null}
         </div>
 
+        <ClientDetailTabs
+          tabs={[
+            {
+              id: "resumo",
+              label: "Resumo",
+              description: "Visao rapida do atendimento.",
+            },
+            {
+              id: "dados",
+              label: "Dados pessoais",
+              description: "Cadastro, contato e responsaveis.",
+            },
+            {
+              id: "acompanhamento",
+              label: "Acompanhamento",
+              description: "Portal e linha do tempo.",
+              count: trackingUpdatesCount + timelineEventsCount,
+            },
+            {
+              id: "documentacao",
+              label: "Documentacao",
+              description: "Anexos e documentos emitidos.",
+              count: attachedDocumentsCount + generatedDocumentsCount,
+            },
+            {
+              id: "pre-vendas",
+              label: "Pre-vendas",
+              description: "Oportunidades do cliente.",
+              count: clientPreSales.length,
+            },
+            {
+              id: "simulacoes",
+              label: "Simulacoes",
+              description: "Analises revisionais.",
+            },
+          ]}
+        >
+          <ClientTabPanel id="resumo">
+            <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+              <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+                <div>
+                  <ClientStatusBadge client={client} />
+                  <h2 className="mt-4 text-xl font-semibold text-slate-950">
+                    {client.full_name}
+                  </h2>
+                  <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
+                    Centralize a leitura principal do cliente antes de acessar dados,
+                    documentos, pre-vendas ou historico completo.
+                  </p>
+                </div>
+                <div className="rounded-lg border border-teal-100 bg-teal-50 px-4 py-3 text-sm text-teal-900">
+                  <span className="font-semibold">Ultima atualizacao:</span>{" "}
+                  {formatDateTime(client.updated_at)}
+                </div>
+              </div>
+
+              <div className="mt-6 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                <SummaryMetric
+                  label="CPF"
+                  value={renderCopyableValue(
+                    displayCpf(client.cpf),
+                    copyableValue(displayCpf(client.cpf)),
+                  )}
+                />
+                <SummaryMetric
+                  label="Celular"
+                  value={renderCopyableValue(
+                    displayPhone(client.phone_mobile),
+                    client.phone_mobile ? displayPhone(client.phone_mobile) : null,
+                  )}
+                />
+                <SummaryMetric
+                  label="Pre-vendas"
+                  value={clientPreSales.length}
+                  detail={
+                    latestPreSale
+                      ? `Mais recente: ${formatDateTime(latestPreSale.created_at)}`
+                      : "Nenhuma oportunidade vinculada."
+                  }
+                />
+                <SummaryMetric
+                  label="Documentos"
+                  value={`${attachedDocumentsCount} anexado(s) / ${generatedDocumentsCount} gerado(s)`}
+                  detail="Arquivos do cliente e documentos emitidos."
+                />
+                <SummaryMetric
+                  label="Consultor comercial"
+                  value={displayValue(
+                    resolveUserDisplayName(commercialConsultantProfile, ""),
+                  )}
+                />
+                <SummaryMetric
+                  label="Adm juridico"
+                  value={displayValue(
+                    resolveUserDisplayName(legalResponsibleProfile, ""),
+                  )}
+                />
+                <SummaryMetric
+                  label="Consultor juridico"
+                  value={displayValue(
+                    resolveUserDisplayName(legalConsultantProfile, ""),
+                  )}
+                />
+                <SummaryMetric
+                  label="Acompanhamento"
+                  value={`${trackingUpdatesCount} publico(s) / ${timelineEventsCount} interno(s)`}
+                  detail="Movimentacoes do portal e historico interno."
+                />
+              </div>
+
+              <div className="mt-6 rounded-lg border border-slate-200 bg-slate-50 p-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Observacoes
+                </p>
+                <p className="mt-2 whitespace-pre-line text-sm leading-6 text-slate-800">
+                  {displayValue(client.notes)}
+                </p>
+              </div>
+            </section>
+          </ClientTabPanel>
+
+          <ClientTabPanel id="dados">
         <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
           <div className="mb-5">
             <ClientStatusBadge client={client} />
@@ -507,33 +659,40 @@ export default async function ClientePage({
             </div>
           </div>
         </section>
+          </ClientTabPanel>
 
-        <ClientTrackingSection
-          clientId={client.id}
-          preSales={clientPreSales.map((preSale) => ({
-            id: preSale.id,
-            status: preSale.status,
-            pre_sale_type: preSale.pre_sale_type,
-            service_type: preSale.service_type,
-            tracking_protocol: preSale.tracking_protocol,
-            created_at: preSale.created_at,
-          }))}
-          updates={trackingUpdates}
-        />
+          <ClientTabPanel id="acompanhamento">
+            <div className="space-y-6">
+              <ClientTrackingSection
+                clientId={client.id}
+                preSales={clientPreSales.map((preSale) => ({
+                  id: preSale.id,
+                  status: preSale.status,
+                  pre_sale_type: preSale.pre_sale_type,
+                  service_type: preSale.service_type,
+                  tracking_protocol: preSale.tracking_protocol,
+                  created_at: preSale.created_at,
+                }))}
+                updates={trackingUpdates}
+              />
 
-        <ClientTimelineSection
-          clientId={client.id}
-          events={timelineEvents}
-          currentUserProfileId={userProfileId}
-          canEditOwnNotes={businessArea === "legal"}
-          canManageAllNotes={role === "admin" || role === "manager"}
-        />
+              <ClientTimelineSection
+                clientId={client.id}
+                events={timelineEvents}
+                currentUserProfileId={userProfileId}
+                canEditOwnNotes={businessArea === "legal"}
+                canManageAllNotes={role === "admin" || role === "manager"}
+              />
+            </div>
+          </ClientTabPanel>
 
-        <ClientDocumentsSection
-          clientId={client.id}
-          title="Documentos do cliente"
-          description="Anexe e consulte documentos vinculados a este cliente usando links temporarios e bucket privado."
-        />
+          <ClientTabPanel id="documentacao">
+            <div className="space-y-6">
+              <ClientDocumentsSection
+                clientId={client.id}
+                title="Documentos do cliente"
+                description="Anexe e consulte documentos vinculados a este cliente usando links temporarios e bucket privado."
+              />
 
         <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
           <div className="border-b border-slate-200 px-6 py-4">
@@ -636,7 +795,10 @@ export default async function ClientePage({
             </div>
           )}
         </section>
+            </div>
+          </ClientTabPanel>
 
+          <ClientTabPanel id="pre-vendas">
         <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
           <div className="border-b border-slate-200 px-6 py-4">
             <h2 className="text-base font-semibold text-slate-950">
@@ -730,8 +892,12 @@ export default async function ClientePage({
             </div>
           )}
         </section>
+          </ClientTabPanel>
 
-        <ClientCalculationsSection clientId={client.id} />
+          <ClientTabPanel id="simulacoes">
+            <ClientCalculationsSection clientId={client.id} />
+          </ClientTabPanel>
+        </ClientDetailTabs>
       </div>
     </>
   );
