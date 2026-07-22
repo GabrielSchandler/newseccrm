@@ -10,7 +10,11 @@ import {
 } from "@/app/(authenticated)/clientes/document-actions";
 import { FormFieldLabel } from "@/components/form-field-label";
 import { createClient } from "@/lib/supabase/browser";
-import { clientDocumentTypes } from "@/types/client-document";
+import {
+  clientDocumentAcceptedFormatsLabel,
+  clientDocumentAcceptedInputTypes,
+  clientDocumentTypes,
+} from "@/types/client-document";
 
 type ClientDocumentUploadProps = {
   clientId: string;
@@ -107,7 +111,7 @@ export function ClientDocumentUpload({
         const { error } = await supabase.storage
           .from("client-documents")
           .uploadToSignedUrl(upload.filePath, upload.token, file, {
-            contentType: file.type || "application/octet-stream",
+            contentType: upload.mimeType || file.type || "application/octet-stream",
           });
 
         if (error) {
@@ -190,7 +194,7 @@ export function ClientDocumentUpload({
             type="file"
             multiple
             disabled={isPending}
-            accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,application/pdf,image/jpeg,image/png,image/webp,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            accept={clientDocumentAcceptedInputTypes}
             className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-slate-700 hover:file:bg-slate-200"
             onChange={(event) => setFiles(Array.from(event.target.files ?? []))}
           />
@@ -231,7 +235,7 @@ export function ClientDocumentUpload({
       </div>
 
       <p className="text-xs text-slate-500">
-        Formatos aceitos: PDF, JPG, PNG, WEBP, DOC e DOCX. Tamanho maximo: 20 MB.
+        Formatos aceitos: {clientDocumentAcceptedFormatsLabel}. Tamanho maximo: 20 MB.
       </p>
 
       {state ? (

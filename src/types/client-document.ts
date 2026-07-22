@@ -37,6 +37,34 @@ export type ClientDocument = {
   deleted_by: string | null;
 };
 
+export const clientDocumentAcceptedFormatsLabel =
+  "PDF, JPG, PNG, WEBP, DOC, DOCX, WAV e MSG";
+
+export const clientDocumentAcceptedInputTypes = [
+  ".pdf",
+  ".jpg",
+  ".jpeg",
+  ".png",
+  ".webp",
+  ".doc",
+  ".docx",
+  ".wav",
+  ".msg",
+  "application/pdf",
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "audio/wav",
+  "audio/wave",
+  "audio/x-wav",
+  "audio/vnd.wave",
+  "application/vnd.ms-outlook",
+  "application/msg",
+  "application/x-msg",
+].join(",");
+
 export const clientDocumentTypes: Array<{
   value: ClientDocumentType;
   label: string;

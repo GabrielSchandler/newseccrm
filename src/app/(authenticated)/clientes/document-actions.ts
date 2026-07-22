@@ -6,6 +6,7 @@ import { getCurrentUserContext } from "@/lib/auth/current-user";
 import { recordClientTimelineEvent } from "@/lib/client-timeline/service";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
+  acceptedClientDocumentMimeTypes,
   assertClientBelongsToCompany,
   assertPreSaleBelongsToClient,
   buildClientDocumentPath,
@@ -15,6 +16,7 @@ import {
   getClientDocumentWithAccess,
   isAllowedClientDocumentFile,
   maxClientDocumentSize,
+  resolveClientDocumentContentType,
 } from "@/lib/client-documents/service";
 import {
   clientDocumentUploadSchema,
@@ -22,6 +24,7 @@ import {
   type ClientDocumentUpdatePayload,
   type ClientDocumentUploadPayload,
 } from "@/lib/client-documents/schema";
+import { clientDocumentAcceptedFormatsLabel } from "@/types/client-document";
 
 export type ClientDocumentActionState = {
   ok: boolean;
@@ -66,32 +69,48 @@ function getTitleFromFileName(fileName: string) {
   return (lastDotIndex > 0 ? fileName.slice(0, lastDotIndex) : fileName).trim() || fileName;
 }
 
+function mergeClientDocumentMimeTypes(
+  currentAllowedMimeTypes: string[] | null | undefined,
+) {
+  if (!Array.isArray(currentAllowedMimeTypes)) {
+    return null;
+  }
+
+  return Array.from(
+    new Set([...currentAllowedMimeTypes, ...acceptedClientDocumentMimeTypes]),
+  );
+}
+
 async function ensureClientDocumentsBucketAvailable() {
   const adminSupabase = createAdminClient();
   const { data: bucket, error } = await adminSupabase.storage.getBucket(clientDocumentsBucket);
 
   if (!error) {
     const currentLimit = bucket.file_size_limit;
-
-    if (
+    const currentAllowedMimeTypes = bucket.allowed_mime_types ?? null;
+    const missingAllowedMimeTypes =
+      Array.isArray(currentAllowedMimeTypes) &&
+      acceptedClientDocumentMimeTypes.some(
+        (mimeType) => !currentAllowedMimeTypes.includes(mimeType),
+      );
+    const needsSizeUpdate =
       typeof currentLimit === "number" &&
       currentLimit > 0 &&
-      currentLimit < maxClientDocumentSize
-    ) {
+      currentLimit < maxClientDocumentSize;
+
+    if (needsSizeUpdate || missingAllowedMimeTypes) {
       const { error: updateError } = await adminSupabase.storage.updateBucket(
         clientDocumentsBucket,
         {
           public: bucket.public,
           fileSizeLimit: maxClientDocumentSize,
-          allowedMimeTypes: bucket.allowed_mime_types ?? null,
+          allowedMimeTypes: mergeClientDocumentMimeTypes(currentAllowedMimeTypes),
         },
       );
 
       if (updateError) {
         return friendlyError(
-          `O bucket '${clientDocumentsBucket}' esta limitado a ${Math.floor(
-            currentLimit / 1024 / 1024,
-          )} MB. Ajuste o limite do bucket para 20 MB no Supabase Storage.`,
+          `Não foi possível ajustar o bucket '${clientDocumentsBucket}'. Confira no Supabase Storage o limite de 20 MB e os tipos MIME permitidos para documentos.`,
         );
       }
     }
@@ -126,7 +145,7 @@ export async function uploadClientDocumentAction(
 
   if (!isAllowedClientDocumentFile(file)) {
     return friendlyError(
-      "Formato inválido. Envie PDF, JPG, PNG, WEBP, DOC ou DOCX.",
+      `Formato inválido. Envie ${clientDocumentAcceptedFormatsLabel}.`,
     );
   }
 
@@ -162,11 +181,12 @@ export async function uploadClientDocumentAction(
     }
 
     const { documentId, filePath } = buildClientDocumentPath(companyId, clientId, file.name);
+    const contentType = resolveClientDocumentContentType(file);
     const buffer = Buffer.from(await file.arrayBuffer());
     const { error: uploadError } = await adminSupabase.storage
       .from(clientDocumentsBucket)
       .upload(filePath, buffer, {
-        contentType: file.type || "application/octet-stream",
+        contentType,
         upsert: false,
       });
 
@@ -184,7 +204,7 @@ export async function uploadClientDocumentAction(
       description: parsed.data.description,
       file_name: file.name,
       file_path: filePath,
-      mime_type: file.type || null,
+      mime_type: contentType,
       file_size: file.size,
       uploaded_by: userProfileId,
     });
@@ -265,7 +285,7 @@ export async function uploadClientDocumentsBulkAction(
   for (const file of files) {
     if (!isAllowedClientDocumentFile(file)) {
       return friendlyError(
-        `Formato inválido em "${file.name}". Envie PDF, JPG, PNG, WEBP, DOC ou DOCX.`,
+        `Formato inválido em "${file.name}". Envie ${clientDocumentAcceptedFormatsLabel}.`,
       );
     }
 
@@ -302,11 +322,12 @@ export async function uploadClientDocumentsBulkAction(
 
     for (const file of files) {
       const { documentId, filePath } = buildClientDocumentPath(companyId, clientId, file.name);
+      const contentType = resolveClientDocumentContentType(file);
       const buffer = Buffer.from(await file.arrayBuffer());
       const { error: uploadError } = await adminSupabase.storage
         .from(clientDocumentsBucket)
         .upload(filePath, buffer, {
-          contentType: file.type || "application/octet-stream",
+          contentType,
           upsert: false,
         });
 
@@ -334,7 +355,7 @@ export async function uploadClientDocumentsBulkAction(
         description: parsed.data.description,
         file_name: file.name,
         file_path: filePath,
-        mime_type: file.type || null,
+        mime_type: contentType,
         file_size: file.size,
         uploaded_by: userProfileId,
       });
@@ -440,7 +461,7 @@ export async function prepareClientDocumentsBulkUploadAction(
 
     if (!isAllowedClientDocumentFile(file)) {
       return prepareFriendlyError(
-        `Formato inválido em "${file.name}". Envie PDF, JPG, PNG, WEBP, DOC ou DOCX.`,
+        `Formato inválido em "${file.name}". Envie ${clientDocumentAcceptedFormatsLabel}.`,
       );
     }
 
@@ -491,7 +512,7 @@ export async function prepareClientDocumentsBulkUploadAction(
         filePath,
         token: data.token,
         fileName: file.name,
-        mimeType: file.type || null,
+        mimeType: resolveClientDocumentContentType(file),
         fileSize: file.size,
         title:
           files.length === 1 && parsed.data.title
@@ -736,7 +757,9 @@ export async function updateClientDocumentAction(
 
   if (replacementFile instanceof File && replacementFile.size > 0) {
     if (!isAllowedClientDocumentFile(replacementFile)) {
-      return friendlyError("Formato inválido. Envie PDF, JPG, PNG, WEBP, DOC ou DOCX.");
+      return friendlyError(
+        `Formato inválido. Envie ${clientDocumentAcceptedFormatsLabel}.`,
+      );
     }
 
     if (replacementFile.size > maxClientDocumentSize) {
@@ -769,6 +792,7 @@ export async function updateClientDocumentAction(
     let uploadedReplacementPath: string | null = null;
 
     if (replacementFile instanceof File && replacementFile.size > 0) {
+      const contentType = resolveClientDocumentContentType(replacementFile);
       const { filePath } = buildClientDocumentPath(
         companyId,
         document.client_id,
@@ -778,7 +802,7 @@ export async function updateClientDocumentAction(
       const { error: uploadError } = await adminSupabase.storage
         .from(clientDocumentsBucket)
         .upload(filePath, buffer, {
-          contentType: replacementFile.type || "application/octet-stream",
+          contentType,
           upsert: false,
         });
 
@@ -789,7 +813,7 @@ export async function updateClientDocumentAction(
       uploadedReplacementPath = filePath;
       nextFilePath = filePath;
       nextFileName = replacementFile.name;
-      nextMimeType = replacementFile.type || null;
+      nextMimeType = contentType;
       nextFileSize = replacementFile.size;
     }
 

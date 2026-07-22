@@ -12,6 +12,14 @@ const acceptedMimeTypes = new Set([
   "image/webp",
   "application/msword",
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "audio/wav",
+  "audio/wave",
+  "audio/x-wav",
+  "audio/vnd.wave",
+  "application/vnd.ms-outlook",
+  "application/msg",
+  "application/x-msg",
+  "application/octet-stream",
   "",
 ]);
 
@@ -23,7 +31,11 @@ const acceptedExtensions = new Set([
   ".webp",
   ".doc",
   ".docx",
+  ".wav",
+  ".msg",
 ]);
+
+export const acceptedClientDocumentMimeTypes = Array.from(acceptedMimeTypes).filter(Boolean);
 
 export function canDeleteClientDocument(role: string | null) {
   return role === "admin" || role === "manager";
@@ -44,7 +56,24 @@ export function isAllowedClientDocumentFile(file: Pick<File, "name" | "type">) {
   const lowerName = file.name.toLowerCase();
   const extension = Array.from(acceptedExtensions).find((value) => lowerName.endsWith(value));
 
-  return Boolean(extension) && acceptedMimeTypes.has(file.type);
+  return Boolean(extension) && acceptedMimeTypes.has(resolveClientDocumentContentType(file));
+}
+
+export function resolveClientDocumentContentType(file: Pick<File, "name" | "type">) {
+  const rawType = file.type?.trim();
+  const lowerName = file.name.toLowerCase();
+
+  if (!rawType || rawType === "application/octet-stream") {
+    if (lowerName.endsWith(".msg")) {
+      return "application/vnd.ms-outlook";
+    }
+
+    if (lowerName.endsWith(".wav")) {
+      return "audio/wav";
+    }
+  }
+
+  return rawType || "application/octet-stream";
 }
 
 export function sanitizeClientDocumentFileName(fileName: string) {

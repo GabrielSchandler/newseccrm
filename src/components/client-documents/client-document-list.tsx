@@ -22,6 +22,7 @@ import {
 } from "@/lib/browser/open-document-tab";
 import { displayValue, formatDateTime } from "@/lib/clients/formatters";
 import {
+  clientDocumentAcceptedInputTypes,
   clientDocumentTypes,
   normalizeClientDocumentType,
   type ClientDocument,
@@ -434,7 +435,7 @@ export function ClientDocumentList({
                                                 setReplacementFile(event.target.files?.[0] ?? null)
                                               }
                                               className="block w-full rounded-lg border border-dashed border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-600"
-                                              accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx"
+                                              accept={clientDocumentAcceptedInputTypes}
                                             />
                                             <p className="text-xs text-slate-500">
                                               Deixe em branco se quiser apenas editar as informações
