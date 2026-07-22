@@ -49,7 +49,7 @@ function getEventConfig(eventType: ClientTimelineEventType): TimelineEventConfig
     case "pre_sale_updated":
     case "pre_sale_status_updated":
       return {
-        label: "Pre-venda",
+        label: "Pré-venda",
         icon: FolderClock,
         badgeClassName: "border-emerald-200 bg-emerald-50 text-emerald-700",
         iconClassName: "border-emerald-200 bg-emerald-50 text-emerald-700",
@@ -60,7 +60,7 @@ function getEventConfig(eventType: ClientTimelineEventType): TimelineEventConfig
     case "legal_payment_deleted":
     case "legal_payment_receipt_generated":
       return {
-        label: "Juridico",
+        label: "Jurídico",
         icon: ShieldCheck,
         badgeClassName: "border-violet-200 bg-violet-50 text-violet-700",
         iconClassName: "border-violet-200 bg-violet-50 text-violet-700",
@@ -104,7 +104,7 @@ function getEventConfig(eventType: ClientTimelineEventType): TimelineEventConfig
 }
 
 function formatActorLine(event: ClientTimelineEvent) {
-  const actorName = event.actor_name?.trim() || "Usuario nao identificado";
+  const actorName = event.actor_name?.trim() || "Usuário não identificado";
   const roleLabel = formatCompanyUserRole(event.actor_role);
   const shouldShowArea =
     event.actor_business_area &&
@@ -215,7 +215,7 @@ export function ClientTimelineSection({
 
   function handleDeleteNote(event: ClientTimelineEvent) {
     const confirmed = window.confirm(
-      "Remover esta anotacao da linha do tempo? Esta acao nao pode ser desfeita.",
+      "Remover esta anotação da linha do tempo? Esta ação não pode ser desfeita.",
     );
 
     if (!confirmed) {
@@ -247,7 +247,7 @@ export function ClientTimelineSection({
         </div>
         <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-600">
           <History className="h-4 w-4" />
-          Historico centralizado
+          Histórico centralizado
         </div>
       </div>
 
@@ -268,7 +268,7 @@ export function ClientTimelineSection({
               value={note}
               disabled={isPending}
               onChange={(event) => setNote(event.target.value)}
-              placeholder="Ex.: Cliente enviou documento complementar e pediu retorno ainda hoje. Pendencia repassada ao juridico."
+              placeholder="Ex.: Cliente enviou documento complementar e pediu retorno ainda hoje. Pendência repassada ao jurídico."
               className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
             />
             <div className="flex flex-wrap items-center gap-3">
@@ -402,7 +402,7 @@ export function ClientTimelineSection({
         </div>
       ) : (
         <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 px-4 py-6 text-sm text-slate-500">
-          Ainda nao ha movimentacoes registradas nesta linha do tempo.
+          Ainda não há movimentações registradas nesta linha do tempo.
         </div>
       )}
     </section>

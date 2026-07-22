@@ -44,7 +44,7 @@ export default async function ClientesPage({ searchParams }: ClientesPageProps) 
       : params.success === "updated"
         ? "Cliente atualizado com sucesso."
         : params.success === "deleted"
-          ? "Cliente excluido com sucesso."
+          ? "Cliente excluído com sucesso."
           : null;
 
   let query = supabase
@@ -124,7 +124,7 @@ export default async function ClientesPage({ searchParams }: ClientesPageProps) 
     <>
       <PageHeader
         title="Clientes"
-        description="Gerencie os clientes da empresa autenticada com busca, cadastro e edicao."
+        description="Gerencie os clientes da empresa autenticada com busca, cadastro e edição."
       />
       <div className="space-y-6 p-6">
         {successMessage ? <ClientToast message={successMessage} /> : null}

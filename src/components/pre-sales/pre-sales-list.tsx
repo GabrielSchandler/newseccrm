@@ -35,7 +35,7 @@ export function PreSalesList({ preSales, canDelete = false }: PreSalesListProps)
     return (
       <div className="rounded-lg border border-slate-200 bg-white p-8 text-center shadow-sm">
         <h3 className="text-lg font-semibold text-slate-950">
-          Nenhuma pre-venda encontrada
+          Nenhuma pré-venda encontrada
         </h3>
         <p className="mt-2 text-sm text-slate-600">
           Crie uma nova oportunidade ou ajuste os filtros.
@@ -83,11 +83,11 @@ export function PreSalesList({ preSales, canDelete = false }: PreSalesListProps)
               <th className="px-5 py-3 font-semibold">Cliente</th>
               <th className="px-5 py-3 font-semibold">Tipo</th>
               <th className="px-5 py-3 font-semibold">Status</th>
-              <th className="px-5 py-3 font-semibold">Servico</th>
+              <th className="px-5 py-3 font-semibold">Serviço</th>
               <th className="px-5 py-3 font-semibold">Valor do contrato</th>
-              <th className="px-5 py-3 font-semibold">Responsavel</th>
+              <th className="px-5 py-3 font-semibold">Responsável</th>
               <th className="px-5 py-3 font-semibold">Data de abertura</th>
-              <th className="px-5 py-3 text-right font-semibold">Acoes</th>
+              <th className="px-5 py-3 text-right font-semibold">Ações</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -99,7 +99,7 @@ export function PreSalesList({ preSales, canDelete = false }: PreSalesListProps)
               >
                 <td className="px-5 py-4">
                   <div className="font-medium text-slate-950">
-                    {preSale.client?.full_name ?? "Cliente nao encontrado"}
+                    {preSale.client?.full_name ?? "Cliente não encontrado"}
                   </div>
                   <div className="mt-1 text-xs text-slate-500">
                     {displayCpf(preSale.client?.cpf ?? null)}
@@ -183,8 +183,8 @@ export function PreSalesList({ preSales, canDelete = false }: PreSalesListProps)
       </div>
       <ChangeNoteModal
         isOpen={Boolean(pendingStatusChange)}
-        title="Registrar mudanca de status"
-        description="Explique o que aconteceu nessa movimentacao da pre-venda e por que ela foi para este novo status."
+        title="Registrar mudança de status"
+        description="Explique o que aconteceu nessa movimentação da pré-venda e por que ela foi para este novo status."
         confirmLabel="Alterar com anotacao"
         pending={isPending}
         onClose={() => {

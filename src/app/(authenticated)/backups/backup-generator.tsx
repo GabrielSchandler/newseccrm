@@ -87,9 +87,9 @@ function triggerDownload(blob: Blob, fileName: string) {
 async function getErrorMessage(response: Response) {
   try {
     const body = (await response.json()) as { error?: string };
-    return body.error ?? "Nao foi possivel preparar o backup.";
+    return body.error ?? "Não foi possível preparar o backup.";
   } catch {
-    return "Nao foi possivel preparar o backup.";
+    return "Não foi possível preparar o backup.";
   }
 }
 
@@ -98,7 +98,7 @@ function wait(delayMs: number) {
 }
 
 async function downloadFileWithRetry(url: string) {
-  let lastError = "Nao foi possivel baixar o arquivo.";
+  let lastError = "Não foi possível baixar o arquivo.";
 
   for (let attempt = 1; attempt <= fileDownloadAttempts; attempt += 1) {
     try {
@@ -176,7 +176,7 @@ export function BackupGenerator() {
           bucket: file.bucket,
           path: file.path,
           source: file.source,
-          error: file.error ?? "Link temporario nao foi gerado.",
+          error: file.error ?? "Link temporário não foi gerado.",
         }));
       let downloadedFiles = 0;
 
@@ -251,7 +251,7 @@ export function BackupGenerator() {
 
       if (downloadErrors.length) {
         throw new Error(
-          `Backup interrompido: ${formatNumber(downloadErrors.length)} arquivo(s) nao puderam ser baixados apos ${fileDownloadAttempts} tentativas. Nenhum ZIP incompleto foi gerado.`,
+          `Backup interrompido: ${formatNumber(downloadErrors.length)} arquivo(s) não puderam ser baixados após ${fileDownloadAttempts} tentativas. Nenhum ZIP incompleto foi gerado.`,
         );
       }
 
@@ -331,7 +331,7 @@ export function BackupGenerator() {
         message:
           error instanceof Error
             ? error.message
-            : "Nao foi possivel gerar o backup.",
+            : "Não foi possível gerar o backup.",
       }));
     }
   }

@@ -17,7 +17,7 @@ export async function GET() {
   } = await supabase.auth.getUser();
 
   if (userError || !user) {
-    return NextResponse.json({ error: "Sessao invalida." }, { status: 401 });
+    return NextResponse.json({ error: "Sessão inválida." }, { status: 401 });
   }
 
   const { data: profile, error: profileError } = await supabase
@@ -28,7 +28,7 @@ export async function GET() {
 
   if (profileError || !profile) {
     return NextResponse.json(
-      { error: "Perfil do usuario nao encontrado." },
+      { error: "Perfil do usuário não encontrado." },
       { status: 403 },
     );
   }
@@ -44,7 +44,7 @@ export async function GET() {
 
   if (!companyId) {
     return NextResponse.json(
-      { error: "Usuario sem empresa vinculada para gerar backup." },
+      { error: "Usuário sem empresa vinculada para gerar backup." },
       { status: 400 },
     );
   }

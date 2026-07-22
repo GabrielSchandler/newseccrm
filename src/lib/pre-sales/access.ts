@@ -81,13 +81,13 @@ const assertPreSaleAccessCached = cache(async (preSaleId: string) => {
   }
 
   if (!data) {
-    throw new Error("Pre-venda nao encontrada para esta empresa.");
+    throw new Error("Pré-venda não encontrada para esta empresa.");
   }
 
   const preSale = data as PreSaleAccessRecord;
 
   if (!canAccessPreSaleRecord(role, businessArea, userProfileId, preSale)) {
-    throw new Error("Voce nao tem permissao para acessar esta pre-venda.");
+    throw new Error("Você não tem permissão para acessar esta pré-venda.");
   }
 
   return preSale;

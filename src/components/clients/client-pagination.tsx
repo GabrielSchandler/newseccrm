@@ -46,7 +46,7 @@ export function ClientPagination({
           Anterior
         </Link>
         <span className="px-2">
-          Pagina {page} de {totalPages}
+          Página {page} de {totalPages}
         </span>
         <Link
           href={buildHref(searchParams, Math.min(totalPages, page + 1))}
@@ -55,7 +55,7 @@ export function ClientPagination({
             page >= totalPages ? "pointer-events-none opacity-50" : ""
           }`}
         >
-          Proxima
+          Próxima
         </Link>
       </div>
     </div>

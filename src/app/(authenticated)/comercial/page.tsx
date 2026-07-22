@@ -211,7 +211,7 @@ function typeLabel(value: string | null | undefined) {
 }
 
 function mediaLabel(value: string | null | undefined) {
-  return leadMediaOptions.find((item) => item.value === value)?.label ?? "Sem midia";
+  return leadMediaOptions.find((item) => item.value === value)?.label ?? "Sem mídia";
 }
 
 function pushBucket(
@@ -301,7 +301,7 @@ function SegmentList({
             </div>
           ))
         ) : (
-          <p className="text-sm text-slate-500">Nenhum pagamento pago neste mes.</p>
+          <p className="text-sm text-slate-500">Nenhum pagamento pago neste mês.</p>
         )}
       </div>
     </section>
@@ -487,7 +487,7 @@ export default async function ComercialDashboardPage() {
     pushBucket(
       serviceBuckets,
       preSale.service_type ?? "none",
-      preSale.service_type?.trim() || "Sem servico",
+      preSale.service_type?.trim() || "Sem serviço",
       value,
     );
   });
@@ -507,7 +507,7 @@ export default async function ComercialDashboardPage() {
     <>
       <PageHeader
         title="Painel comercial"
-        description="Pagamentos pagos no mes, meta, comissao e cobrancas que precisam de acompanhamento."
+        description="Pagamentos pagos no mês, meta, comissão e cobranças que precisam de acompanhamento."
       />
       <div className="space-y-6 p-6">
         {preSalesError ? (
@@ -521,18 +521,18 @@ export default async function ComercialDashboardPage() {
             <div>
               <p className="text-sm font-semibold text-teal-700">{sellerLabel}</p>
               <h2 className="mt-2 text-2xl font-semibold text-slate-950">
-                Resultado do mes atual
+                Resultado do mês atual
               </h2>
               <p className="mt-2 text-sm leading-6 text-slate-600">
-                Periodo analisado: {formatYmdDate(monthStartYmd)} ate {formatYmdDate(monthEndYmd)}.
-                Somente pagamentos pagos no periodo entram na venda total.
+                Período analisado: {formatYmdDate(monthStartYmd)} ate {formatYmdDate(monthEndYmd)}.
+                Somente pagamentos pagos no período entram na venda total.
               </p>
             </div>
             <Link
               href="/pre-vendas/novo"
               className="inline-flex items-center justify-center gap-2 rounded-lg bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-800"
             >
-              Nova pre-venda
+              Nova pré-venda
               <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
             </Link>
           </div>
@@ -556,22 +556,22 @@ export default async function ComercialDashboardPage() {
         <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <StatCard
             icon={Target}
-            label="Meta mes"
+            label="Meta mês"
             value={formatCurrency(sellerGoal)}
-            detail="Valor configurado em Gestao > Usuarios para consultores comerciais."
+            detail="Valor configurado em Gestão > Usuários para consultores comerciais."
           />
           <StatCard
             icon={CircleDollarSign}
             label="Venda total"
             value={formatCurrency(salesTotal)}
-            detail="Soma do campo Meta dos pagamentos pagos dentro do mes atual."
+            detail="Soma do campo Meta dos pagamentos pagos dentro do mês atual."
             tone="success"
           />
           <StatCard
             icon={TrendingUp}
             label="Restante pra meta"
             value={formatCurrency(remainingGoal)}
-            detail={`${remainingBusinessDays} dia(s) util(eis) restantes. Meta diaria: ${formatCurrency(dailyGoal)}.`}
+            detail={`${remainingBusinessDays} dia(s) útil(eis) restantes. Meta diaria: ${formatCurrency(dailyGoal)}.`}
             tone={remainingGoal > 0 ? "warning" : "success"}
           />
           <StatCard
@@ -592,14 +592,14 @@ export default async function ComercialDashboardPage() {
           />
           <StatCard
             icon={CheckCircle2}
-            label="Comissao estimada"
+            label="Comissão estimada"
             value={formatCurrency(commission.amount)}
             detail={`Faixa atual: ${commission.percent}% sobre a meta vendida.`}
             tone="success"
           />
           <StatCard
             icon={ArrowUpRight}
-            label="Proxima faixa"
+            label="Próxima faixa"
             value={
               commission.nextTier
                 ? `${commission.nextTier.percent}% em ${formatCurrency(commission.nextTier.target)}`
@@ -608,14 +608,14 @@ export default async function ComercialDashboardPage() {
             detail={
               commission.nextTier
                 ? `Faltam ${formatCurrency(nextTierGap)} para subir a faixa.`
-                : "A maior faixa de comissao ja foi alcancada."
+                : "A maior faixa de comissão já foi alcancada."
             }
           />
           <StatCard
             icon={AlertTriangle}
-            label="Meta nao informada"
+            label="Meta não informada"
             value={numberFormatter.format(missingPaymentGoalCount)}
-            detail={`${formatCurrency(contractTotal)} em contratos com pagamentos pagos no mes para conferencia.`}
+            detail={`${formatCurrency(contractTotal)} em contratos com pagamentos pagos no mês para conferencia.`}
             tone={missingPaymentGoalCount ? "warning" : "success"}
           />
         </section>
@@ -623,7 +623,7 @@ export default async function ComercialDashboardPage() {
         <section className="grid gap-4 xl:grid-cols-3">
           <SegmentList title="Segmentacao por produto" items={typeSegments} />
           <SegmentList title="Origem do lead" items={mediaSegments} />
-          <SegmentList title="Servico contratado" items={serviceSegments} />
+          <SegmentList title="Serviço contratado" items={serviceSegments} />
         </section>
 
         <section className="grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
@@ -633,7 +633,7 @@ export default async function ComercialDashboardPage() {
                 Clientes com venda aprovada
               </h2>
               <p className="mt-1 text-sm text-slate-600">
-                Clientes com pagamento pago dentro do periodo do painel.
+                Clientes com pagamento pago dentro do período do painel.
               </p>
             </div>
             <div className="overflow-x-auto">
@@ -685,7 +685,7 @@ export default async function ComercialDashboardPage() {
                   {!preSaleValues.length ? (
                     <tr>
                       <td className="px-5 py-8 text-center text-slate-500" colSpan={5}>
-                        Nenhum pagamento pago neste mes.
+                        Nenhum pagamento pago neste mês.
                       </td>
                     </tr>
                   ) : null}
@@ -697,10 +697,10 @@ export default async function ComercialDashboardPage() {
           <div className="rounded-lg border border-slate-200 bg-white shadow-sm">
             <div className="border-b border-slate-200 px-5 py-4">
               <h2 className="text-base font-semibold text-slate-950">
-                Alertas de cobranca
+                Alertas de cobrança
               </h2>
               <p className="mt-1 text-sm text-slate-600">
-                Pagamentos previstos ainda nao marcados como pagos.
+                Pagamentos previstos ainda não marcados como pagos.
               </p>
             </div>
             <div className="divide-y divide-slate-100">
@@ -751,7 +751,7 @@ export default async function ComercialDashboardPage() {
               })}
               {!pendingPayments.length ? (
                 <div className="p-5 text-sm text-slate-500">
-                  Nenhum pagamento pendente entre as pre-vendas aprovadas.
+                  Nenhum pagamento pendente entre as pré-vendas aprovadas.
                 </div>
               ) : null}
             </div>

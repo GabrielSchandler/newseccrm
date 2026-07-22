@@ -119,7 +119,7 @@ export default async function DocumentosPage({ searchParams }: DocumentosPagePro
     <>
       <PageHeader
         title="Documentos"
-        description="Documentos gerados a partir das pre-vendas da empresa."
+        description="Documentos gerados a partir das pré-vendas da empresa."
       />
       <div className="space-y-6 p-6">
         <DocumentsNav />
@@ -179,7 +179,7 @@ export default async function DocumentosPage({ searchParams }: DocumentosPagePro
               <table className="w-full min-w-[980px] border-collapse text-left text-sm">
                 <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
                   <tr>
-                    <th className="px-4 py-3 font-semibold">Titulo</th>
+                    <th className="px-4 py-3 font-semibold">Título</th>
                     <th className="px-4 py-3 font-semibold">Tipo</th>
                     <th className="px-4 py-3 font-semibold">Cliente</th>
                     <th className="px-4 py-3 font-semibold">Template</th>
@@ -187,7 +187,7 @@ export default async function DocumentosPage({ searchParams }: DocumentosPagePro
                     <th className="px-4 py-3 font-semibold">Status</th>
                     <th className="px-4 py-3 font-semibold">Data</th>
                     <th className="px-4 py-3 font-semibold">Criado por</th>
-                    <th className="px-4 py-3 font-semibold">Acoes</th>
+                    <th className="px-4 py-3 font-semibold">Ações</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">

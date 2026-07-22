@@ -199,8 +199,8 @@ export default async function JuridicoPage() {
   return (
     <>
       <PageHeader
-        title="Esteira juridica"
-        description="Acompanhe em que fase cada cliente esta, ha quanto tempo e gere os documentos da etapa certa."
+        title="Esteira jurídica"
+        description="Acompanhe em que fase cada cliente está, há quanto tempo e gere os documentos da etapa certa."
       />
       <div className="space-y-6 p-6">
         {preSalesError ? (

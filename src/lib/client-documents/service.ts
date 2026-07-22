@@ -71,7 +71,7 @@ export async function assertClientBelongsToCompany(clientId: string, companyId: 
   }
 
   if (!data) {
-    throw new Error("Cliente nao encontrado para esta empresa.");
+    throw new Error("Cliente não encontrado para esta empresa.");
   }
 }
 
@@ -94,7 +94,7 @@ export async function assertPreSaleBelongsToClient(
   }
 
   if (!data) {
-    throw new Error("Pre-venda nao encontrada para este cliente.");
+    throw new Error("Pré-venda não encontrada para este cliente.");
   }
 }
 
@@ -147,7 +147,7 @@ export async function getClientDocumentWithAccess(documentId: string) {
   const { supabase, companyId, role } = await getCurrentUserContext();
 
   if (!canManageClientDocuments(role)) {
-    throw new Error("Voce nao tem permissao para acessar documentos.");
+    throw new Error("Você não tem permissão para acessar documentos.");
   }
 
   const { data, error } = await supabase

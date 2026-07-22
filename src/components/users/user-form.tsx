@@ -82,7 +82,7 @@ function UserFormFooter({
         href="/usuarios"
         className="rounded-lg px-4 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-slate-950"
       >
-        Lista de usuarios
+        Lista de usuários
       </Link>
     </div>
   );
@@ -188,11 +188,11 @@ function CreateUserForm({
             id="nickname"
             className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
             disabled={disabled}
-            placeholder="Nome que vai aparecer na simulacao"
+            placeholder="Nome que vai aparecer na simulação"
             {...register("nickname")}
           />
           <p className="text-xs text-slate-500">
-            Se informado, este nome aparece no PDF da simulacao no lugar do nome completo.
+            Se informado, este nome aparece no PDF da simulação no lugar do nome completo.
           </p>
           {errors.nickname?.message ? (
             <p className="text-sm text-red-600">{String(errors.nickname.message)}</p>
@@ -240,7 +240,7 @@ function CreateUserForm({
         <div className="space-y-2">
           <FormFieldLabel
             htmlFor="temporary_password"
-            label="Senha provisoria"
+            label="Senha provisória"
             requirement="required"
           />
           <input
@@ -260,7 +260,7 @@ function CreateUserForm({
         <div className="space-y-2">
           <FormFieldLabel
             htmlFor="business_area"
-            label="Area principal"
+            label="Área principal"
             requirement="required"
           />
           <select
@@ -276,7 +276,7 @@ function CreateUserForm({
             ))}
           </select>
           <p className="text-xs text-slate-500">
-            Para consultores, isso define se o acesso vai direto para Comercial ou Juridico.
+            Para consultores, isso define se o acesso vai direto para Comercial ou Jurídico.
           </p>
           {errors.business_area?.message ? (
             <p className="text-sm text-red-600">{String(errors.business_area.message)}</p>
@@ -307,7 +307,7 @@ function CreateUserForm({
             <div className="space-y-2">
               <FormFieldLabel
                 htmlFor="legal_role"
-                label="Funcao no juridico"
+                label="Função no jurídico"
                 requirement="required"
               />
               <select
@@ -323,7 +323,7 @@ function CreateUserForm({
                 ))}
               </select>
               <p className="text-xs text-slate-500">
-                Adms aparecem no campo Adm responsavel. Consultores aparecem no campo Consultor responsavel.
+                Adms aparecem no campo Adm responsável. Consultores aparecem no campo Consultor responsável.
               </p>
               {errors.legal_role?.message ? (
                 <p className="text-sm text-red-600">{String(errors.legal_role.message)}</p>
@@ -337,7 +337,7 @@ function CreateUserForm({
                 {...register("can_edit_legal_workflow")}
               />
               <span>
-                Editar esteira juridica
+                Editar esteira jurídica
                 <span className="mt-1 block text-xs font-normal leading-5 text-teal-800">
                   Permite criar, editar, ordenar e excluir colunas, alem de mover clientes em massa.
                 </span>
@@ -350,7 +350,7 @@ function CreateUserForm({
           <div className="space-y-2">
             <FormFieldLabel
               htmlFor="monthly_goal"
-              label="Meta do mes"
+              label="Meta do mês"
               requirement="optional"
             />
             <div className="flex rounded-lg border border-slate-300 bg-white focus-within:border-teal-600 focus-within:ring-2 focus-within:ring-teal-600/15">
@@ -467,11 +467,11 @@ function EditUserForm({
             id="nickname"
             className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
             disabled={disabled}
-            placeholder="Nome que vai aparecer na simulacao"
+            placeholder="Nome que vai aparecer na simulação"
             {...register("nickname")}
           />
           <p className="text-xs text-slate-500">
-            Se informado, este nome aparece no PDF da simulacao no lugar do nome completo.
+            Se informado, este nome aparece no PDF da simulação no lugar do nome completo.
           </p>
           {errors.nickname?.message ? (
             <p className="text-sm text-red-600">{String(errors.nickname.message)}</p>
@@ -518,7 +518,7 @@ function EditUserForm({
         <div className="space-y-2">
           <FormFieldLabel
             htmlFor="business_area"
-            label="Area principal"
+            label="Área principal"
             requirement="required"
           />
           <select
@@ -534,7 +534,7 @@ function EditUserForm({
             ))}
           </select>
           <p className="text-xs text-slate-500">
-            Admins e gerentes podem trocar de area na entrada do CRM. Para consultores, isso define o modulo inicial.
+            Admins e gerentes podem trocar de área na entrada do CRM. Para consultores, isso define o módulo inicial.
           </p>
           {errors.business_area?.message ? (
             <p className="text-sm text-red-600">{String(errors.business_area.message)}</p>
@@ -565,7 +565,7 @@ function EditUserForm({
             <div className="space-y-2">
               <FormFieldLabel
                 htmlFor="legal_role"
-                label="Funcao no juridico"
+                label="Função no jurídico"
                 requirement="required"
               />
               <select
@@ -581,7 +581,7 @@ function EditUserForm({
                 ))}
               </select>
               <p className="text-xs text-slate-500">
-                Adms aparecem no campo Adm responsavel. Consultores aparecem no campo Consultor responsavel.
+                Adms aparecem no campo Adm responsável. Consultores aparecem no campo Consultor responsável.
               </p>
               {errors.legal_role?.message ? (
                 <p className="text-sm text-red-600">{String(errors.legal_role.message)}</p>
@@ -595,7 +595,7 @@ function EditUserForm({
                 {...register("can_edit_legal_workflow")}
               />
               <span>
-                Editar esteira juridica
+                Editar esteira jurídica
                 <span className="mt-1 block text-xs font-normal leading-5 text-teal-800">
                   Permite criar, editar, ordenar e excluir colunas, alem de mover clientes em massa.
                 </span>
@@ -608,7 +608,7 @@ function EditUserForm({
           <div className="space-y-2">
             <FormFieldLabel
               htmlFor="monthly_goal"
-              label="Meta do mes"
+              label="Meta do mês"
               requirement="optional"
             />
             <div className="flex rounded-lg border border-slate-300 bg-white focus-within:border-teal-600 focus-within:ring-2 focus-within:ring-teal-600/15">
@@ -646,9 +646,9 @@ function EditUserForm({
             {...register("is_active")}
           />
           <span>
-            Usuario ativo
+            Usuário ativo
             <span className="mt-1 block text-xs font-normal leading-5 text-slate-500">
-              Desative para bloquear o acesso sem apagar o historico do usuario.
+              Desative para bloquear o acesso sem apagar o histórico do usuário.
             </span>
           </span>
         </label>
@@ -657,10 +657,10 @@ function EditUserForm({
       {canViewCurrentPassword && defaultValues.last_set_password ? (
         <div className="rounded-lg border border-blue-200 bg-blue-50 p-5 shadow-sm">
           <h2 className="text-base font-semibold text-blue-900">
-            Senha provisoria atual
+            Senha provisória atual
           </h2>
           <p className="mt-1 text-sm leading-6 text-blue-700">
-            Esta e a ultima senha provisoria definida para este usuario. Sera apagada automaticamente quando o usuario criar uma senha definitiva.
+            Esta é a última senha provisória definida para este usuário. Será apagada automaticamente quando o usuário criar uma senha definitiva.
           </p>
           <div className="mt-3 flex items-center gap-2">
             <input
@@ -687,15 +687,15 @@ function EditUserForm({
               Senha de acesso
             </h2>
             <p className="mt-1 text-sm leading-6 text-slate-600">
-              Defina uma nova senha provisoria abaixo. O administrador pode
-              exigir que o usuario troque no proximo acesso.
+              Defina uma nova senha provisória abaixo. O administrador pode
+              exigir que o usuário troque no próximo acesso.
             </p>
           </div>
 
           <div className="space-y-2">
             <FormFieldLabel
               htmlFor="new_password"
-              label="Nova senha provisoria"
+              label="Nova senha provisória"
               requirement="optional"
             />
             <div className="flex gap-2">
@@ -731,10 +731,10 @@ function EditUserForm({
               {...register("force_password_change")}
             />
             <span>
-              Exigir troca no proximo login
+              Exigir troca no próximo login
               <span className="mt-1 block text-xs font-normal leading-5 text-amber-800">
-                Com esta opcao marcada, o usuario entra com a senha provisoria
-                e e direcionado para criar uma senha definitiva.
+                Com esta opção marcada, o usuário entra com a senha provisória
+                e é direcionado para criar uma senha definitiva.
               </span>
             </span>
           </label>

@@ -33,7 +33,7 @@ export async function disconnectOutlookAction(): Promise<IntegrationActionState>
     });
   } catch (error) {
     return friendlyError(
-      error instanceof Error ? error.message : "Nao foi possivel desconectar o Outlook.",
+      error instanceof Error ? error.message : "Não foi possível desconectar o Outlook.",
     );
   }
 

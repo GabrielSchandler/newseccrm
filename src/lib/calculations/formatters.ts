@@ -13,13 +13,13 @@ const brlFormatter = new Intl.NumberFormat("pt-BR", {
 
 export function formatCalculationCurrency(value: number | string | null | undefined) {
   if (value === null || value === undefined || value === "") {
-    return "Nao informado";
+    return "Não informado";
   }
 
   const numeric = parseBrazilianDecimalInput(value);
 
   if (numeric === null || !Number.isFinite(numeric)) {
-    return "Nao informado";
+    return "Não informado";
   }
 
   return brlFormatter.format(numeric);
@@ -30,7 +30,7 @@ export function formatCalculationStatus(
 ) {
   return (
     financingCalculationStatuses.find((item) => item.value === status)?.label ??
-    "Nao informado"
+    "Não informado"
   );
 }
 
@@ -38,7 +38,7 @@ export function formatCpfDigits(value: string | null | undefined) {
   const digits = onlyDigits(value ?? "");
 
   if (digits.length !== 11) {
-    return "Nao informado";
+    return "Não informado";
   }
 
   return digits.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
@@ -46,7 +46,7 @@ export function formatCpfDigits(value: string | null | undefined) {
 
 export function formatCalculationDate(value: string | null | undefined) {
   if (!value) {
-    return "Nao informado";
+    return "Não informado";
   }
 
   const date = new Date(`${value}T00:00:00`);
@@ -60,7 +60,7 @@ export function formatCalculationDate(value: string | null | undefined) {
 
 export function formatCalculationDateTime(value: string | null | undefined) {
   if (!value) {
-    return "Nao informado";
+    return "Não informado";
   }
 
   const date = new Date(value);

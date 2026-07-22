@@ -110,7 +110,7 @@ export function DocumentTemplateForm({
     if (!file.name.toLowerCase().endsWith(".docx")) {
       setMessage({
         ok: false,
-        message: "Formato nao suportado. Envie um arquivo .docx.",
+        message: "Formato não suportado. Envie um arquivo .docx.",
       });
       event.target.value = "";
       return;
@@ -159,7 +159,7 @@ export function DocumentTemplateForm({
     if (!file.name.toLowerCase().endsWith(".pdf")) {
       setMessage({
         ok: false,
-        message: "Formato nao suportado. Envie um arquivo .pdf.",
+        message: "Formato não suportado. Envie um arquivo .pdf.",
       });
       event.target.value = "";
       return;
@@ -311,9 +311,9 @@ export function DocumentTemplateForm({
           <div className="space-y-2">
             <FormFieldLabel
               htmlFor="legal_stage"
-              label="Etapa juridica"
+              label="Etapa jurídica"
               requirement="conditional"
-              hint="Use este campo para os documentos da esteira do Juridico. Templates sem etapa continuam disponiveis fora da esteira."
+              hint="Use este campo para os documentos da esteira do Jurídico. Templates sem etapa continuam disponíveis fora da esteira."
             />
             <select
               id="legal_stage"
@@ -323,7 +323,7 @@ export function DocumentTemplateForm({
                 setValueAs: (value) => value || null,
               })}
             >
-              <option value="">Sem etapa juridica</option>
+              <option value="">Sem etapa jurídica</option>
               {workflowStages.map((stage) => (
                 <option key={stage.id} value={stage.id}>
                   {stage.label}
@@ -338,7 +338,7 @@ export function DocumentTemplateForm({
           <div className="space-y-2">
             <FormFieldLabel
               htmlFor="description"
-              label="Descricao"
+              label="Descrição"
               requirement="optional"
             />
             <input
@@ -361,7 +361,7 @@ export function DocumentTemplateForm({
               <span>
                 Template ativo
                 <span className="mt-1 block text-xs font-normal leading-5 text-slate-500">
-                  Apenas templates ativos aparecem para geracao na pre-venda.
+                  Apenas templates ativos aparecem para geração na pré-venda.
                 </span>
               </span>
             </label>
@@ -374,9 +374,9 @@ export function DocumentTemplateForm({
                 {...register("is_default")}
               />
               <span>
-                Template padrao
+                Template padrão
                 <span className="mt-1 block text-xs font-normal leading-5 text-slate-500">
-                  Mantem um padrao por tipo de documento para a empresa.
+                  Mantem um padrão por tipo de documento para a empresa.
                 </span>
               </span>
             </label>
@@ -392,7 +392,7 @@ export function DocumentTemplateForm({
                 </h2>
                 <p className="text-sm leading-6 text-slate-600">
                   Para contratos e documentos com fidelidade alta, o CRM passa a usar
-                  somente o arquivo oficial em DOCX ou PDF. O fluxo HTML antigo nao e
+                  somente o arquivo oficial em DOCX ou PDF. O fluxo HTML antigo não e
                   mais a base para gerar contrato.
                 </p>
                 <div className="rounded-lg border border-slate-200 bg-white p-3 text-sm text-slate-700">
@@ -400,7 +400,7 @@ export function DocumentTemplateForm({
                   <ol className="mt-2 space-y-1.5 pl-5 text-sm leading-6 text-slate-600">
                     <li>1. Cadastre o template e vincule o DOCX oficial.</li>
                     <li>
-                      2. Edite o arquivo no Word, mantendo imagens, marca d&apos;agua,
+                      2. Edite o arquivo no Word, mantendo imagens, marca d&após;agua,
                       cabecalho e alinhamento.
                     </li>
                     <li>
@@ -408,7 +408,7 @@ export function DocumentTemplateForm({
                       <span className="font-mono text-slate-900">
                         {`{{contratante_nome}}`}
                       </span>{" "}
-                      , {`{{cliente_cpf}}`} e {`{{valor_contrato}}`} no proprio
+                      , {`{{cliente_cpf}}`} e {`{{valor_contrato}}`} no próprio
                       documento.
                     </li>
                     <li>
@@ -416,14 +416,14 @@ export function DocumentTemplateForm({
                       modelo.
                     </li>
                     <li>
-                      5. Gere na pre-venda e abra/baixe o DOCX e o PDF oficiais.
+                      5. Gere na pré-venda e abra/baixe o DOCX e o PDF oficiais.
                     </li>
                   </ol>
                 </div>
                 <div className="rounded-lg border border-teal-200 bg-teal-50 p-3 text-sm text-teal-900">
-                  <p className="font-semibold">Como usar as variaveis no Word</p>
+                  <p className="font-semibold">Como usar as variáveis no Word</p>
                   <p className="mt-1 leading-6">
-                    A coluna da direita lista todas as variaveis disponiveis. Copie e
+                    A coluna da direita lista todas as variáveis disponíveis. Copie e
                     cole no Word exatamente no formato com chaves duplas, por exemplo:
                     <span className="ml-1 font-mono">{`{{contratante_nome}}`}</span>,
                     <span className="ml-1 font-mono">{`{{titular_nome}}`}</span>,
@@ -433,7 +433,7 @@ export function DocumentTemplateForm({
                     <span className="ml-1 font-mono">{`{{data_contrato}}`}</span>.
                   </p>
                   <p className="mt-2 leading-6">
-                    Exemplo pratico: no seu contrato em Word, troque o nome do
+                    Exemplo prático: no seu contrato em Word, troque o nome do
                     cliente por <span className="font-mono">{`{{contratante_nome}}`}</span>,
                     o CPF por <span className="font-mono">{`{{contratante_cpf}}`}</span> e o
                     valor por <span className="font-mono">{`{{valor_contrato}}`}</span>. Para a
@@ -448,7 +448,7 @@ export function DocumentTemplateForm({
                     <span className="font-mono">{`{{pagamentos_resumo}}`}</span>{" "}
                     para montar a frase com boleto, PIX, cartao e parcelamentos
                     exatamente com base na aba de pagamentos previstos. Se quiser
-                    quebrar em partes, tambem existem variaveis como{" "}
+                    quebrar em partes, tambem existem variáveis como{" "}
                     <span className="font-mono">{`{{pagamento_1_valor_com_extenso}}`}</span>,{" "}
                     <span className="font-mono">{`{{pagamento_1_metodo}}`}</span> e{" "}
                     <span className="font-mono">{`{{pagamento_1_parcelas_texto}}`}</span>.
@@ -536,9 +536,9 @@ export function DocumentTemplateForm({
               </h2>
               <p className="mt-1 text-sm leading-6 text-slate-600">
                 O editor interno foi removido deste fluxo para evitar perda de
-                alinhamento, imagens, marca d&apos;agua e estrutura do contrato.
+                alinhamento, imagens, marca d&após;agua e estrutura do contrato.
                 Agora o caminho recomendado e mais simples: editar o DOCX no Word,
-                salvar o arquivo com as variaveis e subir aqui como arquivo oficial.
+                salvar o arquivo com as variáveis e subir aqui como arquivo oficial.
               </p>
             </div>
 
@@ -552,7 +552,7 @@ export function DocumentTemplateForm({
                 <ol className="space-y-2 pl-5 leading-6">
                   <li>1. Abra o contrato original no Word.</li>
                   <li>
-                    2. Substitua os dados fixos pelas variaveis que estao na coluna da
+                    2. Substitua os dados fixos pelas variáveis que estao na coluna da
                     direita.
                   </li>
                   <li>3. Salve o arquivo em <strong>.docx</strong>.</li>
@@ -566,7 +566,7 @@ export function DocumentTemplateForm({
                     <strong>Substituir DOCX oficial</strong>.
                   </li>
                   <li>
-                    8. Gere o documento na pre-venda usando o template oficial.
+                    8. Gere o documento na pré-venda usando o template oficial.
                   </li>
                 </ol>
                 {defaultValues?.original_docx_path ? (
@@ -581,10 +581,10 @@ export function DocumentTemplateForm({
         </main>
 
         <aside className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="text-base font-semibold text-slate-950">Variaveis</h2>
+          <h2 className="text-base font-semibold text-slate-950">Variáveis</h2>
           <p className="mt-1 text-sm leading-6 text-slate-600">
-            Copie estes placeholders para dentro do DOCX oficial. Eles serao trocados
-            pelos dados da pre-venda na hora de gerar o documento final.
+            Copie estes placeholders para dentro do DOCX oficial. Eles serão trocados
+            pelos dados da pré-venda na hora de gerar o documento final.
           </p>
           <div className="mt-4 max-h-[760px] space-y-4 overflow-y-auto pr-1">
             {documentVariableCatalog.map((group) => (

@@ -17,7 +17,7 @@ export async function assertGeneratedDocumentAccess(documentId: string) {
   }
 
   if (!data) {
-    throw new Error("Documento gerado nao encontrado.");
+    throw new Error("Documento gerado não encontrado.");
   }
 
   const document = data as GeneratedDocument;
@@ -36,7 +36,7 @@ export async function assertGeneratedDocumentAccess(documentId: string) {
       return document;
     }
 
-    throw new Error("Voce nao tem permissao para acessar este documento.");
+    throw new Error("Você não tem permissão para acessar este documento.");
   }
 
   return document;

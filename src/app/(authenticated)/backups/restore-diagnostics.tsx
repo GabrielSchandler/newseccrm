@@ -52,7 +52,7 @@ function formatNumber(value: number) {
 
 function formatDateTime(value: string | undefined) {
   if (!value) {
-    return "Nao informado";
+    return "Não informado";
   }
 
   return new Intl.DateTimeFormat("pt-BR", {
@@ -93,7 +93,7 @@ export function RestoreDiagnostics() {
       const manifestPath = findManifestPath(paths);
 
       if (!manifestPath) {
-        throw new Error("Este ZIP nao possui manifest.json.");
+        throw new Error("Este ZIP não possui manifest.json.");
       }
 
       const manifest = JSON.parse(
@@ -114,7 +114,7 @@ export function RestoreDiagnostics() {
       const warnings: string[] = [];
 
       if (manifest.backup_format !== grsBackupFormat) {
-        warnings.push("Formato de backup diferente do padrao atual do GRS.");
+        warnings.push("Formato de backup diferente do padrão atual do GRS.");
       }
 
       if (manifest.backup_format_version !== backupFormatVersion) {
@@ -122,11 +122,11 @@ export function RestoreDiagnostics() {
       }
 
       if (!manifest.storage?.backup_contains_storage_binaries) {
-        warnings.push("O manifesto indica que os arquivos nao estao embutidos no ZIP.");
+        warnings.push("O manifesto indica que os arquivos não estáo embutidos no ZIP.");
       }
 
       if (missingTables.length) {
-        warnings.push("Existem tabelas esperadas que nao foram encontradas no backup.");
+        warnings.push("Existem tabelas esperadas que não foram encontradas no backup.");
       }
 
       const storageErrors = Array.isArray(manifest.storage?.errors)
@@ -157,7 +157,7 @@ export function RestoreDiagnostics() {
       setError(
         readError instanceof Error
           ? readError.message
-          : "Nao foi possivel ler este arquivo.",
+          : "Não foi possível ler este arquivo.",
       );
     } finally {
       setIsReading(false);
@@ -208,7 +208,7 @@ export function RestoreDiagnostics() {
                   : "bg-amber-100 text-amber-800"
               }`}
             >
-              {result.isCompatible ? "Padrao GRS" : "Requer atencao"}
+              {result.isCompatible ? "Padrão GRS" : "Requer atencao"}
             </span>
           </div>
 
@@ -265,8 +265,8 @@ export function RestoreDiagnostics() {
             </div>
           ) : (
             <div className="mt-4 rounded-lg border border-teal-200 bg-teal-50 p-3 text-sm text-teal-900">
-              Estrutura validada. Este arquivo esta pronto para a etapa futura
-              de restauracao controlada.
+              Estrutura validada. Este arquivo está pronto para a etapa futura
+              de restauração controlada.
             </div>
           )}
 

@@ -114,8 +114,8 @@ export const financePaymentMethods = [
 ] as const;
 
 export const financeModalityOptions = [
-  "Veiculo",
-  "Imovel",
-  "Emprestimo",
+  "Veículo",
+  "Imóvel",
+  "Empréstimo",
   "Outros",
 ] as const;

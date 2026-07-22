@@ -402,7 +402,7 @@ export function CalculationForm({
               }
             }}
           >
-            <option value="">Nao vincular agora</option>
+            <option value="">Não vincular agora</option>
             {clients.map((client) => (
               <option key={client.id} value={client.id}>
                 {client.full_name}
@@ -417,7 +417,7 @@ export function CalculationForm({
         <div className="space-y-2">
           <FormFieldLabel
             htmlFor="pre_sale_id"
-            label="Pre-venda vinculada"
+            label="Pré-venda vinculada"
             requirement="optional"
           />
           <select
@@ -432,7 +432,7 @@ export function CalculationForm({
               }
             }}
           >
-            <option value="">Nao vincular agora</option>
+            <option value="">Não vincular agora</option>
             {preSales.map((preSale) => (
               <option key={preSale.id} value={preSale.id}>
                 {preSale.label}
@@ -440,7 +440,7 @@ export function CalculationForm({
             ))}
           </select>
           <p className="text-xs text-slate-500">
-            Ao selecionar uma pre-venda, o sistema preenche cliente, financeira e
+            Ao selecionar uma pré-venda, o sistema preenche cliente, financeira e
             dados do financiamento automaticamente.
           </p>
           {errors.pre_sale_id?.message ? (
@@ -453,7 +453,7 @@ export function CalculationForm({
         <div>
           <h2 className="text-base font-semibold text-slate-950">Dados do cliente</h2>
           <p className="mt-1 text-sm text-slate-600">
-            Voce pode manter os dados vinculados ao cadastro ou ajustar manualmente.
+            Você pode manter os dados vinculados ao cadastro ou ajustar manualmente.
           </p>
         </div>
         <div className="grid gap-5 md:grid-cols-2">
@@ -462,7 +462,7 @@ export function CalculationForm({
               htmlFor="client_name"
               label="Nome do cliente"
               requirement="optional"
-              hint="Se nao informar, o documento e a simulacao exibem Nao informado."
+              hint="Se não informar, o documento e a simulação exibem Não informado."
             />
             <input
               id="client_name"
@@ -480,7 +480,7 @@ export function CalculationForm({
               htmlFor="client_cpf"
               label="CPF"
               requirement="optional"
-              hint="Se nao informar, o documento e a simulacao exibem Nao informado."
+              hint="Se não informar, o documento e a simulação exibem Não informado."
             />
             <input
               id="client_cpf"
@@ -522,17 +522,17 @@ export function CalculationForm({
 
       <section className="space-y-4 rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
         <div>
-          <h2 className="text-base font-semibold text-slate-950">Dados da operacao</h2>
+          <h2 className="text-base font-semibold text-slate-950">Dados da operação</h2>
           <p className="mt-1 text-sm text-slate-600">
-            O especialista responsavel, a situacao aprovada e a data do atendimento
-            sao preenchidos automaticamente na simulacao.
+            O especialista responsável, a situação aprovada e a data do atendimento
+            são preenchidos automaticamente na simulação.
           </p>
         </div>
         <div className="grid gap-5 md:grid-cols-2">
           <div className="space-y-2">
             <FormFieldLabel
               htmlFor="simulation_type"
-              label="Tipo da simulacao"
+              label="Tipo da simulação"
               requirement="required"
             />
             <select
@@ -580,7 +580,7 @@ export function CalculationForm({
       <section className="space-y-4 rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
         <div>
           <h2 className="text-base font-semibold text-slate-950">
-            {isVehicleSimulation ? "Dados do veiculo" : "Observacoes"}
+            {isVehicleSimulation ? "Dados do veículo" : "Observações"}
           </h2>
         </div>
         <div className="grid gap-5 md:grid-cols-2">
@@ -611,7 +611,7 @@ export function CalculationForm({
             </>
           ) : null}
           <div className="space-y-2 md:col-span-2">
-            <FormFieldLabel htmlFor="notes" label="Observacoes" requirement="optional" />
+            <FormFieldLabel htmlFor="notes" label="Observações" requirement="optional" />
             <textarea
               id="notes"
               rows={4}
@@ -630,7 +630,7 @@ export function CalculationForm({
           </h2>
           {selectedPreSale ? (
             <p className="mt-1 text-sm text-teal-700">
-              Dados preenchidos a partir da pre-venda vinculada. Voce ainda pode
+              Dados preenchidos a partir da pré-venda vinculada. Você ainda pode
               ajustar manualmente.
             </p>
           ) : null}
@@ -728,12 +728,12 @@ export function CalculationForm({
               aria-live="polite"
               className="min-h-[42px] rounded-lg border border-slate-400 bg-slate-200 px-3 py-2.5 text-sm font-semibold text-slate-800"
             >
-              {computedFinancedValue || "Nao informado"}
+              {computedFinancedValue || "Não informado"}
             </div>
             <p className="text-xs text-slate-500">
               {isVehicleSimulation
                 ? "Calculado automaticamente: valor a vista menos entrada."
-                : "Calculado automaticamente a partir do valor informado para a operacao."}
+                : "Calculado automaticamente a partir do valor informado para a operação."}
             </p>
             {errors.financed_value?.message ? (
               <p className="text-sm text-red-600">
@@ -784,9 +784,9 @@ export function CalculationForm({
           <div className="space-y-2">
             <FormFieldLabel
               htmlFor="installment_reduction_percentage"
-              label="Reducao da parcela (%)"
+              label="Redução da parcela (%)"
               requirement="optional"
-              hint="Padrao de 30%. Reduza para 15, 10 ou 5 quando o juros do cliente for baixo."
+              hint="Padrão de 30%. Reduza para 15, 10 ou 5 quando o juros do cliente for baixo."
             />
             <input
               id="installment_reduction_percentage"
@@ -823,9 +823,9 @@ export function CalculationForm({
           <div className="space-y-2">
             <FormFieldLabel
               htmlFor="settlement_discount_percentage"
-              label="Quitacao (%)"
+              label="Quitação (%)"
               requirement="optional"
-              hint="Desconto aplicado sobre o saldo devedor pos correcao. Se ficar em branco, o indicador nao aparece no PDF."
+              hint="Desconto aplicado sobre o saldo devedor pós-correção. Se ficar em branco, o indicador não aparece no PDF."
             />
             <input
               id="settlement_discount_percentage"
@@ -891,7 +891,7 @@ export function CalculationForm({
               aria-live="polite"
               className="min-h-[42px] rounded-lg border border-slate-400 bg-slate-200 px-3 py-2.5 text-sm font-semibold text-slate-800"
             >
-              {remainingInstallments || "Nao informado"}
+              {remainingInstallments || "Não informado"}
             </div>
             <p className="text-xs text-slate-500">
               Calculado automaticamente: total de parcelas menos parcelas pagas.
@@ -997,7 +997,7 @@ export function CalculationForm({
           disabled={disabled}
           className="rounded-lg bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-70"
         >
-          {disabled ? "Salvando simulacao..." : submitLabel}
+          {disabled ? "Salvando simulação..." : submitLabel}
         </button>
         <button
           type="button"
@@ -1010,7 +1010,7 @@ export function CalculationForm({
           href="/calculos"
           className="rounded-lg px-4 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-slate-950"
         >
-          Lista de simulacoes
+          Lista de simulações
         </Link>
       </div>
     </form>

@@ -70,7 +70,7 @@ export default async function EmpresaPage({ searchParams }: EmpresaPageProps) {
     <>
       <PageHeader
         title="Empresa"
-        description="Configure os dados institucionais da empresa, a identidade visual e as informacoes usadas nos documentos."
+        description="Configure os dados institucionais da empresa, a identidade visual e as informações usadas nos documentos."
       />
       <div className="space-y-6 p-6">
         {success ? (
@@ -82,7 +82,7 @@ export default async function EmpresaPage({ searchParams }: EmpresaPageProps) {
         {error ? (
           <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
             {isMissingColumnError(error)
-              ? "A tabela companies desta instancia ainda nao possui os campos da tela Empresa. Rode o SQL da entrega no Supabase e recarregue a pagina."
+              ? "A tabela companies desta instância ainda não possui os campos da tela Empresa. Rode o SQL da entrega no Supabase e recarregue a página."
               : error.message}
           </div>
         ) : company && formValues ? (

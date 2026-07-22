@@ -16,9 +16,9 @@ const initialState: RunnerState = {
 async function getErrorMessage(response: Response) {
   try {
     const body = (await response.json()) as { error?: string };
-    return body.error ?? "Nao foi possivel gerar o backup.";
+    return body.error ?? "Não foi possível gerar o backup.";
   } catch {
-    return "Nao foi possivel gerar o backup.";
+    return "Não foi possível gerar o backup.";
   }
 }
 
@@ -44,7 +44,7 @@ export function StoredBackupRunner() {
 
       setState({
         status: "done",
-        message: "Backup salvo. Atualizando o historico...",
+        message: "Backup salvo. Atualizando o histórico...",
       });
       router.refresh();
     } catch (error) {
@@ -53,7 +53,7 @@ export function StoredBackupRunner() {
         message:
           error instanceof Error
             ? error.message
-            : "Nao foi possivel gerar o backup.",
+            : "Não foi possível gerar o backup.",
       });
     }
   }

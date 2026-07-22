@@ -86,20 +86,20 @@ export default async function CalculoPage({
     : { data: null };
   const creatorName = resolveUserDisplayName(
     creatorData as { full_name?: string | null; username?: string | null; email?: string | null } | null,
-    "Nao informado",
+    "Não informado",
   );
   const successMessage =
     queryParams.success === "created"
-      ? "Simulacao salva com sucesso."
+      ? "Simulação salva com sucesso."
       : queryParams.success === "updated"
-        ? "Simulacao atualizada com sucesso."
+        ? "Simulação atualizada com sucesso."
         : null;
 
   return (
     <>
       <PageHeader
-        title={calculation.client_name || "Nao informado"}
-        description="Relatorio operacional da simulacao revisional pronto para consulta, ajuste e emissao do PDF."
+        title={calculation.client_name || "Não informado"}
+        description="Relatório operacional da simulação revisional pronto para consulta, ajuste e emissão do PDF."
       />
       <div className="space-y-6 p-6">
         {successMessage ? <ClientToast message={successMessage} /> : null}
@@ -116,7 +116,7 @@ export default async function CalculoPage({
             href="/calculos"
             className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
           >
-            Voltar para simulacoes
+            Voltar para simulações
           </Link>
           <CalculationDeleteButton calculationId={calculation.id} />
           {calculation.client_id ? (
@@ -132,18 +132,18 @@ export default async function CalculoPage({
               href={`/pre-vendas/${calculation.pre_sale_id}`}
               className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
             >
-              Abrir pre-venda
+              Abrir pré-venda
             </Link>
           ) : null}
         </div>
 
-        <DetailSection title="Resumo da simulacao">
+        <DetailSection title="Resumo da simulação">
           <DetailItem label="Status" value={<CalculationStatusBadge status={calculation.status} />} />
           <DetailItem
-            label="Tipo da simulacao"
-            value={calculation.simulation_type ? formatPreSaleType(calculation.simulation_type) : "Nao informado"}
+            label="Tipo da simulação"
+            value={calculation.simulation_type ? formatPreSaleType(calculation.simulation_type) : "Não informado"}
           />
-          <DetailItem label="Financeira" value={calculation.financial_institution ?? "Nao informado"} />
+          <DetailItem label="Financeira" value={calculation.financial_institution ?? "Não informado"} />
           <DetailItem label="Criado por" value={creatorName} />
           <DetailItem label="Criado em" value={formatCalculationDateTime(calculation.created_at)} />
           <DetailItem label="Data de atendimento" value={formatCalculationDate(calculation.attendance_date)} />
@@ -151,12 +151,12 @@ export default async function CalculoPage({
         </DetailSection>
 
         <DetailSection title="Dados do cliente">
-          <DetailItem label="Nome" value={calculation.client_name || "Nao informado"} />
+          <DetailItem label="Nome" value={calculation.client_name || "Não informado"} />
           <DetailItem label="CPF" value={formatCpfDigits(calculation.client_cpf)} />
-          <DetailItem label="Telefone" value={calculation.client_phone ?? "Nao informado"} />
-          <DetailItem label="Especialista" value={calculation.specialist_name ?? "Nao informado"} />
-          <DetailItem label="Situacao" value={calculation.situation ?? "Nao informado"} />
-          <DetailItem label="Observacoes" value={calculation.notes ?? "Nao informado"} className="md:col-span-2" />
+          <DetailItem label="Telefone" value={calculation.client_phone ?? "Não informado"} />
+          <DetailItem label="Especialista" value={calculation.specialist_name ?? "Não informado"} />
+          <DetailItem label="Situação" value={calculation.situation ?? "Não informado"} />
+          <DetailItem label="Observações" value={calculation.notes ?? "Não informado"} className="md:col-span-2" />
         </DetailSection>
 
         <DetailSection title="Dados do financiamento">
@@ -166,20 +166,20 @@ export default async function CalculoPage({
           ) : null}
           <DetailItem label="Valor financiado" value={formatCalculationCurrency(calculation.financed_value)} />
           <DetailItem label="Valor atual da parcela" value={formatCalculationCurrency(calculation.current_installment_value)} />
-          <DetailItem label="Quantidade de parcelas" value={String(calculation.installment_count ?? "Nao informado")} />
-          <DetailItem label="Parcelas pagas" value={String(calculation.paid_installments ?? "Nao informado")} />
-          <DetailItem label="Parcelas a pagar" value={String(calculation.remaining_installments ?? "Nao informado")} />
+          <DetailItem label="Quantidade de parcelas" value={String(calculation.installment_count ?? "Não informado")} />
+          <DetailItem label="Parcelas pagas" value={String(calculation.paid_installments ?? "Não informado")} />
+          <DetailItem label="Parcelas a pagar" value={String(calculation.remaining_installments ?? "Não informado")} />
           {calculation.simulation_type === "veiculo" ? (
             <>
-              <DetailItem label="Modelo e marca" value={calculation.vehicle ?? "Nao informado"} />
-              <DetailItem label="Ano" value={calculation.vehicle_year ?? "Nao informado"} />
+              <DetailItem label="Modelo e marca" value={calculation.vehicle ?? "Não informado"} />
+              <DetailItem label="Ano" value={calculation.vehicle_year ?? "Não informado"} />
             </>
           ) : null}
         </DetailSection>
 
         <DetailSection
-          title="Resultado da simulacao"
-          description="Comparativo entre o cenario atual do financiamento e a revisao estimada pela metodologia da planilha."
+          title="Resultado da simulação"
+          description="Comparativo entre o cenário atual do financiamento e a revisão estimada pela metodologia da planilha."
         >
           <DetailItem
             label="Quanto o cliente paga hoje no total"
@@ -194,7 +194,7 @@ export default async function CalculoPage({
             value={formatCalculationCurrency(calculation.estimated_savings)}
           />
           <DetailItem
-            label="Valor atualmente para quitacao"
+            label="Valor atualmente para quitação"
             value={formatCalculationCurrency(calculation.remaining_amount_to_pay)}
           />
           <DetailItem
@@ -204,35 +204,35 @@ export default async function CalculoPage({
             )}
           />
           <DetailItem
-            label="Juros abusivos ja pagos"
+            label="Juros abusivos já pagos"
             value={formatCalculationCurrency(calculation.abusive_interest_paid)}
           />
           <DetailItem
-            label="Divida real"
+            label="Dívida real"
             value={formatCalculationCurrency(calculation.real_debt)}
           />
           {calculation.settlement_amount !== null &&
           calculation.settlement_amount !== undefined ? (
             <DetailItem
-              label="Valor para quitacao"
+              label="Valor para quitação"
               value={formatCalculationCurrency(calculation.settlement_amount)}
             />
           ) : null}
           <DetailItem
-            label="Reducao estimada por parcela restante"
+            label="Redução estimada por parcela restante"
             value={formatCalculationCurrency(
               calculation.installment_reduction_remaining,
             )}
           />
         </DetailSection>
 
-        <DetailSection title="Simulacao simplificada">
+        <DetailSection title="Simulação simplificada">
           <DetailItem
-            label="Divida apos reducao de 30%"
+            label="Dívida após redução de 30%"
             value={formatCalculationCurrency(calculation.debt_after_30_discount)}
           />
           <DetailItem
-            label="Divida apos reducao de 90%"
+            label="Dívida após redução de 90%"
             value={formatCalculationCurrency(calculation.debt_after_90_discount)}
           />
           <DetailItem
@@ -248,11 +248,11 @@ export default async function CalculoPage({
             value={formatCalculationCurrency(calculation.example_50_discount_5x)}
           />
           <DetailItem
-            label="Reducao de 30% sobre o saldo restante"
+            label="Redução de 30% sobre o saldo restante"
             value={formatCalculationCurrency(calculation.discount_30_value)}
           />
           <DetailItem
-            label="Reducao de 90% sobre o saldo restante"
+            label="Redução de 90% sobre o saldo restante"
             value={formatCalculationCurrency(calculation.discount_90_value)}
           />
         </DetailSection>
@@ -260,8 +260,8 @@ export default async function CalculoPage({
         <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
           <h2 className="text-base font-semibold text-slate-950">PDF do cliente</h2>
           <p className="mt-1 text-sm leading-6 text-slate-600">
-            Gere a simulacao de analise de correcao de juros no bucket privado e baixe por signed URL
-            temporaria.
+            Gere a simulação de análise de correção de juros no bucket privado e baixe por signed URL
+            temporária.
           </p>
           <div className="mt-5">
             <CalculationPdfActions
@@ -272,12 +272,12 @@ export default async function CalculoPage({
         </section>
 
         <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="text-base font-semibold text-slate-950">Observacao final</h2>
+          <h2 className="text-base font-semibold text-slate-950">Observação final</h2>
           <p className="mt-3 text-sm leading-6 text-slate-700">
-            Todos os valores informados nesta simulacao foram baseados em taxas
-            medias utilizadas pelo mercado na categoria de financiamentos
-            bancarios. Os verdadeiros valores serao revogados e decididos
-            posteriormente a prestacao de servicos.
+            Todos os valores informados nesta simulação foram baseados em taxas
+            médias utilizadas pelo mercado na categoria de financiamentos
+            bancários. Os verdadeiros valores serão revogados e decididos
+            posteriormente a prestação de serviços.
           </p>
         </section>
       </div>

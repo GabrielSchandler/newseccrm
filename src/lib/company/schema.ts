@@ -19,7 +19,7 @@ const optionalWebsite = optionalText.refine(
     !value ||
     /^https?:\/\/.+/i.test(value) ||
     /^[\w.-]+\.[a-z]{2,}/i.test(value),
-  "Informe um site valido.",
+  "Informe um site válido.",
 );
 
 export const companyProfileSchema = z.object({
@@ -28,7 +28,7 @@ export const companyProfileSchema = z.object({
   cnpj: optionalText.transform((value) => (value ? onlyDigits(value) : null)),
   email: optionalText.refine(
     (value) => !value || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value),
-    "Informe um e-mail valido.",
+    "Informe um e-mail válido.",
   ),
   phone: optionalPhone,
   website: optionalWebsite,

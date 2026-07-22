@@ -5,7 +5,7 @@ function resolveEncryptionKey() {
   const rawKey = process.env.EMAIL_TOKEN_ENCRYPTION_KEY;
 
   if (!rawKey) {
-    throw new Error("EMAIL_TOKEN_ENCRYPTION_KEY nao configurada.");
+    throw new Error("EMAIL_TOKEN_ENCRYPTION_KEY não configurada.");
   }
 
   const base64Key = Buffer.from(rawKey, "base64");
@@ -40,7 +40,7 @@ export function decryptEmailSecret(value: string) {
   const [ivValue, tagValue, encryptedValue] = value.split(".");
 
   if (!ivValue || !tagValue || !encryptedValue) {
-    throw new Error("Token criptografado invalido.");
+    throw new Error("Token criptografado inválido.");
   }
 
   const decipher = createDecipheriv(

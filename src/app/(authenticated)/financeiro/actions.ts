@@ -34,7 +34,7 @@ function requireDate(value: FormDataEntryValue | null, fieldName: string) {
   const text = normalizeText(value);
 
   if (!text) {
-    throw new Error(`${fieldName} e obrigatorio.`);
+    throw new Error(`${fieldName} e obrigatório.`);
   }
 
   return text.slice(0, 10);
@@ -92,7 +92,7 @@ async function requireFinanceAdmin() {
   const context = await getCurrentUserContext();
 
   if (context.role !== "admin") {
-    throw new Error("Apenas usuarios master podem acessar o financeiro.");
+    throw new Error("Apenas usuários master podem acessar o financeiro.");
   }
 
   return context;
@@ -102,7 +102,7 @@ function normalizeDatabaseError(error: { message?: string; code?: string } | Err
   const message = error instanceof Error ? error.message : error?.message;
 
   if (!message) {
-    return "Nao foi possivel concluir a operacao.";
+    return "Não foi possível concluir a operação.";
   }
 
   if (
@@ -110,7 +110,7 @@ function normalizeDatabaseError(error: { message?: string; code?: string } | Err
     message.toLowerCase().includes("schema cache") ||
     message.toLowerCase().includes("does not exist")
   ) {
-    return "As tabelas do financeiro ainda nao existem no Supabase. Rode o SQL docs/sql/financeiro.sql.";
+    return "As tabelas do financeiro ainda não existem no Supabase. Rode o SQL docs/sql/financeiro.sql.";
   }
 
   return message;
@@ -159,7 +159,7 @@ async function fetchFinanceEntity(
   }
 
   if (!data) {
-    throw new Error("Registro financeiro nao encontrado.");
+    throw new Error("Registro financeiro não encontrado.");
   }
 
   return data as Record<string, unknown>;
@@ -212,7 +212,7 @@ export async function createFinanceTransactionAction(formData: FormData) {
     const description = normalizeText(formData.get("description"));
 
     if (!description) {
-      throw new Error("Informe a descricao do lancamento.");
+      throw new Error("Informe a descrição do lançamento.");
     }
 
     const payload = {
@@ -292,7 +292,7 @@ export async function updateFinanceTransactionAction(id: string, formData: FormD
     const description = normalizeText(formData.get("description"));
 
     if (!description) {
-      throw new Error("Informe a descricao do lancamento.");
+      throw new Error("Informe a descrição do lançamento.");
     }
 
     const payload = {
@@ -837,18 +837,18 @@ export async function restoreFinanceAuditLogAction(id: string) {
     }
 
     if (!auditLog) {
-      throw new Error("Log financeiro nao encontrado.");
+      throw new Error("Log financeiro não encontrado.");
     }
 
     if (auditLog.restored_at) {
-      throw new Error("Esta alteracao ja foi restaurada.");
+      throw new Error("Esta alteração já foi restaurada.");
     }
 
     const entityType = auditLog.entity_type as FinanceAuditEntityType;
     const table = financeEntityTables[entityType];
 
     if (!table) {
-      throw new Error("Tipo de registro financeiro invalido.");
+      throw new Error("Tipo de registro financeiro inválido.");
     }
 
     const beforeData = auditLog.before_data as Record<string, unknown> | null;
@@ -856,7 +856,7 @@ export async function restoreFinanceAuditLogAction(id: string) {
     const entityId = getRecordId(afterData) ?? getRecordId(beforeData);
 
     if (!entityId) {
-      throw new Error("Nao foi possivel identificar o registro para restaurar.");
+      throw new Error("Não foi possível identificar o registro para restaurar.");
     }
 
     if (auditLog.action_type === "create") {
@@ -871,7 +871,7 @@ export async function restoreFinanceAuditLogAction(id: string) {
       }
     } else {
       if (!beforeData) {
-        throw new Error("Este log nao possui dados anteriores para restaurar.");
+        throw new Error("Este log não possui dados anteriores para restaurar.");
       }
 
       const { error } = await supabase
@@ -932,7 +932,7 @@ export async function restoreFinanceAuditLogAction(id: string) {
 
     revalidatePath("/financeiro");
     revalidatePath("/financeiro/consultas");
-    redirectWithMessage("success", "Alteracao financeira restaurada.");
+    redirectWithMessage("success", "Alteração financeira restaurada.");
   } catch (error) {
     if (isRedirectError(error)) {
       throw error;
@@ -993,7 +993,7 @@ export async function importFinanceFilesAction(formData: FormData) {
         .single();
 
       if (batchError || !batch) {
-        throw new Error(batchError?.message ?? "Nao foi possivel registrar a importacao.");
+        throw new Error(batchError?.message ?? "Não foi possível registrar a importação.");
       }
 
       const transactionRows = parsed.transactions.map((item) => ({
@@ -1136,7 +1136,7 @@ export async function importFinanceFilesAction(formData: FormData) {
     revalidatePath("/financeiro");
     redirectWithMessage(
       "success",
-      `Importacao concluida: ${totalTransactions} lancamento(s), ${totalSales} venda(s), ${totalChargebacks} chargeback(s).`,
+      `Importação concluída: ${totalTransactions} lançamento(s), ${totalSales} venda(s), ${totalChargebacks} chargeback(s).`,
     );
   } catch (error) {
     if (isRedirectError(error)) {

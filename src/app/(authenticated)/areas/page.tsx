@@ -40,7 +40,7 @@ export default async function AreasPage() {
     <>
       <PageHeader
         title="Tela inicial"
-        description="Escolha a area que voce quer acessar agora."
+        description="Escolha a área que você quer acessar agora."
       />
       <div className="p-6">
         <section className="mx-auto max-w-5xl rounded-lg border border-slate-200 bg-white p-6 shadow-sm sm:p-8">

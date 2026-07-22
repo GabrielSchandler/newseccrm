@@ -59,7 +59,7 @@ async function getAdminProfile() {
 
   if (userError || !user) {
     return {
-      error: jsonError("Sessao invalida.", 401),
+      error: jsonError("Sessão inválida.", 401),
       profile: null,
     };
   }
@@ -72,7 +72,7 @@ async function getAdminProfile() {
 
   if (profileError || !profile) {
     return {
-      error: jsonError("Perfil do usuario nao encontrado.", 403),
+      error: jsonError("Perfil do usuário não encontrado.", 403),
       profile: null,
     };
   }
@@ -95,23 +95,29 @@ async function getAdminProfile() {
 
 function validateBackupManifest(body: RestoreClientRequest, companyId: string) {
   if (body.confirmation !== clientRestoreConfirmationText) {
-    return "Confirmacao invalida. Digite exatamente RESTAURAR CLIENTE.";
+    return "Confirmação inválida. Digite exatamente RESTAURAR CLIENTE.";
   }
 
-  if (body.manifest?.backup_format !== grsBackupFormat) {
-    return "O arquivo selecionado nao esta no formato de backup GRS.";
+  const manifest = body.manifest;
+
+  if (!manifest) {
+    return "O arquivo selecionado não está no formato de backup GRS.";
   }
 
-  if (body.manifest?.backup_format_version !== backupFormatVersion) {
-    return "A versao do backup nao e compativel com esta ferramenta.";
+  if (manifest.backup_format !== grsBackupFormat) {
+    return "O arquivo selecionado não está no formato de backup GRS.";
   }
 
-  if (body.manifest?.company_id !== companyId) {
+  if (manifest.backup_format_version !== backupFormatVersion) {
+    return "A versão do backup não é compatível com esta ferramenta.";
+  }
+
+  if (manifest.company_id !== companyId) {
     return "Este backup pertence a outra empresa ou ambiente.";
   }
 
   if (!body.client?.id) {
-    return "Cliente do backup nao informado.";
+    return "Cliente do backup não informado.";
   }
 
   return null;
@@ -122,7 +128,7 @@ function assertRowsAreObjects(rows: ClientRestoreRows) {
     const tableRows = getRowsByTable(rows, table);
 
     if (!Array.isArray(tableRows) || !tableRows.every(isBackupRow)) {
-      throw new Error(`Tabela ${table} possui linhas invalidas.`);
+      throw new Error(`Tabela ${table} possui linhas inválidas.`);
     }
   }
 }
@@ -144,11 +150,11 @@ function assertClientScope(rows: ClientRestoreRows, clientId: string) {
   const clientIds = new Set(clientRows.map(getRowId).filter(Boolean));
 
   if (!clientIds.has(clientId)) {
-    throw new Error("O pacote nao contem o cadastro do cliente selecionado.");
+    throw new Error("O pacote não contém o cadastro do cliente selecionado.");
   }
 
   if (clientIds.size > 1) {
-    throw new Error("O pacote contem mais de um cliente.");
+    throw new Error("O pacote contém mais de um cliente.");
   }
 
   const preSaleIds = new Set(
@@ -160,7 +166,7 @@ function assertClientScope(rows: ClientRestoreRows, clientId: string) {
 
   for (const row of getRowsByTable(rows, "pre_sales")) {
     if (getRowString(row, "client_id") !== clientId) {
-      throw new Error("O pacote contem pre-venda de outro cliente.");
+      throw new Error("O pacote contém pré-venda de outro cliente.");
     }
   }
 
@@ -172,7 +178,7 @@ function assertClientScope(rows: ClientRestoreRows, clientId: string) {
   ] as const) {
     for (const row of getRowsByTable(rows, table)) {
       if (!preSaleIds.has(getRowString(row, "pre_sale_id"))) {
-        throw new Error(`Tabela ${table} contem dados fora das pre-vendas do cliente.`);
+        throw new Error(`Tabela ${table} contém dados fora das pré-vendas do cliente.`);
       }
     }
   }
@@ -191,11 +197,11 @@ function assertClientScope(rows: ClientRestoreRows, clientId: string) {
       const rowPreSaleId = getRowString(row, "pre_sale_id");
 
       if (rowClientId && rowClientId !== clientId) {
-        throw new Error(`Tabela ${table} contem dados de outro cliente.`);
+        throw new Error(`Tabela ${table} contém dados de outro cliente.`);
       }
 
       if (rowPreSaleId && !preSaleIds.has(rowPreSaleId)) {
-        throw new Error(`Tabela ${table} contem pre-venda fora do cliente.`);
+        throw new Error(`Tabela ${table} contém pré-venda fora do cliente.`);
       }
     }
   }
@@ -205,11 +211,11 @@ function assertClientScope(rows: ClientRestoreRows, clientId: string) {
     const importedPreSaleId = getRowString(row, "imported_pre_sale_id");
 
     if (importedClientId && importedClientId !== clientId) {
-      throw new Error("Importacao RD legada contem outro cliente.");
+      throw new Error("Importação RD legada contém outro cliente.");
     }
 
     if (importedPreSaleId && !preSaleIds.has(importedPreSaleId)) {
-      throw new Error("Importacao RD legada contem pre-venda fora do cliente.");
+      throw new Error("Importação RD legada contém pré-venda fora do cliente.");
     }
   }
 
@@ -218,11 +224,11 @@ function assertClientScope(rows: ClientRestoreRows, clientId: string) {
     const timelineEventId = getRowString(row, "timeline_event_id");
 
     if (matchedClientId && matchedClientId !== clientId) {
-      throw new Error("Importacao RD CRM contem outro cliente.");
+      throw new Error("Importação RD CRM contém outro cliente.");
     }
 
     if (timelineEventId && !timelineIds.has(timelineEventId)) {
-      throw new Error("Importacao RD CRM contem timeline fora do cliente.");
+      throw new Error("Importação RD CRM contém timeline fora do cliente.");
     }
   }
 }
@@ -258,7 +264,7 @@ function assertUploadedStorageFiles(
     }
 
     if (!file.targetPath.startsWith(`restores/${companyId}/`)) {
-      throw new Error("Arquivo enviado fora do caminho seguro de restauracao.");
+      throw new Error("Arquivo enviado fora do caminho seguro de restauração.");
     }
   }
 
@@ -269,7 +275,7 @@ function assertUploadedStorageFiles(
 
         if (value && !uploaded.has(`${spec.bucket}:${value}`)) {
           throw new Error(
-            `Arquivo ${value} nao foi enviado antes da restauracao do banco.`,
+            `Arquivo ${value} não foi enviado antes da restauração do banco.`,
           );
         }
       }
@@ -333,6 +339,12 @@ export async function POST(request: Request) {
       return jsonError(manifestError);
     }
 
+    const manifest = body.manifest;
+
+    if (!manifest) {
+      return jsonError("O arquivo selecionado não está no formato de backup GRS.");
+    }
+
     const rows = body.rows ?? {};
     const clientId = body.client!.id as string;
 
@@ -366,8 +378,8 @@ export async function POST(request: Request) {
       entityId: clientId,
       entityLabel: body.client?.name ?? clientId,
       details: {
-        backup_name: body.manifest?.backup_name ?? null,
-        backup_generated_at: body.manifest?.generated_at ?? null,
+        backup_name: manifest.backup_name ?? null,
+        backup_generated_at: manifest.generated_at ?? null,
         restored_tables: restoredTables,
         restored_rows: countClientRestoreRows(rows),
         uploaded_files: body.uploadedFiles?.length ?? 0,
@@ -384,7 +396,7 @@ export async function POST(request: Request) {
     return jsonError(
       restoreError instanceof Error
         ? restoreError.message
-        : "Nao foi possivel restaurar o cliente.",
+        : "Não foi possível restaurar o cliente.",
       500,
     );
   }

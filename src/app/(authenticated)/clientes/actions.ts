@@ -16,7 +16,7 @@ export type ClientActionState = {
   deletedClientId?: string;
 };
 
-function friendlyError(message = "Nao foi possivel salvar o cliente.") {
+function friendlyError(message = "Não foi possível salvar o cliente.") {
   return {
     ok: false,
     message,
@@ -36,14 +36,14 @@ const clientFieldLabels: Record<keyof ClientPayload, string> = {
   phone_secondary: "Telefone secundario",
   zip_code: "CEP",
   street: "Rua",
-  number: "Numero",
+  number: "Número",
   district: "Bairro",
   city: "Cidade",
   state: "Estado",
-  notes: "Observacoes",
-  commercial_consultant_user_id: "Consultor comercial responsavel",
-  legal_responsible_user_id: "Adm responsavel",
-  legal_consultant_user_id: "Consultor responsavel",
+  notes: "Observações",
+  commercial_consultant_user_id: "Consultor comercial responsável",
+  legal_responsible_user_id: "Adm responsável",
+  legal_consultant_user_id: "Consultor responsável",
 };
 
 function normalizeComparableValue(value: unknown) {
@@ -162,7 +162,7 @@ export async function createClientAction(
   const parsed = clientFormSchema.safeParse(values);
 
   if (!parsed.success) {
-    return friendlyError("Confira os campos obrigatorios do cliente.");
+    return friendlyError("Confira os campos obrigatórios do cliente.");
   }
 
   let createdClientId = "";
@@ -175,13 +175,13 @@ export async function createClientAction(
     if (existingClient?.deleted_at) {
       return {
         ok: false,
-        message: "Ja existe um cliente excluido com este CPF",
+        message: "Já existe um cliente excluído com este CPF",
         deletedClientId: existingClient.id,
       };
     }
 
     if (existingClient) {
-      return friendlyError("Ja existe cliente cadastrado com esse CPF.");
+      return friendlyError("Já existe cliente cadastrado com esse CPF.");
     }
 
     const commercialConsultantExists = await assertCommercialConsultantAvailable(
@@ -217,14 +217,14 @@ export async function createClientAction(
 
     if (error) {
       if (error.code === "23505") {
-        return friendlyError("Ja existe cliente cadastrado com esse CPF.");
+        return friendlyError("Já existe cliente cadastrado com esse CPF.");
       }
 
       return friendlyError(error.message);
     }
 
     if (!data?.id) {
-      return friendlyError("Cliente salvo, mas nao foi possivel abrir o cadastro.");
+      return friendlyError("Cliente salvo, mas não foi possível abrir o cadastro.");
     }
 
     createdClientId = data.id;
@@ -257,7 +257,7 @@ export async function createClientAction(
     });
   } catch (error) {
     return friendlyError(
-      error instanceof Error ? error.message : "Nao foi possivel criar o cliente.",
+      error instanceof Error ? error.message : "Não foi possível criar o cliente.",
     );
   }
 
@@ -273,7 +273,7 @@ export async function updateClientAction(
   const parsed = clientFormSchema.safeParse(values);
 
   if (!parsed.success) {
-    return friendlyError("Confira os campos obrigatorios do cliente.");
+    return friendlyError("Confira os campos obrigatórios do cliente.");
   }
 
   const normalizedChangeNote = requireChangeNote(changeNote);
@@ -294,7 +294,7 @@ export async function updateClientAction(
     );
 
     if (duplicatedCpf) {
-      return friendlyError("Ja existe cliente cadastrado com esse CPF.");
+      return friendlyError("Já existe cliente cadastrado com esse CPF.");
     }
 
     const commercialConsultantExists = await assertCommercialConsultantAvailable(
@@ -316,7 +316,7 @@ export async function updateClientAction(
     const currentClient = currentClientData as Client | null;
 
     if (currentClientError || !currentClient) {
-      return friendlyError("Cliente nao encontrado para atualizacao.");
+      return friendlyError("Cliente não encontrado para atualizacao.");
     }
 
     const changedFields = getChangedClientFields(currentClient, parsed.data);
@@ -345,7 +345,7 @@ export async function updateClientAction(
 
     if (error) {
       if (error.code === "23505") {
-        return friendlyError("Ja existe cliente cadastrado com esse CPF.");
+        return friendlyError("Já existe cliente cadastrado com esse CPF.");
       }
 
       return friendlyError(error.message);
@@ -385,7 +385,7 @@ export async function updateClientAction(
     });
   } catch (error) {
     return friendlyError(
-      error instanceof Error ? error.message : "Nao foi possivel atualizar o cliente.",
+      error instanceof Error ? error.message : "Não foi possível atualizar o cliente.",
     );
   }
 
@@ -419,7 +419,7 @@ export async function addClientTimelineNoteAction(
       .single();
 
     if (clientError || !clientData) {
-      return friendlyError("Cliente nao encontrado para adicionar anotacao.");
+      return friendlyError("Cliente não encontrado para adicionar anotacao.");
     }
 
     await recordClientTimelineEvent({
@@ -448,7 +448,7 @@ export async function addClientTimelineNoteAction(
     });
   } catch (error) {
     return friendlyError(
-      error instanceof Error ? error.message : "Nao foi possivel salvar a anotacao.",
+      error instanceof Error ? error.message : "Não foi possível salvar a anotacao.",
     );
   }
 
@@ -475,7 +475,7 @@ export async function updateClientTimelineNoteAction(
     const canManageAllTimelineNotes = role === "admin" || role === "manager";
 
     if (!canManageAllTimelineNotes && businessArea !== "legal") {
-      return friendlyError("Apenas integrantes do juridico podem editar anotacoes.");
+      return friendlyError("Apenas integrantes do jurídico podem editar anotações.");
     }
 
     const adminClient = createAdminClient();
@@ -495,15 +495,15 @@ export async function updateClientTimelineNoteAction(
     } | null;
 
     if (eventError || !timelineEvent) {
-      return friendlyError("Anotacao nao encontrada.");
+      return friendlyError("Anotacao não encontrada.");
     }
 
     if (!canManageAllTimelineNotes && timelineEvent.actor_user_profile_id !== userProfileId) {
-      return friendlyError("Voce so pode editar anotacoes feitas por voce.");
+      return friendlyError("Você só pode editar anotações feitas por você.");
     }
 
     if (!timelineEvent.note?.trim()) {
-      return friendlyError("Este registro nao possui anotacao editavel.");
+      return friendlyError("Este registro não possui anotacao editavel.");
     }
 
     const editedAt = new Date().toISOString();
@@ -548,7 +548,7 @@ export async function updateClientTimelineNoteAction(
     };
   } catch (error) {
     return friendlyError(
-      error instanceof Error ? error.message : "Nao foi possivel atualizar a anotacao.",
+      error instanceof Error ? error.message : "Não foi possível atualizar a anotacao.",
     );
   }
 }
@@ -562,7 +562,7 @@ export async function deleteClientTimelineNoteAction(
     const canManageAllTimelineNotes = role === "admin" || role === "manager";
 
     if (!canManageAllTimelineNotes && businessArea !== "legal") {
-      return friendlyError("Apenas integrantes do juridico podem remover anotacoes.");
+      return friendlyError("Apenas integrantes do jurídico podem remover anotações.");
     }
 
     const adminClient = createAdminClient();
@@ -582,15 +582,15 @@ export async function deleteClientTimelineNoteAction(
     } | null;
 
     if (eventError || !timelineEvent) {
-      return friendlyError("Anotacao nao encontrada.");
+      return friendlyError("Anotacao não encontrada.");
     }
 
     if (!canManageAllTimelineNotes && timelineEvent.actor_user_profile_id !== userProfileId) {
-      return friendlyError("Voce so pode remover anotacoes feitas por voce.");
+      return friendlyError("Você só pode remover anotações feitas por você.");
     }
 
     if (!timelineEvent.note?.trim()) {
-      return friendlyError("Este registro nao possui anotacao removivel.");
+      return friendlyError("Este registro não possui anotacao removivel.");
     }
 
     const { error: deleteError } = await adminClient
@@ -643,7 +643,7 @@ export async function deleteClientTimelineNoteAction(
     };
   } catch (error) {
     return friendlyError(
-      error instanceof Error ? error.message : "Nao foi possivel remover a anotacao.",
+      error instanceof Error ? error.message : "Não foi possível remover a anotacao.",
     );
   }
 }
@@ -680,7 +680,7 @@ export async function softDeleteClientAction(
     });
   } catch (error) {
     return friendlyError(
-      error instanceof Error ? error.message : "Nao foi possivel excluir o cliente.",
+      error instanceof Error ? error.message : "Não foi possível excluir o cliente.",
     );
   }
 
@@ -695,7 +695,7 @@ export async function reactivateClientAction(
     const { supabase, companyId, role, userProfileId } = await getCurrentUserContext();
 
     if (role !== "admin") {
-      return friendlyError("Apenas usuarios administradores podem reativar clientes.");
+      return friendlyError("Apenas usuários administradores podem reativar clientes.");
     }
 
     const { data: clientData, error: clientError } = await supabase
@@ -708,7 +708,7 @@ export async function reactivateClientAction(
     const client = clientData as { cpf: string } | null;
 
     if (clientError || !client) {
-      return friendlyError("Cliente excluido nao encontrado.");
+      return friendlyError("Cliente excluído não encontrado.");
     }
 
     const activeClientWithCpf = await findClientByCpf(
@@ -719,7 +719,7 @@ export async function reactivateClientAction(
 
     if (activeClientWithCpf && !activeClientWithCpf.deleted_at) {
       return friendlyError(
-        "Nao foi possivel reativar: ja existe cliente ativo com esse CPF.",
+        "Não foi possível reativar: já existe cliente ativo com esse CPF.",
       );
     }
 
@@ -752,7 +752,7 @@ export async function reactivateClientAction(
     });
   } catch (error) {
     return friendlyError(
-      error instanceof Error ? error.message : "Nao foi possivel reativar o cliente.",
+      error instanceof Error ? error.message : "Não foi possível reativar o cliente.",
     );
   }
 

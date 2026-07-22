@@ -23,8 +23,8 @@ export function UserToggleStatusButton({
   function handleClick() {
     const confirmed = window.confirm(
       isActive
-        ? "Deseja desativar este usuario?"
-        : "Deseja reativar este usuario?",
+        ? "Deseja desativar este usuário?"
+        : "Deseja reativar este usuário?",
     );
 
     if (!confirmed) {

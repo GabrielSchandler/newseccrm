@@ -57,12 +57,12 @@ export default async function EditarClientePage({ params }: EditarClientePagePro
     <>
       <PageHeader
         title="Editar cliente"
-        description="Atualize os dados do cliente mantendo o vinculo com a empresa autenticada."
+        description="Atualize os dados do cliente mantendo o vínculo com a empresa autenticada."
       />
       <div className="p-6">
         <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
           <ClientForm
-            submitLabel="Salvar alteracoes"
+            submitLabel="Salvar alterações"
             defaultValues={clientToFormValues(client)}
             onSubmitAction={updateClientAction.bind(null, client.id)}
             commercialConsultants={commercialConsultants}

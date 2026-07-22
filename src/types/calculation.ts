@@ -116,7 +116,7 @@ export const financingCalculationTypes: Array<{
   value: FinancingCalculationType;
   label: string;
 }> = [
-  { value: "emprestimo", label: "Emprestimo" },
-  { value: "veiculo", label: "Veiculo" },
-  { value: "imovel", label: "Imovel" },
+  { value: "emprestimo", label: "Empréstimo" },
+  { value: "veiculo", label: "Veículo" },
+  { value: "imovel", label: "Imóvel" },
 ];

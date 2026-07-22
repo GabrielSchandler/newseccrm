@@ -60,19 +60,19 @@ const loadCurrentUserContext = cache(async () => {
 
   if (profileError) {
     throw new UserProfileContextError(
-      "Nao foi possivel carregar o perfil do usuario autenticado.",
+      "Não foi possível carregar o perfil do usuário autenticado.",
     );
   }
 
   if (!profile) {
     throw new UserProfileContextError(
-      "Existe uma sessao autenticada, mas nao ha perfil vinculado em public.user_profiles.",
+      "Existe uma sessão autenticada, mas não há perfil vinculado em public.user_profiles.",
     );
   }
 
   if (!profile.company_id) {
     throw new UserProfileContextError(
-      "O perfil do usuario autenticado nao possui company_id em public.user_profiles.",
+      "O perfil do usuário autenticado não possui company_id em public.user_profiles.",
     );
   }
 

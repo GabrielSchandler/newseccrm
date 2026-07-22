@@ -55,7 +55,7 @@ export function GenerateDocumentModal({
           : {
               ok: false,
               message:
-                "Este template ainda nao possui arquivo oficial vinculado. Vincule o DOCX ou o PDF oficial no cadastro do template.",
+                "Este template ainda não possui arquivo oficial vinculado. Vincule o DOCX ou o PDF oficial no cadastro do template.",
             };
       setState(result);
       setGeneratedDocumentId(result.documentId ?? "");
@@ -192,7 +192,7 @@ export function GenerateDocumentModal({
                       </select>
                     </div>
                     <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-600">
-                      Contratos oficiais nao usam mais preview HTML para emissao.
+                      Contratos oficiais não usam mais preview HTML para emissão.
                     </div>
                     <button
                       type="button"
@@ -218,10 +218,10 @@ export function GenerateDocumentModal({
                       </p>
                       <p className="mt-1">
                         {selectedTemplate.original_pdf_path
-                          ? "Este template tem PDF oficial. A emissao final vai preencher campos do PDF sem reconverter o layout."
+                          ? "Este template tem PDF oficial. A emissão final vai preencher campos do PDF sem reconverter o layout."
                           : selectedTemplate.original_docx_path
-                            ? "Este template tem DOCX oficial. A emissao final sera gerada a partir do Word original, preservando melhor a estrutura do contrato."
-                            : "Este template ainda nao tem arquivo oficial. Vincule um DOCX ou PDF oficial antes de gerar documentos na pre-venda."}
+                            ? "Este template tem DOCX oficial. A emissão final sera gerada a partir do Word original, preservando melhor a estrutura do contrato."
+                            : "Este template ainda não tem arquivo oficial. Vincule um DOCX ou PDF oficial antes de gerar documentos na pré-venda."}
                       </p>
                     </div>
                   ) : null}
@@ -270,7 +270,7 @@ export function GenerateDocumentModal({
 
                   <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-600">
                     O documento final sera aberto a partir do arquivo oficial gerado.
-                    Para contratos, o CRM nao usa mais o HTML como fonte principal.
+                    Para contratos, o CRM não usa mais o HTML como fonte principal.
                   </div>
                 </>
               ) : (

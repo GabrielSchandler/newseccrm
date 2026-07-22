@@ -48,7 +48,7 @@ function requiredEnv(name: string) {
   const value = process.env[name]?.trim();
 
   if (!value) {
-    throw new Error(`${name} nao configurada.`);
+    throw new Error(`${name} não configurada.`);
   }
 
   return value;
@@ -144,7 +144,7 @@ export async function getMicrosoftProfile(accessToken: string) {
   };
 
   if (!response.ok) {
-    throw new Error(body.error?.message || "Nao foi possivel validar a conta Outlook.");
+    throw new Error(body.error?.message || "Não foi possível validar a conta Outlook.");
   }
 
   return body;
@@ -193,7 +193,7 @@ export async function dispatchMicrosoftEmail(payload: MicrosoftEmailPayload) {
     const body = (await response.json()) as { id?: string; error?: { message?: string } };
 
     if (!response.ok || !body.id) {
-      throw new Error(body.error?.message || "Nao foi possivel criar o rascunho no Outlook.");
+      throw new Error(body.error?.message || "Não foi possível criar o rascunho no Outlook.");
     }
 
     return {
@@ -217,7 +217,7 @@ export async function dispatchMicrosoftEmail(payload: MicrosoftEmailPayload) {
 
   if (!response.ok) {
     const body = (await response.json()) as { error?: { message?: string } };
-    throw new Error(body.error?.message || "Nao foi possivel enviar o email pelo Outlook.");
+    throw new Error(body.error?.message || "Não foi possível enviar o email pelo Outlook.");
   }
 
   return {

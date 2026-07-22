@@ -161,7 +161,7 @@ export default async function AcademyPage({
           <p className="text-sm font-medium text-teal-700">CRM SaaS</p>
           <h1 className="mt-2 text-3xl font-semibold text-slate-950">Academy</h1>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-            O modulo Academy ainda nao esta habilitado para esta empresa.
+            O módulo Academy ainda não está habilitado para esta empresa.
           </p>
         </section>
       </main>
@@ -194,7 +194,7 @@ export default async function AcademyPage({
             <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-600">
               Escolha uma trilha para evoluir com foco. A formacao comercial
               ensina venda consultiva revisional. A trilha de CRM ensina uso
-              profissional da plataforma, registros, documentos e seguranca.
+              profissional da plataforma, registros, documentos e segurança.
             </p>
           </div>
           <div className="rounded-lg border border-teal-200 bg-teal-50 p-4">
@@ -202,10 +202,10 @@ export default async function AcademyPage({
               <ShieldCheck aria-hidden="true" className="mt-0.5 h-5 w-5 text-teal-800" />
               <div>
                 <p className="font-semibold text-teal-950">
-                  Ola, {fullName || "usuario"}.
+                  Olá, {fullName || "usuario"}.
                 </p>
                 <p className="mt-1 text-sm leading-6 text-teal-900">
-                  Seu progresso fica separado por curso para a gestao acompanhar
+                  Seu progresso fica separado por curso para a gestão acompanhar
                   com mais precisao.
                 </p>
               </div>
@@ -217,9 +217,9 @@ export default async function AcademyPage({
       <section className="space-y-6 p-6">
         {!tableReady || params.error === "sql" ? (
           <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-900">
-            O banco ainda nao possui as tabelas do Academy. Rode o SQL
+            O banco ainda não possui as tabelas do Academy. Rode o SQL
             `docs/sql/academy-crm.sql` no Supabase para salvar progresso,
-            provas e relatorios.
+            provas e relatórios.
           </div>
         ) : null}
 

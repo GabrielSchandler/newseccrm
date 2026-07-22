@@ -44,7 +44,7 @@ function getBanner(params: { success?: string; error?: string }) {
   if (params.error === "permission") {
     return {
       tone: "error" as const,
-      text: "Voce nao tem permissao para gerenciar templates de email.",
+      text: "Você não tem permissão para gerenciar templates de email.",
     };
   }
 
@@ -100,7 +100,7 @@ export default async function EmailTemplatesPage({
     <>
       <PageHeader
         title="Templates de email"
-        description="Cadastre os assuntos e corpos usados pelo juridico nos emails para clientes e bancos."
+        description="Cadastre os assuntos e corpos usados pelo jurídico nos emails para clientes e bancos."
       />
       <div className="space-y-6 p-6">
         {banner ? (
@@ -133,7 +133,7 @@ export default async function EmailTemplatesPage({
 
             <div className="space-y-2">
               <label className="text-sm font-semibold text-slate-700" htmlFor="legal_stage">
-                Etapa juridica
+                Etapa jurídica
               </label>
               <select
                 id="legal_stage"
@@ -151,7 +151,7 @@ export default async function EmailTemplatesPage({
 
             <div className="space-y-2">
               <label className="text-sm font-semibold text-slate-700" htmlFor="recipient_mode">
-                Destinatario padrao
+                Destinatario padrão
               </label>
               <select
                 id="recipient_mode"
@@ -181,7 +181,7 @@ export default async function EmailTemplatesPage({
 
             <div className="space-y-2">
               <label className="text-sm font-semibold text-slate-700" htmlFor="cc_template">
-                Cc padrao
+                Cc padrão
               </label>
               <input
                 id="cc_template"
@@ -193,7 +193,7 @@ export default async function EmailTemplatesPage({
 
             <div className="space-y-2">
               <label className="text-sm font-semibold text-slate-700" htmlFor="bcc_template">
-                Cco padrao
+                Cco padrão
               </label>
               <input
                 id="bcc_template"
@@ -246,7 +246,7 @@ export default async function EmailTemplatesPage({
                     <th className="px-6 py-3 font-semibold">Destinatario</th>
                     <th className="px-6 py-3 font-semibold">Status</th>
                     <th className="px-6 py-3 font-semibold">Criado em</th>
-                    <th className="px-6 py-3 font-semibold">Acoes</th>
+                    <th className="px-6 py-3 font-semibold">Ações</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">

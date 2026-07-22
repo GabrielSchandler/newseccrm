@@ -21,7 +21,7 @@ const optionalDisplayText = z
 const optionalUuid = z
   .union([z.string(), z.null(), z.undefined()])
   .transform((value) => (typeof value === "string" && value.trim() ? value.trim() : null))
-  .pipe(z.string().uuid("Selecione um registro valido.").nullable());
+  .pipe(z.string().uuid("Selecione um registro válido.").nullable());
 
 const optionalCpf = z
   .union([z.string(), z.null(), z.undefined()])
@@ -36,13 +36,13 @@ const optionalCpf = z
   });
 
 const optionalPhone = optionalText
-  .refine((value) => isValidPhone(value), "Informe um telefone valido.")
+  .refine((value) => isValidPhone(value), "Informe um telefone válido.")
   .transform((value) => (value ? onlyDigits(value) : null));
 
 const optionalNumber = z
   .union([z.string(), z.number(), z.null(), z.undefined()])
   .transform((value) => parseBrazilianDecimalInput(value))
-  .refine((value) => value === null || !Number.isNaN(value), "Informe um valor valido.")
+  .refine((value) => value === null || !Number.isNaN(value), "Informe um valor válido.")
   .refine((value) => value === null || value >= 0, "Informe um valor maior ou igual a zero.");
 
 const optionalPercentage = optionalNumber.refine(
@@ -60,8 +60,8 @@ const optionalInteger = z
     const digits = String(value).replace(/\D/g, "");
     return digits ? Number(digits) : Number.NaN;
   })
-  .refine((value) => value === null || Number.isInteger(value), "Informe um numero valido.")
-  .refine((value) => value === null || value >= 0, "Informe um numero maior ou igual a zero.");
+  .refine((value) => value === null || Number.isInteger(value), "Informe um número válido.")
+  .refine((value) => value === null || value >= 0, "Informe um número maior ou igual a zero.");
 
 const optionalCalculationType = z
   .union([z.string(), z.null(), z.undefined()])
@@ -69,7 +69,7 @@ const optionalCalculationType = z
   .refine(
     (value): value is FinancingCalculationType | null =>
       value === null || financingCalculationTypes.some((item) => item.value === value),
-    "Selecione um tipo de simulacao valido.",
+    "Selecione um tipo de simulação válido.",
   );
 
 export const financingCalculationFormSchema = z.object({

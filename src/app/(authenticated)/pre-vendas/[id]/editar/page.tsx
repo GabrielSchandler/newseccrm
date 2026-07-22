@@ -98,7 +98,7 @@ export default async function EditarPreVendaPage({ params }: EditarPreVendaPageP
   return (
     <>
       <PageHeader
-        title="Editar pre-venda"
+        title="Editar pré-venda"
         description="Atualize os dados e status da oportunidade."
       />
       <div className="space-y-4 p-6">
@@ -107,7 +107,7 @@ export default async function EditarPreVendaPage({ params }: EditarPreVendaPageP
           <PreSalesForm
             clients={(clientsData ?? []) as ClientOption[]}
             consultants={consultants}
-            submitLabel="Salvar alteracoes"
+            submitLabel="Salvar alterações"
             openingDateLabel={formatDateTime(preSale.created_at)}
             defaultValues={preSaleToFormValues(
               preSale,

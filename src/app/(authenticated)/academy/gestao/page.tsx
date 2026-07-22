@@ -59,7 +59,7 @@ function percentBar(value: number) {
 function statusBadge(status: "not_started" | "in_progress" | "approved") {
   const meta = {
     not_started: {
-      label: "Nao iniciado",
+      label: "Não iniciado",
       className: "bg-slate-100 text-slate-700",
     },
     in_progress: {
@@ -131,7 +131,7 @@ function CourseManagementBlock({
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
         <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
           <Users aria-hidden="true" className="h-5 w-5 text-teal-700" />
-          <p className="mt-3 text-sm font-medium text-slate-600">Usuarios</p>
+          <p className="mt-3 text-sm font-medium text-slate-600">Usuários</p>
           <p className="text-2xl font-semibold text-slate-950">{totalUsers}</p>
         </div>
         <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
@@ -153,7 +153,7 @@ function CourseManagementBlock({
         </div>
         <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
           <Clock aria-hidden="true" className="h-5 w-5 text-teal-700" />
-          <p className="mt-3 text-sm font-medium text-slate-600">Nao iniciados</p>
+          <p className="mt-3 text-sm font-medium text-slate-600">Não iniciados</p>
           <p className="text-2xl font-semibold text-slate-950">{notStartedUsers}</p>
         </div>
       </div>
@@ -161,7 +161,7 @@ function CourseManagementBlock({
       <div className="overflow-hidden rounded-lg border border-slate-200">
         <div className="border-b border-slate-200 bg-slate-50 px-5 py-4">
           <h3 className="text-lg font-semibold text-slate-950">
-            Progresso dos usuarios
+            Progresso dos usuários
           </h3>
           <p className="mt-1 text-sm text-slate-600">
             Acompanhamento separado desta trilha.
@@ -171,8 +171,8 @@ function CourseManagementBlock({
           <table className="min-w-full divide-y divide-slate-200 text-sm">
             <thead className="bg-white text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
               <tr>
-                <th className="px-5 py-3">Usuario</th>
-                <th className="px-5 py-3">Area</th>
+                <th className="px-5 py-3">Usuário</th>
+                <th className="px-5 py-3">Área</th>
                 <th className="px-5 py-3">Status</th>
                 <th className="px-5 py-3">Progresso</th>
                 <th className="px-5 py-3">Nota media</th>
@@ -185,7 +185,7 @@ function CourseManagementBlock({
                   <td className="px-5 py-4">
                     <p className="font-semibold text-slate-950">{row.fullName}</p>
                     <p className="mt-1 text-xs text-slate-500">
-                      {row.email ?? "Email nao informado"}
+                      {row.email ?? "Email não informado"}
                     </p>
                   </td>
                   <td className="px-5 py-4 text-slate-700">
@@ -206,7 +206,7 @@ function CourseManagementBlock({
                     </div>
                     {percentBar(row.progressPercent)}
                     <p className="mt-2 text-xs text-slate-500">
-                      {row.approvedChapters} modulo(s) aprovado(s)
+                      {row.approvedChapters} módulo(s) aprovado(s)
                     </p>
                   </td>
                   <td className="px-5 py-4 font-semibold text-slate-950">
@@ -223,7 +223,7 @@ function CourseManagementBlock({
                     colSpan={6}
                     className="px-5 py-10 text-center text-sm text-slate-500"
                   >
-                    Nenhum usuario ativo encontrado para acompanhar.
+                    Nenhum usuário ativo encontrado para acompanhar.
                   </td>
                 </tr>
               ) : null}
@@ -255,7 +255,7 @@ export default async function AcademyManagementPage() {
             Academy
           </h1>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-            O modulo Academy ainda nao esta habilitado para esta empresa.
+            O módulo Academy ainda não está habilitado para esta empresa.
           </p>
         </section>
       </main>
@@ -287,10 +287,10 @@ export default async function AcademyManagementPage() {
         <div className="mt-2 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <h1 className="text-3xl font-semibold text-slate-950">
-              Academy da gestao
+              Academy da gestão
             </h1>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-              Acompanhe trilhas separadas por curso: Comercial GRS e Operacao
+              Acompanhe trilhas separadas por curso: Comercial GRS e Operação
               do CRM GRS.
             </p>
           </div>
@@ -306,9 +306,9 @@ export default async function AcademyManagementPage() {
       <section className="space-y-6 p-6">
         {hasMissingTable ? (
           <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-900">
-            O banco ainda nao possui as tabelas do Academy. Rode o SQL
+            O banco ainda não possui as tabelas do Academy. Rode o SQL
             `docs/sql/academy-crm.sql` no Supabase para salvar progresso,
-            provas e relatorios.
+            provas e relatórios.
           </div>
         ) : null}
 
@@ -329,7 +329,7 @@ export default async function AcademyManagementPage() {
           <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
             <Users aria-hidden="true" className="h-5 w-5 text-teal-700" />
             <p className="mt-3 text-sm font-medium text-slate-600">
-              Usuarios ativos
+              Usuários ativos
             </p>
             <p className="text-2xl font-semibold text-slate-950">{uniqueUsers}</p>
           </div>

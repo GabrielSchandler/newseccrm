@@ -109,12 +109,12 @@ export default async function PreVendasPage({ searchParams }: PreVendasPageProps
   );
 
   const successMessage =
-    params.success === "deleted" ? "Pre-venda excluida com sucesso." : null;
+    params.success === "deleted" ? "Pré-venda excluída com sucesso." : null;
 
   return (
     <>
       <PageHeader
-        title="Pre-vendas"
+        title="Pré-vendas"
         description="Acompanhe oportunidades comerciais em lista e pipeline."
       />
       <div className="space-y-6 p-6">
@@ -149,7 +149,7 @@ export default async function PreVendasPage({ searchParams }: PreVendasPageProps
                 className="inline-flex items-center justify-center gap-2 rounded-lg bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-800"
               >
                 <Plus className="h-4 w-4" />
-                Nova pre-venda
+                Nova pré-venda
               </Link>
             </div>
           ) : null}

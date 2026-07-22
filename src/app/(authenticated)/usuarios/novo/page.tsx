@@ -33,8 +33,8 @@ export default async function NovoUsuarioPage() {
   return (
     <>
       <PageHeader
-        title="Novo usuario"
-        description="Crie um acesso com login proprio para a empresa respeitando o limite de licencas contratado."
+        title="Novo usuário"
+        description="Crie um acesso com login próprio para a empresa respeitando o limite de licencas contratado."
       />
       <div className="space-y-6 p-6">
         <div className="rounded-lg border border-slate-200 bg-white p-4 text-sm text-slate-700 shadow-sm">
@@ -42,7 +42,7 @@ export default async function NovoUsuarioPage() {
         </div>
         <UserForm
           mode="create"
-          submitLabel="Criar usuario"
+          submitLabel="Criar usuário"
           onSubmitAction={createCompanyUserAction}
           canAssignAdmin
         />

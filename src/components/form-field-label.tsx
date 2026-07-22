@@ -14,7 +14,7 @@ const requirementMeta: Record<
   { text: string; className: string }
 > = {
   required: {
-    text: "Obrigatorio",
+    text: "Obrigatório",
     className: "border-red-200 bg-red-50 text-red-700",
   },
   optional: {
@@ -26,7 +26,7 @@ const requirementMeta: Record<
     className: "border-amber-200 bg-amber-50 text-amber-700",
   },
   legal: {
-    text: "Juridico",
+    text: "Jurídico",
     className: "border-violet-200 bg-violet-50 text-violet-700",
   },
 };

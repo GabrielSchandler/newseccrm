@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
     const token = await exchangeMicrosoftCode(code);
 
     if (!token.refresh_token) {
-      throw new Error("A Microsoft nao retornou refresh token. Verifique a permissao offline_access.");
+      throw new Error("A Microsoft não retornou refresh token. Verifique a permissão offline_access.");
     }
 
     const integration = await persistMicrosoftIntegration({

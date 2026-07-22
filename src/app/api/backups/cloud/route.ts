@@ -14,7 +14,7 @@ export async function POST() {
   } = await supabase.auth.getUser();
 
   if (userError || !user) {
-    return NextResponse.json({ error: "Sessao invalida." }, { status: 401 });
+    return NextResponse.json({ error: "Sessão inválida." }, { status: 401 });
   }
 
   const { data: profile, error: profileError } = await supabase
@@ -25,7 +25,7 @@ export async function POST() {
 
   if (profileError || !profile) {
     return NextResponse.json(
-      { error: "Perfil do usuario nao encontrado." },
+      { error: "Perfil do usuário não encontrado." },
       { status: 403 },
     );
   }
@@ -41,7 +41,7 @@ export async function POST() {
 
   if (!companyId) {
     return NextResponse.json(
-      { error: "Usuario sem empresa vinculada para gerar backup." },
+      { error: "Usuário sem empresa vinculada para gerar backup." },
       { status: 400 },
     );
   }
@@ -60,7 +60,7 @@ export async function POST() {
         error:
           error instanceof Error
             ? error.message
-            : "Nao foi possivel gerar o backup.",
+            : "Não foi possível gerar o backup.",
       },
       { status: 500 },
     );

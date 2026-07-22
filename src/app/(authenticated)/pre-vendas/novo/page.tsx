@@ -37,7 +37,7 @@ export default async function NovaPreVendaPage() {
   return (
     <>
       <PageHeader
-        title="Nova pre-venda"
+        title="Nova pré-venda"
         description="Crie uma oportunidade vinculada a um cliente e consultor da empresa."
       />
       <div className="p-6">
@@ -45,7 +45,7 @@ export default async function NovaPreVendaPage() {
           <PreSalesForm
             clients={(clientsData ?? []) as ClientOption[]}
             consultants={consultants}
-            submitLabel="Cadastrar pre-venda"
+            submitLabel="Cadastrar pré-venda"
             openingDateLabel="Sera definida ao salvar"
             onSubmitAction={createPreSaleAction}
           />

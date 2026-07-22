@@ -14,12 +14,12 @@ export const businessAreaOptions: Array<{
   {
     value: "commercial",
     label: "Comercial",
-    description: "Pre-vendas, clientes, simulacoes, documentos e contratos.",
+    description: "Pré-vendas, clientes, simulações, documentos e contratos.",
   },
   {
     value: "legal",
-    label: "Juridico",
-    description: "Clientes, pre-vendas e documentos da frente juridica da empresa.",
+    label: "Jurídico",
+    description: "Clientes, pré-vendas e documentos da frente jurídica da empresa.",
   },
 ];
 
@@ -31,26 +31,26 @@ export const workspaceOptions: Array<{
 }> = [
   {
     value: "management",
-    label: "Gestao",
-    description: "Dashboard, usuarios, empresa, templates, contratos e configuracoes.",
+    label: "Gestão",
+    description: "Dashboard, usuários, empresa, templates, contratos e configurações.",
     href: "/dashboard",
   },
   {
     value: "commercial",
     label: "Comercial",
-    description: "Clientes, pre-vendas, simulacoes e documentos da operacao comercial.",
+    description: "Clientes, pré-vendas, simulações e documentos da operação comercial.",
     href: "/comercial",
   },
   {
     value: "legal",
-    label: "Juridico",
-    description: "Clientes, pre-vendas e documentos gerados da operacao juridica.",
+    label: "Jurídico",
+    description: "Clientes, pré-vendas e documentos gerados da operação jurídica.",
     href: "/juridico",
   },
   {
     value: "finance",
     label: "Financeiro",
-    description: "Controle financeiro, importacao de planilhas e resultados por periodo.",
+    description: "Controle financeiro, importação de planilhas e resultados por período.",
     href: "/financeiro",
   },
 ];
@@ -109,7 +109,7 @@ export function resolveCurrentWorkspace(
 }
 
 export function formatBusinessAreaLabel(area: CompanyBusinessArea | string | null | undefined) {
-  return normalizeBusinessArea(area) === "legal" ? "Juridico" : "Comercial";
+  return normalizeBusinessArea(area) === "legal" ? "Jurídico" : "Comercial";
 }
 
 const managementPrefixes = [

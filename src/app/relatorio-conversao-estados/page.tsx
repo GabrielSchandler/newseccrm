@@ -15,7 +15,7 @@ export const dynamic = "force-static";
 
 export const metadata: Metadata = {
   title: "Vendas por UF fiscal | GRS",
-  description: "Dashboard estatico com clientes e conversao por UF fiscal do CPF.",
+  description: "Dashboard estatico com clientes e conversão por UF fiscal do CPF.",
 };
 
 type RegionMetric = {
@@ -52,7 +52,7 @@ const totals = {
 const regionMetrics: RegionMetric[] = [
   {
     label: "SP",
-    name: "Sao Paulo",
+    name: "São Paulo",
     precise: true,
     clients: 35,
     commercialClients: 27,
@@ -192,7 +192,7 @@ const regionMetrics: RegionMetric[] = [
   },
   {
     label: "Sem CPF",
-    name: "Sem CPF valido",
+    name: "Sem CPF válido",
     precise: false,
     clients: 1,
     commercialClients: 1,
@@ -308,7 +308,7 @@ function RegionBar({ region }: { region: RegionMetric }) {
         <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-stone-500">
           <span>{formatNumber(region.clients)} clientes</span>
           <span>Comercial {formatNumber(region.commercialClients)}</span>
-          <span>Juridico {formatNumber(region.juridicoClients)}</span>
+          <span>Jurídico {formatNumber(region.juridicoClients)}</span>
         </div>
       </div>
 
@@ -382,7 +382,7 @@ function RegionCards() {
             </div>
             <div>
               <dt className="text-xs font-semibold uppercase tracking-normal text-stone-500">
-                Juridico
+                Jurídico
               </dt>
               <dd className="mt-1 font-semibold text-stone-800">
                 {formatCurrency(region.ticketJuridico)}
@@ -406,7 +406,7 @@ function RegionTable() {
             <th className="px-4 py-3">Total convertido</th>
             <th className="px-4 py-3">Ticket total</th>
             <th className="px-4 py-3">Ticket comercial</th>
-            <th className="px-4 py-3">Ticket juridico</th>
+            <th className="px-4 py-3">Ticket jurídico</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-stone-100">
@@ -451,16 +451,16 @@ export default function StateConversionReportPage() {
               GRS - base de vendas
             </p>
             <h1 className="mt-4 max-w-4xl text-3xl font-semibold leading-tight sm:text-4xl">
-              Clientes e conversao por UF fiscal do CPF
+              Clientes e conversão por UF fiscal do CPF
             </h1>
             <p className="mt-4 max-w-3xl text-sm leading-6 text-stone-300 sm:text-base">
-              Analise feita somente com a aba{" "}
+              Análise feita somente com a aba{" "}
               <code className="rounded bg-white/10 px-1.5 py-0.5">
                 CONSOLIDADO
               </code>{" "}
               da base de vendas. Valores calculados pelo campo{" "}
               <code className="rounded bg-white/10 px-1.5 py-0.5">META</code>,
-              por cliente unico.
+              por cliente único.
             </p>
           </div>
 
@@ -472,10 +472,10 @@ export default function StateConversionReportPage() {
               />
               <div>
                 <p className="text-sm font-semibold text-white">
-                  Campo de estado nao existe na venda
+                  Campo de estado não existe na venda
                 </p>
                 <p className="mt-2 text-sm leading-6 text-stone-300">
-                  A base de vendas nao tem UF, DDD, cidade ou telefone. Para
+                  A base de vendas não tem UF, DDD, cidade ou telefone. Para
                   entregar uma leitura geografica sem leads, usei o 9o digito do
                   CPF, que indica UF ou grupo fiscal.
                 </p>
@@ -497,7 +497,7 @@ export default function StateConversionReportPage() {
           <MetricCard
             label="Total convertido"
             value={formatCurrency(totals.total)}
-            detail={`${formatCurrency(totals.commercial)} comercial + ${formatCurrency(totals.juridico)} juridico.`}
+            detail={`${formatCurrency(totals.commercial)} comercial + ${formatCurrency(totals.juridico)} jurídico.`}
             icon={BadgeDollarSign}
             tone="blue"
           />
@@ -521,19 +521,19 @@ export default function StateConversionReportPage() {
           <MetricCard
             label="Ticket comercial"
             value={formatCurrency(totals.ticketComercial)}
-            detail={`${formatNumber(totals.commercialClients)} clientes com conversao comercial.`}
+            detail={`${formatNumber(totals.commercialClients)} clientes com conversão comercial.`}
             icon={FileSpreadsheet}
             tone="green"
           />
           <MetricCard
-            label="Ticket juridico"
+            label="Ticket jurídico"
             value={formatCurrency(totals.ticketJuridico)}
-            detail={`${formatNumber(totals.juridicoClients)} clientes com conversao juridica.`}
+            detail={`${formatNumber(totals.juridicoClients)} clientes com conversão juridica.`}
             icon={Scale}
             tone="amber"
           />
           <MetricCard
-            label="Periodo"
+            label="Período"
             value={period}
             detail="Data minima e maxima encontradas na aba de vendas."
             icon={DatabaseZap}
@@ -549,7 +549,7 @@ export default function StateConversionReportPage() {
                   Top 5 por total convertido
                 </h2>
                 <p className="mt-1 text-sm leading-6 text-stone-600">
-                  Ranking por cliente unico, somando comercial e juridico pelo
+                  Ranking por cliente único, somando comercial e jurídico pelo
                   campo META.
                 </p>
               </div>
@@ -571,22 +571,22 @@ export default function StateConversionReportPage() {
                 className="h-5 w-5 text-emerald-600"
               />
               <h2 className="text-lg font-semibold text-stone-950">
-                Como ler esta analise
+                Como ler esta análise
               </h2>
             </div>
             <div className="mt-4 space-y-4 text-sm leading-6 text-stone-700">
               <p>
-                Clientes foram deduplicados por CPF. Quando o CPF nao existe,
+                Clientes foram deduplicados por CPF. Quando o CPF não existe,
                 usei nome normalizado como chave de cliente.
               </p>
               <p>
-                O CPF permite identificar a regiao fiscal de emissao. SP, MG e
+                O CPF permite identificar a regiao fiscal de emissão. SP, MG e
                 RS aparecem como UF exata; os demais digitos agrupam mais de um
                 estado, entao aparecem como grupo fiscal.
               </p>
               <p>
                 Para ter estado real do cliente, a venda precisa registrar UF,
-                cidade, DDD ou telefone no proprio CONSOLIDADO.
+                cidade, DDD ou telefone no próprio CONSOLIDADO.
               </p>
             </div>
           </article>
@@ -596,7 +596,7 @@ export default function StateConversionReportPage() {
           <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
             <div>
               <h2 className="text-lg font-semibold text-stone-950">
-                Clientes, conversao e tickets por UF fiscal
+                Clientes, conversão e tickets por UF fiscal
               </h2>
               <p className="mt-1 text-sm text-stone-600">
                 Tabela completa usando somente a base de vendas.

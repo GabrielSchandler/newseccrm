@@ -43,12 +43,12 @@ export default async function ContratosPage() {
     <>
       <PageHeader
         title="Contratos"
-        description="Contratos gerados a partir das pre-vendas da empresa."
+        description="Contratos gerados a partir das pré-vendas da empresa."
       />
       <div className="space-y-6 p-6">
         <div className="rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600 shadow-sm">
-          Esta tela lista documentos gerados do tipo contrato. A gestao juridica
-          completa, assinatura e versionamento podem entrar na proxima etapa.
+          Esta tela lista documentos gerados do tipo contrato. A gestão jurídica
+          completa, assinatura e versionamento podem entrar na próxima etapa.
         </div>
 
         {error ? (
@@ -65,7 +65,7 @@ export default async function ContratosPage() {
                     <th className="px-4 py-3 font-semibold">Cliente</th>
                     <th className="px-4 py-3 font-semibold">Template</th>
                     <th className="px-4 py-3 font-semibold">Data</th>
-                    <th className="px-4 py-3 font-semibold">Acoes</th>
+                    <th className="px-4 py-3 font-semibold">Ações</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">

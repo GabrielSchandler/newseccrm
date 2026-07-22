@@ -40,8 +40,8 @@ export function ClientDocumentUpload({
   const hintText = useMemo(
     () =>
       preSaleId
-        ? "Este arquivo sera vinculado ao cliente e tambem a esta operacao."
-        : "Este arquivo sera vinculado ao cliente.",
+        ? "Este arquivo será vinculado ao cliente e também a esta operação."
+        : "Este arquivo será vinculado ao cliente.",
     [preSaleId],
   );
 
@@ -97,7 +97,7 @@ export function ClientDocumentUpload({
           await cancelClientDocumentsBulkUploadAction(uploadedPaths);
           setState({
             ok: false,
-            message: "Um arquivo selecionado nao foi encontrado. Selecione novamente.",
+            message: "Um arquivo selecionado não foi encontrado. Selecione novamente.",
           });
           return;
         }
@@ -200,13 +200,13 @@ export function ClientDocumentUpload({
         </div>
 
         <div className="space-y-2">
-          <FormFieldLabel htmlFor="title" label="Titulo" requirement="optional" />
+          <FormFieldLabel htmlFor="title" label="Título" requirement="optional" />
           <input
             id="title"
             value={title}
             disabled={isPending}
             className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
-            placeholder="Opcional para envio unico. Em massa, o nome do arquivo vira titulo."
+            placeholder="Opcional para envio único. Em massa, o nome do arquivo vira título."
             onChange={(event) => setTitle(event.target.value)}
           />
         </div>
@@ -214,7 +214,7 @@ export function ClientDocumentUpload({
         <div className="space-y-2">
           <FormFieldLabel
             htmlFor="description"
-            label="Descricao"
+            label="Descrição"
             requirement="optional"
           />
           <input
@@ -222,7 +222,7 @@ export function ClientDocumentUpload({
             value={description}
             disabled={isPending}
             className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
-            placeholder="Observacao opcional"
+            placeholder="Observação opcional"
             onChange={(event) => setDescription(event.target.value)}
           />
         </div>

@@ -35,7 +35,7 @@ export async function persistMicrosoftIntegration({
   const email = profile.mail || profile.userPrincipalName;
 
   if (!email) {
-    throw new Error("A conta Microsoft conectada nao possui email.");
+    throw new Error("A conta Microsoft conectada não possui email.");
   }
 
   const adminClient = createAdminClient();
@@ -98,7 +98,7 @@ export async function getValidMicrosoftAccessToken(
   const integration = await getMicrosoftIntegrationForUser(companyId, userProfileId);
 
   if (!integration) {
-    throw new Error("O Adm responsavel ainda nao conectou o Outlook.");
+    throw new Error("O Adm responsável ainda não conectou o Outlook.");
   }
 
   if (new Date(integration.token_expires_at).getTime() > Date.now()) {

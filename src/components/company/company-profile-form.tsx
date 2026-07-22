@@ -103,7 +103,7 @@ export function CompanyProfileForm({ defaultValues }: CompanyProfileFormProps) {
           <input
             name="cnpj"
             defaultValue={defaultValues.cnpj}
-            placeholder="Somente numeros ou formatado"
+            placeholder="Somente números ou formatado"
             className="w-full rounded-lg border border-slate-300 px-3 py-2.5 outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
           />
         </div>
@@ -153,7 +153,7 @@ export function CompanyProfileForm({ defaultValues }: CompanyProfileFormProps) {
           />
         </div>
         <div className="space-y-2 text-sm text-slate-700">
-          <FormFieldLabel label="Numero" requirement="optional" />
+          <FormFieldLabel label="Número" requirement="optional" />
           <input
             name="number"
             defaultValue={defaultValues.number}

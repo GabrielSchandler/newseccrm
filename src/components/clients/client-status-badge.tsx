@@ -16,7 +16,7 @@ export function ClientStatusBadge({ client }: ClientStatusBadgeProps) {
           : "border-teal-200 bg-teal-50 text-teal-700"
       }`}
     >
-      {deleted ? "Excluido" : "Ativo"}
+      {deleted ? "Excluído" : "Ativo"}
     </span>
   );
 }

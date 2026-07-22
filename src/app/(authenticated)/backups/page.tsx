@@ -10,9 +10,9 @@ import { FullRestoreTool } from "./full-restore-tool";
 import { RestoreDiagnostics } from "./restore-diagnostics";
 
 const backupItems = [
-  "Dados da empresa, usuarios, clientes, pre-vendas e pagamentos.",
-  "Templates, documentos gerados, simulacoes e arquivos anexados aos clientes.",
-  "Linha do tempo, acompanhamento do cliente, logs, emails e registros de importacao.",
+  "Dados da empresa, usuários, clientes, pré-vendas e pagamentos.",
+  "Templates, documentos gerados, simulações e arquivos anexados aos clientes.",
+  "Linha do tempo, acompanhamento do cliente, logs, emails e registros de importação.",
 ];
 const runningTimeoutMinutes = 20;
 
@@ -137,19 +137,19 @@ export default async function BackupsPage() {
           <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-teal-700">
-                Backup automatico fora da producao
+                Backup automático fora da produção
               </p>
               <h2 className="mt-2 text-2xl font-semibold text-slate-950">
                 Backups privados guardados no GitHub por 7 dias
               </h2>
               <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
-                O GitHub Actions gera o backup completo diariamente, publica o
-                ZIP em uma Release privada e registra o download nesta pagina.
-                O processo nao depende do navegador, do seu computador nem do
+                O GitHub Actions gera o backup completo diariamente, pública o
+                ZIP em uma Release privada e registra o download nesta página.
+                O processo não depende do navegador, do seu computador nem do
                 limite de execucao da Vercel.
               </p>
               <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
-                Para disparar fora do horario automatico, acesse o workflow
+                Para disparar fora do horario automático, acesse o workflow
                 Backup CRM no GitHub e use Run workflow.
               </p>
 
@@ -186,13 +186,13 @@ export default async function BackupsPage() {
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-teal-700">
-                Historico
+                Histórico
               </p>
               <h2 className="mt-2 text-xl font-semibold text-slate-950">
                 Backups salvos
               </h2>
               <p className="mt-2 text-sm text-slate-600">
-                Os arquivos automaticos ficam disponiveis por 7 dias nas
+                Os arquivos automaticos ficam disponíveis por 7 dias nas
                 Releases privadas do GitHub.
               </p>
             </div>
@@ -201,7 +201,7 @@ export default async function BackupsPage() {
           {error ? (
             <div className="mt-5 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
               {isMissingBackupTable(error)
-                ? "A estrutura de backups ainda nao existe. Rode o SQL docs/sql/backups.sql no Supabase e recarregue a pagina."
+                ? "A estrutura de backups ainda não existe. Rode o SQL docs/sql/backups.sql no Supabase e recarregue a página."
                 : error.message}
             </div>
           ) : (
@@ -216,7 +216,7 @@ export default async function BackupsPage() {
                       <th className="px-4 py-3 font-semibold">Tamanho</th>
                       <th className="px-4 py-3 font-semibold">Gerado em</th>
                       <th className="px-4 py-3 font-semibold">Expira em</th>
-                      <th className="px-4 py-3 font-semibold">Acao</th>
+                      <th className="px-4 py-3 font-semibold">Ação</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
@@ -234,13 +234,13 @@ export default async function BackupsPage() {
                             ) : null}
                             {displayStatus === "timeout" ? (
                               <p className="mt-1 max-w-md text-xs font-normal text-red-700">
-                                A geracao passou de {runningTimeoutMinutes} minutos e
+                                A geração passou de {runningTimeoutMinutes} minutos e
                                 provavelmente foi interrompida pela Vercel.
                               </p>
                             ) : null}
                           </td>
                           <td className="px-4 py-3 text-slate-700">
-                            {job.trigger_type === "scheduled" ? "Automatico" : "Manual"}
+                            {job.trigger_type === "scheduled" ? "Automático" : "Manual"}
                           </td>
                           <td className="px-4 py-3">
                             <span
@@ -291,7 +291,7 @@ export default async function BackupsPage() {
                                   : "Baixar"}
                               </a>
                             ) : (
-                              <span className="text-xs text-slate-400">Indisponivel</span>
+                              <span className="text-xs text-slate-400">Indisponível</span>
                             )}
                           </td>
                         </tr>
@@ -318,12 +318,12 @@ export default async function BackupsPage() {
                 Backup manual completo
               </p>
               <h2 className="mt-2 text-xl font-semibold text-slate-950">
-                Baixe uma copia completa com documentos para guardar fora da plataforma
+                Baixe uma cópia completa com documentos para guardar fora da plataforma
               </h2>
               <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
                 Esse backup monta o ZIP no seu computador e segue o mesmo
-                formato do backup automatico. Use quando quiser guardar uma
-                copia local completa antes de uma mudanca importante ou para
+                formato do backup automático. Use quando quiser guardar uma
+                cópia local completa antes de uma mudança importante ou para
                 sua rotina mensal.
               </p>
               <BackupGenerator />
@@ -334,7 +334,7 @@ export default async function BackupsPage() {
                 Importante
               </h3>
               <p className="mt-3 text-sm leading-6 text-slate-600">
-                Se fechar a aba durante essa geracao, o processo manual e
+                Se fechar a aba durante essa geração, o processo manual e
                 interrompido. Para o backup salvo automaticamente, use a lista
                 de backups acima.
               </p>
@@ -346,15 +346,15 @@ export default async function BackupsPage() {
           <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-teal-700">
-                Restauracao
+                Restauração
               </p>
               <h2 className="mt-2 text-xl font-semibold text-slate-950">
                 Diagnosticar backup antes de restaurar
               </h2>
               <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
-                Esta primeira ferramenta confere se o ZIP esta no padrao GRS,
+                Esta primeira ferramenta confere se o ZIP esta no padrão GRS,
                 se o manifesto existe, se as tabelas esperadas estao presentes
-                e se os arquivos foram embutidos. Ela ainda nao altera dados do
+                e se os arquivos foram embutidos. Ela ainda não altera dados do
                 CRM.
               </p>
               <RestoreDiagnostics />
@@ -365,10 +365,10 @@ export default async function BackupsPage() {
                 Modo seguro
               </h3>
               <p className="mt-3 text-sm leading-6 text-amber-900">
-                O diagnostico nao altera dados do CRM. A restauracao por
-                cliente esta disponivel abaixo; a restauracao completa do
-                sistema sera feita em uma etapa separada, com relatorio de
-                impacto proprio.
+                O diagnóstico não altera dados do CRM. A restauração por
+                cliente está disponível abaixo; a restauração completa do
+                sistema sera feita em uma etapa separada, com relatório de
+                impacto próprio.
               </p>
             </div>
           </div>
@@ -378,15 +378,15 @@ export default async function BackupsPage() {
           <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-red-700">
-                Restauracao por cliente
+                Restauração por cliente
               </p>
               <h2 className="mt-2 text-xl font-semibold text-slate-950">
-                Recuperar cadastro, historico, pre-vendas e arquivos de um cliente
+                Recuperar cadastro, histórico, pré-vendas e arquivos de um cliente
               </h2>
               <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
                 Use quando precisar recuperar somente um cliente do backup. O
                 sistema restaura os dados vinculados a ele e grava os arquivos
-                recuperados em um caminho novo de restauracao, sem apagar
+                recuperados em um caminho novo de restauração, sem apagar
                 documentos atuais do Storage.
               </p>
               <ClientRestoreTool />
@@ -394,12 +394,12 @@ export default async function BackupsPage() {
 
             <div className="rounded-lg border border-red-200 bg-red-50 p-5">
               <h3 className="text-sm font-semibold text-red-950">
-                Acao sensivel
+                Ação sensível
               </h3>
               <p className="mt-3 text-sm leading-6 text-red-900">
-                Esta ferramenta faz upsert: se o registro do cliente ja existir,
-                ele pode ser sobrescrito pelo conteudo do backup. Por isso ela
-                exige selecao do cliente, previa e confirmacao manual.
+                Esta ferramenta faz upsert: se o registro do cliente já existir,
+                ele pode ser sobrescrito pelo conteúdo do backup. Por isso ela
+                exige seleção do cliente, prévia e confirmação manual.
               </p>
             </div>
           </div>
@@ -409,7 +409,7 @@ export default async function BackupsPage() {
           <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-red-700">
-                Restauracao completa
+                Restauração completa
               </p>
               <h2 className="mt-2 text-xl font-semibold text-slate-950">
                 Restaurar todo o sistema a partir de um backup completo
@@ -418,7 +418,7 @@ export default async function BackupsPage() {
                 Use somente em caso de perda grave de dados ou migracao
                 controlada. A ferramenta envia os arquivos do ZIP para os
                 buckets originais e substitui os dados da empresa atual pelo
-                conteudo do backup.
+                conteúdo do backup.
               </p>
               <FullRestoreTool />
             </div>
@@ -428,9 +428,9 @@ export default async function BackupsPage() {
                 Antes de restaurar
               </h3>
               <p className="mt-3 text-sm leading-6 text-red-900">
-                Baixe e guarde um backup atual antes de executar esta acao. A
-                restauracao completa apaga os dados atuais da empresa nas
-                tabelas do CRM e reinsere o conteudo do ZIP selecionado.
+                Baixe e guarde um backup atual antes de executar esta ação. A
+                restauração completa apaga os dados atuais da empresa nas
+                tabelas do CRM e reinsere o conteúdo do ZIP selecionado.
               </p>
             </div>
           </div>
@@ -439,7 +439,7 @@ export default async function BackupsPage() {
         <section className="grid gap-4 lg:grid-cols-3">
           <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
             <h3 className="text-sm font-semibold text-slate-950">
-              Dados sensiveis
+              Dados sensíveis
             </h3>
             <p className="mt-2 text-sm leading-6 text-slate-600">
               O ZIP pode conter documentos, dados pessoais, emails e tokens
@@ -463,7 +463,7 @@ export default async function BackupsPage() {
             </h3>
             <p className="mt-2 text-sm leading-6 text-slate-600">
               Dentro do ZIP existe um arquivo manifest.json com a quantidade de
-              linhas exportadas e possiveis avisos sobre arquivos nao baixados.
+              linhas exportadas e possíveis avisos sobre arquivos não baixados.
             </p>
           </div>
         </section>

@@ -116,7 +116,7 @@ export function CalculationPdfActions({
           className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-70"
         >
           <Eye className="h-4 w-4" />
-          {hasPdf ? "Visualizar PDF" : "PDF indisponivel"}
+          {hasPdf ? "Visualizar PDF" : "PDF indisponível"}
         </button>
         <button
           type="button"
@@ -125,7 +125,7 @@ export function CalculationPdfActions({
           className="inline-flex items-center gap-2 rounded-lg bg-teal-700 px-3 py-2 text-sm font-semibold text-white transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-70"
         >
           <FileDown className="h-4 w-4" />
-          {hasPdf ? "Baixar PDF" : "PDF indisponivel"}
+          {hasPdf ? "Baixar PDF" : "PDF indisponível"}
         </button>
       </div>
       {state ? (

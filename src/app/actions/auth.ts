@@ -88,14 +88,14 @@ export async function signInWithLoginAction(
       if (error || !data?.email) {
         return {
           ok: false,
-          message: "Nao foi possivel entrar. Confira login e senha.",
+          message: "Não foi possível entrar. Confira login e senha.",
         };
       }
 
       if (data.is_active === false) {
         return {
           ok: false,
-          message: "Nao foi possivel entrar. Confira login e senha.",
+          message: "Não foi possível entrar. Confira login e senha.",
         };
       }
 
@@ -111,7 +111,7 @@ export async function signInWithLoginAction(
     if (error) {
       return {
         ok: false,
-        message: "Nao foi possivel entrar. Confira login e senha.",
+        message: "Não foi possível entrar. Confira login e senha.",
       };
     }
 
@@ -135,7 +135,7 @@ export async function signInWithLoginAction(
   } catch {
     return {
       ok: false,
-      message: "Nao foi possivel entrar agora. Tente novamente.",
+      message: "Não foi possível entrar agora. Tente novamente.",
     };
   }
 }

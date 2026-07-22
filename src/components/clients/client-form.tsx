@@ -47,7 +47,7 @@ const fields = [
   { name: "phone_secondary", label: "Telefone secundario", type: "text" },
   { name: "zip_code", label: "CEP", type: "text", required: true },
   { name: "street", label: "Rua", type: "text", required: true },
-  { name: "number", label: "Numero", type: "text", required: true },
+  { name: "number", label: "Número", type: "text", required: true },
   { name: "district", label: "Bairro", type: "text", required: true },
   { name: "city", label: "Cidade", type: "text", required: true },
   { name: "state", label: "Estado", type: "text", required: true },
@@ -143,7 +143,7 @@ export function ClientForm({
   const zipCodeValue = watch("zip_code");
 
   function confirmNavigation() {
-    return !isDirty || window.confirm("Existem alteracoes nao salvas. Deseja sair mesmo assim?");
+    return !isDirty || window.confirm("Existem alterações não salvas. Deseja sair mesmo assim?");
   }
 
   const fetchAddressByZipCode = useCallback(async (zipCode: string) => {
@@ -212,11 +212,11 @@ export function ClientForm({
   return (
     <form className="space-y-8" onSubmit={handleSubmit(onValidSubmit)}>
       <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-        Obrigatoriedade alinhada com os contratos e recibos atuais. Os campos marcados como obrigatorios
-        sao os que entram diretamente nesses documentos.
+        Obrigatoriedade alinhada com os contratos e recibos atuais. Os campos marcados como obrigatórios
+        são os que entram diretamente nesses documentos.
       </div>
       <div className="rounded-lg border border-violet-200 bg-violet-50 px-4 py-3 text-sm text-violet-800">
-        Os campos marcados como Juridico sao usados em documentos da esteira juridica, como procuracoes
+        Os campos marcados como Jurídico são usados em documentos da esteira jurídica, como procuracoes
         e declaracoes.
       </div>
       <div className="grid gap-5 md:grid-cols-2">
@@ -279,7 +279,7 @@ export function ClientForm({
         ))}
 
         <div className="space-y-2 md:col-span-2">
-          <FormFieldLabel htmlFor="notes" label="Observacoes" requirement="optional" />
+          <FormFieldLabel htmlFor="notes" label="Observações" requirement="optional" />
           <textarea
             id="notes"
             rows={5}
@@ -292,9 +292,9 @@ export function ClientForm({
         <div className="space-y-2 md:col-span-2">
           <FormFieldLabel
             htmlFor="commercial_consultant_user_id"
-            label="Consultor comercial responsavel"
+            label="Consultor comercial responsável"
             requirement="optional"
-            hint="Selecione o consultor comercial que deve acompanhar este cliente e novas pre-vendas."
+            hint="Selecione o consultor comercial que deve acompanhar este cliente e novas pré-vendas."
           />
           <select
             id="commercial_consultant_user_id"
@@ -302,7 +302,7 @@ export function ClientForm({
             disabled={disabled}
             {...register("commercial_consultant_user_id")}
           >
-            <option value="">Nao definido</option>
+            <option value="">Não definido</option>
             {commercialConsultants.map((consultant) => (
               <option key={consultant.id} value={consultant.id}>
                 {resolveUserDisplayName(consultant, "Consultor comercial")}
@@ -320,9 +320,9 @@ export function ClientForm({
         <div className="space-y-2 md:col-span-2">
           <FormFieldLabel
             htmlFor="legal_responsible_user_id"
-            label="Adm responsavel"
+            label="Adm responsável"
             requirement="legal"
-            hint="Selecione o adm juridico que responde pela operacao deste cliente."
+            hint="Selecione o adm jurídico que responde pela operação deste cliente."
           />
           <select
             id="legal_responsible_user_id"
@@ -330,10 +330,10 @@ export function ClientForm({
             disabled={disabled}
             {...register("legal_responsible_user_id")}
           >
-            <option value="">Nao definido</option>
+            <option value="">Não definido</option>
             {legalAdmins.map((admin) => (
               <option key={admin.id} value={admin.id}>
-                {resolveUserDisplayName(admin, "Adm juridico")}
+                {resolveUserDisplayName(admin, "Adm jurídico")}
               </option>
             ))}
           </select>
@@ -347,9 +347,9 @@ export function ClientForm({
         <div className="space-y-2 md:col-span-2">
           <FormFieldLabel
             htmlFor="legal_consultant_user_id"
-            label="Consultor responsavel"
+            label="Consultor responsável"
             requirement="legal"
-            hint="Selecione o consultor juridico que acompanha diretamente este cliente."
+            hint="Selecione o consultor jurídico que acompanha diretamente este cliente."
           />
           <select
             id="legal_consultant_user_id"
@@ -357,10 +357,10 @@ export function ClientForm({
             disabled={disabled}
             {...register("legal_consultant_user_id")}
           >
-            <option value="">Nao definido</option>
+            <option value="">Não definido</option>
             {legalConsultants.map((consultant) => (
               <option key={consultant.id} value={consultant.id}>
-                {resolveUserDisplayName(consultant, "Consultor juridico")}
+                {resolveUserDisplayName(consultant, "Consultor jurídico")}
               </option>
             ))}
           </select>
@@ -425,8 +425,8 @@ export function ClientForm({
 
       <ChangeNoteModal
         isOpen={isChangeNoteModalOpen}
-        title="Registrar alteracao no cliente"
-        description="Antes de salvar, escreva o que foi alterado no cadastro do cliente e por que essa mudanca foi feita."
+        title="Registrar alteração no cliente"
+        description="Antes de salvar, escreva o que foi alterado no cadastro do cliente e por que essa mudança foi feita."
         confirmLabel="Salvar com anotacao"
         pending={disabled}
         onClose={() => {

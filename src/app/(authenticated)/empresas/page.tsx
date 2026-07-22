@@ -31,7 +31,7 @@ function errorMessage(error?: string) {
   }
 
   if (error === "empresa_indisponivel") {
-    return "A empresa selecionada nao esta disponivel. Escolha outra empresa para continuar.";
+    return "A empresa selecionada não está disponível. Escolha outra empresa para continuar.";
   }
 
   return decodeURIComponent(error);
@@ -98,7 +98,7 @@ export default async function EmpresasPage({ searchParams }: EmpresasPageProps) 
   const settingsTableReady = !isCompanyPlatformSettingsMissingError(settingsError);
   const settingsWarning =
     settingsError && settingsTableReady
-      ? `Nao foi possivel carregar configuracoes SaaS: ${settingsError.message}`
+      ? `Não foi possível carregar configurações SaaS: ${settingsError.message}`
       : null;
 
   const companies = (companyRows ?? []) as CompanyProfile[];
@@ -165,7 +165,7 @@ export default async function EmpresasPage({ searchParams }: EmpresasPageProps) 
 
         {!settingsTableReady ? (
           <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-900">
-            As configuracoes avancadas ainda estao usando o padrao do sistema. Rode o arquivo
+            As configurações avancadas ainda estao usando o padrão do sistema. Rode o arquivo
             <span className="font-semibold"> docs/sql/company-platform-settings.sql </span>
             no Supabase para ativar plano, modulos e limites por empresa.
           </div>
@@ -187,9 +187,9 @@ export default async function EmpresasPage({ searchParams }: EmpresasPageProps) 
                 Controle executivo das empresas
               </h2>
               <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
-                Antes de entrar em gestao, comercial, juridico ou financeiro, o master escolhe a
+                Antes de entrar em gestão, comercial, jurídico ou financeiro, o master escolhe a
                 empresa e enxerga rapidamente licencas, status e recursos liberados. Isso protege
-                dados de cada cliente do CRM e deixa a operacao pronta para escalar.
+                dados de cada cliente do CRM e deixa a operação pronta para escalar.
               </p>
               <div className="mt-6 flex flex-wrap gap-3">
                 <Link
@@ -237,11 +237,11 @@ export default async function EmpresasPage({ searchParams }: EmpresasPageProps) 
           </div>
           <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
             <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Usuarios ativos
+              Usuários ativos
             </p>
             <p className="mt-2 text-3xl font-semibold text-slate-950">{activeUsers}</p>
             <p className="mt-2 text-sm text-slate-600">
-              {contractedUsers || "Sem"} licenca(s) contratada(s)
+              {contractedUsers || "Sem"} licença(s) contratada(s)
             </p>
           </div>
           <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
@@ -261,7 +261,7 @@ export default async function EmpresasPage({ searchParams }: EmpresasPageProps) 
               {settingsTableReady ? "OK" : "SQL"}
             </p>
             <p className="mt-2 text-sm text-slate-600">
-              {settingsTableReady ? "Configuracao por empresa ativa" : "Configuracao pendente"}
+              {settingsTableReady ? "Configuração por empresa ativa" : "Configuração pendente"}
             </p>
           </div>
         </section>
@@ -286,10 +286,10 @@ export default async function EmpresasPage({ searchParams }: EmpresasPageProps) 
                   <tr>
                     <th className="px-5 py-3">Empresa</th>
                     <th className="px-5 py-3">Status</th>
-                    <th className="px-5 py-3">Usuarios</th>
+                    <th className="px-5 py-3">Usuários</th>
                     <th className="px-5 py-3">Modulos</th>
                     <th className="px-5 py-3">Criada em</th>
-                    <th className="px-5 py-3">Acoes</th>
+                    <th className="px-5 py-3">Ações</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -400,7 +400,7 @@ export default async function EmpresasPage({ searchParams }: EmpresasPageProps) 
               Criar ambiente no CRM
             </h2>
             <p className="mt-2 text-sm leading-6 text-slate-600">
-              Ao criar, a empresa recebe o conjunto padrao de modulos. Depois voce pode ajustar
+              Ao criar, a empresa recebe o conjunto padrão de modulos. Depois você pode ajustar
               plano, limites e recursos.
             </p>
 

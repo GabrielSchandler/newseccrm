@@ -37,7 +37,7 @@ const freeEmailTemplateId = "__free_email__";
 
 function renderTemplate(value: string, variables: Record<string, string>) {
   return value.replace(/\{\{\s*([\w.]+)\s*\}\}/g, (_match, key: string) => {
-    return variables[key] ?? "Nao informado";
+    return variables[key] ?? "Não informado";
   });
 }
 
@@ -229,7 +229,7 @@ export function SendClientEmailModal({
 
                 <div className="space-y-2">
                   <label htmlFor="email-mode" className="text-sm font-semibold text-slate-700">
-                    Acao
+                    Ação
                   </label>
                   <select
                     id="email-mode"
@@ -327,7 +327,7 @@ export function SendClientEmailModal({
                     onChange={(event) => setBody(event.target.value)}
                     rows={9}
                     className="w-full resize-y rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm leading-6 outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
-                    placeholder="Escreva o email aqui. Voce tambem pode usar tags como {{nome_cliente}}, {{cpf}} e {{numero_contrato}}."
+                    placeholder="Escreva o email aqui. Você tambem pode usar tags como {{nome_cliente}}, {{cpf}} e {{numero_contrato}}."
                   />
                   <p className="text-xs text-slate-500">
                     A assinatura da empresa sera adicionada automaticamente no final do email.
@@ -338,7 +338,7 @@ export function SendClientEmailModal({
               <div className="rounded-lg border border-slate-200 p-4">
                 <p className="text-sm font-semibold text-slate-950">Anexos do cliente</p>
                 <p className="mt-1 text-xs text-slate-500">
-                  Nesta versao, os anexos selecionados precisam somar ate 3 MB.
+                  Nesta versao, os anexos selecionados precisam somar até 3 MB.
                 </p>
                 <div className="mt-4 grid gap-2">
                   {documents.length ? (

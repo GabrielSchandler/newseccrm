@@ -138,7 +138,7 @@ export function ClientList({ clients, sort, searchParams }: ClientListProps) {
               <th className="px-5 py-3">
                 <SortHeader column="created_at" sort={sort} searchParams={searchParams} />
               </th>
-              <th className="px-5 py-3 text-right font-semibold">Acoes</th>
+              <th className="px-5 py-3 text-right font-semibold">Ações</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">

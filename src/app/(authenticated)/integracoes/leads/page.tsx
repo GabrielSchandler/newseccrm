@@ -54,17 +54,17 @@ function getBannerMessage(params: Awaited<LeadSourcesPageProps["searchParams"]>)
 
   const errorMessages: Record<string, string> = {
     required: "Informe nome e link da planilha.",
-    invalid_sheet: "Use um link valido do Google Sheets.",
-    duplicated: "Ja existe uma fonte com este nome nesta empresa.",
-    missing_source: "Fonte de leads nao encontrada.",
-    save_failed: "Nao foi possivel salvar a fonte de leads.",
-    delete_failed: "Nao foi possivel remover a fonte de leads.",
+    invalid_sheet: "Use um link válido do Google Sheets.",
+    duplicated: "Já existe uma fonte com este nome nesta empresa.",
+    missing_source: "Fonte de leads não encontrada.",
+    save_failed: "Não foi possível salvar a fonte de leads.",
+    delete_failed: "Não foi possível remover a fonte de leads.",
   };
 
   if (params.error) {
     return {
       tone: "error" as const,
-      text: errorMessages[params.error] ?? "Nao foi possivel concluir a acao.",
+      text: errorMessages[params.error] ?? "Não foi possível concluir a ação.",
     };
   }
 
@@ -92,7 +92,7 @@ function Field({
         {label}
         {required ? (
           <span className="ml-2 rounded-full border border-red-200 bg-red-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-red-700">
-            Obrigatorio
+            Obrigatório
           </span>
         ) : null}
       </span>
@@ -147,7 +147,7 @@ export default async function LeadSourcesPage({ searchParams }: LeadSourcesPageP
         <section className="rounded-lg border border-slate-200 bg-white shadow-sm">
           <div className="border-b border-slate-200 p-6">
             <p className="text-xs font-semibold uppercase tracking-wide text-teal-700">
-              Configuracao
+              Configuração
             </p>
             <h2 className="mt-2 text-xl font-semibold text-slate-950">
               Nova fonte do Google Sheets
@@ -155,7 +155,7 @@ export default async function LeadSourcesPage({ searchParams }: LeadSourcesPageP
             <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
               A planilha precisa estar compartilhada para leitura por link. O CRM
               importa apenas linhas novas e guarda a origem para evitar duplicidade.
-              Voce nao precisa preencher o ID da aba na maioria dos casos: se o
+              Você não precisa preencher o ID da aba na maioria dos casos: se o
               link estiver aberto na aba correta, o CRM tenta identificar isso
               automaticamente.
             </p>
@@ -183,18 +183,18 @@ export default async function LeadSourcesPage({ searchParams }: LeadSourcesPageP
             />
             <details className="rounded-lg border border-slate-200 bg-slate-50 p-4 lg:col-span-2">
               <summary className="cursor-pointer text-sm font-semibold text-slate-800">
-                Configuracao avancada da aba
+                Configuração avancada da aba
               </summary>
               <div className="mt-4 grid gap-3 lg:grid-cols-[minmax(0,360px)_1fr]">
                 <Field
-                  label="ID numerico da aba"
+                  label="ID numérico da aba"
                   name="sheet_gid"
                   placeholder="Opcional. Ex.: 0 ou 123456789"
                 />
                 <p className="text-sm leading-6 text-slate-600">
-                  Este campo nao e o nome da pagina/aba. Ele e o numero que aparece
+                  Este campo não é o nome da página/aba. Ele é o número que aparece
                   no final do link como <span className="font-mono">#gid=...</span>.
-                  Se ficar em branco, o CRM usa a primeira aba ou a aba que ja esta
+                  Se ficar em branco, o CRM usa a primeira aba ou a aba que já está
                   no link informado.
                 </p>
               </div>
@@ -205,12 +205,12 @@ export default async function LeadSourcesPage({ searchParams }: LeadSourcesPageP
               <Field label="Coluna do email" name="email_column" placeholder="Ex.: C" />
               <Field label="Coluna do CPF" name="cpf_column" placeholder="Ex.: D" />
               <Field label="Coluna da campanha" name="campaign_column" placeholder="Ex.: E" />
-              <Field label="Coluna de observacoes" name="notes_column" placeholder="Ex.: F" />
+              <Field label="Coluna de observações" name="notes_column" placeholder="Ex.: F" />
             </div>
             <p className="text-sm leading-6 text-slate-600 lg:col-span-2">
-              Dica: se a planilha tiver cabecalhos como Nome, Telefone, Midia e
-              Observacao, o CRM tenta identificar as colunas automaticamente,
-              mesmo que a configuracao acima esteja diferente.
+              Dica: se a planilha tiver cabecalhos como Nome, Telefone, Mídia e
+              Observação, o CRM tenta identificar as colunas automaticamente,
+              mesmo que a configuração acima esteja diferente.
             </p>
             <div className="lg:col-span-2">
               <button
@@ -237,7 +237,7 @@ export default async function LeadSourcesPage({ searchParams }: LeadSourcesPageP
               href="/leads"
               className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
             >
-              Ir para distribuicao
+              Ir para distribuição
             </Link>
           </div>
 
@@ -276,7 +276,7 @@ export default async function LeadSourcesPage({ searchParams }: LeadSourcesPageP
                           Aba / linha
                         </dt>
                         <dd className="mt-1 text-slate-950">
-                          {source.sheet_gid ? `GID ${source.sheet_gid}` : "Aba automatica"} /
+                          {source.sheet_gid ? `GID ${source.sheet_gid}` : "Aba automática"} /
                           linha {source.start_row ?? 2}
                         </dd>
                       </div>
@@ -309,7 +309,7 @@ export default async function LeadSourcesPage({ searchParams }: LeadSourcesPageP
 
                     <details className="rounded-lg border border-slate-200 bg-slate-50 p-4">
                       <summary className="cursor-pointer text-sm font-semibold text-slate-800">
-                        Editar conexao
+                        Editar conexão
                       </summary>
                       <form
                         action={updateLeadSourceAction}
@@ -335,10 +335,10 @@ export default async function LeadSourcesPage({ searchParams }: LeadSourcesPageP
                           defaultValue={source.start_row ?? 2}
                         />
                         <Field
-                          label="ID numerico da aba"
+                          label="ID numérico da aba"
                           name="sheet_gid"
                           defaultValue={source.sheet_gid ?? ""}
-                          placeholder="Opcional. Nao use o nome da aba."
+                          placeholder="Opcional. Não use o nome da aba."
                         />
                         <div className="grid gap-4 sm:grid-cols-3 lg:col-span-2">
                           <Field
@@ -371,14 +371,14 @@ export default async function LeadSourcesPage({ searchParams }: LeadSourcesPageP
                             placeholder="Ex.: E"
                           />
                           <Field
-                            label="Coluna de observacoes"
+                            label="Coluna de observações"
                             name="notes_column"
                             defaultValue={source.notes_column ?? ""}
                             placeholder="Ex.: F"
                           />
                         </div>
                         <p className="text-sm leading-6 text-slate-600 lg:col-span-2">
-                          Se voce colocou o nome da aba no campo ID, deixe em branco
+                          Se você colocou o nome da aba no campo ID, deixe em branco
                           e salve. O CRM vai tentar identificar a aba pelo link.
                         </p>
                         <div className="lg:col-span-2">
@@ -386,7 +386,7 @@ export default async function LeadSourcesPage({ searchParams }: LeadSourcesPageP
                             type="submit"
                             className="rounded-lg bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-800"
                           >
-                            Salvar alteracoes
+                            Salvar alterações
                           </button>
                         </div>
                       </form>

@@ -32,15 +32,15 @@ type CalculosPageProps = {
 
 function successMessage(success?: string) {
   if (success === "created") {
-    return "Simulacao criada com sucesso.";
+    return "Simulação criada com sucesso.";
   }
 
   if (success === "updated") {
-    return "Simulacao atualizada com sucesso.";
+    return "Simulação atualizada com sucesso.";
   }
 
   if (success === "deleted") {
-    return "Simulacao excluida com sucesso.";
+    return "Simulação excluída com sucesso.";
   }
 
   return null;
@@ -109,7 +109,7 @@ export default async function CalculosPage({ searchParams }: CalculosPageProps) 
   const creatorMap = new Map(
     creators.map((creator) => [
       creator.id,
-      resolveUserDisplayName(creator, "Nao informado"),
+      resolveUserDisplayName(creator, "Não informado"),
     ]),
   );
   const bannerMessage = successMessage(params.success);
@@ -117,8 +117,8 @@ export default async function CalculosPage({ searchParams }: CalculosPageProps) 
   return (
     <>
       <PageHeader
-        title="Simulacoes"
-        description="Central de simulacoes revisionais com historico, filtros e geracao de PDF para o cliente."
+        title="Simulações"
+        description="Central de simulações revisionais com histórico, filtros e geração de PDF para o cliente."
       />
       <div className="space-y-6 p-6">
         {bannerMessage ? (
@@ -169,7 +169,7 @@ export default async function CalculosPage({ searchParams }: CalculosPageProps) 
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium text-slate-700" htmlFor="date_to">
-                Ate
+                Até
               </label>
               <input
                 id="date_to"
@@ -201,7 +201,7 @@ export default async function CalculosPage({ searchParams }: CalculosPageProps) 
               href="/calculos/novo"
               className="rounded-lg bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-800"
             >
-            Nova simulacao
+            Nova simulação
           </Link>
         </div>
 
@@ -225,20 +225,20 @@ export default async function CalculosPage({ searchParams }: CalculosPageProps) 
                     <th className="px-4 py-3 font-semibold">Status</th>
                     <th className="px-4 py-3 font-semibold">Criado em</th>
                     <th className="px-4 py-3 font-semibold">Criado por</th>
-                    <th className="px-4 py-3 font-semibold">Acoes</th>
+                    <th className="px-4 py-3 font-semibold">Ações</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {calculations.map((calculation) => (
                     <tr key={calculation.id} className="align-top transition hover:bg-slate-50">
                       <td className="px-4 py-3 font-medium text-slate-950">
-                        {calculation.client_name || "Nao informado"}
+                        {calculation.client_name || "Não informado"}
                       </td>
                       <td className="px-4 py-3 text-slate-700">
                         {formatCpfDigits(calculation.client_cpf)}
                       </td>
                       <td className="px-4 py-3 text-slate-700">
-                        {calculation.financial_institution ?? "Nao informado"}
+                        {calculation.financial_institution ?? "Não informado"}
                       </td>
                       <td className="px-4 py-3 text-slate-700">
                         {formatCalculationCurrency(calculation.financed_value)}
@@ -249,7 +249,7 @@ export default async function CalculosPage({ searchParams }: CalculosPageProps) 
                         )}
                       </td>
                       <td className="px-4 py-3 text-slate-700">
-                        {calculation.installment_count ?? "Nao informado"}
+                        {calculation.installment_count ?? "Não informado"}
                       </td>
                       <td className="px-4 py-3 text-slate-700">
                         {formatCalculationCurrency(calculation.estimated_savings)}
@@ -261,7 +261,7 @@ export default async function CalculosPage({ searchParams }: CalculosPageProps) 
                         {formatCalculationDateTime(calculation.created_at)}
                       </td>
                       <td className="px-4 py-3 text-slate-700">
-                        {creatorMap.get(calculation.created_by ?? "") ?? "Nao informado"}
+                        {creatorMap.get(calculation.created_by ?? "") ?? "Não informado"}
                       </td>
                       <td className="px-4 py-3">
                         <div className="space-y-3">
@@ -294,7 +294,7 @@ export default async function CalculosPage({ searchParams }: CalculosPageProps) 
                   {!calculations.length ? (
                     <tr>
                       <td className="px-4 py-6 text-center text-slate-500" colSpan={11}>
-                        Nenhuma simulacao encontrada.
+                        Nenhuma simulação encontrada.
                       </td>
                     </tr>
                   ) : null}

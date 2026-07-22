@@ -34,7 +34,7 @@ export function formatBoolean(value: boolean | null | undefined) {
   }
 
   if (value === false) {
-    return "Nao";
+    return "Não";
   }
 
   return "-";

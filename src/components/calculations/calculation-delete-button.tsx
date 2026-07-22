@@ -24,7 +24,7 @@ export function CalculationDeleteButton({
   const [message, setMessage] = useState<CalculationActionState | null>(null);
 
   function handleDelete() {
-    if (!window.confirm("Deseja excluir esta simulacao?")) {
+    if (!window.confirm("Deseja excluir esta simulação?")) {
       return;
     }
 

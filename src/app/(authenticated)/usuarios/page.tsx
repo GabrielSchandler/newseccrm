@@ -51,17 +51,17 @@ const sortableColumns = {
     desc: "phone_desc",
   },
   business_area: {
-    label: "Area",
+    label: "Área",
     asc: "area_asc",
     desc: "area_desc",
   },
   legal_role: {
-    label: "Funcao juridico",
+    label: "Função jurídica",
     asc: "legal_role_asc",
     desc: "legal_role_desc",
   },
   monthly_goal: {
-    label: "Meta do mes",
+    label: "Meta do mês",
     asc: "monthly_goal_asc",
     desc: "monthly_goal_desc",
   },
@@ -289,11 +289,11 @@ function canEditTarget(actorRole: string | null, targetRole: string | null) {
 
 function successMessage(success?: string) {
   if (success === "created") {
-    return "Usuario criado com sucesso.";
+    return "Usuário criado com sucesso.";
   }
 
   if (success === "updated") {
-    return "Usuario atualizado.";
+    return "Usuário atualizado.";
   }
 
   return null;
@@ -301,7 +301,7 @@ function successMessage(success?: string) {
 
 function errorMessage(error?: string) {
   if (error === "license_limit") {
-    return "Limite de usuarios atingido. Contrate uma licenca adicional.";
+    return "Limite de usuários atingido. Contrate uma licença adicional.";
   }
 
   return null;
@@ -357,8 +357,8 @@ export default async function UsuariosPage({ searchParams }: UsuariosPageProps) 
   return (
     <>
       <PageHeader
-        title="Usuarios"
-        description="Gestao dos usuarios da empresa, com controle de licencas e ativacao."
+        title="Usuários"
+        description="Gestão dos usuários da empresa, com controle de licencas e ativacao."
       />
       <div className="space-y-6 p-6">
         {bannerMessage ? (
@@ -381,16 +381,16 @@ export default async function UsuariosPage({ searchParams }: UsuariosPageProps) 
           </div>
           <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
             <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Usuarios ativos
+              Usuários ativos
             </p>
             <p className="mt-2 text-3xl font-semibold text-slate-950">{activeUsers}</p>
             <p className="mt-2 text-sm text-slate-600">
-              {activeUsers} de {licenseLimit} usuarios ativos
+              {activeUsers} de {licenseLimit} usuários ativos
             </p>
           </div>
           <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
             <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Licencas disponiveis
+              Licencas disponíveis
             </p>
             <p className="mt-2 text-3xl font-semibold text-slate-950">
               {availableLicenses}
@@ -402,29 +402,29 @@ export default async function UsuariosPage({ searchParams }: UsuariosPageProps) 
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="space-y-1">
               <p className="text-sm font-semibold text-slate-950">
-                {activeUsers} de {licenseLimit} usuarios ativos
+                {activeUsers} de {licenseLimit} usuários ativos
               </p>
               {activeUsers >= licenseLimit ? (
                 <p className="text-sm text-amber-800">
-                  Limite de usuarios atingido. Contrate uma licenca adicional.
+                  Limite de usuários atingido. Contrate uma licença adicional.
                 </p>
               ) : (
                 <p className="text-sm text-slate-600">
-                  {availableLicenses} licenca(s) disponivel(is) para novos acessos.
+                  {availableLicenses} licença(s) disponível(is) para novos acessos.
                 </p>
               )}
             </div>
             {canCreateUsers(role) ? (
               createBlocked ? (
                 <span className="rounded-lg border border-slate-200 bg-slate-100 px-4 py-2.5 text-sm font-semibold text-slate-500">
-                  Novo usuario indisponivel
+                  Novo usuário indisponível
                 </span>
               ) : (
                 <Link
                   href="/usuarios/novo"
                   className="rounded-lg bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-800"
                 >
-                  Novo usuario
+                  Novo usuário
                 </Link>
               )
             ) : null}
@@ -437,9 +437,9 @@ export default async function UsuariosPage({ searchParams }: UsuariosPageProps) 
               defaultValue={statusFilter}
               className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
             >
-              <option value="all">Todos os usuarios</option>
-              <option value="active">Usuarios ativos</option>
-              <option value="inactive">Usuarios desativados</option>
+              <option value="all">Todos os usuários</option>
+              <option value="active">Usuários ativos</option>
+              <option value="inactive">Usuários desativados</option>
             </select>
             <button
               type="submit"
@@ -456,7 +456,7 @@ export default async function UsuariosPage({ searchParams }: UsuariosPageProps) 
           </form>
 
           <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-            {users.length} usuario(s) exibido(s)
+            {users.length} usuário(s) exibido(s)
           </p>
         </div>
 
@@ -534,7 +534,7 @@ export default async function UsuariosPage({ searchParams }: UsuariosPageProps) 
                         searchParams={params}
                       />
                     </th>
-                    <th className="px-4 py-3 font-semibold">Acoes</th>
+                    <th className="px-4 py-3 font-semibold">Ações</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -601,7 +601,7 @@ export default async function UsuariosPage({ searchParams }: UsuariosPageProps) 
                   {!users.length ? (
                     <tr>
                       <td className="px-4 py-6 text-center text-slate-500" colSpan={11}>
-                        Nenhum usuario encontrado.
+                        Nenhum usuário encontrado.
                       </td>
                     </tr>
                   ) : null}

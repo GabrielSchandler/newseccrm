@@ -140,7 +140,7 @@ export async function loadAcademyUserProgress({
 
     return {
       tableReady: true,
-      errorMessage: error?.message ?? "Nao foi possivel carregar o Academy.",
+      errorMessage: error?.message ?? "Não foi possível carregar o Academy.",
       statuses: buildAcademyChapterStatuses({
         course,
         progressRows: [],
@@ -214,7 +214,7 @@ export async function loadAcademyReport({
 
     return {
       tableReady: true,
-      errorMessage: error?.message ?? "Nao foi possivel carregar o relatorio.",
+      errorMessage: error?.message ?? "Não foi possível carregar o relatório.",
       rows: [] as AcademyReportRow[],
     };
   }
@@ -237,7 +237,7 @@ export async function loadAcademyReport({
 
     return {
       userId: user.id,
-      fullName: user.nickname || user.full_name || "Usuario sem nome",
+      fullName: user.nickname || user.full_name || "Usuário sem nome",
       email: user.email ?? null,
       role: user.role ?? null,
       businessArea: user.business_area ?? null,

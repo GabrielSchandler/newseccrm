@@ -66,7 +66,7 @@ function parseEmailList(value: string | null | undefined) {
 
 function renderTemplate(value: string, variables: Record<string, string>) {
   return value.replace(/\{\{\s*([\w.]+)\s*\}\}/g, (_match, key: string) => {
-    return variables[key] ?? "Nao informado";
+    return variables[key] ?? "Não informado";
   });
 }
 
@@ -74,7 +74,7 @@ function currency(value: number | string | null | undefined) {
   const numeric = Number(value ?? 0);
 
   if (!Number.isFinite(numeric) || numeric <= 0) {
-    return "Nao informado";
+    return "Não informado";
   }
 
   return new Intl.NumberFormat("pt-BR", {
@@ -89,18 +89,18 @@ function buildVariables(
   financialCase: PreSaleFinancialCase | null,
 ) {
   return {
-    nome_cliente: client.full_name || "Nao informado",
-    cpf: client.cpf || "Nao informado",
-    email_cliente: client.email || "Nao informado",
-    telefone_cliente: client.phone_mobile || "Nao informado",
-    banco: financialCase?.financer_name || "Nao informado",
-    financeira: financialCase?.financer_name || "Nao informado",
-    financeira_razao_social: financialCase?.financer_legal_name || "Nao informado",
-    financeira_cnpj: financialCase?.financer_cnpj || "Nao informado",
-    numero_contrato: preSale?.tracking_protocol || "Nao informado",
-    numero_protocolo: preSale?.tracking_protocol || "Nao informado",
-    protocolo: preSale?.tracking_protocol || "Nao informado",
-    numero_contrato_financiamento: financialCase?.contract_number || "Nao informado",
+    nome_cliente: client.full_name || "Não informado",
+    cpf: client.cpf || "Não informado",
+    email_cliente: client.email || "Não informado",
+    telefone_cliente: client.phone_mobile || "Não informado",
+    banco: financialCase?.financer_name || "Não informado",
+    financeira: financialCase?.financer_name || "Não informado",
+    financeira_razao_social: financialCase?.financer_legal_name || "Não informado",
+    financeira_cnpj: financialCase?.financer_cnpj || "Não informado",
+    numero_contrato: preSale?.tracking_protocol || "Não informado",
+    numero_protocolo: preSale?.tracking_protocol || "Não informado",
+    protocolo: preSale?.tracking_protocol || "Não informado",
+    numero_contrato_financiamento: financialCase?.contract_number || "Não informado",
     valor_contrato: currency(preSale?.contract_value),
   };
 }
@@ -136,7 +136,7 @@ async function getClientDocumentAttachments(
   );
 
   if (missingIds.length) {
-    throw new Error("Um ou mais anexos selecionados nao pertencem a este cliente.");
+    throw new Error("Um ou mais anexos selecionados não pertencem a este cliente.");
   }
 
   const totalSize = documents.reduce((sum, document) => sum + Number(document.file_size ?? 0), 0);
@@ -155,7 +155,7 @@ async function getClientDocumentAttachments(
       .download(document.file_path);
 
     if (downloadError || !fileData) {
-      throw new Error(downloadError?.message || `Nao foi possivel anexar ${document.file_name}.`);
+      throw new Error(downloadError?.message || `Não foi possível anexar ${document.file_name}.`);
     }
 
     const buffer = Buffer.from(await fileData.arrayBuffer());
@@ -201,7 +201,7 @@ export async function sendClientEmailAction(
     const adminClient = createAdminClient();
 
     if (!canUseLegalEmail(role, businessArea)) {
-      return friendlyError("Voce nao tem permissao para enviar emails juridicos.");
+      return friendlyError("Você não tem permissão para enviar emails jurídicos.");
     }
 
     const [
@@ -245,19 +245,19 @@ export async function sendClientEmailAction(
     const preSale = preSaleData as PreSale | null;
 
     if (!client) {
-      return friendlyError("Cliente nao encontrado.");
+      return friendlyError("Cliente não encontrado.");
     }
 
     if (parsed.data.template_id && !template) {
-      return friendlyError("Template de email nao encontrado ou inativo.");
+      return friendlyError("Template de email não encontrado ou inativo.");
     }
 
     if (parsed.data.pre_sale_id && !preSale) {
-      return friendlyError("Pre-venda nao encontrada.");
+      return friendlyError("Pré-venda não encontrada.");
     }
 
     if (!client.legal_responsible_user_id) {
-      return friendlyError("Defina um Adm responsavel no cliente antes de enviar email.");
+      return friendlyError("Defina um Adm responsável no cliente antes de enviar email.");
     }
 
     const { data: financialCaseData } = preSale
@@ -415,12 +415,12 @@ export async function sendClientEmailAction(
       ok: true,
       message:
         parsed.data.mode === "draft"
-          ? "Rascunho criado no Outlook do Adm responsavel."
-          : "Email enviado pelo Outlook do Adm responsavel.",
+          ? "Rascunho criado no Outlook do Adm responsável."
+          : "Email enviado pelo Outlook do Adm responsável.",
     };
   } catch (error) {
     return friendlyError(
-      error instanceof Error ? error.message : "Nao foi possivel processar o email.",
+      error instanceof Error ? error.message : "Não foi possível processar o email.",
     );
   }
 }

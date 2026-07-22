@@ -47,7 +47,7 @@ export async function assertCalculationAccess(calculationId: string) {
   const supabase = getCompanyScopedClient(context);
 
   if (!canManageCalculations(role)) {
-    throw new Error("Voce nao tem permissao para acessar simulacoes.");
+    throw new Error("Você não tem permissão para acessar simulações.");
   }
 
   const { data, error } = await supabase
@@ -73,7 +73,7 @@ export async function assertCalculationAccess(calculationId: string) {
       return calculation;
     }
 
-    throw new Error("Voce nao tem permissao para acessar esta simulacao.");
+    throw new Error("Você não tem permissão para acessar esta simulação.");
   }
 
   return calculation;
@@ -94,7 +94,7 @@ export async function assertClientBelongsToCompany(clientId: string, companyId: 
   }
 
   if (!data) {
-    throw new Error("Cliente nao encontrado para esta empresa.");
+    throw new Error("Cliente não encontrado para esta empresa.");
   }
 }
 
@@ -106,11 +106,11 @@ export async function assertPreSaleBelongsToCompany(
   const preSale = await assertPreSaleAccess(preSaleId);
 
   if (preSale.company_id !== companyId) {
-    throw new Error("Pre-venda nao encontrada para esta empresa.");
+    throw new Error("Pré-venda não encontrada para esta empresa.");
   }
 
   if (clientId && preSale.client_id !== clientId) {
-    throw new Error("Pre-venda nao encontrada para esta empresa.");
+    throw new Error("Pré-venda não encontrada para esta empresa.");
   }
 }
 

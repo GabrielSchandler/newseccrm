@@ -34,13 +34,13 @@ function isMissingColumnError(error: { code?: string; message?: string } | null)
 }
 
 function normalizeCompanyError(error: { code?: string; message?: string } | Error | null) {
-  const message = error instanceof Error ? error.message : error?.message || "Nao foi possivel atualizar a empresa.";
+  const message = error instanceof Error ? error.message : error?.message || "Não foi possível atualizar a empresa.";
 
   if (
     "message" in (error ?? {}) &&
     isMissingColumnError(error as { code?: string; message?: string })
   ) {
-    return "A tabela companies desta instancia ainda nao possui as colunas de configuracao da empresa. Rode o SQL da tela Empresa/Logs no Supabase.";
+    return "A tabela companies desta instância ainda não possui as colunas de configuração da empresa. Rode o SQL da tela Empresa/Logs no Supabase.";
   }
 
   return message;
@@ -56,7 +56,7 @@ async function ensureDocumentsBucketAvailable() {
 
   if (error.message.toLowerCase().includes("bucket not found")) {
     return friendlyError(
-      "O bucket privado 'documents' ainda nao existe nesta instancia. Crie-o no Supabase antes de subir a logo da empresa.",
+      "O bucket privado 'documents' ainda não existe nesta instância. Crie-o no Supabase antes de subir a logo da empresa.",
     );
   }
 
@@ -158,7 +158,7 @@ export async function uploadCompanyLogoAction(
     }
 
     if (!acceptedLogoTypes.has(file.type)) {
-      return friendlyError("Formato nao suportado. Envie PNG, JPG ou WEBP.");
+      return friendlyError("Formato não suportado. Envie PNG, JPG ou WEBP.");
     }
 
     if (file.size > maxLogoSize) {

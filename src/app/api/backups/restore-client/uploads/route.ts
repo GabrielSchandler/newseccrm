@@ -33,7 +33,7 @@ async function getAdminProfile() {
 
   if (userError || !user) {
     return {
-      error: NextResponse.json({ error: "Sessao invalida." }, { status: 401 }),
+      error: NextResponse.json({ error: "Sessão inválida." }, { status: 401 }),
       profile: null,
     };
   }
@@ -47,7 +47,7 @@ async function getAdminProfile() {
   if (profileError || !profile) {
     return {
       error: NextResponse.json(
-        { error: "Perfil do usuario nao encontrado." },
+        { error: "Perfil do usuário não encontrado." },
         { status: 403 },
       ),
       profile: null,
@@ -103,14 +103,14 @@ export async function POST(request: Request) {
 
     if (!isAllowedBucket(bucket) || !targetPath) {
       return NextResponse.json(
-        { error: `Arquivo ${index + 1} possui bucket ou caminho invalido.` },
+        { error: `Arquivo ${index + 1} possui bucket ou caminho inválido.` },
         { status: 400 },
       );
     }
 
     if (!targetPath.startsWith(`restores/${profile.companyId}/`)) {
       return NextResponse.json(
-        { error: `Arquivo ${index + 1} nao esta no caminho seguro de restauracao.` },
+        { error: `Arquivo ${index + 1} não está no caminho seguro de restauracao.` },
         { status: 400 },
       );
     }
@@ -124,7 +124,7 @@ export async function POST(request: Request) {
         {
           error:
             uploadError?.message ??
-            `Nao foi possivel preparar o upload do arquivo ${index + 1}.`,
+            `Não foi possível preparar o upload do arquivo ${index + 1}.`,
         },
         { status: 500 },
       );

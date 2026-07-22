@@ -357,7 +357,7 @@ export default async function FinanceiroPage({ searchParams }: FinancePageProps)
         {firstError ? (
           <MessageBox
             type="error"
-            message="As tabelas do financeiro ainda nao foram encontradas. Rode o SQL docs/sql/financeiro.sql no Supabase."
+            message="As tabelas do financeiro ainda não foram encontradas. Rode o SQL docs/sql/financeiro.sql no Supabase."
           />
         ) : null}
 
@@ -365,13 +365,13 @@ export default async function FinanceiroPage({ searchParams }: FinancePageProps)
           <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
             <div>
               <p className="text-sm font-semibold uppercase text-teal-700">
-                Mesa de lancamento
+                Mesa de lançamento
               </p>
               <h2 className="mt-2 text-2xl font-semibold text-slate-950">
                 Registrar, importar e corrigir dados
               </h2>
               <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-                Esta tela fica para cadastro e manutencao dos dados. Resultado consolidado,
+                Esta tela fica para cadastro e manutenção dos dados. Resultado consolidado,
                 consulta por consultor e planilha filtrada ficam separados na tela de consultas.
               </p>
             </div>
@@ -390,7 +390,7 @@ export default async function FinanceiroPage({ searchParams }: FinancePageProps)
             <section className="rounded-lg border border-slate-200 bg-white shadow-sm">
               <div className="border-b border-slate-200 px-5 py-4">
                 <h2 className="text-base font-semibold text-slate-950">
-                  {editingTransaction ? "Editar lancamento financeiro" : "Novo lancamento financeiro"}
+                  {editingTransaction ? "Editar lançamento financeiro" : "Novo lançamento financeiro"}
                 </h2>
                 <p className="mt-1 text-sm text-slate-600">
                   Use para despesas, receitas previstas, contas pagas e ajustes do caixa.
@@ -416,7 +416,7 @@ export default async function FinanceiroPage({ searchParams }: FinancePageProps)
                 </SelectField>
                 <Field label="Vencimento" name="due_date" type="date" required defaultValue={editingTransaction?.due_date} />
                 <Field label="Data do pagamento" name="paid_at" type="date" defaultValue={editingTransaction?.paid_at} />
-                <Field label="Descricao" name="description" required defaultValue={editingTransaction?.description} />
+                <Field label="Descrição" name="description" required defaultValue={editingTransaction?.description} />
                 <Field label="Destinatario/Origem" name="counterparty" defaultValue={editingTransaction?.counterparty} />
                 <SelectField label="Categoria" name="category_id" defaultValue={editingTransaction?.category_id}>
                   <option value="">Sem categoria</option>
@@ -435,7 +435,7 @@ export default async function FinanceiroPage({ searchParams }: FinancePageProps)
                   ))}
                 </SelectField>
                 <SelectField label="Forma" name="payment_method" defaultValue={editingTransaction?.payment_method}>
-                  <option value="">Nao informado</option>
+                  <option value="">Não informado</option>
                   {financePaymentMethods.map((method) => (
                     <option key={method} value={method}>
                       {method}
@@ -444,15 +444,15 @@ export default async function FinanceiroPage({ searchParams }: FinancePageProps)
                 </SelectField>
                 <Field label="Valor previsto" name="amount_expected" required placeholder="0,00" defaultValue={editingTransaction?.amount_expected} />
                 <Field label="Valor pago" name="amount_paid" placeholder="0,00" defaultValue={editingTransaction?.amount_paid} />
-                <TextArea label="Observacao" name="notes" defaultValue={editingTransaction?.notes} />
+                <TextArea label="Observação" name="notes" defaultValue={editingTransaction?.notes} />
                 <div className="flex gap-3 md:col-span-2 xl:col-span-3">
-                  <SubmitButton label={editingTransaction ? "Salvar alteracoes" : "Cadastrar lancamento"} />
+                  <SubmitButton label={editingTransaction ? "Salvar alterações" : "Cadastrar lançamento"} />
                   {editingTransaction ? (
                     <Link
                       href="/financeiro"
                       className="inline-flex items-center justify-center rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
                     >
-                      Cancelar edicao
+                      Cancelar edição
                     </Link>
                   ) : null}
                 </div>
@@ -465,7 +465,7 @@ export default async function FinanceiroPage({ searchParams }: FinancePageProps)
                   {editingSale ? "Editar venda" : "Venda manual"}
                 </h2>
                 <p className="mt-1 text-sm text-slate-600">
-                  Use enquanto o comercial ainda nao tabula 100% correto no CRM.
+                  Use enquanto o comercial ainda não tabula 100% correto no CRM.
                 </p>
               </div>
               <form
@@ -480,16 +480,16 @@ export default async function FinanceiroPage({ searchParams }: FinancePageProps)
                 <Field label="Cliente" name="client_name" required defaultValue={editingSale?.client_name} />
                 <Field label="CPF" name="client_cpf" defaultValue={editingSale?.client_cpf} />
                 <SelectField label="Consultor CRM" name="consultant_user_id" defaultValue={editingSale?.consultant_user_id}>
-                  <option value="">Sem vinculo</option>
+                  <option value="">Sem vínculo</option>
                   {users.map((user) => (
                     <option key={user.id} value={user.id}>
                       {resolveUserDisplayName(user, "Sem nome")}
                     </option>
                   ))}
                 </SelectField>
-                <Field label="Consultor historico" name="consultant_name" defaultValue={editingSale?.consultant_name} />
+                <Field label="Consultor histórico" name="consultant_name" defaultValue={editingSale?.consultant_name} />
                 <SelectField label="Modalidade" name="modality" defaultValue={editingSale?.modality}>
-                  <option value="">Nao informado</option>
+                  <option value="">Não informado</option>
                   {financeModalityOptions.map((option) => (
                     <option key={option} value={option}>
                       {option}
@@ -497,7 +497,7 @@ export default async function FinanceiroPage({ searchParams }: FinancePageProps)
                   ))}
                 </SelectField>
                 <SelectField label="Plataforma/Forma" name="platform" defaultValue={editingSale?.platform}>
-                  <option value="">Nao informado</option>
+                  <option value="">Não informado</option>
                   {financePaymentMethods.map((method) => (
                     <option key={method} value={method}>
                       {method}
@@ -515,7 +515,7 @@ export default async function FinanceiroPage({ searchParams }: FinancePageProps)
                   <option value="pending">Pendente</option>
                   <option value="canceled">Cancelada</option>
                 </SelectField>
-                <TextArea label="Observacao" name="notes" defaultValue={editingSale?.notes} />
+                <TextArea label="Observação" name="notes" defaultValue={editingSale?.notes} />
                 <div className="flex gap-3 md:col-span-2 xl:col-span-3">
                   <SubmitButton label={editingSale ? "Salvar venda" : "Cadastrar venda"} />
                   {editingSale ? (
@@ -523,7 +523,7 @@ export default async function FinanceiroPage({ searchParams }: FinancePageProps)
                       href="/financeiro"
                       className="inline-flex items-center justify-center rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
                     >
-                      Cancelar edicao
+                      Cancelar edição
                     </Link>
                   ) : null}
                 </div>
@@ -538,7 +538,7 @@ export default async function FinanceiroPage({ searchParams }: FinancePageProps)
                   Importar planilhas
                 </h2>
                 <p className="mt-1 text-sm text-slate-600">
-                  Aceita os modelos do financeiro atual. A planilha original nao e alterada.
+                  Aceita os modelos do financeiro atual. A planilha original não é alterada.
                 </p>
               </div>
               <form action={importFinanceFilesAction} className="space-y-4 p-5">
@@ -566,7 +566,7 @@ export default async function FinanceiroPage({ searchParams }: FinancePageProps)
                   {editingChargeback ? "Editar chargeback" : "Chargeback"}
                 </h2>
                 <p className="mt-1 text-sm text-slate-600">
-                  Controle de estornos e cobrancas pendentes.
+                  Controle de estornos e cobranças pendentes.
                 </p>
               </div>
               <form
@@ -588,7 +588,7 @@ export default async function FinanceiroPage({ searchParams }: FinancePageProps)
                   <option value="lost">Perdido</option>
                   <option value="canceled">Cancelado</option>
                 </SelectField>
-                <TextArea label="Observacao" name="notes" defaultValue={editingChargeback?.notes} />
+                <TextArea label="Observação" name="notes" defaultValue={editingChargeback?.notes} />
                 <div className="flex gap-3 md:col-span-2">
                   <SubmitButton label={editingChargeback ? "Salvar chargeback" : "Cadastrar chargeback"} />
                   {editingChargeback ? (
@@ -620,7 +620,7 @@ export default async function FinanceiroPage({ searchParams }: FinancePageProps)
                 ))}
                 {!imports.length ? (
                   <p className="p-5 text-sm text-slate-500">
-                    Nenhuma importacao registrada ainda.
+                    Nenhuma importação registrada ainda.
                   </p>
                 ) : null}
               </div>
@@ -637,13 +637,13 @@ export default async function FinanceiroPage({ searchParams }: FinancePageProps)
               <thead className="bg-slate-50 text-slate-500">
                 <tr>
                   <th className="px-5 py-3 font-semibold">Data</th>
-                  <th className="px-5 py-3 font-semibold">Descricao</th>
+                  <th className="px-5 py-3 font-semibold">Descrição</th>
                   <th className="px-5 py-3 font-semibold">Tipo</th>
                   <th className="px-5 py-3 font-semibold">Categoria</th>
                   <th className="px-5 py-3 font-semibold">Conta</th>
                   <th className="px-5 py-3 font-semibold">Status</th>
                   <th className="px-5 py-3 font-semibold">Valor</th>
-                  <th className="px-5 py-3 font-semibold">Acoes</th>
+                  <th className="px-5 py-3 font-semibold">Ações</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -678,7 +678,7 @@ export default async function FinanceiroPage({ searchParams }: FinancePageProps)
                 {!transactions.length ? (
                   <tr>
                     <td colSpan={8} className="px-5 py-8 text-center text-slate-500">
-                      Nenhum lancamento financeiro cadastrado.
+                      Nenhum lançamento financeiro cadastrado.
                     </td>
                   </tr>
                 ) : null}
@@ -700,7 +700,7 @@ export default async function FinanceiroPage({ searchParams }: FinancePageProps)
                     <th className="px-5 py-3 font-semibold">Cliente</th>
                     <th className="px-5 py-3 font-semibold">Consultor</th>
                     <th className="px-5 py-3 font-semibold">Meta</th>
-                    <th className="px-5 py-3 font-semibold">Acoes</th>
+                    <th className="px-5 py-3 font-semibold">Ações</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -762,7 +762,7 @@ export default async function FinanceiroPage({ searchParams }: FinancePageProps)
                     <th className="px-5 py-3 font-semibold">Cliente</th>
                     <th className="px-5 py-3 font-semibold">Valor</th>
                     <th className="px-5 py-3 font-semibold">Status</th>
-                    <th className="px-5 py-3 font-semibold">Acoes</th>
+                    <th className="px-5 py-3 font-semibold">Ações</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -806,10 +806,10 @@ export default async function FinanceiroPage({ searchParams }: FinancePageProps)
             <div>
               <h2 className="flex items-center gap-2 text-base font-semibold text-slate-950">
                 <History className="h-4 w-4 text-teal-700" aria-hidden="true" />
-                Historico de alteracoes financeiras
+                Histórico de alterações financeiras
               </h2>
               <p className="mt-1 text-sm text-slate-600">
-                Ultimas alteracoes com opcao de restaurar criacao, edicao ou remocao.
+                Últimas alterações com opção de restaurar criação, edição ou remoção.
               </p>
             </div>
             <Link
@@ -825,9 +825,9 @@ export default async function FinanceiroPage({ searchParams }: FinancePageProps)
                 <tr>
                   <th className="px-5 py-3 font-semibold">Data</th>
                   <th className="px-5 py-3 font-semibold">Registro</th>
-                  <th className="px-5 py-3 font-semibold">Acao</th>
-                  <th className="px-5 py-3 font-semibold">Usuario</th>
-                  <th className="px-5 py-3 font-semibold">Restauracao</th>
+                  <th className="px-5 py-3 font-semibold">Ação</th>
+                  <th className="px-5 py-3 font-semibold">Usuário</th>
+                  <th className="px-5 py-3 font-semibold">Restauração</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -869,7 +869,7 @@ export default async function FinanceiroPage({ searchParams }: FinancePageProps)
                           </button>
                         </form>
                       ) : (
-                        <span className="text-xs text-slate-500">Sem acao</span>
+                        <span className="text-xs text-slate-500">Sem ação</span>
                       )}
                     </td>
                   </tr>
@@ -877,7 +877,7 @@ export default async function FinanceiroPage({ searchParams }: FinancePageProps)
                 {!auditLogs.length ? (
                   <tr>
                     <td colSpan={5} className="px-5 py-8 text-center text-slate-500">
-                      Nenhuma alteracao financeira registrada ainda.
+                      Nenhuma alteração financeira registrada ainda.
                     </td>
                   </tr>
                 ) : null}

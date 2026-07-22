@@ -38,7 +38,7 @@ async function cleanupExpiredBackups(adminClient: ReturnType<typeof createAdminC
   }
 
   if (error) {
-    throw new Error(`Nao foi possivel limpar backups vencidos: ${error.message}`);
+    throw new Error(`Não foi possível limpar backups vencidos: ${error.message}`);
   }
 
   const rows = (data ?? []) as BackupJobRow[];
@@ -73,7 +73,7 @@ async function markStaleRunningBackups(adminClient: ReturnType<typeof createAdmi
     .update({
       status: "failed",
       error_message:
-        "Geracao interrompida por tempo excedido. Gere um novo backup manual completo.",
+        "Geração interrompida por tempo excedido. Gere um novo backup manual completo.",
       completed_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     })
@@ -85,7 +85,7 @@ async function markStaleRunningBackups(adminClient: ReturnType<typeof createAdmi
   }
 
   if (error) {
-    throw new Error(`Nao foi possivel atualizar backups travados: ${error.message}`);
+    throw new Error(`Não foi possível atualizar backups travados: ${error.message}`);
   }
 }
 
@@ -125,11 +125,11 @@ export async function generateStoredBackup({
     .single();
 
   if (isMissingBackupTable(createError)) {
-    throw new Error("Tabela backup_jobs nao encontrada. Rode o SQL docs/sql/backups.sql no Supabase.");
+    throw new Error("Tabela backup_jobs não encontrada. Rode o SQL docs/sql/backups.sql no Supabase.");
   }
 
   if (createError || !job) {
-    throw new Error(createError?.message ?? "Nao foi possivel criar o registro do backup.");
+    throw new Error(createError?.message ?? "Não foi possível criar o registro do backup.");
   }
 
   try {

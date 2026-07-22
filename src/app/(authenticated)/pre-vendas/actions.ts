@@ -19,7 +19,7 @@ export type PreSaleActionState = {
   message: string;
 };
 
-function friendlyError(message = "Nao foi possivel salvar a pre-venda.") {
+function friendlyError(message = "Não foi possível salvar a pré-venda.") {
   return {
     ok: false,
     message,
@@ -86,7 +86,7 @@ async function generateTrackingProtocol(
     }
   }
 
-  throw new Error("Nao foi possivel gerar um protocolo numerico unico.");
+  throw new Error("Não foi possível gerar um protocolo numérico único.");
 }
 
 function isTrackingProtocolConflict(error: { code?: string | null; message?: string | null } | null) {
@@ -418,7 +418,7 @@ export async function createPreSaleAction(
   const parsed = preSaleFormSchema.safeParse(values);
 
   if (!parsed.success) {
-    return friendlyError("Confira os campos obrigatorios da pre-venda.");
+    return friendlyError("Confira os campos obrigatórios da pré-venda.");
   }
 
   let preSaleId = "";
@@ -451,7 +451,7 @@ export async function createPreSaleAction(
     }
 
     if (!canCreatePreSales(role, businessArea)) {
-      return friendlyError("O usuario atual nao pode criar pre-vendas nesta area.");
+      return friendlyError("O usuário atual não pode criar pré-vendas nesta área.");
     }
 
     if (
@@ -461,7 +461,7 @@ export async function createPreSaleAction(
       parsed.data.consultant_user_id !== userProfileId
     ) {
       return friendlyError(
-        "Consultores so podem criar pre-vendas vinculadas ao proprio usuario.",
+        "Consultores só podem criar pré-vendas vinculadas ao próprio usuário.",
       );
     }
 
@@ -512,7 +512,7 @@ export async function createPreSaleAction(
 
     if (insertError || !createdPreSale) {
       return friendlyError(
-        insertError?.message ?? "Nao foi possivel gerar um protocolo numerico unico.",
+        insertError?.message ?? "Não foi possível gerar um protocolo numérico único.",
       );
     }
 
@@ -542,7 +542,7 @@ export async function createPreSaleAction(
       clientId: parsed.data.client_id,
       preSaleId,
       eventType: "pre_sale_created",
-      title: "Pre-venda criada",
+      title: "Pré-venda criada",
       actorUserProfileId: userProfileId,
       actorRole: role,
       actorBusinessArea: businessArea,
@@ -554,7 +554,7 @@ export async function createPreSaleAction(
     });
   } catch (error) {
     return friendlyError(
-      error instanceof Error ? error.message : "Nao foi possivel criar a pre-venda.",
+      error instanceof Error ? error.message : "Não foi possível criar a pré-venda.",
     );
   }
 
@@ -570,13 +570,13 @@ export async function updatePreSaleAction(
   const parsed = preSaleFormSchema.safeParse(values);
 
   if (!parsed.success) {
-    return friendlyError("Confira os campos obrigatorios da pre-venda.");
+    return friendlyError("Confira os campos obrigatórios da pré-venda.");
   }
 
   const normalizedChangeNote = requireChangeNote(changeNote);
 
   if (!normalizedChangeNote) {
-    return friendlyError("Descreva o que foi alterado na pre-venda e por que.");
+    return friendlyError("Descreva o que foi alterado na pré-venda e por que.");
   }
 
   try {
@@ -592,7 +592,7 @@ export async function updatePreSaleAction(
     const accessiblePreSale = await assertPreSaleAccess(preSaleId);
 
     if (!canEditPreSaleRecord(role, businessArea, userProfileId, accessiblePreSale)) {
-      return friendlyError("O usuario atual nao pode editar esta pre-venda.");
+      return friendlyError("O usuário atual não pode editar esta pré-venda.");
     }
 
     const clientRecord = await assertClientExistsInCompany(parsed.data.client_id, companyId);
@@ -608,7 +608,7 @@ export async function updatePreSaleAction(
       parsed.data.consultant_user_id !== userProfileId
     ) {
       return friendlyError(
-        "Consultores so podem manter a pre-venda vinculada ao proprio usuario.",
+        "Consultores só podem manter a pré-venda vinculada ao próprio usuário.",
       );
     }
 
@@ -666,7 +666,7 @@ export async function updatePreSaleAction(
         clientId: parsed.data.client_id,
         preSaleId,
         eventType: "pre_sale_updated",
-        title: "Pre-venda atualizada",
+        title: "Pré-venda atualizada",
         note: normalizedChangeNote,
         actorUserProfileId: userProfileId,
         actorRole: role,
@@ -679,7 +679,7 @@ export async function updatePreSaleAction(
       });
     } catch (error) {
     return friendlyError(
-      error instanceof Error ? error.message : "Nao foi possivel atualizar a pre-venda.",
+      error instanceof Error ? error.message : "Não foi possível atualizar a pré-venda.",
     );
   }
 
@@ -696,7 +696,7 @@ export async function updatePreSaleStatusAction(
   const normalizedChangeNote = requireChangeNote(changeNote);
 
   if (!normalizedChangeNote) {
-    return friendlyError("Descreva a mudanca de status da pre-venda e o motivo.");
+    return friendlyError("Descreva a mudança de status da pré-venda e o motivo.");
   }
 
   try {
@@ -711,11 +711,11 @@ export async function updatePreSaleStatusAction(
       .single();
 
     if (currentPreSaleError || !currentPreSaleData) {
-      return friendlyError("Pre-venda nao encontrada para atualizar o status.");
+      return friendlyError("Pré-venda não encontrada para atualizar o status.");
     }
 
     if (!canEditPreSaleRecord(role, businessArea, userProfileId, accessiblePreSale)) {
-      return friendlyError("O usuario atual nao pode alterar o status desta pre-venda.");
+      return friendlyError("O usuário atual não pode alterar o status desta pré-venda.");
     }
 
     const { error } = await supabase
@@ -762,7 +762,7 @@ export async function updatePreSaleStatusAction(
       });
     } catch (error) {
     return friendlyError(
-      error instanceof Error ? error.message : "Nao foi possivel alterar o status.",
+      error instanceof Error ? error.message : "Não foi possível alterar o status.",
     );
   }
 
@@ -772,7 +772,7 @@ export async function updatePreSaleStatusAction(
     ok: true,
     message:
       status === "aprovado"
-        ? "Pre-venda aprovada. Estrutura pronta para virar contrato futuramente."
+        ? "Pré-venda aprovada. Estrutura pronta para virar contrato futuramente."
         : "Status atualizado com sucesso.",
   };
 }
@@ -782,7 +782,7 @@ export async function deletePreSaleAction(preSaleId: string): Promise<PreSaleAct
       const { supabase, companyId, role, userProfileId } = await getCurrentUserContext();
 
     if (!canManageAllPreSales(role)) {
-      return friendlyError("Apenas admin ou manager podem excluir pre-vendas.");
+      return friendlyError("Apenas admin ou manager podem excluir pré-vendas.");
     }
 
     const { error } = await supabase
@@ -806,13 +806,13 @@ export async function deletePreSaleAction(preSaleId: string): Promise<PreSaleAct
       });
     } catch (error) {
     return friendlyError(
-      error instanceof Error ? error.message : "Nao foi possivel excluir a pre-venda.",
+      error instanceof Error ? error.message : "Não foi possível excluir a pré-venda.",
     );
   }
 
   revalidatePath("/pre-vendas");
   return {
     ok: true,
-    message: "Pre-venda excluida com sucesso.",
+    message: "Pré-venda excluída com sucesso.",
   };
 }

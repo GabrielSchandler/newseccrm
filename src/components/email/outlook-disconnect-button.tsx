@@ -13,7 +13,7 @@ export function OutlookDisconnectButton() {
   const [state, setState] = useState<IntegrationActionState | null>(null);
 
   function handleDisconnect() {
-    if (!window.confirm("Deseja desconectar o Outlook deste usuario?")) {
+    if (!window.confirm("Deseja desconectar o Outlook deste usuário?")) {
       return;
     }
 

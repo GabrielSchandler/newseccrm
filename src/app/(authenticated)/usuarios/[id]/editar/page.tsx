@@ -49,7 +49,7 @@ export default async function EditarUsuarioPage({
   return (
     <>
       <PageHeader
-        title="Editar usuario"
+        title="Editar usuário"
         description="Atualize nome, login, telefone, cargo e status do acesso da empresa."
       />
       <div className="space-y-6 p-6">
@@ -59,7 +59,7 @@ export default async function EditarUsuarioPage({
         <UserForm
           mode="edit"
           defaultValues={user}
-          submitLabel="Salvar usuario"
+          submitLabel="Salvar usuário"
           onSubmitAction={updateAction}
           canAssignAdmin={role === "admin"}
           canManagePasswords={role === "admin"}

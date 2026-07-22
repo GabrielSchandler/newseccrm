@@ -19,10 +19,10 @@ export default async function ContaInativaPage() {
           Conta inativa
         </p>
         <h1 className="mt-2 text-2xl font-semibold text-slate-950">
-          Seu usuario esta inativo
+          Seu usuário está inativo
         </h1>
         <p className="mt-3 text-sm leading-6 text-slate-600">
-          Seu usuario esta inativo. Fale com o administrador da empresa para
+          Seu usuário está inativo. Fale com o administrador da empresa para
           reativar o acesso.
         </p>
         <div className="mt-6 flex flex-wrap gap-3">

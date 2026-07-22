@@ -218,7 +218,7 @@ export function extractGoogleSheetInfo(sheetUrl: string, fallbackGid?: string | 
   }
 
   if (!spreadsheetId) {
-    throw new Error("Link da planilha invalido. Use um link do Google Sheets.");
+    throw new Error("Link da planilha inválido. Use um link do Google Sheets.");
   }
 
   return { spreadsheetId, gid };
@@ -296,7 +296,7 @@ export async function fetchSheetLeads(source: SheetLeadSource) {
 
   if (!response.ok) {
     throw new Error(
-      `Nao foi possivel ler a planilha. Confirme se o link esta compartilhado. HTTP ${response.status}.`,
+      `Não foi possível ler a planilha. Confirme se o link esta compartilhado. HTTP ${response.status}.`,
     );
   }
 
@@ -304,7 +304,7 @@ export async function fetchSheetLeads(source: SheetLeadSource) {
 
   if (/^\s*</.test(csv)) {
     throw new Error(
-      "A planilha retornou uma pagina HTML. Compartilhe a planilha como 'qualquer pessoa com o link pode visualizar' ou publique a aba.",
+      "A planilha retornou uma página HTML. Compartilhe a planilha como 'qualquer pessoa com o link pode visualizar' ou publique a aba.",
     );
   }
 

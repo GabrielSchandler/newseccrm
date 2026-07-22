@@ -200,7 +200,7 @@ async function downloadStorageFileWithRetry({
   adminClient: ReturnType<typeof createAdminClient>;
   ref: StorageFileRef;
 }) {
-  let lastError = "Arquivo nao retornado pelo Storage.";
+  let lastError = "Arquivo não retornado pelo Storage.";
 
   for (let attempt = 1; attempt <= storageDownloadAttempts; attempt += 1) {
     try {
@@ -534,7 +534,7 @@ async function addStorageBinariesToZip({
         error:
           error instanceof Error
             ? error.message
-            : "Arquivo nao retornado pelo Storage.",
+            : "Arquivo não retornado pelo Storage.",
       });
     }
   }
@@ -579,7 +579,7 @@ export async function buildFullBackupZip({
       .join("; ");
 
     throw new Error(
-      `Backup incompleto: ${storageResult.errors.length} arquivo(s) nao puderam ser baixados apos ${storageDownloadAttempts} tentativas. ${examples}`,
+      `Backup incompleto: ${storageResult.errors.length} arquivo(s) não puderam ser baixados após ${storageDownloadAttempts} tentativas. ${examples}`,
     );
   }
 

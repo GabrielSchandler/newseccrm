@@ -88,7 +88,7 @@ export default async function LogsPage({ searchParams }: LogsPageProps) {
           <input
             name="action"
             defaultValue={params.action ?? ""}
-            placeholder="Buscar por acao"
+            placeholder="Buscar por ação"
             className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
           />
           <select
@@ -108,7 +108,7 @@ export default async function LogsPage({ searchParams }: LogsPageProps) {
             defaultValue={params.user ?? ""}
             className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
           >
-            <option value="">Todos os usuarios</option>
+            <option value="">Todos os usuários</option>
             {users.map((user) => (
               <option key={user.id} value={user.id}>
                 {resolveUserDisplayName(user, user.id)}
@@ -138,7 +138,7 @@ export default async function LogsPage({ searchParams }: LogsPageProps) {
         {error ? (
           <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
             {isMissingTableError(error)
-              ? "A tabela de logs ainda nao existe nesta instancia. Rode o SQL da entrega no Supabase e recarregue a pagina."
+              ? "A tabela de logs ainda não existe nesta instância. Rode o SQL da entrega no Supabase e recarregue a página."
               : error.message}
           </div>
         ) : (
@@ -148,8 +148,8 @@ export default async function LogsPage({ searchParams }: LogsPageProps) {
                 <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
                   <tr>
                     <th className="px-4 py-3 font-semibold">Data</th>
-                    <th className="px-4 py-3 font-semibold">Usuario</th>
-                    <th className="px-4 py-3 font-semibold">Acao</th>
+                    <th className="px-4 py-3 font-semibold">Usuário</th>
+                    <th className="px-4 py-3 font-semibold">Ação</th>
                     <th className="px-4 py-3 font-semibold">Entidade</th>
                     <th className="px-4 py-3 font-semibold">Registro</th>
                     <th className="px-4 py-3 font-semibold">Detalhes</th>

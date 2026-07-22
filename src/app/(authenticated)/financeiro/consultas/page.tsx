@@ -462,7 +462,7 @@ export default async function ConsultaFinanceiraPage({
     <>
       <PageHeader
         title="Consultas financeiras"
-        description="Analise vendas por meta, comissoes, caixa financeiro e registros filtrados."
+        description="Análise vendas por meta, comissoes, caixa financeiro e registros filtrados."
       />
       <div className="space-y-6 p-6">
         {params.success ? (
@@ -477,7 +477,7 @@ export default async function ConsultaFinanceiraPage({
         ) : null}
         {firstError ? (
           <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            Nao foi possivel carregar a consulta financeira. Confirme se o SQL do financeiro foi rodado.
+            Não foi possível carregar a consulta financeira. Confirme se o SQL do financeiro foi rodado.
           </div>
         ) : null}
 
@@ -491,7 +491,7 @@ export default async function ConsultaFinanceiraPage({
                 {queryType === "vendas" ? "Vendas por meta" : "Financeiro por caixa"}
               </h2>
               <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-                Venda usa o valor da meta para resultado comercial e comissao.
+                Venda usa o valor da meta para resultado comercial e comissão.
                 Entrada de caixa fica separada em financeiro, evitando duplicidade.
               </p>
             </div>
@@ -499,7 +499,7 @@ export default async function ConsultaFinanceiraPage({
               href="/financeiro"
               className="inline-flex items-center justify-center rounded-lg border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
             >
-              Voltar aos lancamentos
+              Voltar aos lançamentos
             </Link>
           </div>
 
@@ -576,12 +576,12 @@ export default async function ConsultaFinanceiraPage({
                 icon={Banknote}
                 label="Venda pela meta"
                 value={formatCurrency(salesSummary.goalTotal)}
-                detail="Base correta para comissao, ja liquida taxas e descontos."
+                detail="Base correta para comissão, já líquida taxas e descontos."
                 tone="success"
               />
               <StatCard
                 icon={Calculator}
-                label="Comissao estimada"
+                label="Comissão estimada"
                 value={formatCurrency(salesSummary.commissionTotal)}
                 detail="Calculada por faixa e por consultor."
                 tone="warning"
@@ -616,7 +616,7 @@ export default async function ConsultaFinanceiraPage({
                       <th className="px-5 py-3 font-semibold">Contrato</th>
                       <th className="px-5 py-3 font-semibold">Meta</th>
                       <th className="px-5 py-3 font-semibold">Status</th>
-                      <th className="px-5 py-3 font-semibold">Acoes</th>
+                      <th className="px-5 py-3 font-semibold">Ações</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
@@ -673,14 +673,14 @@ export default async function ConsultaFinanceiraPage({
                 icon={ArrowUpRight}
                 label="Entradas pagas"
                 value={formatCurrency(financeSummary.income)}
-                detail="Somente lancamentos financeiros pagos."
+                detail="Somente lançamentos financeiros pagos."
                 tone="success"
               />
               <StatCard
                 icon={ArrowDownRight}
                 label="Saidas pagas"
                 value={formatCurrency(financeSummary.expense)}
-                detail="Despesas pagas e chargebacks nao cancelados."
+                detail="Despesas pagas e chargebacks não cancelados."
                 tone={financeSummary.expense > 0 ? "warning" : "success"}
               />
               <StatCard
@@ -694,14 +694,14 @@ export default async function ConsultaFinanceiraPage({
                 icon={Banknote}
                 label="A receber"
                 value={formatCurrency(financeSummary.pendingIncome)}
-                detail="Receitas previstas ainda nao pagas."
+                detail="Receitas previstas ainda não pagas."
                 tone={financeSummary.pendingIncome > 0 ? "warning" : "success"}
               />
               <StatCard
                 icon={Banknote}
                 label="A pagar"
                 value={formatCurrency(financeSummary.pendingExpense)}
-                detail="Despesas previstas ainda nao pagas."
+                detail="Despesas previstas ainda não pagas."
                 tone={financeSummary.pendingExpense > 0 ? "warning" : "success"}
               />
             </section>
@@ -718,10 +718,10 @@ export default async function ConsultaFinanceiraPage({
                     <tr>
                       <th className="px-5 py-3 font-semibold">Data</th>
                       <th className="px-5 py-3 font-semibold">Tipo</th>
-                      <th className="px-5 py-3 font-semibold">Descricao</th>
+                      <th className="px-5 py-3 font-semibold">Descrição</th>
                       <th className="px-5 py-3 font-semibold">Status</th>
                       <th className="px-5 py-3 font-semibold">Valor</th>
-                      <th className="px-5 py-3 font-semibold">Acoes</th>
+                      <th className="px-5 py-3 font-semibold">Ações</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">

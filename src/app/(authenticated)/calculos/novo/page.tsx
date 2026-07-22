@@ -43,7 +43,7 @@ export default async function NovoCalculoPage({
     loadError =
       error instanceof Error
         ? error.message
-        : "Nao foi possivel carregar clientes e pre-vendas para preenchimento automatico.";
+        : "Não foi possível carregar clientes e pré-vendas para preenchimento automático.";
   }
 
   let defaultValues: FinancingCalculationFormValues = financingCalculationDefaultValues;
@@ -94,19 +94,19 @@ export default async function NovoCalculoPage({
   return (
     <>
       <PageHeader
-        title="Nova simulacao"
-        description="Preencha os dados operacionais, revise os numeros e gere a simulacao de analise de correcao de juros para o cliente."
+        title="Nova simulação"
+        description="Preencha os dados operacionais, revise os números e gere a simulação de análise de correção de juros para o cliente."
       />
       <div className="space-y-6 p-6">
         {loadError ? (
           <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-            Nao foi possivel carregar as listas auxiliares de clientes e pre-vendas.
-            Voce ainda pode preencher a simulacao manualmente. Detalhe: {loadError}
+            Não foi possível carregar as listas auxiliares de clientes e pré-vendas.
+            Você ainda pode preencher a simulação manualmente. Detalhe: {loadError}
           </div>
         ) : null}
         <CalculationForm
           mode="create"
-          submitLabel="Calcular e salvar simulacao"
+          submitLabel="Calcular e salvar simulação"
           clients={clients}
           preSales={preSales}
           defaultValues={defaultValues}

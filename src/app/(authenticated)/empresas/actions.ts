@@ -21,7 +21,7 @@ const createCompanySchema = z.object({
   cnpj: optionalText.transform((value) => (value ? onlyDigits(value) : null)),
   email: optionalText.refine(
     (value) => !value || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value),
-    "Informe um e-mail valido.",
+    "Informe um e-mail válido.",
   ),
   phone: optionalText.transform((value) => (value ? onlyDigits(value) : null)),
 });
@@ -92,7 +92,7 @@ export async function createPlatformCompanyAction(formData: FormData) {
     .single();
 
   if (error || !data?.id) {
-    redirectWithError(error?.message || "Nao foi possivel criar a empresa.");
+    redirectWithError(error?.message || "Não foi possível criar a empresa.");
   }
 
   const adminClient = createAdminClient();
@@ -171,7 +171,7 @@ export async function updateCompanyPlatformSettingsAction(formData: FormData) {
 
   if (settingsError) {
     const message = isCompanyPlatformSettingsMissingError(settingsError)
-      ? "A tabela company_platform_settings ainda nao existe. Rode o SQL desta entrega no Supabase."
+      ? "A tabela company_platform_settings ainda não existe. Rode o SQL desta entrega no Supabase."
       : settingsError.message;
 
     redirectSettingsWithError(parsed.data.company_id, message);

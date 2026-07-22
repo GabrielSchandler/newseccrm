@@ -252,15 +252,15 @@ export default async function PreVendaPage({ params, searchParams }: PreVendaPag
     role === "admin" || role === "manager" || businessArea === "legal";
   const successMessage =
     queryParams.success === "created"
-      ? "Pre-venda cadastrada com sucesso."
+      ? "Pré-venda cadastrada com sucesso."
       : queryParams.success === "updated"
-        ? "Pre-venda atualizada com sucesso."
+        ? "Pré-venda atualizada com sucesso."
         : null;
 
   return (
     <>
       <PageHeader
-        title={snapshot?.full_name ?? client?.full_name ?? "Pre-venda"}
+        title={snapshot?.full_name ?? client?.full_name ?? "Pré-venda"}
         description="Cadastro operacional completo da oportunidade."
       />
       <div className="space-y-6 p-6">
@@ -280,7 +280,7 @@ export default async function PreVendaPage({ params, searchParams }: PreVendaPag
             href="/pre-vendas"
             className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
           >
-            Voltar para pre-vendas
+            Voltar para pré-vendas
           </Link>
           {client ? (
             <Link
@@ -294,7 +294,7 @@ export default async function PreVendaPage({ params, searchParams }: PreVendaPag
             href={`/calculos/novo?preSaleId=${preSale.id}`}
             className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
           >
-            Criar simulacao
+            Criar simulação
           </Link>
           <GenerateDocumentModal preSaleId={preSale.id} templates={templates} />
           <WhatsAppLink phone={snapshot?.phone_mobile ?? client?.phone_mobile ?? null} />
@@ -325,12 +325,12 @@ export default async function PreVendaPage({ params, searchParams }: PreVendaPag
             copyValue={copyableValue(preSale.tracking_protocol)}
           />
           <DetailItem
-            label="Servico"
+            label="Serviço"
             value={displayValue(preSale.service_type)}
             copyValue={copyableValue(preSale.service_type)}
           />
           <DetailItem
-            label="Midia"
+            label="Mídia"
             value={displayValue(preSale.media)}
             copyValue={copyableValue(preSale.media)}
           />
@@ -358,7 +358,7 @@ export default async function PreVendaPage({ params, searchParams }: PreVendaPag
 
         <DetailSection
           title="Contratante"
-          description="Snapshot preservado para contrato e ordem de servico."
+          description="Snapshot preservado para contrato e ordem de serviço."
         >
           <DetailItem label="Nome" value={displayValue(snapshot?.full_name ?? null)} copyValue={copyableValue(snapshot?.full_name ?? null)} />
           <DetailItem label="CPF" value={displayCpf(snapshot?.cpf ?? null)} copyValue={copyableValue(displayCpf(snapshot?.cpf ?? null))} />
@@ -371,13 +371,13 @@ export default async function PreVendaPage({ params, searchParams }: PreVendaPag
           <DetailItem label="Telefone secundario" value={displayPhone(snapshot?.phone_secondary ?? null)} copyValue={copyableValue(displayPhone(snapshot?.phone_secondary ?? null))} />
           <DetailItem label="CEP" value={displayValue(snapshot?.zip_code ?? null)} copyValue={copyableValue(snapshot?.zip_code ?? null)} />
           <DetailItem label="Rua" value={displayValue(snapshot?.street ?? null)} copyValue={copyableValue(snapshot?.street ?? null)} />
-          <DetailItem label="Numero" value={displayValue(snapshot?.number ?? null)} copyValue={copyableValue(snapshot?.number ?? null)} />
+          <DetailItem label="Número" value={displayValue(snapshot?.number ?? null)} copyValue={copyableValue(snapshot?.number ?? null)} />
           <DetailItem label="Bairro" value={displayValue(snapshot?.district ?? null)} copyValue={copyableValue(snapshot?.district ?? null)} />
           <DetailItem label="Cidade" value={displayValue(snapshot?.city ?? null)} copyValue={copyableValue(snapshot?.city ?? null)} />
           <DetailItem label="Estado" value={displayValue(snapshot?.state ?? null)} copyValue={copyableValue(snapshot?.state ?? null)} />
         </DetailSection>
 
-        <DetailSection title="Titular da divida">
+        <DetailSection title="Titular da dívida">
           <DetailItem label="Nome" value={displayValue(debtHolder?.full_name ?? null)} copyValue={copyableValue(debtHolder?.full_name ?? null)} />
           <DetailItem label="CPF" value={displayCpf(debtHolder?.cpf ?? null)} copyValue={copyableValue(displayCpf(debtHolder?.cpf ?? null))} />
           <DetailItem label="RG" value={displayValue(debtHolder?.rg ?? null)} copyValue={copyableValue(debtHolder?.rg ?? null)} />
@@ -385,7 +385,7 @@ export default async function PreVendaPage({ params, searchParams }: PreVendaPag
           <DetailItem label="Estado civil" value={displayValue(debtHolder?.marital_status ?? null)} copyValue={copyableValue(debtHolder?.marital_status ?? null)} />
           <DetailItem label="Profissao" value={displayValue(debtHolder?.profession ?? null)} copyValue={copyableValue(debtHolder?.profession ?? null)} />
           <DetailItem label="Nacionalidade" value={displayValue(debtHolder?.nationality ?? null)} copyValue={copyableValue(debtHolder?.nationality ?? null)} />
-          <DetailItem label="Orgao emissor" value={displayValue(debtHolder?.issuer_agency ?? null)} copyValue={copyableValue(debtHolder?.issuer_agency ?? null)} />
+          <DetailItem label="Órgão emissor" value={displayValue(debtHolder?.issuer_agency ?? null)} copyValue={copyableValue(debtHolder?.issuer_agency ?? null)} />
           <DetailItem label="Pai" value={displayValue(debtHolder?.father_name ?? null)} copyValue={copyableValue(debtHolder?.father_name ?? null)} />
           <DetailItem label="Mae" value={displayValue(debtHolder?.mother_name ?? null)} copyValue={copyableValue(debtHolder?.mother_name ?? null)} />
           <DetailItem label="Celular" value={displayPhone(debtHolder?.phone_mobile ?? null)} copyValue={copyableValue(displayPhone(debtHolder?.phone_mobile ?? null))} />
@@ -393,7 +393,7 @@ export default async function PreVendaPage({ params, searchParams }: PreVendaPag
           <DetailItem label="Email" value={displayValue(debtHolder?.email ?? null)} copyValue={copyableValue(debtHolder?.email ?? null)} />
           <DetailItem label="CEP" value={displayValue(debtHolder?.zip_code ?? null)} copyValue={copyableValue(debtHolder?.zip_code ?? null)} />
           <DetailItem label="Rua" value={displayValue(debtHolder?.street ?? null)} copyValue={copyableValue(debtHolder?.street ?? null)} />
-          <DetailItem label="Numero" value={displayValue(debtHolder?.number ?? null)} copyValue={copyableValue(debtHolder?.number ?? null)} />
+          <DetailItem label="Número" value={displayValue(debtHolder?.number ?? null)} copyValue={copyableValue(debtHolder?.number ?? null)} />
           <DetailItem label="Bairro" value={displayValue(debtHolder?.district ?? null)} copyValue={copyableValue(debtHolder?.district ?? null)} />
           <DetailItem label="Cidade" value={displayValue(debtHolder?.city ?? null)} copyValue={copyableValue(debtHolder?.city ?? null)} />
           <DetailItem label="Estado" value={displayValue(debtHolder?.state ?? null)} copyValue={copyableValue(debtHolder?.state ?? null)} />
@@ -412,7 +412,7 @@ export default async function PreVendaPage({ params, searchParams }: PreVendaPag
             copyValue={copyableValue(financialCase?.financer_cnpj ?? null)}
           />
           <DetailItem
-            label="Sede / endereco da financeira"
+            label="Sede / endereço da financeira"
             value={displayValue(financialCase?.financer_address ?? null)}
             copyValue={copyableValue(financialCase?.financer_address ?? null)}
           />
@@ -445,40 +445,40 @@ export default async function PreVendaPage({ params, searchParams }: PreVendaPag
           <DetailItem label="Parcelas pagas" value={displayValue(financialCase?.paid_installments === null || financialCase?.paid_installments === undefined ? null : String(financialCase.paid_installments))} copyValue={copyableValue(financialCase?.paid_installments === null || financialCase?.paid_installments === undefined ? null : String(financialCase.paid_installments))} />
           <DetailItem label="Parcelas em atraso" value={displayValue(financialCase?.overdue_installments === null || financialCase?.overdue_installments === undefined ? null : String(financialCase.overdue_installments))} copyValue={copyableValue(financialCase?.overdue_installments === null || financialCase?.overdue_installments === undefined ? null : String(financialCase.overdue_installments))} />
           <DetailItem label="Dia do vencimento" value={displayValue(financialCase?.due_day === null || financialCase?.due_day === undefined ? null : String(financialCase.due_day))} copyValue={copyableValue(financialCase?.due_day === null || financialCase?.due_day === undefined ? null : String(financialCase.due_day))} />
-          <DetailItem label="Numero do financiamento" value={displayValue(financialCase?.contract_number ?? null)} copyValue={copyableValue(financialCase?.contract_number ?? null)} />
+          <DetailItem label="Número do financiamento" value={displayValue(financialCase?.contract_number ?? null)} copyValue={copyableValue(financialCase?.contract_number ?? null)} />
         </DetailSection>
 
         <DetailSection
-          title="Dados juridicos"
-          description="Informacoes herdadas do legado e usadas pelo Juridico."
+          title="Dados jurídicos"
+          description="Informações herdadas do legado e usadas pelo Jurídico."
         >
-          <DetailItem label="Departamento juridico legado" value={displayValue(preSale.legal_department)} copyValue={copyableValue(preSale.legal_department)} />
-          <DetailItem label="Status juridico" value={displayValue(preSale.legal_status_text)} copyValue={copyableValue(preSale.legal_status_text)} />
-          <DetailItem label="Status documental juridico" value={displayValue(preSale.legal_document_status)} copyValue={copyableValue(preSale.legal_document_status)} />
-          <DetailItem label="Numero do processo" value={displayValue(preSale.legal_case_number)} copyValue={copyableValue(preSale.legal_case_number)} />
+          <DetailItem label="Departamento jurídico legado" value={displayValue(preSale.legal_department)} copyValue={copyableValue(preSale.legal_department)} />
+          <DetailItem label="Status jurídico" value={displayValue(preSale.legal_status_text)} copyValue={copyableValue(preSale.legal_status_text)} />
+          <DetailItem label="Status documental jurídico" value={displayValue(preSale.legal_document_status)} copyValue={copyableValue(preSale.legal_document_status)} />
+          <DetailItem label="Número do processo" value={displayValue(preSale.legal_case_number)} copyValue={copyableValue(preSale.legal_case_number)} />
           <DetailItem label="Ano do processo" value={displayValue(preSale.legal_case_year)} copyValue={copyableValue(preSale.legal_case_year)} />
           <DetailItem label="Prazo" value={displayValue(preSale.legal_deadline)} copyValue={copyableValue(preSale.legal_deadline)} />
           <DetailItem label="Comarca" value={displayValue(preSale.legal_county)} copyValue={copyableValue(preSale.legal_county)} />
           <DetailItem label="Forum" value={displayValue(preSale.legal_forum)} copyValue={copyableValue(preSale.legal_forum)} />
           <DetailItem label="Vara" value={displayValue(preSale.legal_court_division)} copyValue={copyableValue(preSale.legal_court_division)} />
-          <DetailItem label="Operador juridico legado" value={displayValue(preSale.legal_operator_name)} copyValue={copyableValue(preSale.legal_operator_name)} />
+          <DetailItem label="Operador jurídico legado" value={displayValue(preSale.legal_operator_name)} copyValue={copyableValue(preSale.legal_operator_name)} />
           <DetailItem label="Operador processual legado" value={displayValue(preSale.legal_process_operator_name)} copyValue={copyableValue(preSale.legal_process_operator_name)} />
-          <DetailItem label="Protocolo juridico" value={displayValue(preSale.legal_protocol)} copyValue={copyableValue(preSale.legal_protocol)} />
+          <DetailItem label="Protocolo jurídico" value={displayValue(preSale.legal_protocol)} copyValue={copyableValue(preSale.legal_protocol)} />
         </DetailSection>
 
         {preSale.pre_sale_type === "veiculo" ? (
-          <DetailSection title="Dados do veiculo">
-            <DetailItem label="Veiculo" value={displayValue(financialCase?.asset_brand_model ?? null)} copyValue={copyableValue(financialCase?.asset_brand_model ?? null)} />
+          <DetailSection title="Dados do veículo">
+            <DetailItem label="Veículo" value={displayValue(financialCase?.asset_brand_model ?? null)} copyValue={copyableValue(financialCase?.asset_brand_model ?? null)} />
             <DetailItem label="Cor" value={displayValue(financialCase?.asset_color ?? null)} copyValue={copyableValue(financialCase?.asset_color ?? null)} />
             <DetailItem label="Ano" value={displayValue(financialCase?.asset_year === null || financialCase?.asset_year === undefined ? null : String(financialCase.asset_year))} copyValue={copyableValue(financialCase?.asset_year === null || financialCase?.asset_year === undefined ? null : String(financialCase.asset_year))} />
             <DetailItem label="Placa" value={displayValue(financialCase?.asset_plate ?? null)} copyValue={copyableValue(financialCase?.asset_plate ?? null)} />
           </DetailSection>
         ) : null}
 
-        <DetailSection title="Contratacao e negociacao">
+        <DetailSection title="Contratação e negociacao">
           <DetailItem label="Valor do contrato" value={formatCurrency(preSale.contract_value)} copyValue={copyableValue(formatCurrency(preSale.contract_value))} />
           <DetailItem
-            label="Descricao de contrato"
+            label="Descrição de contrato"
             className="md:col-span-2"
             value={
               <p className="whitespace-pre-line">
@@ -488,7 +488,7 @@ export default async function PreVendaPage({ params, searchParams }: PreVendaPag
             copyValue={copyableValue(preSale.payment_description)}
           />
           <DetailItem
-            label="Descricao livre da contratacao / informe"
+            label="Descrição livre da contratação / informe"
             className="md:col-span-2"
             value={
               <p className="whitespace-pre-line">
@@ -552,8 +552,8 @@ export default async function PreVendaPage({ params, searchParams }: PreVendaPag
         <ClientDocumentsSection
           clientId={preSale.client_id}
           preSaleId={preSale.id}
-          title="Anexos da operacao"
-          description="Documentos privados vinculados a esta pre-venda e ao cliente da operacao."
+          title="Anexos da operação"
+          description="Documentos privados vinculados a esta pré-venda e ao cliente da operação."
         />
       </div>
     </>

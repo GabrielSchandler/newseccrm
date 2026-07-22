@@ -19,7 +19,7 @@ function moduleGroups() {
   return [
     {
       key: "operacao",
-      label: "Operacao principal",
+      label: "Operação principal",
       description: "Modulos que aparecem para a equipe no uso diario.",
     },
     {
@@ -30,7 +30,7 @@ function moduleGroups() {
     {
       key: "gestao",
       label: "Governanca",
-      description: "Recursos administrativos, seguranca e padronizacao.",
+      description: "Recursos administrativos, segurança e padronizacao.",
     },
   ] as const;
 }
@@ -58,7 +58,7 @@ export function CompanyPlatformSettingsForm({
       <div className="flex flex-col gap-4 border-b border-slate-200 pb-6 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-teal-700">
-            Configuracao SaaS
+            Configuração SaaS
           </p>
           <h2 className="mt-2 text-2xl font-semibold text-slate-950">
             Plano e modulos da empresa
@@ -85,9 +85,9 @@ export function CompanyPlatformSettingsForm({
 
       {!settingsTableReady ? (
         <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-900">
-          A tabela de configuracoes ainda nao existe no Supabase. Esta tela esta
-          usando padroes temporarios; rode o SQL desta entrega para salvar as
-          configuracoes.
+          A tabela de configurações ainda não existe no Supabase. Esta tela esta
+          usando padrões temporarios; rode o SQL desta entrega para salvar as
+          configurações.
         </div>
       ) : null}
 
@@ -108,7 +108,7 @@ export function CompanyPlatformSettingsForm({
         </label>
 
         <label className="space-y-2 text-sm font-medium text-slate-700">
-          <span>Usuarios contratados</span>
+          <span>Usuários contratados</span>
           <input
             name="user_license_limit"
             type="number"
@@ -191,26 +191,26 @@ export function CompanyPlatformSettingsForm({
       </section>
 
       <label className="block space-y-2 text-sm font-medium text-slate-700">
-        <span>Observacoes internas</span>
+        <span>Observações internas</span>
         <textarea
           name="notes"
           rows={4}
           defaultValue={settings.notes ?? ""}
-          placeholder="Ex.: empresa em onboarding, pacote contratado, observacoes comerciais ou restricoes combinadas."
+          placeholder="Ex.: empresa em onboarding, pacote contratado, observações comerciais ou restrições combinadas."
           className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
         />
       </label>
 
       <div className="flex flex-col gap-3 border-t border-slate-200 pt-5 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm leading-6 text-slate-500">
-          As alteracoes ficam registradas na empresa e podem controlar o que aparece
-          para os usuarios na entrada do CRM.
+          As alterações ficam registradas na empresa e podem controlar o que aparece
+          para os usuários na entrada do CRM.
         </p>
         <button
           type="submit"
           className="inline-flex items-center justify-center rounded-lg bg-teal-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-800"
         >
-          Salvar configuracoes
+          Salvar configurações
         </button>
       </div>
     </form>

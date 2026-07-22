@@ -59,7 +59,7 @@ export async function convertDocxToPdf(
         engine: "libreoffice",
         message:
           result.stderr.trim() ||
-          "LibreOffice nao conseguiu converter o DOCX para PDF.",
+          "LibreOffice não conseguiu converter o DOCX para PDF.",
       };
     }
 
@@ -75,7 +75,7 @@ export async function convertDocxToPdf(
       message:
         error instanceof Error
           ? error.message
-          : "Conversao PDF indisponivel neste ambiente.",
+          : "Conversão PDF indisponível neste ambiente.",
     };
   } finally {
     await rm(workDir, { recursive: true, force: true });

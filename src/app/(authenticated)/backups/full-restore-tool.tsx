@@ -72,7 +72,7 @@ function formatNumber(value: number) {
 
 function formatDateTime(value: string | undefined) {
   if (!value) {
-    return "Nao informado";
+    return "Não informado";
   }
 
   return new Intl.DateTimeFormat("pt-BR", {
@@ -231,9 +231,9 @@ function buildRestoreFiles({
 async function getFriendlyError(response: Response) {
   try {
     const data = (await response.json()) as { error?: string };
-    return data.error ?? "Nao foi possivel concluir a operacao.";
+    return data.error ?? "Não foi possível concluir a operação.";
   } catch {
-    return "Nao foi possivel concluir a operacao.";
+    return "Não foi possível concluir a operação.";
   }
 }
 
@@ -290,7 +290,7 @@ export function FullRestoreTool() {
       const manifestPath = findManifestPath(paths);
 
       if (!manifestPath) {
-        throw new Error("Este ZIP nao possui manifest.json.");
+        throw new Error("Este ZIP não possui manifest.json.");
       }
 
       const manifest = JSON.parse(
@@ -301,11 +301,11 @@ export function FullRestoreTool() {
         manifest.backup_format !== grsBackupFormat ||
         manifest.backup_format_version !== backupFormatVersion
       ) {
-        throw new Error("Este backup nao esta no padrao GRS atual.");
+        throw new Error("Este backup não está no padrão GRS atual.");
       }
 
       if (!manifest.storage?.backup_contains_storage_binaries) {
-        throw new Error("Este backup nao contem os arquivos do Storage embutidos.");
+        throw new Error("Este backup não contem os arquivos do Storage embutidos.");
       }
 
       const rootPrefix = getBackupRoot(manifestPath);
@@ -351,7 +351,7 @@ export function FullRestoreTool() {
       setError(
         readError instanceof Error
           ? readError.message
-          : "Nao foi possivel ler o backup.",
+          : "Não foi possível ler o backup.",
       );
       setMessage("Falha ao analisar o backup.");
     }
@@ -405,7 +405,7 @@ export function FullRestoreTool() {
         const fileRef = loaded.files[upload.index];
 
         if (!fileRef) {
-          throw new Error("Referencia de arquivo restaurado nao encontrada.");
+          throw new Error("Referência de arquivo restaurado não encontrada.");
         }
 
         const zipFile = loaded.zip.file(fileRef.zipPath);
@@ -437,7 +437,7 @@ export function FullRestoreTool() {
       }
 
       setStage("restoring");
-      setMessage("Substituindo os dados da empresa pelo conteudo do backup...");
+      setMessage("Substituindo os dados da empresa pelo conteúdo do backup...");
 
       const completeResponse = await fetch("/api/backups/restore-full/complete", {
         method: "POST",
@@ -466,7 +466,7 @@ export function FullRestoreTool() {
       setError(
         restoreError instanceof Error
           ? restoreError.message
-          : "Nao foi possivel restaurar o sistema.",
+          : "Não foi possível restaurar o sistema.",
       );
       setMessage("Falha ao restaurar o sistema.");
     }
@@ -514,7 +514,7 @@ export function FullRestoreTool() {
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-red-700">
-                Previa da restauracao completa
+                Previa da restauração completa
               </p>
               <h3 className="mt-2 text-lg font-semibold text-slate-950">
                 {loaded.manifest.backup_name ?? loaded.fileName}
@@ -524,7 +524,7 @@ export function FullRestoreTool() {
               </p>
             </div>
             <span className="rounded-full bg-red-50 px-3 py-1 text-xs font-semibold text-red-800">
-              Acao irreversivel sem outro backup
+              Ação irreversivel sem outro backup
             </span>
           </div>
 
@@ -566,7 +566,7 @@ export function FullRestoreTool() {
           {loaded.storageErrors ? (
             <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-900">
               O manifesto registra {formatNumber(loaded.storageErrors)} erro(s)
-              de arquivo. A restauracao completa fica bloqueada para evitar
+              de arquivo. A restauração completa fica bloqueada para evitar
               perda de documentos.
             </div>
           ) : null}
@@ -574,7 +574,7 @@ export function FullRestoreTool() {
           {loaded.missingFiles.length ? (
             <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-900">
               {formatNumber(loaded.missingFiles.length)} arquivo(s)
-              referenciados nao foram encontrados dentro do ZIP. Gere um novo
+              referenciados não foram encontrados dentro do ZIP. Gere um novo
               backup completo antes de restaurar tudo.
             </div>
           ) : null}
@@ -600,10 +600,10 @@ export function FullRestoreTool() {
 
           <div className="mt-5 rounded-lg border border-red-200 bg-red-50 p-4">
             <p className="text-sm font-semibold text-red-950">
-              Confirmacao obrigatoria
+              Confirmacao obrigatória
             </p>
             <p className="mt-2 text-sm leading-6 text-red-900">
-              Esta acao substitui os dados da empresa atual pelo conteudo do
+              Esta ação substitui os dados da empresa atual pelo conteúdo do
               backup selecionado. Para continuar, digite{" "}
               <strong>{fullRestoreConfirmationText}</strong>.
             </p>

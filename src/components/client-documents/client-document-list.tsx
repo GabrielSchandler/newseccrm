@@ -155,12 +155,12 @@ export function ClientDocumentList({
             <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
               <tr>
                 <th className="px-4 py-3 font-semibold">Tipo</th>
-                <th className="px-4 py-3 font-semibold">Titulo</th>
+                <th className="px-4 py-3 font-semibold">Título</th>
                 <th className="px-4 py-3 font-semibold">Arquivo</th>
                 <th className="px-4 py-3 font-semibold">Tamanho</th>
                 <th className="px-4 py-3 font-semibold">Enviado por</th>
                 <th className="px-4 py-3 font-semibold">Data</th>
-                <th className="px-4 py-3 font-semibold">Acoes</th>
+                <th className="px-4 py-3 font-semibold">Ações</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -262,7 +262,7 @@ export function ClientDocumentList({
                             </div>
                             <div className="space-y-2">
                               <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                                Titulo
+                                Título
                               </label>
                               <input
                                 value={editingTitle}
@@ -272,7 +272,7 @@ export function ClientDocumentList({
                             </div>
                             <div className="space-y-2 md:col-span-2">
                               <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                                Descricao
+                                Descrição
                               </label>
                               <textarea
                                 rows={3}
@@ -292,7 +292,7 @@ export function ClientDocumentList({
                                 accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx"
                               />
                               <p className="text-xs text-slate-500">
-                                Deixe em branco se quiser apenas editar as informacoes do documento atual.
+                                Deixe em branco se quiser apenas editar as informações do documento atual.
                               </p>
                             </div>
                           </div>
@@ -303,7 +303,7 @@ export function ClientDocumentList({
                               onClick={() => handleUpdate(document.id)}
                               className="rounded-lg bg-teal-700 px-3 py-2 text-sm font-semibold text-white transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-70"
                             >
-                              Salvar alteracoes
+                              Salvar alterações
                             </button>
                             <button
                               type="button"

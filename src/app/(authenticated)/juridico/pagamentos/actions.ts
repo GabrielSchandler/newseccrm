@@ -120,14 +120,14 @@ function redirectWithPaymentMessage(
 }
 
 function normalizeError(error: unknown) {
-  const message = error instanceof Error ? error.message : "Nao foi possivel concluir a operacao.";
+  const message = error instanceof Error ? error.message : "Não foi possível concluir a operação.";
 
   if (
     message.toLowerCase().includes("schema cache") ||
     message.toLowerCase().includes("does not exist") ||
     message.toLowerCase().includes("could not find")
   ) {
-    return "As tabelas de pagamentos juridicos ainda nao existem. Rode o SQL docs/sql/juridico-pagamentos.sql no Supabase.";
+    return "As tabelas de pagamentos jurídicos ainda não existem. Rode o SQL docs/sql/juridico-pagamentos.sql no Supabase.";
   }
 
   return message;
@@ -137,7 +137,7 @@ async function requireLegalPaymentContext(preSaleId: string): Promise<PaymentWri
   const context = await getCurrentUserContext();
 
   if (!canManageLegalPayments(context.role, context.businessArea)) {
-    throw new Error("O usuario atual nao pode lancar pagamentos juridicos.");
+    throw new Error("O usuário atual não pode lançar pagamentos jurídicos.");
   }
 
   const preSale = await assertPreSaleAccess(preSaleId);
@@ -153,7 +153,7 @@ async function ensureLegalResponsibleUser(
   responsibleUserId: string | null,
 ) {
   if (!responsibleUserId) {
-    throw new Error("Selecione o responsavel juridico pela venda/comissao.");
+    throw new Error("Selecione o responsável jurídico pela venda/comissão.");
   }
 
   const { data, error } = await context.supabase
@@ -172,7 +172,7 @@ async function ensureLegalResponsibleUser(
     | null;
 
   if (!responsible || responsible.is_active === false || responsible.business_area !== "legal") {
-    throw new Error("Selecione um usuario juridico ativo para receber a venda.");
+    throw new Error("Selecione um usuário jurídico ativo para receber a venda.");
   }
 
   return responsible;
@@ -183,7 +183,7 @@ async function getLegalPaymentType(
   legalPaymentTypeId: string | null,
 ) {
   if (!legalPaymentTypeId) {
-    throw new Error("Selecione o tipo de cobranca juridica.");
+    throw new Error("Selecione o tipo de cobrança jurídica.");
   }
 
   const { data, error } = await context.supabase
@@ -199,7 +199,7 @@ async function getLegalPaymentType(
   }
 
   if (!data) {
-    throw new Error("Tipo de cobranca juridica nao encontrado.");
+    throw new Error("Tipo de cobrança jurídica não encontrado.");
   }
 
   return data as LegalPaymentType;
@@ -222,11 +222,11 @@ function buildPayloadFromForm(
       : normalizeDate(formData.get("paid_at"));
 
   if (amount <= 0) {
-    throw new Error("Informe um valor juridico maior que zero.");
+    throw new Error("Informe um valor jurídico maior que zero.");
   }
 
   if (goalAmount < 0) {
-    throw new Error("O valor meta nao pode ser negativo.");
+    throw new Error("O valor meta não pode ser negativo.");
   }
 
   if ((status === "previsto" || status === "vencido") && !dueDate) {
@@ -268,13 +268,13 @@ async function loadPaymentContext(paymentId: string, context: CurrentUserContext
   const payment = data as LegalPayment | null;
 
   if (!payment) {
-    throw new Error("Pagamento juridico nao encontrado.");
+    throw new Error("Pagamento jurídico não encontrado.");
   }
 
   const preSale = await assertPreSaleAccess(payment.pre_sale_id);
 
   if (!canManageLegalPayments(context.role, context.businessArea)) {
-    throw new Error("O usuario atual nao pode alterar pagamentos juridicos.");
+    throw new Error("O usuário atual não pode alterar pagamentos jurídicos.");
   }
 
   return {
@@ -305,7 +305,7 @@ async function getFinanceCategoryId(companyId: string) {
     .from("finance_categories")
     .select("id")
     .eq("company_id", companyId)
-    .eq("name", "Receita Juridica")
+    .eq("name", "Receita Jurídica")
     .maybeSingle();
 
   if (error) {
@@ -320,7 +320,7 @@ async function getFinanceCategoryId(companyId: string) {
     .from("finance_categories")
     .insert({
       company_id: companyId,
-      name: "Receita Juridica",
+      name: "Receita Jurídica",
       kind: "income",
     })
     .select("id")
@@ -360,14 +360,14 @@ async function syncPaymentWithFinance({
   ]);
   const snapshot = snapshotData as PreSaleClientSnapshot | null;
   const client = clientData as { full_name: string | null; cpf: string | null } | null;
-  const clientName = snapshot?.full_name || client?.full_name || "Cliente juridico";
+  const clientName = snapshot?.full_name || client?.full_name || "Cliente jurídico";
   const clientCpf = String(snapshot?.cpf || client?.cpf || "").replace(/\D/g, "") || null;
   const sourceHash = `legal_payment:${payment.id}`;
   const dueDate = payment.due_date ?? payment.paid_at ?? todayYmd();
   const paidAt = payment.status === "pago" ? payment.paid_at ?? todayYmd() : null;
   const categoryId = await getFinanceCategoryId(context.companyId);
   const responsibleName = responsible ? resolveUserDisplayName(responsible) : null;
-  const description = `Recebimento juridico - ${type.name} - ${clientName}`;
+  const description = `Recebimento jurídico - ${type.name} - ${clientName}`;
   const transactionStatus = financeTransactionStatus(payment.status);
 
   const { data: transactionData, error: transactionError } = await adminClient
@@ -415,7 +415,7 @@ async function syncPaymentWithFinance({
           client_cpf: clientCpf,
           consultant_user_id: payment.responsible_user_id,
           consultant_name: responsibleName,
-          modality: "Juridico",
+          modality: "Jurídico",
           platform: type.name,
           installment_count: String(payment.installment_number ?? 1),
           gross_amount: payment.amount,
@@ -484,10 +484,10 @@ async function recordLegalPaymentTimeline({
   action: "created" | "updated" | "deleted" | "receipt";
 }) {
   const titles = {
-    created: `Pagamento juridico cadastrado: ${type.name}`,
-    updated: `Pagamento juridico atualizado: ${type.name}`,
-    deleted: `Pagamento juridico removido: ${type.name}`,
-    receipt: `Recibo juridico gerado: ${type.name}`,
+    created: `Pagamento jurídico cadastrado: ${type.name}`,
+    updated: `Pagamento jurídico atualizado: ${type.name}`,
+    deleted: `Pagamento jurídico removido: ${type.name}`,
+    receipt: `Recibo jurídico gerado: ${type.name}`,
   };
 
   await recordClientTimelineEvent({
@@ -568,7 +568,7 @@ export async function createLegalPaymentAction(preSaleId: string, formData: Form
     redirectWithPaymentMessage(preSaleId, "error", normalizeError(error));
   }
 
-  redirectWithPaymentMessage(preSaleId, "success", "Pagamento juridico cadastrado.");
+  redirectWithPaymentMessage(preSaleId, "success", "Pagamento jurídico cadastrado.");
 }
 
 export async function updateLegalPaymentAction(paymentId: string, formData: FormData) {
@@ -628,7 +628,7 @@ export async function updateLegalPaymentAction(paymentId: string, formData: Form
     redirectWithPaymentMessage(preSaleId, "error", normalizeError(error));
   }
 
-  redirectWithPaymentMessage(preSaleId, "success", "Pagamento juridico atualizado.");
+  redirectWithPaymentMessage(preSaleId, "success", "Pagamento jurídico atualizado.");
 }
 
 export async function deleteLegalPaymentAction(paymentId: string, formData: FormData) {
@@ -695,7 +695,7 @@ export async function deleteLegalPaymentAction(paymentId: string, formData: Form
     redirectWithPaymentMessage(preSaleId, "error", normalizeError(error));
   }
 
-  redirectWithPaymentMessage(preSaleId, "success", "Pagamento juridico removido.");
+  redirectWithPaymentMessage(preSaleId, "success", "Pagamento jurídico removido.");
 }
 
 export async function generateLegalPaymentReceiptAction(
@@ -710,13 +710,13 @@ export async function generateLegalPaymentReceiptAction(
     preSaleId = payment.pre_sale_id;
 
     if (payment.status !== "pago") {
-      throw new Error("O recibo juridico so pode ser gerado para pagamento marcado como pago.");
+      throw new Error("O recibo jurídico só pode ser gerado para pagamento marcado como pago.");
     }
 
     const templateId = optionalUuid(formData.get("template_id"));
 
     if (!templateId) {
-      throw new Error("Selecione o template do recibo juridico.");
+      throw new Error("Selecione o template do recibo jurídico.");
     }
 
     const { data: templateData, error: templateError } = await context.supabase
@@ -734,7 +734,7 @@ export async function generateLegalPaymentReceiptAction(
     const template = templateData as DocumentTemplate | null;
 
     if (!template) {
-      throw new Error("Template ativo nao encontrado.");
+      throw new Error("Template ativo não encontrado.");
     }
 
     const result = template.original_pdf_path
@@ -769,5 +769,5 @@ export async function generateLegalPaymentReceiptAction(
     redirectWithPaymentMessage(preSaleId, "error", normalizeError(error));
   }
 
-  redirectWithPaymentMessage(preSaleId, "success", "Recibo juridico gerado.");
+  redirectWithPaymentMessage(preSaleId, "success", "Recibo jurídico gerado.");
 }

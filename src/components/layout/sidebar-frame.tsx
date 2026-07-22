@@ -123,13 +123,13 @@ export function SidebarFrame({
 
   const workspaceLabel =
     currentWorkspace === "management"
-      ? "Gestao"
+      ? "Gestão"
       : currentWorkspace === "finance"
         ? "Financeiro"
         : currentWorkspace === "academy"
           ? "Academy"
           : currentWorkspace === "legal"
-            ? "Juridico"
+            ? "Jurídico"
             : "Comercial";
 
   return (

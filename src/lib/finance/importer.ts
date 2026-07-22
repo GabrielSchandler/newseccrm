@@ -255,7 +255,7 @@ function findHeaderRowIndex(matrix: unknown[][]) {
   const keywords = new Set([
     "VCTO",
     "DECRICAO",
-    "DESCRICAO",
+    "DESCRIÇÃO",
     "DESTINATARIO",
     "DESTINATARIO",
     "CONTAS A PAGAR",
@@ -329,7 +329,7 @@ function parseTransactionRows(
     const get = rowGetter(row);
     const rowNumber = Number(row[metadataRowNumberKey] ?? index + 2);
     const description =
-      cleanText(get("DECRICAO", "DESCRICAO", "DESCRIÇÃO", "HISTORICO")) ??
+      cleanText(get("DECRICAO", "DESCRIÇÃO", "DESCRIÇÃO", "HISTÓRICO")) ??
       cleanText(get("DESTINATARIO", "DESTINATÁRIO")) ??
       "Lancamento importado";
     const dueDate = parseDate(get("VCTO", "VENCIMENTO", "DATA"), defaultYear) ?? defaultDate;
@@ -411,7 +411,7 @@ function parseSaleRows(
       client_cpf: normalizeCpf(get("CPF")),
       consultant_name:
         cleanText(get("CONSULTOR", "COMERCIAL", "COMERCAL")) ?? sheetConsultant,
-      modality: cleanText(get("MODALIDADE", "TIPO", "SERVICO", "SERVIÇO")),
+      modality: cleanText(get("MODALIDADE", "TIPO", "SERVIÇO", "SERVIÇO")),
       platform: cleanText(get("PLATAFORMA", "FORMA", "PGTO", "PAGAMENTO")),
       installment_count: cleanText(get("QTDE", "PARCELA", "PARCELAS")),
       gross_amount: grossAmount || goalAmount,

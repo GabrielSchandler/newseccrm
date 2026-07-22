@@ -41,26 +41,26 @@ export default async function EditarCalculoPage({
     loadError =
       error instanceof Error
         ? error.message
-        : "Nao foi possivel carregar clientes e pre-vendas para edicao assistida.";
+        : "Não foi possível carregar clientes e pré-vendas para edição assistida.";
   }
 
   return (
     <>
       <PageHeader
-        title="Editar simulacao"
-        description="Atualize os dados do financiamento e recalcule os resultados preservando o historico do atendimento."
+        title="Editar simulação"
+        description="Atualize os dados do financiamento e recalcule os resultados preservando o histórico do atendimento."
       />
       <div className="space-y-6 p-6">
         <CalculationDeleteButton calculationId={id} />
         {loadError ? (
           <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-            Nao foi possivel carregar as listas auxiliares de clientes e pre-vendas.
-            Voce ainda pode editar a simulacao manualmente. Detalhe: {loadError}
+            Não foi possível carregar as listas auxiliares de clientes e pré-vendas.
+            Você ainda pode editar a simulação manualmente. Detalhe: {loadError}
           </div>
         ) : null}
         <CalculationForm
           mode="edit"
-          submitLabel="Salvar simulacao"
+          submitLabel="Salvar simulação"
           clients={clients}
           preSales={preSales}
           defaultValues={financingCalculationToFormValues(calculation)}

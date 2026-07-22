@@ -22,12 +22,12 @@ export const legalWorkflowStages: Array<LegalWorkflowStageDefinition> = [
     id: "termo_pagamento_servico",
     value: "termo_pagamento_servico",
     legacyKey: "termo_pagamento_servico",
-    label: "1. Termo de pagamento de prestacao de servico",
+    label: "1. Termo de pagamento de prestação de serviço",
     shortLabel: "Termo de pagamento",
     description:
-      "Entrada do cliente no Juridico com o termo comercial de pagamento de prestacao de servico.",
+      "Entrada do cliente no Jurídico com o termo comercial de pagamento de prestação de serviço.",
     color: "#0f766e",
-    documents: ["Termo de pagamento de prestacao de servico"],
+    documents: ["Termo de pagamento de prestação de serviço"],
     position: 1,
   },
   {
@@ -50,10 +50,10 @@ export const legalWorkflowStages: Array<LegalWorkflowStageDefinition> = [
     id: "diligencia_cobranca",
     value: "diligencia_cobranca",
     legacyKey: "diligencia_cobranca",
-    label: "3. Diligencia para cobranca",
-    shortLabel: "Diligencia e cobranca",
+    label: "3. Diligencia para cobrança",
+    shortLabel: "Diligencia e cobrança",
     description:
-      "Emitir os documentos de diligencia e formalizacao da cobranca extrajudicial.",
+      "Emitir os documentos de diligencia e formalizacao da cobrança extrajudicial.",
     color: "#7c3aed",
     documents: [
       "Notificacao Extrajudicial",
@@ -78,10 +78,10 @@ export const legalWorkflowStages: Array<LegalWorkflowStageDefinition> = [
     id: "pos_laudo_ciencia",
     value: "pos_laudo_ciencia",
     legacyKey: "pos_laudo_ciencia",
-    label: "5. Pos recebimento do laudo",
-    shortLabel: "Pos-laudo",
+    label: "5. Pós recebimento do laudo",
+    shortLabel: "Pós-laudo",
     description:
-      "Registrar a etapa final de ciencia e responsabilidade apos o recebimento do laudo.",
+      "Registrar a etapa final de ciencia e responsabilidade após o recebimento do laudo.",
     color: "#be123c",
     documents: ["Termo de Ciencia e Responsabilidade"],
     position: 5,

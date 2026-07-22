@@ -101,7 +101,7 @@ async function ensureClientDocumentsBucketAvailable() {
 
   if (error.message.toLowerCase().includes("bucket not found")) {
     return friendlyError(
-      "O bucket privado 'client-documents' ainda nao existe nesta instancia do Supabase.",
+      "O bucket privado 'client-documents' ainda não existe nesta instância do Supabase.",
     );
   }
 
@@ -126,7 +126,7 @@ export async function uploadClientDocumentAction(
 
   if (!isAllowedClientDocumentFile(file)) {
     return friendlyError(
-      "Formato invalido. Envie PDF, JPG, PNG, WEBP, DOC ou DOCX.",
+      "Formato inválido. Envie PDF, JPG, PNG, WEBP, DOC ou DOCX.",
     );
   }
 
@@ -135,7 +135,7 @@ export async function uploadClientDocumentAction(
   }
 
   if (file.size > maxClientDocumentSize) {
-    return friendlyError("Envie um arquivo com ate 20 MB.");
+    return friendlyError("Envie um arquivo com até 20 MB.");
   }
 
   const { client_id: clientId, pre_sale_id: preSaleId } = parsed.data;
@@ -146,7 +146,7 @@ export async function uploadClientDocumentAction(
     const adminSupabase = createAdminClient();
 
     if (!canManageClientDocuments(role)) {
-      return friendlyError("Voce nao tem permissao para enviar documentos.");
+      return friendlyError("Você não tem permissão para enviar documentos.");
     }
 
     const bucketError = await ensureClientDocumentsBucketAvailable();
@@ -216,7 +216,7 @@ export async function uploadClientDocumentAction(
       preSaleId,
       eventType: "client_document_uploaded",
       title: "Documento enviado ao cadastro do cliente",
-      note: `Arquivo "${parsed.data.title || file.name}" adicionado ao historico documental do cliente.`,
+      note: `Arquivo "${parsed.data.title || file.name}" adicionado ao histórico documental do cliente.`,
       actorUserProfileId: userProfileId,
       actorRole: role,
       actorBusinessArea: businessArea,
@@ -239,7 +239,7 @@ export async function uploadClientDocumentAction(
     };
   } catch (error) {
     return friendlyError(
-      error instanceof Error ? error.message : "Nao foi possivel enviar o documento.",
+      error instanceof Error ? error.message : "Não foi possível enviar o documento.",
     );
   }
 }
@@ -265,7 +265,7 @@ export async function uploadClientDocumentsBulkAction(
   for (const file of files) {
     if (!isAllowedClientDocumentFile(file)) {
       return friendlyError(
-        `Formato invalido em "${file.name}". Envie PDF, JPG, PNG, WEBP, DOC ou DOCX.`,
+        `Formato inválido em "${file.name}". Envie PDF, JPG, PNG, WEBP, DOC ou DOCX.`,
       );
     }
 
@@ -283,7 +283,7 @@ export async function uploadClientDocumentsBulkAction(
     const adminSupabase = createAdminClient();
 
     if (!canManageClientDocuments(role)) {
-      return friendlyError("Voce nao tem permissao para enviar documentos.");
+      return friendlyError("Você não tem permissão para enviar documentos.");
     }
 
     const bucketError = await ensureClientDocumentsBucketAvailable();
@@ -376,10 +376,10 @@ export async function uploadClientDocumentsBulkAction(
           : "Documento enviado ao cadastro do cliente",
       note:
         files.length > 1
-          ? `${files.length} arquivos adicionados ao historico documental do cliente: ${files
+          ? `${files.length} arquivos adicionados ao histórico documental do cliente: ${files
               .map((file) => file.name)
               .join(", ")}.`
-          : `Arquivo "${documentsToInsert[0]?.title || files[0]?.name}" adicionado ao historico documental do cliente.`,
+          : `Arquivo "${documentsToInsert[0]?.title || files[0]?.name}" adicionado ao histórico documental do cliente.`,
       actorUserProfileId: userProfileId,
       actorRole: role,
       actorBusinessArea: businessArea,
@@ -410,7 +410,7 @@ export async function uploadClientDocumentsBulkAction(
     }
 
     return friendlyError(
-      error instanceof Error ? error.message : "Nao foi possivel enviar os documentos.",
+      error instanceof Error ? error.message : "Não foi possível enviar os documentos.",
     );
   }
 }
@@ -440,7 +440,7 @@ export async function prepareClientDocumentsBulkUploadAction(
 
     if (!isAllowedClientDocumentFile(file)) {
       return prepareFriendlyError(
-        `Formato invalido em "${file.name}". Envie PDF, JPG, PNG, WEBP, DOC ou DOCX.`,
+        `Formato inválido em "${file.name}". Envie PDF, JPG, PNG, WEBP, DOC ou DOCX.`,
       );
     }
 
@@ -456,7 +456,7 @@ export async function prepareClientDocumentsBulkUploadAction(
     const adminSupabase = createAdminClient();
 
     if (!canManageClientDocuments(role)) {
-      return prepareFriendlyError("Voce nao tem permissao para enviar documentos.");
+      return prepareFriendlyError("Você não tem permissão para enviar documentos.");
     }
 
     const bucketError = await ensureClientDocumentsBucketAvailable();
@@ -481,7 +481,7 @@ export async function prepareClientDocumentsBulkUploadAction(
 
       if (error || !data?.token) {
         return prepareFriendlyError(
-          error?.message || `Nao foi possivel preparar o envio de "${file.name}".`,
+          error?.message || `Não foi possível preparar o envio de "${file.name}".`,
         );
       }
 
@@ -507,7 +507,7 @@ export async function prepareClientDocumentsBulkUploadAction(
     };
   } catch (error) {
     return prepareFriendlyError(
-      error instanceof Error ? error.message : "Nao foi possivel preparar o envio dos documentos.",
+      error instanceof Error ? error.message : "Não foi possível preparar o envio dos documentos.",
     );
   }
 }
@@ -549,7 +549,7 @@ export async function completeClientDocumentsBulkUploadAction(
     const adminSupabase = createAdminClient();
 
     if (!canManageClientDocuments(role)) {
-      return friendlyError("Voce nao tem permissao para enviar documentos.");
+      return friendlyError("Você não tem permissão para enviar documentos.");
     }
 
     await assertClientBelongsToCompany(clientId, companyId);
@@ -564,7 +564,7 @@ export async function completeClientDocumentsBulkUploadAction(
       )
     ) {
       await adminSupabase.storage.from(clientDocumentsBucket).remove(uploadedPaths);
-      return friendlyError("Os dados do envio estao invalidos. Selecione os arquivos novamente.");
+      return friendlyError("Os dados do envio estao inválidos. Selecione os arquivos novamente.");
     }
 
     const documentsToInsert = uploads.map((upload) => ({
@@ -619,10 +619,10 @@ export async function completeClientDocumentsBulkUploadAction(
           : "Documento enviado ao cadastro do cliente",
       note:
         uploads.length > 1
-          ? `${uploads.length} arquivos adicionados ao historico documental do cliente: ${uploads
+          ? `${uploads.length} arquivos adicionados ao histórico documental do cliente: ${uploads
               .map((upload) => upload.fileName)
               .join(", ")}.`
-          : `Arquivo "${uploads[0]?.title || uploads[0]?.fileName}" adicionado ao historico documental do cliente.`,
+          : `Arquivo "${uploads[0]?.title || uploads[0]?.fileName}" adicionado ao histórico documental do cliente.`,
       actorUserProfileId: userProfileId,
       actorRole: role,
       actorBusinessArea: businessArea,
@@ -653,7 +653,7 @@ export async function completeClientDocumentsBulkUploadAction(
     }
 
     return friendlyError(
-      error instanceof Error ? error.message : "Nao foi possivel concluir o envio dos documentos.",
+      error instanceof Error ? error.message : "Não foi possível concluir o envio dos documentos.",
     );
   }
 }
@@ -677,7 +677,7 @@ export async function cancelClientDocumentsBulkUploadAction(
     };
   } catch (error) {
     return friendlyError(
-      error instanceof Error ? error.message : "Nao foi possivel cancelar o envio.",
+      error instanceof Error ? error.message : "Não foi possível cancelar o envio.",
     );
   }
 }
@@ -702,17 +702,17 @@ export async function createSignedDocumentUrlAction(
       });
 
     if (error || !data?.signedUrl) {
-      return friendlyError(error?.message || "Nao foi possivel gerar o link do documento.");
+      return friendlyError(error?.message || "Não foi possível gerar o link do documento.");
     }
 
     return {
       ok: true,
-      message: mode === "download" ? "Download liberado." : "Visualizacao liberada.",
+      message: mode === "download" ? "Download liberado." : "Visualização liberada.",
       url: data.signedUrl,
     };
   } catch (error) {
     return friendlyError(
-      error instanceof Error ? error.message : "Nao foi possivel abrir o documento.",
+      error instanceof Error ? error.message : "Não foi possível abrir o documento.",
     );
   }
 }
@@ -731,16 +731,16 @@ export async function updateClientDocumentAction(
   const replacementFile = formData.get("file");
 
   if (replacementFile && !(replacementFile instanceof File)) {
-    return friendlyError("Arquivo invalido para substituicao.");
+    return friendlyError("Arquivo inválido para substituicao.");
   }
 
   if (replacementFile instanceof File && replacementFile.size > 0) {
     if (!isAllowedClientDocumentFile(replacementFile)) {
-      return friendlyError("Formato invalido. Envie PDF, JPG, PNG, WEBP, DOC ou DOCX.");
+      return friendlyError("Formato inválido. Envie PDF, JPG, PNG, WEBP, DOC ou DOCX.");
     }
 
     if (replacementFile.size > maxClientDocumentSize) {
-      return friendlyError("Envie um arquivo com ate 20 MB.");
+      return friendlyError("Envie um arquivo com até 20 MB.");
     }
   }
 
@@ -751,7 +751,7 @@ export async function updateClientDocumentAction(
 
     if (!canModifyClientDocuments(role, businessArea)) {
       return friendlyError(
-        "Apenas admin, gerente ou consultor juridico podem editar documentos.",
+        "Apenas admin, gerente ou consultor jurídico podem editar documentos.",
       );
     }
 
@@ -879,7 +879,7 @@ export async function updateClientDocumentAction(
     };
   } catch (error) {
     return friendlyError(
-      error instanceof Error ? error.message : "Nao foi possivel atualizar o documento.",
+      error instanceof Error ? error.message : "Não foi possível atualizar o documento.",
     );
   }
 }
@@ -893,7 +893,7 @@ export async function softDeleteClientDocumentAction(
 
     if (!canModifyClientDocuments(role, businessArea)) {
       return friendlyError(
-        "Apenas admin, gerente ou consultor juridico podem excluir documentos.",
+        "Apenas admin, gerente ou consultor jurídico podem excluir documentos.",
       );
     }
 
@@ -932,7 +932,7 @@ export async function softDeleteClientDocumentAction(
       clientId: document.client_id,
       preSaleId: document.pre_sale_id,
       eventType: "client_document_deleted",
-      title: "Documento excluido",
+      title: "Documento excluído",
       note: `O documento "${document.title || document.file_name}" foi removido do cadastro do cliente.`,
       actorUserProfileId: userProfileId,
       actorRole: role,
@@ -951,11 +951,11 @@ export async function softDeleteClientDocumentAction(
 
     return {
       ok: true,
-      message: "Documento excluido.",
+      message: "Documento excluído.",
     };
   } catch (error) {
     return friendlyError(
-      error instanceof Error ? error.message : "Nao foi possivel excluir o documento.",
+      error instanceof Error ? error.message : "Não foi possível excluir o documento.",
     );
   }
 }

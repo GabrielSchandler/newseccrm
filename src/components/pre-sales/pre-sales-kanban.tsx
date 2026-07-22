@@ -158,13 +158,13 @@ export function PreSalesKanban({ preSales, canDelete = false }: PreSalesKanbanPr
                       href={`/pre-vendas/${preSale.id}`}
                       className="text-sm font-semibold text-slate-950 hover:text-teal-700"
                     >
-                      {preSale.client?.full_name ?? "Cliente nao encontrado"}
+                      {preSale.client?.full_name ?? "Cliente não encontrado"}
                     </Link>
                     <p className="mt-2 text-sm font-medium text-slate-700">
                       {formatPreSaleType(preSale.pre_sale_type)}
                     </p>
                     <p className="mt-1 text-xs text-slate-500">
-                      {preSale.service_type || "Servico nao informado"}
+                      {preSale.service_type || "Serviço não informado"}
                     </p>
                     <p className="mt-2 text-sm font-medium text-slate-700">
                       {formatCurrency(preSale.contract_value)}
@@ -202,8 +202,8 @@ export function PreSalesKanban({ preSales, canDelete = false }: PreSalesKanbanPr
 
       <ChangeNoteModal
         isOpen={Boolean(pendingStatusChange)}
-        title="Registrar mudanca de status"
-        description="Explique o que aconteceu nessa movimentacao da pre-venda e por que ela foi para esta nova etapa."
+        title="Registrar mudança de status"
+        description="Explique o que aconteceu nessa movimentação da pré-venda e por que ela foi para esta nova etapa."
         confirmLabel="Mover com anotacao"
         pending={isPending}
         onClose={() => {

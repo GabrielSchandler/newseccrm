@@ -503,6 +503,7 @@ function isFilledDisplayValue(value: string | null | undefined) {
   return Boolean(
     normalized &&
       normalized !== "nao informado" &&
+      normalized !== "não informado" &&
       normalized !== "em branco" &&
       normalized !== "-",
   );
@@ -527,7 +528,7 @@ function optionalTextLimited(
 
 function displayDate(value: string | null | undefined) {
   const result = formatCalculationDate(value);
-  return result === "Nao informado" ? "Não informado" : result;
+  return result === "Não informado" ? "Não informado" : result;
 }
 
 function optionalDate(value: string | null | undefined) {
@@ -537,7 +538,7 @@ function optionalDate(value: string | null | undefined) {
 
 function displayCurrency(value: number | string | null | undefined) {
   const result = formatCalculationCurrency(value);
-  return result === "Nao informado" ? "Não informado" : result;
+  return result === "Não informado" ? "Não informado" : result;
 }
 
 function optionalCurrency(value: number | string | null | undefined) {
@@ -835,7 +836,7 @@ export function CalculationReportPdf({
       value: monthlyReduction,
       cardStyle: [styles.comparisonCard, styles.comparisonCardPositive],
       valueStyle: [styles.comparisonValue, styles.comparisonValuePositive],
-      hint: "Estimativa inicial com base no cenario informado.",
+      hint: "Estimativa inicial com base no cenário informado.",
     },
   ].filter((card) => isFilledDisplayValue(card.value));
 
@@ -918,7 +919,7 @@ export function CalculationReportPdf({
       value: optionalCurrency(calculation.remaining_amount_to_pay),
     },
     {
-      label: "Saldo devedor pós correção",
+      label: "Saldo devedor pós-correção",
       value: optionalCurrency(calculation.real_debt),
     },
     ...(calculation.settlement_discount_percentage !== null &&
@@ -1015,7 +1016,7 @@ export function CalculationReportPdf({
                 value={optionalText(calculation.financial_institution)}
               />
               <InfoItem
-                label="Tipo da simulacao"
+                label="Tipo da simulação"
                 value={
                   calculation.simulation_type
                     ? formatPreSaleType(calculation.simulation_type)
@@ -1023,7 +1024,7 @@ export function CalculationReportPdf({
                 }
               />
               <InfoItem
-                label="Especialista responsavel"
+                label="Especialista responsável"
                 value={specialist}
               />
               <InfoItem
@@ -1031,11 +1032,11 @@ export function CalculationReportPdf({
                 value={attendanceDate}
               />
               <InfoItem
-                label="Situacao"
+                label="Situação"
                 value={situation}
               />
               <InfoItem
-                label="Proposta valida ate:"
+                label="Proposta válida até:"
                 value={expiresIn}
               />
               {isVehicleSimulation ? (
@@ -1051,7 +1052,7 @@ export function CalculationReportPdf({
                 />
               ) : null}
               <InfoItem
-                label="Observacoes"
+                label="Observações"
                 value={optionalTextLimited(calculation.notes, 240)}
                 full
               />
@@ -1148,18 +1149,18 @@ export function CalculationReportPdf({
           wrap={false}
         >
           <Text style={styles.guaranteeTitle}>
-            {displayText(simulationGuarantee?.title, "Seguranca contratual")}
+            {displayText(simulationGuarantee?.title, "Segurança contratual")}
           </Text>
           <Text style={styles.guaranteeLead}>
             {displayText(
               simulationGuarantee?.lead,
-              "A prestacao de servico segue as condicoes definidas no contrato assinado entre as partes, com analise documental e orientacao de proximos passos conforme o caso.",
+              "A prestação de serviço segue as condições definidas no contrato assinado entre as partes, com análise documental e orientação de próximos passos conforme o caso.",
             )}
           </Text>
           {isFilledDisplayValue(simulationGuarantee?.clauseText) ? (
             <>
               <Text style={styles.guaranteeClauseLabel}>
-                {displayText(simulationGuarantee?.clauseLabel, "Condicao contratual")}
+                {displayText(simulationGuarantee?.clauseLabel, "Condição contratual")}
               </Text>
               <Text style={styles.guaranteeClause}>
                 {simulationGuarantee?.clauseText}

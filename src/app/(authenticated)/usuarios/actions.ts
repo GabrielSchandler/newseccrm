@@ -155,7 +155,7 @@ async function ensureNotLastActiveAdmin(
   }
 
   if ((count ?? 0) <= 1) {
-    throw new Error("Nao e permitido desativar ou rebaixar o ultimo admin ativo da empresa.");
+    throw new Error("Não é permitido desativar ou rebaixar o ultimo admin ativo da empresa.");
   }
 }
 
@@ -173,7 +173,7 @@ export async function createCompanyUserAction(
   const parsed = createCompanyUserSchema.safeParse(values);
 
   if (!parsed.success) {
-    return friendlyError("Confira os campos obrigatorios do usuario.");
+    return friendlyError("Confira os campos obrigatórios do usuário.");
   }
 
   let createdAuthUserId: string | null = null;
@@ -183,18 +183,18 @@ export async function createCompanyUserAction(
     const { supabase, companyId, role, userProfileId } = await getCurrentUserContext();
 
     if (!canCreateUsers(role)) {
-      return friendlyError("Apenas administradores podem criar usuarios.");
+      return friendlyError("Apenas administradores podem criar usuários.");
     }
 
     if (!canAssignRole(role, parsed.data.role)) {
-      return friendlyError("Voce nao pode criar usuario com esse cargo.");
+      return friendlyError("Você não pode criar usuário com esse cargo.");
     }
 
     const licenseSummary = await getLicenseSummary(companyId);
 
     if (licenseSummary.activeUsers >= licenseSummary.limit) {
       return friendlyError(
-        "Limite de usuarios atingido. Contrate uma licenca adicional.",
+        "Limite de usuários atingido. Contrate uma licença adicional.",
       );
     }
 
@@ -213,7 +213,7 @@ export async function createCompanyUserAction(
     }
 
     if (duplicatedUser) {
-      return friendlyError("Ja existe usuario cadastrado com este login.");
+      return friendlyError("Já existe usuário cadastrado com este login.");
     }
 
     const { data: authData, error: authError } = await adminClient.auth.admin.createUser({
@@ -228,7 +228,7 @@ export async function createCompanyUserAction(
     });
 
     if (authError || !authData.user) {
-      return friendlyError(authError?.message || "Nao foi possivel criar o usuario no Auth.");
+      return friendlyError(authError?.message || "Não foi possível criar o usuário no Auth.");
     }
 
     createdAuthUserId = authData.user.id;
@@ -264,7 +264,7 @@ export async function createCompanyUserAction(
     if (profileError) {
       await adminClient.auth.admin.deleteUser(createdAuthUserId);
       return friendlyError(
-        `Usuario criado no Auth, mas falhou ao criar perfil da empresa: ${profileError.message}`,
+        `Usuário criado no Auth, mas falhou ao criar perfil da empresa: ${profileError.message}`,
       );
     }
 
@@ -300,7 +300,7 @@ export async function createCompanyUserAction(
     }
 
     return friendlyError(
-      error instanceof Error ? error.message : "Nao foi possivel criar o usuario.",
+      error instanceof Error ? error.message : "Não foi possível criar o usuário.",
     );
   }
 
@@ -308,7 +308,7 @@ export async function createCompanyUserAction(
 
   return {
     ok: true,
-    message: "Usuario criado com sucesso.",
+    message: "Usuário criado com sucesso.",
     redirectTo: "/usuarios?success=created",
   };
 }
@@ -320,24 +320,24 @@ export async function updateCompanyUserAction(
   const parsed = updateCompanyUserSchema.safeParse(values);
 
   if (!parsed.success) {
-    return friendlyError("Confira os campos obrigatorios do usuario.");
+    return friendlyError("Confira os campos obrigatórios do usuário.");
   }
 
   try {
     const { supabase, companyId, role, userProfileId } = await getCurrentUserContext();
 
     if (!canAccessUserManagement(role)) {
-      return friendlyError("Voce nao tem permissao para editar usuarios.");
+      return friendlyError("Você não tem permissão para editar usuários.");
     }
 
     const targetUser = await getCompanyUser(userId, companyId);
 
     if (!canManageTargetUser(role, targetUser)) {
-      return friendlyError("Voce nao pode editar este usuario.");
+      return friendlyError("Você não pode editar este usuário.");
     }
 
     if (!canAssignRole(role, parsed.data.role)) {
-      return friendlyError("Voce nao pode definir este cargo para o usuario.");
+      return friendlyError("Você não pode definir este cargo para o usuário.");
     }
 
     const adminClient = createAdminClient();
@@ -356,7 +356,7 @@ export async function updateCompanyUserAction(
     }
 
     if (duplicateUsername) {
-      return friendlyError("Ja existe outro usuario com este login.");
+      return friendlyError("Já existe outro usuário com este login.");
     }
 
     await ensureNotLastActiveAdmin(
@@ -370,7 +370,7 @@ export async function updateCompanyUserAction(
       const licenseSummary = await getLicenseSummary(companyId);
 
       if (licenseSummary.activeUsers <= 0) {
-        return friendlyError("Nao foi possivel desativar este usuario agora.");
+        return friendlyError("Não foi possível desativar este usuário agora.");
       }
     }
 
@@ -444,7 +444,7 @@ export async function updateCompanyUserAction(
 
       if (licenseSummary.availableLicenses <= 0) {
         return friendlyError(
-          "Nao ha licencas disponiveis para reativar este usuario.",
+          "Não há licencas disponíveis para reativar este usuário.",
         );
       }
     }
@@ -487,7 +487,7 @@ export async function updateCompanyUserAction(
     });
   } catch (error) {
     return friendlyError(
-      error instanceof Error ? error.message : "Nao foi possivel atualizar o usuario.",
+      error instanceof Error ? error.message : "Não foi possível atualizar o usuário.",
     );
   }
 
@@ -495,7 +495,7 @@ export async function updateCompanyUserAction(
 
   return {
     ok: true,
-    message: "Usuario atualizado.",
+    message: "Usuário atualizado.",
     redirectTo: `/usuarios?success=updated`,
   };
 }
@@ -507,13 +507,13 @@ export async function toggleCompanyUserStatusAction(
     const { supabase, companyId, role, userProfileId } = await getCurrentUserContext();
 
     if (!canAccessUserManagement(role)) {
-      return friendlyError("Voce nao tem permissao para alterar usuarios.");
+      return friendlyError("Você não tem permissão para alterar usuários.");
     }
 
     const targetUser = await getCompanyUser(userId, companyId);
 
     if (!canManageTargetUser(role, targetUser)) {
-      return friendlyError("Voce nao pode alterar este usuario.");
+      return friendlyError("Você não pode alterar este usuário.");
     }
 
     if (targetUser.is_active) {
@@ -550,14 +550,14 @@ export async function toggleCompanyUserStatusAction(
       await revalidateUserPages(userId);
       return {
         ok: true,
-        message: "Usuario desativado.",
+        message: "Usuário desativado.",
       };
     }
 
     const licenseSummary = await getLicenseSummary(companyId);
 
     if (licenseSummary.availableLicenses <= 0) {
-      return friendlyError("Nao ha licencas disponiveis para reativar este usuario.");
+      return friendlyError("Não há licencas disponíveis para reativar este usuário.");
     }
 
     const { error } = await supabase
@@ -592,11 +592,11 @@ export async function toggleCompanyUserStatusAction(
 
     return {
       ok: true,
-      message: "Usuario reativado.",
+      message: "Usuário reativado.",
     };
   } catch (error) {
     return friendlyError(
-      error instanceof Error ? error.message : "Nao foi possivel alterar o usuario.",
+      error instanceof Error ? error.message : "Não foi possível alterar o usuário.",
     );
   }
 }

@@ -64,7 +64,7 @@ export function DocumentTemplateActions({
           onClick={() => runAction(() => setDefaultDocumentTemplateAction(templateId))}
         >
           <Star className="h-4 w-4" />
-          Padrao
+          Padrão
         </button>
         <button
           type="button"

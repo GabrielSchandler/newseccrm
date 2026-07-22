@@ -21,10 +21,10 @@ export type LegalWorkflowActionState = {
 };
 
 const stageSchema = z.object({
-  title: z.string().trim().min(3, "Informe um titulo com pelo menos 3 caracteres.").max(100),
+  title: z.string().trim().min(3, "Informe um título com pelo menos 3 caracteres.").max(100),
   shortTitle: z.string().trim().min(2, "Informe o nome curto da coluna.").max(45),
-  description: z.string().trim().min(5, "Informe uma descricao da etapa.").max(500),
-  color: z.string().regex(/^#[0-9a-f]{6}$/i, "Selecione uma cor valida."),
+  description: z.string().trim().min(5, "Informe uma descrição da etapa.").max(500),
+  color: z.string().regex(/^#[0-9a-f]{6}$/i, "Selecione uma cor válida."),
   expectedDocuments: z.array(z.string().trim().min(1).max(150)).max(30),
 });
 
@@ -128,7 +128,7 @@ export async function updateLegalWorkflowStageAction(
   const normalizedChangeNote = changeNote?.trim();
 
   if (!normalizedChangeNote) {
-    return friendlyError("Descreva a movimentacao juridica e o motivo.");
+    return friendlyError("Descreva a movimentação jurídica e o motivo.");
   }
 
   try {
@@ -140,7 +140,7 @@ export async function updateLegalWorkflowStageAction(
       role !== "manager" &&
       !(role === "seller" && businessArea === "legal")
     ) {
-      return friendlyError("O usuario atual nao pode movimentar a esteira juridica.");
+      return friendlyError("O usuário atual não pode movimentar a esteira jurídica.");
     }
 
     const preSale = await assertPreSaleAccess(preSaleId);
@@ -148,7 +148,7 @@ export async function updateLegalWorkflowStageAction(
     const targetStage = stageResult.row ?? stageResult.fallback;
 
     if (!targetStage) {
-      return friendlyError("A etapa juridica selecionada nao existe mais.");
+      return friendlyError("A etapa jurídica selecionada não existe mais.");
     }
 
     const { data: currentStageData, error: currentStageError } = await supabase
@@ -159,7 +159,7 @@ export async function updateLegalWorkflowStageAction(
       .single();
 
     if (currentStageError || !currentStageData) {
-      return friendlyError("Pre-venda nao encontrada para atualizar a etapa juridica.");
+      return friendlyError("Pré-venda não encontrada para atualizar a etapa jurídica.");
     }
 
     const now = new Date().toISOString();
@@ -225,7 +225,7 @@ export async function updateLegalWorkflowStageAction(
     };
   } catch (error) {
     return friendlyError(
-      error instanceof Error ? error.message : "Nao foi possivel atualizar a etapa juridica.",
+      error instanceof Error ? error.message : "Não foi possível atualizar a etapa jurídica.",
     );
   }
 }
@@ -244,7 +244,7 @@ export async function createLegalWorkflowStageAction(
       await getCurrentUserContext();
 
     if (!canEditWorkflow(role, canEditLegalWorkflow)) {
-      return friendlyError("Voce nao tem permissao para editar a esteira juridica.");
+      return friendlyError("Você não tem permissão para editar a esteira jurídica.");
     }
 
     const { count, error: countError } = await supabase
@@ -261,7 +261,7 @@ export async function createLegalWorkflowStageAction(
     }
 
     if ((count ?? 0) >= 20) {
-      return friendlyError("A esteira juridica aceita no maximo 20 colunas.");
+      return friendlyError("A esteira jurídica aceita no maximo 20 colunas.");
     }
 
     const { data: lastStage, error: lastStageError } = await supabase
@@ -295,7 +295,7 @@ export async function createLegalWorkflowStageAction(
       const duplicate = error.message.toLowerCase().includes("duplicate");
       return friendlyError(
         duplicate
-          ? "Ja existe uma coluna com este titulo ou esta descricao."
+          ? "Já existe uma coluna com este título ou esta descrição."
           : error.message,
       );
     }
@@ -315,7 +315,7 @@ export async function createLegalWorkflowStageAction(
     return { ok: true, message: "Coluna criada no fim da esteira." };
   } catch (error) {
     return friendlyError(
-      error instanceof Error ? error.message : "Nao foi possivel criar a coluna.",
+      error instanceof Error ? error.message : "Não foi possível criar a coluna.",
     );
   }
 }
@@ -335,7 +335,7 @@ export async function updateLegalWorkflowStageDefinitionAction(
       await getCurrentUserContext();
 
     if (!canEditWorkflow(role, canEditLegalWorkflow)) {
-      return friendlyError("Voce nao tem permissao para editar a esteira juridica.");
+      return friendlyError("Você não tem permissão para editar a esteira jurídica.");
     }
 
     const { error } = await supabase
@@ -356,7 +356,7 @@ export async function updateLegalWorkflowStageDefinitionAction(
       const duplicate = error.message.toLowerCase().includes("duplicate");
       return friendlyError(
         duplicate
-          ? "Ja existe uma coluna com este titulo ou esta descricao."
+          ? "Já existe uma coluna com este título ou esta descrição."
           : error.message,
       );
     }
@@ -376,7 +376,7 @@ export async function updateLegalWorkflowStageDefinitionAction(
     return { ok: true, message: "Coluna atualizada." };
   } catch (error) {
     return friendlyError(
-      error instanceof Error ? error.message : "Nao foi possivel atualizar a coluna.",
+      error instanceof Error ? error.message : "Não foi possível atualizar a coluna.",
     );
   }
 }
@@ -389,7 +389,7 @@ export async function reorderLegalWorkflowStagesAction(
       await getCurrentUserContext();
 
     if (!canEditWorkflow(role, canEditLegalWorkflow)) {
-      return friendlyError("Voce nao tem permissao para ordenar a esteira juridica.");
+      return friendlyError("Você não tem permissão para ordenar a esteira jurídica.");
     }
 
     const uniqueIds = [...new Set(orderedStageIds)];
@@ -439,7 +439,7 @@ export async function reorderLegalWorkflowStagesAction(
     return { ok: true, message: "Ordem da esteira atualizada." };
   } catch (error) {
     return friendlyError(
-      error instanceof Error ? error.message : "Nao foi possivel ordenar as colunas.",
+      error instanceof Error ? error.message : "Não foi possível ordenar as colunas.",
     );
   }
 }
@@ -452,7 +452,7 @@ export async function deleteLegalWorkflowStageAction(
       await getCurrentUserContext();
 
     if (!canEditWorkflow(role, canEditLegalWorkflow)) {
-      return friendlyError("Voce nao tem permissao para excluir colunas.");
+      return friendlyError("Você não tem permissão para excluir colunas.");
     }
 
     const { data: stage, error: stageError } = await supabase
@@ -463,7 +463,7 @@ export async function deleteLegalWorkflowStageAction(
       .single();
 
     if (stageError || !stage) {
-      return friendlyError("A coluna selecionada nao foi encontrada.");
+      return friendlyError("A coluna selecionada não foi encontrada.");
     }
 
     const { count, error: countError } = await supabase
@@ -522,7 +522,7 @@ export async function deleteLegalWorkflowStageAction(
       return friendlyError(
         documentTemplateError?.message ??
           emailTemplateError?.message ??
-          "Nao foi possivel desvincular os templates.",
+          "Não foi possível desvincular os templates.",
       );
     }
 
@@ -566,11 +566,11 @@ export async function deleteLegalWorkflowStageAction(
     revalidateWorkflow();
     return {
       ok: true,
-      message: "Coluna excluida. Os templates foram mantidos e ficaram sem etapa vinculada.",
+      message: "Coluna excluída. Os templates foram mantidos e ficaram sem etapa vinculada.",
     };
   } catch (error) {
     return friendlyError(
-      error instanceof Error ? error.message : "Nao foi possivel excluir a coluna.",
+      error instanceof Error ? error.message : "Não foi possível excluir a coluna.",
     );
   }
 }
@@ -588,7 +588,7 @@ export async function moveLegalClientsBulkAction(
   }
 
   if (!normalizedNote) {
-    return friendlyError("Descreva o motivo da movimentacao em massa.");
+    return friendlyError("Descreva o motivo da movimentação em massa.");
   }
 
   try {
@@ -603,14 +603,14 @@ export async function moveLegalClientsBulkAction(
     } = await getCurrentUserContext();
 
     if (!canEditWorkflow(role, canEditLegalWorkflow)) {
-      return friendlyError("Voce nao tem permissao para mover clientes em massa.");
+      return friendlyError("Você não tem permissão para mover clientes em massa.");
     }
 
     const stageResult = await findStage(targetStageId);
     const targetStage = stageResult.row;
 
     if (!targetStage) {
-      return friendlyError("A etapa de destino nao foi encontrada.");
+      return friendlyError("A etapa de destino não foi encontrada.");
     }
 
     const { data: preSales, error: preSalesError } = await supabase
@@ -630,11 +630,11 @@ export async function moveLegalClientsBulkAction(
     );
 
     if (!movable.length) {
-      return friendlyError("Os clientes selecionados ja estao nesta coluna.");
+      return friendlyError("Os clientes selecionados já estáo nesta coluna.");
     }
 
     if (movable.some((preSale) => !preSale.legal_stage_id)) {
-      return friendlyError("Atualize a pagina antes de mover clientes antigos em massa.");
+      return friendlyError("Atualize a página antes de mover clientes antigos em massa.");
     }
 
     const undoExpiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
@@ -652,7 +652,7 @@ export async function moveLegalClientsBulkAction(
       .single();
 
     if (batchError || !batch) {
-      return friendlyError(batchError?.message ?? "Nao foi possivel criar o lote.");
+      return friendlyError(batchError?.message ?? "Não foi possível criar o lote.");
     }
 
     const { error: itemsError } = await supabase
@@ -743,7 +743,7 @@ export async function moveLegalClientsBulkAction(
     };
   } catch (error) {
     return friendlyError(
-      error instanceof Error ? error.message : "Nao foi possivel mover os clientes.",
+      error instanceof Error ? error.message : "Não foi possível mover os clientes.",
     );
   }
 }
@@ -763,7 +763,7 @@ export async function undoLegalClientsBulkAction(
     } = await getCurrentUserContext();
 
     if (!canEditWorkflow(role, canEditLegalWorkflow)) {
-      return friendlyError("Voce nao tem permissao para desfazer movimentacoes.");
+      return friendlyError("Você não tem permissão para desfazer movimentações.");
     }
 
     const { data: batch, error: batchError } = await supabase
@@ -774,15 +774,15 @@ export async function undoLegalClientsBulkAction(
       .single();
 
     if (batchError || !batch) {
-      return friendlyError("A movimentacao em massa nao foi encontrada.");
+      return friendlyError("A movimentação em massa não foi encontrada.");
     }
 
     if (batch.undone_at) {
-      return friendlyError("Esta movimentacao ja foi desfeita.");
+      return friendlyError("Esta movimentação já foi desfeita.");
     }
 
     if (new Date(batch.undo_expires_at).getTime() < Date.now()) {
-      return friendlyError("O prazo de 10 minutos para desfazer esta movimentacao terminou.");
+      return friendlyError("O prazo de 10 minutos para desfazer esta movimentação terminou.");
     }
 
     const { data: items, error: itemsError } = await supabase
@@ -792,7 +792,7 @@ export async function undoLegalClientsBulkAction(
       .eq("company_id", companyId);
 
     if (itemsError || !items?.length) {
-      return friendlyError(itemsError?.message ?? "O lote nao possui clientes para restaurar.");
+      return friendlyError(itemsError?.message ?? "O lote não possui clientes para restaurar.");
     }
 
     const previousStageIds = [...new Set(items.map((item) => item.previous_stage_id))];
@@ -803,7 +803,7 @@ export async function undoLegalClientsBulkAction(
       .in("id", previousStageIds);
 
     if (stagesError || previousStages?.length !== previousStageIds.length) {
-      return friendlyError("Uma das colunas de origem nao existe mais.");
+      return friendlyError("Uma das colunas de origem não existe mais.");
     }
 
     const now = new Date().toISOString();
@@ -839,7 +839,7 @@ export async function undoLegalClientsBulkAction(
           preSaleId: item.pre_sale_id,
           eventType: "legal_stage_updated",
           title: `Movimentacao em massa desfeita para ${previousStage?.short_title ?? "etapa anterior"}`,
-          note: "Desfazer aplicado dentro do prazo de seguranca.",
+          note: "Desfazer aplicado dentro do prazo de segurança.",
           actorUserProfileId: userProfileId,
           actorRole: role,
           actorBusinessArea: businessArea,
@@ -883,7 +883,7 @@ export async function undoLegalClientsBulkAction(
     return { ok: true, message: `${items.length} cliente(s) retornaram as colunas anteriores.` };
   } catch (error) {
     return friendlyError(
-      error instanceof Error ? error.message : "Nao foi possivel desfazer a movimentacao.",
+      error instanceof Error ? error.message : "Não foi possível desfazer a movimentação.",
     );
   }
 }

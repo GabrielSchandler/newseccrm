@@ -82,7 +82,7 @@ function PaymentFields({
     <div className="grid gap-4 md:grid-cols-3">
       <label className="space-y-1.5">
         <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-          Tipo de cobranca
+          Tipo de cobrança
         </span>
         <select
           name="legal_payment_type_id"
@@ -101,7 +101,7 @@ function PaymentFields({
 
       <label className="space-y-1.5">
         <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-          Responsavel juridico
+          Responsável jurídico
         </span>
         <select
           name="responsible_user_id"
@@ -167,7 +167,7 @@ function PaymentFields({
           defaultValue={defaultPayment?.payment_method ?? ""}
           className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
         >
-          <option value="">Nao informado</option>
+          <option value="">Não informado</option>
           {financePaymentMethods.map((method) => (
             <option key={method} value={method}>
               {method}
@@ -219,7 +219,7 @@ function PaymentFields({
 
       <label className="space-y-1.5 md:col-span-3">
         <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-          Descricao
+          Descrição
         </span>
         <input
           name="description"
@@ -231,7 +231,7 @@ function PaymentFields({
 
       <label className="space-y-1.5 md:col-span-3">
         <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-          Observacoes internas
+          Observações internas
         </span>
         <textarea
           name="notes"
@@ -265,17 +265,17 @@ export function LegalPaymentsPanel({
       <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-teal-700">
-            Juridico
+            Jurídico
           </p>
           <h2 className="mt-1 text-base font-semibold text-slate-950">
-            Pagamentos juridicos
+            Pagamentos jurídicos
           </h2>
           <p className="mt-1 text-sm leading-6 text-slate-600">
-            Lance laudo, diligencia, certidao, honorarios, acordo e outras cobrancas vinculadas a este protocolo.
+            Lance laudo, diligencia, certidao, honorarios, acordo e outras cobranças vinculadas a este protocolo.
           </p>
         </div>
         <span className="rounded-full border border-teal-200 bg-teal-50 px-3 py-1 text-xs font-semibold text-teal-800">
-          {legalPayments.length} lancamento(s)
+          {legalPayments.length} lançamento(s)
         </span>
       </div>
 
@@ -293,7 +293,7 @@ export function LegalPaymentsPanel({
       {canManage ? (
         <details className="rounded-lg border border-teal-200 bg-teal-50/40 p-4" open={!legalPayments.length}>
           <summary className="cursor-pointer text-sm font-semibold text-slate-950">
-            Novo pagamento juridico
+            Novo pagamento jurídico
           </summary>
           <form action={createLegalPaymentAction.bind(null, preSaleId)} className="mt-4 space-y-4">
             <PaymentFields legalPaymentTypes={legalPaymentTypes} legalUsers={legalUsers} />
@@ -301,13 +301,13 @@ export function LegalPaymentsPanel({
               type="submit"
               className="rounded-lg bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-800"
             >
-              Cadastrar pagamento juridico
+              Cadastrar pagamento jurídico
             </button>
           </form>
         </details>
       ) : (
         <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-          Somente usuarios juridicos, gestores e administradores podem lancar pagamentos juridicos.
+          Somente usuários jurídicos, gestores e administradores podem lançar pagamentos jurídicos.
         </div>
       )}
 
@@ -321,7 +321,7 @@ export function LegalPaymentsPanel({
               <div>
                 <div className="flex flex-wrap items-center gap-2">
                   <h3 className="text-sm font-semibold text-slate-950">
-                    {payment.type?.name ?? "Cobranca juridica"}
+                    {payment.type?.name ?? "Cobrança jurídica"}
                   </h3>
                   <span
                     className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${
@@ -332,7 +332,7 @@ export function LegalPaymentsPanel({
                   </span>
                 </div>
                 <p className="mt-2 text-sm text-slate-600">
-                  Responsavel:{" "}
+                  Responsável:{" "}
                   <span className="font-semibold text-slate-900">
                     {formatUserName(payment.responsible)}
                   </span>
@@ -445,7 +445,7 @@ export function LegalPaymentsPanel({
                       disabled={payment.status !== "pago"}
                       className="w-full rounded-lg border border-teal-200 bg-teal-50 px-4 py-2.5 text-sm font-semibold text-teal-800 transition hover:bg-teal-100 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400"
                     >
-                      Gerar recibo juridico
+                      Gerar recibo jurídico
                     </button>
                   </form>
 
@@ -466,7 +466,7 @@ export function LegalPaymentsPanel({
 
         {!legalPayments.length ? (
           <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 px-4 py-6 text-sm text-slate-500">
-            Nenhum pagamento juridico cadastrado para este protocolo.
+            Nenhum pagamento jurídico cadastrado para este protocolo.
           </div>
         ) : null}
       </div>

@@ -15,7 +15,7 @@ import { getCurrentUserContext } from "@/lib/auth/current-user";
 
 function messageForError(error: string | string[] | undefined) {
   if (error === "checkpoint") {
-    return "A resposta do checkpoint nao esta correta. Revise o conteudo e tente novamente.";
+    return "A resposta do checkpoint não está correta. Revise o conteúdo e tente novamente.";
   }
 
   if (error === "missing_answers") {
@@ -23,11 +23,11 @@ function messageForError(error: string | string[] | undefined) {
   }
 
   if (error === "sql") {
-    return "As tabelas do Academy ainda nao existem no Supabase. Rode o SQL informado para salvar progresso e notas.";
+    return "As tabelas do Academy ainda não existem no Supabase. Rode o SQL informado para salvar progresso e notas.";
   }
 
   if (error === "save") {
-    return "Nao foi possivel salvar o progresso agora. Tente novamente em instantes.";
+    return "Não foi possível salvar o progresso agora. Tente novamente em instantes.";
   }
 
   return null;
@@ -124,7 +124,7 @@ export default async function AcademyChapterPage({
           >
             Sua nota foi {score}%.{" "}
             {passed
-              ? "Modulo aprovado."
+              ? "Módulo aprovado."
               : "Revise os pontos principais e envie a prova novamente."}
           </div>
         ) : null}
@@ -158,7 +158,7 @@ export default async function AcademyChapterPage({
               <div className="flex items-center gap-3">
                 <CheckCircle2 aria-hidden="true" className="h-5 w-5 text-teal-800" />
                 <h2 className="text-base font-semibold text-teal-950">
-                  Checkpoint do modulo
+                  Checkpoint do módulo
                 </h2>
               </div>
               <p className="mt-3 text-sm leading-6 text-teal-950">
@@ -196,8 +196,8 @@ export default async function AcademyChapterPage({
                 Prova rapida
               </h2>
               <p className="mt-2 text-sm leading-6 text-slate-600">
-                Registre a nota de conclusao deste modulo. O gestor acompanha
-                esse resultado na area de gestao.
+                Registre a nota de conclusao deste módulo. O gestor acompanha
+                esse resultado na área de gestão.
               </p>
               <form action={submitAcademyExamAction} className="mt-4 space-y-5">
                 <input type="hidden" name="course_slug" value={course.slug} />
@@ -238,7 +238,7 @@ export default async function AcademyChapterPage({
                 href={`/academy/cursos/${course.slug}/capitulos/${nextChapter.id}`}
                 className="inline-flex w-full justify-center rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 transition hover:bg-slate-50"
               >
-                Proximo modulo
+                Próximo módulo
               </Link>
             ) : null}
           </aside>

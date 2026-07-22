@@ -67,7 +67,7 @@ export const documentTemplateTypes: Array<{
   value: DocumentTemplateType;
   label: string;
 }> = [
-  { value: "ordem_servico", label: "Ordem de servico" },
+  { value: "ordem_servico", label: "Ordem de serviço" },
   { value: "contrato", label: "Contrato" },
   { value: "aditivo", label: "Aditivo" },
   { value: "declaracao", label: "Declaracao" },

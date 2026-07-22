@@ -7,7 +7,7 @@ export function createAdminClient() {
 
   if (!supabaseUrl || !serviceRoleKey) {
     throw new Error(
-      "SUPABASE_SERVICE_ROLE_KEY nao configurada. Defina a variavel na Vercel para criar usuarios.",
+      "SUPABASE_SERVICE_ROLE_KEY não configurada. Defina a variável na Vercel para criar usuários.",
     );
   }
 

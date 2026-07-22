@@ -57,7 +57,7 @@ export const companyPlatformStatusOptions: Array<{
   {
     value: "trial",
     label: "Teste",
-    description: "Empresa em avaliacao comercial ou onboarding.",
+    description: "Empresa em avaliação comercial ou onboarding.",
     tone: "info",
   },
   {
@@ -69,7 +69,7 @@ export const companyPlatformStatusOptions: Array<{
   {
     value: "cancelled",
     label: "Cancelada",
-    description: "Conta encerrada, mantida apenas para historico.",
+    description: "Conta encerrada, mantida apenas para histórico.",
     tone: "danger",
   },
 ];
@@ -80,15 +80,15 @@ export const companyModuleDefinitions: CompanyModuleDefinition[] = [
     field: "enable_commercial",
     label: "Comercial",
     shortLabel: "Comercial",
-    description: "Clientes, pre-vendas, simulacoes, documentos e painel comercial.",
+    description: "Clientes, pré-vendas, simulações, documentos e painel comercial.",
     group: "operacao",
   },
   {
     key: "legal",
     field: "enable_legal",
-    label: "Juridico",
-    shortLabel: "Juridico",
-    description: "Esteira juridica, documentos juridicos, emails e acompanhamento.",
+    label: "Jurídico",
+    shortLabel: "Jurídico",
+    description: "Esteira jurídica, documentos jurídicos, emails e acompanhamento.",
     group: "operacao",
   },
   {
@@ -96,7 +96,7 @@ export const companyModuleDefinitions: CompanyModuleDefinition[] = [
     field: "enable_finance",
     label: "Financeiro",
     shortLabel: "Financeiro",
-    description: "Lancamentos, consultas, importacao de planilhas e resultados.",
+    description: "Lancamentos, consultas, importação de planilhas e resultados.",
     group: "operacao",
   },
   {
@@ -110,9 +110,9 @@ export const companyModuleDefinitions: CompanyModuleDefinition[] = [
   {
     key: "lead_distribution",
     field: "enable_lead_distribution",
-    label: "Distribuicao de leads",
+    label: "Distribuição de leads",
     shortLabel: "Leads",
-    description: "Conexao com planilhas e distribuicao manual ou automatica.",
+    description: "Conexão com planilhas e distribuição manual ou automática.",
     group: "crescimento",
   },
   {
@@ -120,7 +120,7 @@ export const companyModuleDefinitions: CompanyModuleDefinition[] = [
     field: "enable_client_portal",
     label: "Portal do cliente",
     shortLabel: "Portal",
-    description: "Consulta publica de andamento por CPF e protocolo.",
+    description: "Consulta pública de andamento por CPF e protocolo.",
     group: "crescimento",
   },
   {
@@ -128,7 +128,7 @@ export const companyModuleDefinitions: CompanyModuleDefinition[] = [
     field: "enable_backups",
     label: "Backups",
     shortLabel: "Backups",
-    description: "Rotina de backup, historico de pacotes e restauracao.",
+    description: "Rotina de backup, histórico de pacotes e restauração.",
     group: "gestao",
   },
   {
@@ -136,15 +136,15 @@ export const companyModuleDefinitions: CompanyModuleDefinition[] = [
     field: "enable_outlook_email",
     label: "Emails Outlook",
     shortLabel: "Outlook",
-    description: "Integracao Microsoft para emails do juridico.",
+    description: "Integração Microsoft para emails do jurídico.",
     group: "gestao",
   },
   {
     key: "simulations",
     field: "enable_simulations",
-    label: "Simulacoes",
-    shortLabel: "Simulacoes",
-    description: "Analise de correcao de juros e geracao de PDF.",
+    label: "Simulações",
+    shortLabel: "Simulações",
+    description: "Análise de correção de juros e geração de PDF.",
     group: "operacao",
   },
   {
@@ -160,7 +160,7 @@ export const companyModuleDefinitions: CompanyModuleDefinition[] = [
     field: "enable_custom_templates",
     label: "Templates customizados",
     shortLabel: "Templates",
-    description: "Templates de contrato, recibo, juridico e email por empresa.",
+    description: "Templates de contrato, recibo, jurídico e email por empresa.",
     group: "gestao",
   },
 ];

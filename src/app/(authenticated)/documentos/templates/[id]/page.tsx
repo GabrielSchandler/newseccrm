@@ -79,7 +79,7 @@ export default async function TemplatePage({
     <>
       <PageHeader
         title={template.name}
-        description="Visualizacao do template salvo para esta empresa."
+        description="Visualização do template salvo para esta empresa."
       />
       <div className="space-y-6 p-6">
         <DocumentsNav />
@@ -141,10 +141,10 @@ export default async function TemplatePage({
           </div>
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Padrao
+              Padrão
             </p>
             <p className="mt-1 text-sm font-medium text-slate-950">
-              {template.is_default ? "Sim" : "Nao"}
+              {template.is_default ? "Sim" : "Não"}
             </p>
           </div>
           <div>
@@ -173,7 +173,7 @@ export default async function TemplatePage({
           </div>
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Etapa juridica
+              Etapa jurídica
             </p>
             <p className="mt-1 text-sm font-medium text-slate-950">
               {template.legal_stage_id || template.legal_stage
@@ -181,12 +181,12 @@ export default async function TemplatePage({
                     template.legal_stage_id ?? template.legal_stage,
                     workflowStages,
                   ).label
-                : "Nao vinculada"}
+                : "Não vinculada"}
             </p>
           </div>
           <div className="md:col-span-4">
             <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Descricao
+              Descrição
             </p>
             <p className="mt-1 text-sm font-medium text-slate-950">
               {displayValue(template.description)}
@@ -199,8 +199,8 @@ export default async function TemplatePage({
           <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm leading-6 text-slate-700">
             <p>
               Este template foi preparado para trabalhar com arquivo oficial em DOCX
-              ou PDF. A geracao final da pre-venda deve usar o arquivo oficial para
-              preservar alinhamento, imagens, marca d&apos;agua e a estrutura do
+              ou PDF. A geração final da pré-venda deve usar o arquivo oficial para
+              preservar alinhamento, imagens, marca d&após;agua e a estrutura do
               contrato.
             </p>
             <p className="mt-3">

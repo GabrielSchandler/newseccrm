@@ -42,15 +42,15 @@ function friendlyError(message: string): CalculationActionState {
 
 function normalizeCalculationErrorMessage(message: string) {
   if (message.includes("Could not find the table") && message.includes("financing_calculations")) {
-    return "A tabela public.financing_calculations ainda nao existe no Supabase desta instancia. Rode o SQL do modulo de simulacoes e tente novamente.";
+    return "A tabela public.financing_calculations ainda não existe no Supabase desta instância. Rode o SQL do módulo de simulações e tente novamente.";
   }
 
   if (message.includes("settlement_")) {
-    return "As colunas de quitacao da simulacao ainda nao existem no Supabase desta instancia. Rode o SQL de quitacao e tente novamente.";
+    return "As colunas de quitação da simulação ainda não existem no Supabase desta instância. Rode o SQL de quitação e tente novamente.";
   }
 
   if (message.toLowerCase().includes("row-level security policy")) {
-    return "A politica de seguranca do Supabase bloqueou esta operacao. Atualize a pagina e tente novamente. Se continuar, revise as permissoes de Storage e simulacoes.";
+    return "A política de segurança do Supabase bloqueou esta operação. Atualize a página e tente novamente. Se continuar, revise as permissões de Storage e simulações.";
   }
 
   return message;
@@ -68,7 +68,7 @@ async function ensureCalculationReportsBucketAvailable() {
 
   if (error.message.toLowerCase().includes("bucket not found")) {
     return friendlyError(
-      "O bucket privado 'calculation-reports' ainda nao existe nesta instancia do Supabase.",
+      "O bucket privado 'calculation-reports' ainda não existe nesta instância do Supabase.",
     );
   }
 
@@ -202,7 +202,7 @@ function resolveSpecialistName(
     return normalizedUsername;
   }
 
-  return "Nao informado";
+  return "Não informado";
 }
 
 function stringFromUnknown(value: unknown) {
@@ -218,7 +218,7 @@ function stringFromUnknown(value: unknown) {
 }
 
 function resolveCalculationClientLabel(value: string | null | undefined) {
-  return value?.trim() || "Nao informado";
+  return value?.trim() || "Não informado";
 }
 
 function resolveCompanyDisplayName(companyRecord: Record<string, unknown> | null) {
@@ -242,11 +242,11 @@ function resolveSimulationGuarantee(companyRecord: Record<string, unknown> | nul
   const clauseText = stringFromUnknown(companyRecord?.simulation_guarantee_clause_text);
 
   return {
-    title: title || "Seguranca contratual",
+    title: title || "Segurança contratual",
     lead:
       lead ||
-      "A prestacao de servico segue as condicoes definidas no contrato assinado entre as partes, com analise documental e orientacao de proximos passos conforme o caso.",
-    clauseLabel: clauseText ? clauseLabel || "Condicao contratual" : null,
+      "A prestação de serviço segue as condições definidas no contrato assinado entre as partes, com análise documental e orientação de próximos passos conforme o caso.",
+    clauseLabel: clauseText ? clauseLabel || "Condição contratual" : null,
     clauseText: clauseText || null,
   };
 }
@@ -480,7 +480,7 @@ export async function createFinancingCalculationAction(
   const parsed = financingCalculationFormSchema.safeParse(values);
 
   if (!parsed.success) {
-    return friendlyError("Confira os dados da simulacao.");
+    return friendlyError("Confira os dados da simulação.");
   }
 
   try {
@@ -495,7 +495,7 @@ export async function createFinancingCalculationAction(
     } = await getCurrentUserContext();
 
     if (!canManageCalculations(role)) {
-      return friendlyError("Voce nao tem permissao para criar simulacoes.");
+      return friendlyError("Você não tem permissão para criar simulações.");
     }
 
     if (parsed.data.client_id) {
@@ -530,7 +530,7 @@ export async function createFinancingCalculationAction(
     if (error || !data) {
       return friendlyError(
         normalizeCalculationErrorMessage(
-          error?.message || "Nao foi possivel salvar a simulacao.",
+          error?.message || "Não foi possível salvar a simulação.",
         ),
       );
     }
@@ -559,14 +559,14 @@ export async function createFinancingCalculationAction(
 
     return {
       ok: true,
-      message: "Simulacao salva com sucesso.",
+      message: "Simulação salva com sucesso.",
       redirectTo: `/calculos/${calculationId}?success=created`,
     };
   } catch (error) {
     return friendlyError(
       error instanceof Error
         ? normalizeCalculationErrorMessage(error.message)
-        : "Nao foi possivel salvar a simulacao.",
+        : "Não foi possível salvar a simulação.",
     );
   }
 }
@@ -578,7 +578,7 @@ export async function updateFinancingCalculationAction(
   const parsed = financingCalculationFormSchema.safeParse(values);
 
   if (!parsed.success) {
-    return friendlyError("Confira os dados da simulacao.");
+    return friendlyError("Confira os dados da simulação.");
   }
 
   try {
@@ -593,7 +593,7 @@ export async function updateFinancingCalculationAction(
     } = await getCurrentUserContext();
 
     if (!canManageCalculations(role)) {
-      return friendlyError("Voce nao tem permissao para editar simulacoes.");
+      return friendlyError("Você não tem permissão para editar simulações.");
     }
 
     const existing = await assertCalculationAccess(calculationId);
@@ -654,14 +654,14 @@ export async function updateFinancingCalculationAction(
 
     return {
       ok: true,
-      message: "Simulacao atualizada com sucesso.",
+      message: "Simulação atualizada com sucesso.",
       redirectTo: `/calculos/${calculationId}?success=updated`,
     };
   } catch (error) {
     return friendlyError(
       error instanceof Error
         ? normalizeCalculationErrorMessage(error.message)
-        : "Nao foi possivel atualizar a simulacao.",
+        : "Não foi possível atualizar a simulação.",
     );
   }
 }
@@ -673,7 +673,7 @@ export async function deleteFinancingCalculationAction(
     const { supabase, companyId, userProfileId, role } = await getCurrentUserContext();
 
     if (!canManageCalculations(role)) {
-      return friendlyError("Voce nao tem permissao para excluir simulacoes.");
+      return friendlyError("Você não tem permissão para excluir simulações.");
     }
 
     const calculation = await assertCalculationAccess(calculationId);
@@ -725,14 +725,14 @@ export async function deleteFinancingCalculationAction(
 
     return {
       ok: true,
-      message: "Simulacao excluida com sucesso.",
+      message: "Simulação excluída com sucesso.",
       redirectTo: "/calculos?success=deleted",
     };
   } catch (error) {
     return friendlyError(
       error instanceof Error
         ? normalizeCalculationErrorMessage(error.message)
-        : "Nao foi possivel excluir a simulacao.",
+        : "Não foi possível excluir a simulação.",
     );
   }
 }
@@ -750,7 +750,7 @@ export async function generateCalculationPdfAction(
     const { supabase, companyId, userProfileId, role } = await getCurrentUserContext();
 
     if (!canManageCalculations(role)) {
-      return friendlyError("Voce nao tem permissao para gerar PDFs.");
+      return friendlyError("Você não tem permissão para gerar PDFs.");
     }
 
     const calculation = await assertCalculationAccess(calculationId);
@@ -844,7 +844,7 @@ export async function generateCalculationPdfAction(
     };
   } catch (error) {
     return friendlyError(
-      error instanceof Error ? error.message : "Nao foi possivel gerar o PDF.",
+      error instanceof Error ? error.message : "Não foi possível gerar o PDF.",
     );
   }
 }
@@ -863,7 +863,7 @@ export async function createSignedCalculationPdfUrlAction(
     const calculation = await assertCalculationAccess(calculationId);
 
     if (!calculation.pdf_storage_path) {
-      return friendlyError("Esta simulacao ainda nao possui PDF gerado.");
+      return friendlyError("Esta simulação ainda não possui PDF gerado.");
     }
 
     const adminClient = createAdminClient();
@@ -871,7 +871,7 @@ export async function createSignedCalculationPdfUrlAction(
 
     if (!fileExists) {
       return friendlyError(
-        "O arquivo PDF nao foi encontrado no Storage. Clique em Gerar PDF para recriar a simulacao.",
+        "O arquivo PDF não foi encontrado no Storage. Clique em Gerar PDF para recriar a simulação.",
       );
     }
 
@@ -892,19 +892,19 @@ export async function createSignedCalculationPdfUrlAction(
     if (error || !data?.signedUrl) {
       return friendlyError(
         normalizeCalculationErrorMessage(
-          error?.message || "Nao foi possivel gerar o link do PDF.",
+          error?.message || "Não foi possível gerar o link do PDF.",
         ),
       );
     }
 
     return {
       ok: true,
-      message: mode === "download" ? "Download liberado." : "Visualizacao liberada.",
+      message: mode === "download" ? "Download liberado." : "Visualização liberada.",
       url: data.signedUrl,
     };
   } catch (error) {
     return friendlyError(
-      error instanceof Error ? error.message : "Nao foi possivel abrir o PDF.",
+      error instanceof Error ? error.message : "Não foi possível abrir o PDF.",
     );
   }
 }

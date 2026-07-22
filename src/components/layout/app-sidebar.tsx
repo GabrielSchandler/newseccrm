@@ -21,8 +21,8 @@ const navigation: SidebarNavigationItem[] = [
   { href: "/dashboard", label: "Painel comercial", icon: "dashboard" },
   { href: "/comercial", label: "Painel comercial", icon: "dashboard" },
   { href: "/clientes", label: "Clientes", icon: "clients" },
-  { href: "/pre-vendas", label: "Pre-vendas", icon: "preSales" },
-  { href: "/calculos", label: "Simulacoes", icon: "calculations" },
+  { href: "/pre-vendas", label: "Pré-vendas", icon: "preSales" },
+  { href: "/calculos", label: "Simulações", icon: "calculations" },
   { href: "/documentos", label: "Documentos", icon: "documents" },
   { href: "/academy", label: "Academy", icon: "academy" },
   {
@@ -45,7 +45,7 @@ const navigation: SidebarNavigationItem[] = [
     managerOnly: true,
   },
   { href: "/contratos", label: "Contratos", icon: "contracts" },
-  { href: "/usuarios", label: "Usuarios", icon: "users" },
+  { href: "/usuarios", label: "Usuários", icon: "users" },
   { href: "/empresa", label: "Empresa", icon: "company", adminOnly: true },
   {
     href: "/academy/gestao",
@@ -58,7 +58,7 @@ const navigation: SidebarNavigationItem[] = [
   { href: "/juridico", label: "Esteira", icon: "legal" },
   {
     href: "/leads",
-    label: "Distribuicao de leads",
+    label: "Distribuição de leads",
     icon: "leads",
     managerOnly: true,
   },

@@ -102,7 +102,7 @@ export default async function DocumentoPage({ params }: DocumentoPageProps) {
     <>
       <PageHeader
         title={document.title}
-        description="Documento gerado e salvo a partir da pre-venda."
+        description="Documento gerado e salvo a partir da pré-venda."
       />
       <div className="space-y-6 p-6">
         <DocumentsNav />
@@ -118,7 +118,7 @@ export default async function DocumentoPage({ params }: DocumentoPageProps) {
             href={`/pre-vendas/${document.pre_sale_id}`}
             className="rounded-lg bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-800"
           >
-            Abrir pre-venda
+            Abrir pré-venda
           </Link>
           {document.render_source === "html" ? (
             <Link
@@ -209,7 +209,7 @@ export default async function DocumentoPage({ params }: DocumentoPageProps) {
           </div>
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Usuario
+              Usuário
             </p>
             <p className="mt-1 text-sm font-medium text-slate-950">
               {resolveUserDisplayName(creator)}
@@ -264,14 +264,14 @@ export default async function DocumentoPage({ params }: DocumentoPageProps) {
             <p className="mt-1 text-sm text-slate-600">
               Quando o documento tiver DOCX ou PDF oficial, use os arquivos oficiais
               acima para conferir a versao fiel. Este preview serve apenas como
-              referencia rapida dentro do CRM.
+              referência rapida dentro do CRM.
             </p>
             <div className="mt-4 bg-slate-50 p-4">
               {document.rendered_content_html ? (
                 <DocumentRenderedContent html={document.rendered_content_html} />
               ) : (
                 <p className="text-sm text-slate-500">
-                  Este documento foi gerado a partir do arquivo oficial e nao possui
+                  Este documento foi gerado a partir do arquivo oficial e não possui
                   preview HTML salvo.
                 </p>
               )}

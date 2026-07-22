@@ -5,9 +5,9 @@ const optionalText = z
   .transform((value) => (typeof value === "string" && value.trim() ? value.trim() : null));
 
 export const clientDocumentUploadSchema = z.object({
-  client_id: z.string().uuid("Cliente invalido."),
+  client_id: z.string().uuid("Cliente inválido."),
   pre_sale_id: z
-    .union([z.string().uuid("Pre-venda invalida."), z.literal(""), z.null(), z.undefined()])
+    .union([z.string().uuid("Pré-venda inválida."), z.literal(""), z.null(), z.undefined()])
     .transform((value) => (typeof value === "string" && value.trim() ? value : null)),
   document_type: z.enum(
     [

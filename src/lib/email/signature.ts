@@ -52,7 +52,7 @@ function senderName(sender: SignatureUser, senderDisplayName?: string | null) {
 
 function senderTitle(sender: SignatureUser) {
   if (sender?.legal_role === "consultant") {
-    return "Juridico";
+    return "Jurídico";
   }
 
   return "Administrativo";

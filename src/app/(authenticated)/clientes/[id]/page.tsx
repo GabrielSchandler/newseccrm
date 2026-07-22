@@ -71,7 +71,7 @@ const contactDetails = [
 const addressDetails = [
   ["CEP", "zip_code"],
   ["Rua", "street"],
-  ["Numero", "number"],
+  ["Número", "number"],
   ["Bairro", "district"],
   ["Cidade", "city"],
   ["Estado", "state"],
@@ -319,7 +319,7 @@ export default async function ClientePage({
         title={client.full_name}
         description={
           isDeletedClient(client)
-            ? "Este cliente esta excluido e nao aparece na listagem padrao."
+            ? "Este cliente está excluído e não aparece na listagem padrão."
             : "Dados cadastrados do cliente selecionado."
         }
       />
@@ -354,18 +354,18 @@ export default async function ClientePage({
               variables={{
                 nome_cliente: client.full_name,
                 cpf: client.cpf,
-                email_cliente: client.email ?? "Nao informado",
+                email_cliente: client.email ?? "Não informado",
                 telefone_cliente: client.phone_mobile,
-                banco: emailFinancialCase?.financer_name ?? "Nao informado",
-                financeira: emailFinancialCase?.financer_name ?? "Nao informado",
+                banco: emailFinancialCase?.financer_name ?? "Não informado",
+                financeira: emailFinancialCase?.financer_name ?? "Não informado",
                 financeira_razao_social:
-                  emailFinancialCase?.financer_legal_name ?? "Nao informado",
-                financeira_cnpj: emailFinancialCase?.financer_cnpj ?? "Nao informado",
-                numero_contrato: primaryEmailPreSale?.tracking_protocol ?? "Nao informado",
-                numero_protocolo: primaryEmailPreSale?.tracking_protocol ?? "Nao informado",
-                protocolo: primaryEmailPreSale?.tracking_protocol ?? "Nao informado",
+                  emailFinancialCase?.financer_legal_name ?? "Não informado",
+                financeira_cnpj: emailFinancialCase?.financer_cnpj ?? "Não informado",
+                numero_contrato: primaryEmailPreSale?.tracking_protocol ?? "Não informado",
+                numero_protocolo: primaryEmailPreSale?.tracking_protocol ?? "Não informado",
+                protocolo: primaryEmailPreSale?.tracking_protocol ?? "Não informado",
                 numero_contrato_financiamento:
-                  emailFinancialCase?.contract_number ?? "Nao informado",
+                  emailFinancialCase?.contract_number ?? "Não informado",
               }}
             />
           ) : null}
@@ -382,12 +382,12 @@ export default async function ClientePage({
             {
               id: "resumo",
               label: "Resumo",
-              description: "Visao rapida do atendimento.",
+              description: "Visão rapida do atendimento.",
             },
             {
               id: "dados",
               label: "Dados pessoais",
-              description: "Cadastro, contato e responsaveis.",
+              description: "Cadastro, contato e responsáveis.",
             },
             {
               id: "acompanhamento",
@@ -397,20 +397,20 @@ export default async function ClientePage({
             },
             {
               id: "documentacao",
-              label: "Documentacao",
+              label: "Documentação",
               description: "Anexos e documentos emitidos.",
               count: attachedDocumentsCount + generatedDocumentsCount,
             },
             {
               id: "pre-vendas",
-              label: "Pre-vendas",
+              label: "Pré-vendas",
               description: "Oportunidades do cliente.",
               count: clientPreSales.length,
             },
             {
               id: "simulacoes",
-              label: "Simulacoes",
-              description: "Analises revisionais.",
+              label: "Simulações",
+              description: "Análises revisionais.",
             },
           ]}
         >
@@ -424,7 +424,7 @@ export default async function ClientePage({
                   </h2>
                   <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
                     Centralize a leitura principal do cliente antes de acessar dados,
-                    documentos, pre-vendas ou historico completo.
+                    documentos, pré-vendas ou histórico completo.
                   </p>
                 </div>
                 <div className="rounded-lg border border-teal-100 bg-teal-50 px-4 py-3 text-sm text-teal-900">
@@ -449,7 +449,7 @@ export default async function ClientePage({
                   )}
                 />
                 <SummaryMetric
-                  label="Pre-vendas"
+                  label="Pré-vendas"
                   value={clientPreSales.length}
                   detail={
                     latestPreSale
@@ -469,27 +469,27 @@ export default async function ClientePage({
                   )}
                 />
                 <SummaryMetric
-                  label="Adm juridico"
+                  label="Adm jurídico"
                   value={displayValue(
                     resolveUserDisplayName(legalResponsibleProfile, ""),
                   )}
                 />
                 <SummaryMetric
-                  label="Consultor juridico"
+                  label="Consultor jurídico"
                   value={displayValue(
                     resolveUserDisplayName(legalConsultantProfile, ""),
                   )}
                 />
                 <SummaryMetric
                   label="Acompanhamento"
-                  value={`${trackingUpdatesCount} publico(s) / ${timelineEventsCount} interno(s)`}
-                  detail="Movimentacoes do portal e historico interno."
+                  value={`${trackingUpdatesCount} público(s) / ${timelineEventsCount} interno(s)`}
+                  detail="Movimentações do portal e histórico interno."
                 />
               </div>
 
               <div className="mt-6 rounded-lg border border-slate-200 bg-slate-50 p-4">
                 <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Observacoes
+                  Observações
                 </p>
                 <p className="mt-2 whitespace-pre-line text-sm leading-6 text-slate-800">
                   {displayValue(client.notes)}
@@ -567,7 +567,7 @@ export default async function ClientePage({
             </div>
 
             <div>
-              <h2 className="text-base font-semibold text-slate-950">Endereco</h2>
+              <h2 className="text-base font-semibold text-slate-950">Endereço</h2>
               <div className="mt-4 grid gap-5 md:grid-cols-2">
                 {addressDetails.map(([label, key]) => (
                   <div key={key}>
@@ -620,7 +620,7 @@ export default async function ClientePage({
               <div className="mt-4 grid gap-5 md:grid-cols-2">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Consultor comercial responsavel
+                    Consultor comercial responsável
                   </p>
                   <p className="mt-1 text-sm font-medium text-slate-950">
                     {displayValue(resolveUserDisplayName(commercialConsultantProfile, ""))}
@@ -630,11 +630,11 @@ export default async function ClientePage({
             </div>
 
             <div>
-              <h2 className="text-base font-semibold text-slate-950">Juridico</h2>
+              <h2 className="text-base font-semibold text-slate-950">Jurídico</h2>
               <div className="mt-4 grid gap-5 md:grid-cols-2">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Adm responsavel
+                    Adm responsável
                   </p>
                   <p className="mt-1 text-sm font-medium text-slate-950">
                     {displayValue(resolveUserDisplayName(legalResponsibleProfile, ""))}
@@ -642,7 +642,7 @@ export default async function ClientePage({
                 </div>
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Consultor responsavel
+                    Consultor responsável
                   </p>
                   <p className="mt-1 text-sm font-medium text-slate-950">
                     {displayValue(resolveUserDisplayName(legalConsultantProfile, ""))}
@@ -652,7 +652,7 @@ export default async function ClientePage({
             </div>
 
             <div>
-              <h2 className="text-base font-semibold text-slate-950">Observacoes</h2>
+              <h2 className="text-base font-semibold text-slate-950">Observações</h2>
               <p className="mt-3 whitespace-pre-line text-sm font-medium text-slate-950">
                 {displayValue(client.notes)}
               </p>
@@ -700,7 +700,7 @@ export default async function ClientePage({
               Documentos gerados deste cliente
             </h2>
             <p className="mt-1 text-sm text-slate-600">
-              Contratos, recibos e outros documentos emitidos a partir das pre-vendas
+              Contratos, recibos e outros documentos emitidos a partir das pré-vendas
               vinculadas a este cliente.
             </p>
           </div>
@@ -717,10 +717,10 @@ export default async function ClientePage({
                     <th className="px-6 py-3 font-semibold">Documento</th>
                     <th className="px-6 py-3 font-semibold">Tipo</th>
                     <th className="px-6 py-3 font-semibold">Template</th>
-                    <th className="px-6 py-3 font-semibold">Pre-venda</th>
+                    <th className="px-6 py-3 font-semibold">Pré-venda</th>
                     <th className="px-6 py-3 font-semibold">Status</th>
                     <th className="px-6 py-3 font-semibold">Data</th>
-                    <th className="px-6 py-3 font-semibold">Acoes</th>
+                    <th className="px-6 py-3 font-semibold">Ações</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -745,10 +745,10 @@ export default async function ClientePage({
                               href={`/pre-vendas/${document.pre_sale_id}`}
                               className="font-semibold text-teal-700 transition hover:text-teal-800"
                             >
-                              Ver pre-venda
+                              Ver pré-venda
                             </Link>
                           ) : (
-                            "Nao vinculada"
+                            "Não vinculada"
                           )}
                           {preSale?.status ? (
                             <p className="mt-1 text-xs text-slate-500">
@@ -802,10 +802,10 @@ export default async function ClientePage({
         <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
           <div className="border-b border-slate-200 px-6 py-4">
             <h2 className="text-base font-semibold text-slate-950">
-              Pre-vendas deste cliente
+              Pré-vendas deste cliente
             </h2>
             <p className="mt-1 text-sm text-slate-600">
-              Historico comercial com acesso rapido as oportunidades abertas para este cliente.
+              Histórico comercial com acesso rapido as oportunidades abertas para este cliente.
             </p>
           </div>
 
@@ -819,13 +819,13 @@ export default async function ClientePage({
                 <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
                   <tr>
                     <th className="px-6 py-3 font-semibold">Tipo</th>
-                    <th className="px-6 py-3 font-semibold">Servico</th>
-                    <th className="px-6 py-3 font-semibold">Midia</th>
+                    <th className="px-6 py-3 font-semibold">Serviço</th>
+                    <th className="px-6 py-3 font-semibold">Mídia</th>
                     <th className="px-6 py-3 font-semibold">Protocolo</th>
                     <th className="px-6 py-3 font-semibold">Consultor</th>
                     <th className="px-6 py-3 font-semibold">Status</th>
                     <th className="px-6 py-3 font-semibold">Criada em</th>
-                    <th className="px-6 py-3 font-semibold">Acoes</th>
+                    <th className="px-6 py-3 font-semibold">Ações</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -876,7 +876,7 @@ export default async function ClientePage({
                               href={`/calculos/novo?preSaleId=${preSale.id}`}
                               className="rounded-lg border border-teal-300 bg-teal-50 px-3 py-2 text-sm font-semibold text-teal-800 transition hover:bg-teal-100"
                             >
-                              Simulacao
+                              Simulação
                             </Link>
                           </div>
                         </td>
@@ -888,7 +888,7 @@ export default async function ClientePage({
             </div>
           ) : (
             <div className="px-6 py-6 text-sm text-slate-500">
-              Nenhuma pre-venda encontrada para este cliente.
+              Nenhuma pré-venda encontrada para este cliente.
             </div>
           )}
         </section>

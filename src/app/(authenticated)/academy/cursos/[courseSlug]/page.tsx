@@ -56,7 +56,7 @@ export default async function AcademyCoursePage({
           <p className="text-sm font-medium text-teal-700">CRM SaaS</p>
           <h1 className="mt-2 text-3xl font-semibold text-slate-950">Academy</h1>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-            O modulo Academy ainda nao esta habilitado para esta empresa.
+            O módulo Academy ainda não está habilitado para esta empresa.
           </p>
         </section>
       </main>
@@ -109,9 +109,9 @@ export default async function AcademyCoursePage({
       <section className="space-y-6 p-6">
         {!progress.tableReady || query.error === "sql" ? (
           <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-900">
-            O banco ainda nao possui as tabelas do Academy. Rode o SQL
+            O banco ainda não possui as tabelas do Academy. Rode o SQL
             `docs/sql/academy-crm.sql` no Supabase para salvar progresso,
-            provas e relatorios.
+            provas e relatórios.
           </div>
         ) : null}
 

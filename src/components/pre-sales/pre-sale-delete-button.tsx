@@ -21,7 +21,7 @@ export function PreSaleDeleteButton({
   const [message, setMessage] = useState<PreSaleActionState | null>(null);
 
   function handleDelete() {
-    if (!window.confirm("Deseja excluir esta pre-venda?")) {
+    if (!window.confirm("Deseja excluir esta pré-venda?")) {
       return;
     }
 

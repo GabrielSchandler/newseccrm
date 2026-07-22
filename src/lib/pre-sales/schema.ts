@@ -62,7 +62,7 @@ const optionalLeadMedia = z
 const optionalEmail = z
   .union([z.string(), z.null(), z.undefined()])
   .transform((value) => (typeof value === "string" && value.trim() ? value.trim() : null))
-  .pipe(z.string().email("Informe um email valido.").nullable());
+  .pipe(z.string().email("Informe um email válido.").nullable());
 
 const requiredCpf = z
   .string()
@@ -86,13 +86,13 @@ const optionalCnpj = optionalText
   .transform((value) => (value ? onlyDigits(value) : null));
 
 const optionalPhone = optionalText
-  .refine((value) => isValidPhone(value), "Informe um telefone valido.")
+  .refine((value) => isValidPhone(value), "Informe um telefone válido.")
   .transform((value) => (value ? onlyDigits(value) : null));
 
 const optionalNumber = z
   .union([z.string(), z.number(), z.null(), z.undefined()])
   .transform((value) => parseBrazilianDecimalInput(value))
-  .refine((value) => value === null || !Number.isNaN(value), "Informe um valor valido.");
+  .refine((value) => value === null || !Number.isNaN(value), "Informe um valor válido.");
 
 const paymentMethod = z
   .union([z.enum(paymentMethodValues), z.literal(""), z.null(), z.undefined()])
@@ -101,7 +101,7 @@ const paymentMethod = z
 const requiredNumber = z
   .union([z.string(), z.number(), z.null(), z.undefined()])
   .transform((value) => parseBrazilianDecimalInput(value))
-  .refine((value) => value !== null && !Number.isNaN(value), "Informe um valor valido.")
+  .refine((value) => value !== null && !Number.isNaN(value), "Informe um valor válido.")
   .transform((value) => value as number);
 
 const optionalInteger = z
@@ -114,7 +114,7 @@ const optionalInteger = z
     const digits = String(value).replace(/\D/g, "");
     return digits ? Number(digits) : Number.NaN;
   })
-  .refine((value) => value === null || Number.isInteger(value), "Informe um numero valido.");
+  .refine((value) => value === null || Number.isInteger(value), "Informe um número válido.");
 
 function hasPaymentContent(payment: {
   amount: number | null;
@@ -135,10 +135,10 @@ const preSaleFormBaseSchema = z.object({
   consultant_user_id: z
     .union([z.string(), z.null(), z.undefined()])
     .transform((value) => (typeof value === "string" && value ? value : null))
-    .pipe(z.string().uuid("Selecione um consultor valido.").nullable()),
+    .pipe(z.string().uuid("Selecione um consultor válido.").nullable()),
   pre_sale_type: z.enum(["emprestimo", "imovel", "veiculo"], {
-    required_error: "Selecione o tipo de pre-venda.",
-    invalid_type_error: "Selecione o tipo de pre-venda.",
+    required_error: "Selecione o tipo de pré-venda.",
+    invalid_type_error: "Selecione o tipo de pré-venda.",
   }),
   status: z.enum([
     "lead",
@@ -255,14 +255,14 @@ export const preSaleFormSchema = preSaleFormBaseSchema.superRefine((values, cont
       context.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["debt_holder_issuer_agency"],
-        message: "Informe o orgao emissor quando houver titular da divida.",
+        message: "Informe o órgão emissor quando houver titular da dívida.",
       });
     }
   }
 
   if (values.pre_sale_type === "veiculo") {
     const requiredVehicleFields = [
-      ["asset_brand_model", values.asset_brand_model, "Informe o veiculo."],
+      ["asset_brand_model", values.asset_brand_model, "Informe o veículo."],
       ["asset_color", values.asset_color, "Informe a cor."],
       ["asset_year", values.asset_year, "Informe o ano."],
       ["asset_plate", values.asset_plate, "Informe a placa."],

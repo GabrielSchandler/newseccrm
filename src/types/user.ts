@@ -44,19 +44,19 @@ export const companyBusinessAreas: Array<{
   label: string;
 }> = [
   { value: "commercial", label: "Comercial" },
-  { value: "legal", label: "Juridico" },
+  { value: "legal", label: "Jurídico" },
 ];
 
 export const legalUserRoles: Array<{
   value: LegalUserRole;
   label: string;
 }> = [
-  { value: "admin", label: "Adm juridico" },
-  { value: "consultant", label: "Consultor juridico" },
+  { value: "admin", label: "Adm jurídico" },
+  { value: "consultant", label: "Consultor jurídico" },
 ];
 
 export function formatCompanyUserRole(role: CompanyUserRole | string | null) {
-  return companyUserRoles.find((item) => item.value === role)?.label ?? "Nao informado";
+  return companyUserRoles.find((item) => item.value === role)?.label ?? "Não informado";
 }
 
 export function formatCompanyBusinessArea(
@@ -66,5 +66,5 @@ export function formatCompanyBusinessArea(
 }
 
 export function formatLegalUserRole(role: LegalUserRole | string | null) {
-  return legalUserRoles.find((item) => item.value === role)?.label ?? "Nao definido";
+  return legalUserRoles.find((item) => item.value === role)?.label ?? "Não definido";
 }

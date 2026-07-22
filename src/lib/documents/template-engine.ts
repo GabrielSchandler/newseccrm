@@ -134,7 +134,7 @@ export const documentVariableCatalog = [
     ],
   },
   {
-    group: "Titular da divida",
+    group: "Titular da dívida",
     variables: [
       "titular_nome",
       "titular_cpf",
@@ -159,7 +159,7 @@ export const documentVariableCatalog = [
     ],
   },
   {
-    group: "Pre-venda",
+    group: "Pré-venda",
     variables: [
       "pre_venda_id",
       "pre_venda_tipo",
@@ -195,7 +195,7 @@ export const documentVariableCatalog = [
     ],
   },
   {
-    group: "Veiculo",
+    group: "Veículo",
     variables: [
       "veiculo_modelo",
       "veiculo_cor",
@@ -204,7 +204,7 @@ export const documentVariableCatalog = [
     ],
   },
   {
-    group: "Contratacao",
+    group: "Contratação",
     variables: [
       "numero_contrato",
       "numero_protocolo",
@@ -215,7 +215,7 @@ export const documentVariableCatalog = [
     ],
   },
   {
-    group: "Juridico",
+    group: "Jurídico",
     variables: [
       "juridico_departamento_legado",
       "juridico_status",
@@ -243,7 +243,7 @@ export const documentVariableCatalog = [
     ],
   },
   {
-    group: "Pagamento juridico",
+    group: "Pagamento jurídico",
     variables: [
       "juridico_pagamento_id",
       "juridico_pagamento_tipo",

@@ -83,10 +83,10 @@ function getStageAgeLabel(isoDate: string) {
   }
 
   if (diffDays === 1) {
-    return "Ha 1 dia";
+    return "Há 1 dia";
   }
 
-  return `Ha ${diffDays} dias`;
+  return `Há ${diffDays} dias`;
 }
 
 function getStageTemplates(
@@ -110,7 +110,7 @@ function getStageTemplates(
       .toLowerCase();
 
   const stageKeywords: Record<string, string[]> = {
-    termo_pagamento_servico: ["recibo", "termo de pagamento", "prestacao de servico"],
+    termo_pagamento_servico: ["recibo", "termo de pagamento", "prestação de serviço"],
     lgpd_hipossuficiencia_procuracao: ["lgpd", "hipossuficiencia", "procuracao"],
     diligencia_cobranca: ["notificacao", "protocolo", "designacao de perito", "perito"],
     pagamento_laudo: ["pagamento de laudo", "laudo"],
@@ -306,7 +306,7 @@ export function LegalKanban({
   function confirmBulkMove() {
     if (!bulkTargetStageId || !bulkMoveNote.trim()) {
       setMessageTone("error");
-      setMessage("Selecione a coluna de destino e descreva o motivo da movimentacao.");
+      setMessage("Selecione a coluna de destino e descreva o motivo da movimentação.");
       return;
     }
 
@@ -373,7 +373,7 @@ export function LegalKanban({
               onClick={undoLastBulkMove}
               className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-2.5 text-sm font-semibold text-amber-900 hover:bg-amber-100 disabled:opacity-60"
             >
-              Desfazer ultima movimentacao em massa
+              Desfazer ultima movimentação em massa
             </button>
           ) : null}
         </div>
@@ -416,10 +416,10 @@ export function LegalKanban({
             <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
               <div>
                 <p className="text-sm font-semibold text-slate-950">
-                  Filtros de responsaveis juridicos
+                  Filtros de responsáveis jurídicos
                 </p>
                 <p className="mt-1 text-sm text-slate-600">
-                  A esteira abre filtrada para o responsavel logado quando houver vinculo. Se precisar, voce pode trocar para outro responsavel, ver todos ou localizar clientes sem responsavel definido.
+                  A esteira abre filtrada para o responsável logado quando houver vínculo. Se precisar, você pode trocar para outro responsável, ver todos ou localizar clientes sem responsável definido.
                 </p>
               </div>
               <div className="grid w-full gap-3 md:max-w-4xl md:grid-cols-3">
@@ -428,7 +428,7 @@ export function LegalKanban({
                     htmlFor="legal-status-filter"
                     className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500"
                   >
-                    Situacao juridica
+                    Situação jurídica
                   </label>
                   <select
                     id="legal-status-filter"
@@ -447,7 +447,7 @@ export function LegalKanban({
                     htmlFor="legal-admin-filter"
                     className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500"
                   >
-                    Adm responsavel
+                    Adm responsável
                   </label>
                   <select
                     id="legal-admin-filter"
@@ -456,7 +456,7 @@ export function LegalKanban({
                     className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
                   >
                     <option value="all">Todos</option>
-                    <option value="none">Sem adm responsavel</option>
+                    <option value="none">Sem adm responsável</option>
                     {legalAdmins.map((admin) => (
                       <option key={admin.id} value={admin.id}>
                         {formatUserName(admin)}
@@ -469,7 +469,7 @@ export function LegalKanban({
                     htmlFor="legal-consultant-filter"
                     className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500"
                   >
-                    Consultor responsavel
+                    Consultor responsável
                   </label>
                   <select
                     id="legal-consultant-filter"
@@ -478,7 +478,7 @@ export function LegalKanban({
                     className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
                   >
                     <option value="all">Todos</option>
-                    <option value="none">Sem consultor responsavel</option>
+                    <option value="none">Sem consultor responsável</option>
                     {legalConsultants.map((consultant) => (
                       <option key={consultant.id} value={consultant.id}>
                         {formatUserName(consultant)}
@@ -643,7 +643,7 @@ export function LegalKanban({
                             {formatUserName(preSale.consultant)}
                           </p>
                           <p>
-                            <span className="font-semibold text-slate-700">Adm responsavel:</span>{" "}
+                            <span className="font-semibold text-slate-700">Adm responsável:</span>{" "}
                             {formatUserName(
                               legalAdmins.find(
                                 (admin) => admin.id === preSale.legalResponsibleUserId,
@@ -651,7 +651,7 @@ export function LegalKanban({
                             )}
                           </p>
                           <p>
-                            <span className="font-semibold text-slate-700">Consultor responsavel:</span>{" "}
+                            <span className="font-semibold text-slate-700">Consultor responsável:</span>{" "}
                             {formatUserName(
                               legalConsultants.find(
                                 (consultant) => consultant.id === preSale.legalConsultantUserId,
@@ -667,7 +667,7 @@ export function LegalKanban({
                             {formatDateTime(preSale.created_at)}
                           </p>
                           <p>
-                            <span className="font-semibold text-slate-700">Ultima mudanca:</span>{" "}
+                            <span className="font-semibold text-slate-700">Ultima mudança:</span>{" "}
                             {formatDate(preSale.stageUpdatedAt)}
                           </p>
                         </div>
@@ -691,7 +691,7 @@ export function LegalKanban({
                             href={`/pre-vendas/${preSale.id}`}
                             className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
                           >
-                            Pre-venda
+                            Pré-venda
                           </Link>
                           <Link
                             href="/documentos"
@@ -763,33 +763,33 @@ export function LegalKanban({
                             documents={preSale.clientDocuments}
                             variables={{
                               nome_cliente:
-                                preSale.client?.full_name ?? "Nao informado",
-                              cpf: preSale.client?.cpf ?? "Nao informado",
+                                preSale.client?.full_name ?? "Não informado",
+                              cpf: preSale.client?.cpf ?? "Não informado",
                               email_cliente:
-                                preSale.client?.email ?? "Nao informado",
+                                preSale.client?.email ?? "Não informado",
                               telefone_cliente:
-                                preSale.client?.phone_mobile ?? "Nao informado",
+                                preSale.client?.phone_mobile ?? "Não informado",
                               banco:
                                 preSale.financialCase?.financer_name ??
-                                "Nao informado",
+                                "Não informado",
                               financeira:
                                 preSale.financialCase?.financer_name ??
-                                "Nao informado",
+                                "Não informado",
                               financeira_razao_social:
                                 preSale.financialCase?.financer_legal_name ??
-                                "Nao informado",
+                                "Não informado",
                               financeira_cnpj:
                                 preSale.financialCase?.financer_cnpj ??
-                                "Nao informado",
+                                "Não informado",
                               numero_contrato:
-                                preSale.tracking_protocol ?? "Nao informado",
+                                preSale.tracking_protocol ?? "Não informado",
                               numero_protocolo:
-                                preSale.tracking_protocol ?? "Nao informado",
+                                preSale.tracking_protocol ?? "Não informado",
                               protocolo:
-                                preSale.tracking_protocol ?? "Nao informado",
+                                preSale.tracking_protocol ?? "Não informado",
                               numero_contrato_financiamento:
                                 preSale.financialCase?.contract_number ??
-                                "Nao informado",
+                                "Não informado",
                             }}
                           />
                         </div>
@@ -817,7 +817,7 @@ export function LegalKanban({
                                       <p className="text-slate-500">
                                         {documentCreated
                                           ? `Gerado em ${formatDateTime(documentCreated.created_at)}`
-                                          : "Ainda nao gerado"}
+                                          : "Ainda não gerado"}
                                       </p>
                                     </div>
                                     {documentCreated ? (
@@ -835,7 +835,7 @@ export function LegalKanban({
                           ) : (
                             <p className="text-xs leading-5 text-amber-700">
                               Nenhum template desta etapa foi vinculado ainda. Suba os
-                              documentos prontos em Templates e marque a etapa juridica
+                              documentos prontos em Templates e marque a etapa jurídica
                               correspondente.
                             </p>
                           )}
@@ -858,8 +858,8 @@ export function LegalKanban({
 
       <ChangeNoteModal
         isOpen={Boolean(pendingStageChange)}
-        title="Registrar mudanca na esteira juridica"
-        description="Antes de mover o cliente de etapa, registre o que foi feito e por que essa movimentacao juridica aconteceu agora."
+        title="Registrar mudança na esteira jurídica"
+        description="Antes de mover o cliente de etapa, registre o que foi feito e por que essa movimentação jurídica aconteceu agora."
         confirmLabel="Mover com anotacao"
         pending={isPending}
         onClose={() => {
@@ -875,15 +875,15 @@ export function LegalKanban({
         isOpen={Boolean(pendingArchiveChange)}
         title={
           pendingArchiveChange?.status === "aprovado"
-            ? "Registrar reativacao juridica"
+            ? "Registrar reativação jurídica"
             : `Registrar ${getPreSaleStatusLabel(
                 pendingArchiveChange?.status ?? "inativo",
               ).toLowerCase()}`
         }
         description={
           pendingArchiveChange?.status === "aprovado"
-            ? "Explique por que o cliente esta voltando para a esteira juridica ativa."
-            : "Explique por que o cliente deve sair da esteira juridica ativa neste momento."
+            ? "Explique por que o cliente está voltando para a esteira jurídica ativa."
+            : "Explique por que o cliente deve sair da esteira jurídica ativa neste momento."
         }
         confirmLabel={
           pendingArchiveChange?.status === "aprovado"
@@ -930,7 +930,7 @@ export function LegalKanban({
               </select>
             </label>
             <label className="mt-4 block space-y-1.5 text-sm font-semibold text-slate-700">
-              Anotacao obrigatoria
+              Anotacao obrigatória
               <textarea
                 rows={4}
                 value={bulkMoveNote}

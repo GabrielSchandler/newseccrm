@@ -13,7 +13,7 @@ function normalizeVariables(variables: Record<string, string>) {
 
 function buildDocxErrorMessage(error: unknown) {
   if (!(error instanceof Error)) {
-    return "Nao foi possivel renderizar o DOCX oficial.";
+    return "Não foi possível renderizar o DOCX oficial.";
   }
 
   const typedError = error as Error & {
@@ -31,7 +31,7 @@ function buildDocxErrorMessage(error: unknown) {
     ?.map((item) =>
       [
         item.properties?.explanation,
-        item.properties?.xtag ? `variavel: ${item.properties.xtag}` : null,
+        item.properties?.xtag ? `variável: ${item.properties.xtag}` : null,
       ]
         .filter(Boolean)
         .join(" - "),
@@ -39,10 +39,10 @@ function buildDocxErrorMessage(error: unknown) {
     .filter(Boolean);
 
   if (details?.length) {
-    return `Template DOCX invalido: ${details.join("; ")}`;
+    return `Template DOCX inválido: ${details.join("; ")}`;
   }
 
-  return error.message || "Nao foi possivel renderizar o DOCX oficial.";
+  return error.message || "Não foi possível renderizar o DOCX oficial.";
 }
 
 export function renderOfficialDocxTemplate(

@@ -75,7 +75,7 @@ async function assertTrackingAccess(clientId: string, preSaleId: string) {
   }
 
   if (!preSale) {
-    return { allowed: false, message: "Selecione uma pre-venda deste cliente." };
+    return { allowed: false, message: "Selecione uma pré-venda deste cliente." };
   }
 
   const canManageTracking =

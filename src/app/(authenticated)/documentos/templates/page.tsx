@@ -80,7 +80,7 @@ export default async function TemplatesPage({ searchParams }: TemplatesPageProps
     <>
       <PageHeader
         title="Templates"
-        description="Modelos de contrato, ordem de servico e documentos operacionais da empresa."
+        description="Modelos de contrato, ordem de serviço e documentos operacionais da empresa."
       />
       <div className="space-y-6 p-6">
         <DocumentsNav />
@@ -144,12 +144,12 @@ export default async function TemplatesPage({ searchParams }: TemplatesPageProps
                   <tr>
                     <th className="px-4 py-3 font-semibold">Nome</th>
                     <th className="px-4 py-3 font-semibold">Tipo</th>
-                    <th className="px-4 py-3 font-semibold">Etapa juridica</th>
+                    <th className="px-4 py-3 font-semibold">Etapa jurídica</th>
                     <th className="px-4 py-3 font-semibold">DOCX oficial</th>
                     <th className="px-4 py-3 font-semibold">Ativo</th>
-                    <th className="px-4 py-3 font-semibold">Padrao</th>
+                    <th className="px-4 py-3 font-semibold">Padrão</th>
                     <th className="px-4 py-3 font-semibold">Atualizado em</th>
-                    <th className="px-4 py-3 font-semibold">Acoes</th>
+                    <th className="px-4 py-3 font-semibold">Ações</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -210,7 +210,7 @@ export default async function TemplatesPage({ searchParams }: TemplatesPageProps
                               : "bg-slate-100 text-slate-600"
                           }`}
                         >
-                          {template.is_default ? "Padrao" : "Nao"}
+                          {template.is_default ? "Padrão" : "Não"}
                         </span>
                       </td>
                       <td className="px-4 py-3 text-slate-700">

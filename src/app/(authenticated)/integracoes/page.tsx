@@ -24,42 +24,42 @@ function getMessage(params: { outlook?: string; error?: string }) {
   if (params.error === "permission") {
     return {
       tone: "error" as const,
-      text: "Apenas adms juridicos, administradores ou gerentes podem conectar Outlook.",
+      text: "Apenas adms jurídicos, administradores ou gerentes podem conectar Outlook.",
     };
   }
 
   if (params.error === "outlook_config") {
     return {
       tone: "error" as const,
-      text: "A integracao Outlook ainda nao esta configurada na Vercel. Revise MICROSOFT_TENANT_ID, MICROSOFT_CLIENT_ID, MICROSOFT_CLIENT_SECRET e MICROSOFT_REDIRECT_URI.",
+      text: "A integração Outlook ainda não está configurada na Vercel. Revise MICROSOFT_TENANT_ID, MICROSOFT_CLIENT_ID, MICROSOFT_CLIENT_SECRET e MICROSOFT_REDIRECT_URI.",
     };
   }
 
   if (params.error === "invalid_state") {
     return {
       tone: "error" as const,
-      text: "A conexao expirou. Clique em Conectar Outlook novamente.",
+      text: "A conexão expirou. Clique em Conectar Outlook novamente.",
     };
   }
 
   if (params.error === "outlook_denied") {
     return {
       tone: "error" as const,
-      text: "A Microsoft recusou a autorizacao. Confirme o consentimento da conta e tente novamente.",
+      text: "A Microsoft recusou a autorização. Confirme o consentimento da conta e tente novamente.",
     };
   }
 
   if (params.error === "connect_failed") {
     return {
       tone: "error" as const,
-      text: "Nao foi possivel finalizar a conexao com a Microsoft. Confira o segredo do aplicativo, a URL de callback e as permissoes do Graph.",
+      text: "Não foi possível finalizar a conexão com a Microsoft. Confira o segredo do aplicativo, a URL de callback e as permissões do Graph.",
     };
   }
 
   if (params.error) {
     return {
       tone: "error" as const,
-      text: "Nao foi possivel conectar o Outlook. Revise as permissoes Microsoft e tente novamente.",
+      text: "Não foi possível conectar o Outlook. Revise as permissões Microsoft e tente novamente.",
     };
   }
 
@@ -78,7 +78,7 @@ export default async function IntegracoesPage({ searchParams }: IntegracoesPageP
     <>
       <PageHeader
         title="Integracoes"
-        description="Conecte o Outlook usado pelo CRM para criar rascunhos e enviar emails juridicos."
+        description="Conecte o Outlook usado pelo CRM para criar rascunhos e enviar emails jurídicos."
       />
       <div className="space-y-6 p-6">
         {message ? (
@@ -96,9 +96,9 @@ export default async function IntegracoesPage({ searchParams }: IntegracoesPageP
         <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
           <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
             <div>
-              <h2 className="text-base font-semibold text-slate-950">Outlook do Adm juridico</h2>
+              <h2 className="text-base font-semibold text-slate-950">Outlook do Adm jurídico</h2>
               <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-600">
-                O email enviado no cliente sai pela conta Outlook do Adm responsavel. Cada Adm juridico conecta a propria conta uma vez.
+                O email enviado no cliente sai pela conta Outlook do Adm responsável. Cada Adm jurídico conecta a própria conta uma vez.
               </p>
             </div>
             {canConnect ? (
@@ -117,7 +117,7 @@ export default async function IntegracoesPage({ searchParams }: IntegracoesPageP
                 Status
               </p>
               <p className="mt-2 text-sm font-semibold text-slate-950">
-                {integration ? "Conectado" : "Nao conectado"}
+                {integration ? "Conectado" : "Não conectado"}
               </p>
             </div>
             <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
@@ -140,7 +140,7 @@ export default async function IntegracoesPage({ searchParams }: IntegracoesPageP
 
           {!canConnect ? (
             <p className="mt-5 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-              Este usuario nao esta marcado como Adm juridico. A conexao oficial do Outlook deve ser feita pelo Adm responsavel.
+              Este usuário não está marcado como Adm jurídico. A conexão oficial do Outlook deve ser feita pelo Adm responsável.
             </p>
           ) : null}
 

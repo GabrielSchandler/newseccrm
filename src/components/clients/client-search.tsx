@@ -110,8 +110,8 @@ export function ClientSearch({ defaultValues }: ClientSearchProps) {
             defaultValue={defaultValues?.pageSize ?? "20"}
             className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
           >
-            <option value="20">20 por pagina</option>
-            <option value="50">50 por pagina</option>
+            <option value="20">20 por página</option>
+            <option value="50">50 por página</option>
           </select>
         </div>
       </details>

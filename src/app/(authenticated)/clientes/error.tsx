@@ -20,16 +20,16 @@ export default function ClientesErrorPage({ error, reset }: ClientesErrorPagePro
           </div>
           <div>
             <h2 className="text-lg font-semibold text-slate-950">
-              Nao foi possivel carregar clientes
+              Não foi possível carregar clientes
             </h2>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
               {isProfileContextError
                 ? error.message
-                : "Ocorreu um erro ao carregar o modulo de clientes."}
+                : "Ocorreu um erro ao carregar o módulo de clientes."}
             </p>
             {isProfileContextError ? (
               <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
-                Verifique se o usuario autenticado possui um registro vinculado
+                Verifique se o usuário autenticado possui um registro vinculado
                 em public.user_profiles.
               </p>
             ) : null}

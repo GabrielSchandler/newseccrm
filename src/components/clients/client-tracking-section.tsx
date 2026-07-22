@@ -138,7 +138,7 @@ export function ClientTrackingSection({
     if (!form.pre_sale_id) {
       setFeedback({
         ok: false,
-        message: "Selecione a pre-venda vinculada ao acompanhamento.",
+        message: "Selecione a pré-venda vinculada ao acompanhamento.",
       });
       return;
     }
@@ -246,7 +246,7 @@ export function ClientTrackingSection({
           <div className="mt-4 space-y-4">
             <label className="block">
               <span className="text-xs font-semibold uppercase tracking-wide text-slate-600">
-                Pre-venda / protocolo
+                Pré-venda / protocolo
               </span>
               <select
                 value={form.pre_sale_id}
@@ -254,7 +254,7 @@ export function ClientTrackingSection({
                 className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
               >
                 {preSales.length ? null : (
-                  <option value="">Nenhuma pre-venda encontrada</option>
+                  <option value="">Nenhuma pré-venda encontrada</option>
                 )}
                 {preSales.map((preSale) => (
                   <option key={preSale.id} value={preSale.id}>
@@ -513,7 +513,7 @@ export function ClientTrackingSection({
                             <span>
                               {preSale
                                 ? getPreSaleLabel(preSale)
-                                : "Pre-venda vinculada não encontrada"}
+                                : "Pré-venda vinculada não encontrada"}
                             </span>
                           </div>
                         </>

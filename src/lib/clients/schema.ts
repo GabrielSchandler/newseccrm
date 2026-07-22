@@ -34,30 +34,30 @@ export const clientFormSchema = z.object({
       z
         .string()
         .min(1, "Informe o email.")
-        .email("Informe um email valido."),
+        .email("Informe um email válido."),
     ),
   phone_mobile: optionalText
-    .refine((value) => isValidPhone(value), "Informe um telefone valido.")
+    .refine((value) => isValidPhone(value), "Informe um telefone válido.")
     .transform((value) => (value ? onlyDigits(value) : null)),
   phone_secondary: optionalText.refine(
     (value) => isValidPhone(value),
-    "Informe um telefone valido.",
+    "Informe um telefone válido.",
   ).transform((value) => (value ? onlyDigits(value) : null)),
   zip_code: z.string().trim().min(1, "Informe o CEP.").transform((value) => value.trim()),
   street: z.string().trim().min(1, "Informe a rua.").transform((value) => value.trim()),
-  number: z.string().trim().min(1, "Informe o numero.").transform((value) => value.trim()),
+  number: z.string().trim().min(1, "Informe o número.").transform((value) => value.trim()),
   district: z.string().trim().min(1, "Informe o bairro.").transform((value) => value.trim()),
   city: z.string().trim().min(1, "Informe a cidade.").transform((value) => value.trim()),
   state: z.string().trim().min(1, "Informe o estado.").transform((value) => value.trim()),
   notes: optionalText,
   commercial_consultant_user_id: z
-    .union([z.string().uuid("Consultor comercial invalido."), z.literal(""), z.null(), z.undefined()])
+    .union([z.string().uuid("Consultor comercial inválido."), z.literal(""), z.null(), z.undefined()])
     .transform((value) => (typeof value === "string" && value.trim() ? value : null)),
   legal_responsible_user_id: z
-    .union([z.string().uuid("Responsavel juridico invalido."), z.literal(""), z.null(), z.undefined()])
+    .union([z.string().uuid("Responsável jurídico inválido."), z.literal(""), z.null(), z.undefined()])
     .transform((value) => (typeof value === "string" && value.trim() ? value : null)),
   legal_consultant_user_id: z
-    .union([z.string().uuid("Consultor juridico invalido."), z.literal(""), z.null(), z.undefined()])
+    .union([z.string().uuid("Consultor jurídico inválido."), z.literal(""), z.null(), z.undefined()])
     .transform((value) => (typeof value === "string" && value.trim() ? value : null)),
 });
 

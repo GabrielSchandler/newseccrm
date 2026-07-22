@@ -158,9 +158,9 @@ export const preSalePipelineStatuses: Array<{
   label: string;
 }> = [
   { value: "lead", label: "Lead" },
-  { value: "pre_venda", label: "Pre-venda" },
+  { value: "pre_venda", label: "Pré-venda" },
   { value: "em_contato", label: "Em contato" },
-  { value: "em_negociacao", label: "Em negociacao" },
+  { value: "em_negociacao", label: "Em negociação" },
   { value: "aprovado", label: "Aprovado" },
   { value: "perdido", label: "Perdido" },
 ];
@@ -186,9 +186,9 @@ export const preSaleTypes: Array<{
   value: PreSaleType;
   label: string;
 }> = [
-  { value: "emprestimo", label: "Emprestimo" },
-  { value: "imovel", label: "Imovel" },
-  { value: "veiculo", label: "Veiculo" },
+  { value: "emprestimo", label: "Empréstimo" },
+  { value: "imovel", label: "Imóvel" },
+  { value: "veiculo", label: "Veículo" },
 ];
 
 export const leadMediaOptions: Array<{

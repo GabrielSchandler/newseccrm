@@ -396,9 +396,9 @@ function getRestoreSummary(rows: ClientRestoreRows) {
 async function getFriendlyError(response: Response) {
   try {
     const data = (await response.json()) as { error?: string };
-    return data.error ?? "Nao foi possivel concluir a operacao.";
+    return data.error ?? "Não foi possível concluir a operação.";
   } catch {
-    return "Nao foi possivel concluir a operacao.";
+    return "Não foi possível concluir a operação.";
   }
 }
 
@@ -482,7 +482,7 @@ export function ClientRestoreTool() {
       const manifestPath = findManifestPath(paths);
 
       if (!manifestPath) {
-        throw new Error("Este ZIP nao possui manifest.json.");
+        throw new Error("Este ZIP não possui manifest.json.");
       }
 
       const manifest = JSON.parse(
@@ -493,7 +493,7 @@ export function ClientRestoreTool() {
         manifest.backup_format !== grsBackupFormat ||
         manifest.backup_format_version !== backupFormatVersion
       ) {
-        throw new Error("Este backup nao esta no padrao GRS atual.");
+        throw new Error("Este backup não está no padrão GRS atual.");
       }
 
       const rootPrefix = getBackupRoot(manifestPath);
@@ -533,7 +533,7 @@ export function ClientRestoreTool() {
       setError(
         readError instanceof Error
           ? readError.message
-          : "Nao foi possivel ler o backup.",
+          : "Não foi possível ler o backup.",
       );
       setMessage("Falha ao analisar o backup.");
     }
@@ -587,7 +587,7 @@ export function ClientRestoreTool() {
         const fileRef = restorePackage.files[upload.index];
 
         if (!fileRef) {
-          throw new Error("Referencia de arquivo restaurado nao encontrada.");
+          throw new Error("Referência de arquivo restaurado não encontrada.");
         }
 
         const zipFile = loaded.zip.file(fileRef.zipPath);
@@ -619,7 +619,7 @@ export function ClientRestoreTool() {
       }
 
       setStage("restoring");
-      setMessage("Gravando cadastro, pre-vendas, historico e documentos no CRM...");
+      setMessage("Gravando cadastro, pré-vendas, histórico e documentos no CRM...");
 
       const completeResponse = await fetch("/api/backups/restore-client/complete", {
         method: "POST",
@@ -649,7 +649,7 @@ export function ClientRestoreTool() {
       setError(
         restoreError instanceof Error
           ? restoreError.message
-          : "Nao foi possivel restaurar o cliente.",
+          : "Não foi possível restaurar o cliente.",
       );
       setMessage("Falha ao restaurar o cliente.");
     }
@@ -702,10 +702,10 @@ export function ClientRestoreTool() {
               {loaded.manifest.backup_name ?? loaded.fileName}
             </p>
             <p className="mt-1 text-xs text-slate-600">
-              Empresa: {loaded.manifest.company_id ?? "Nao informado"}
+              Empresa: {loaded.manifest.company_id ?? "Não informado"}
             </p>
             <p className="mt-1 text-xs text-slate-600">
-              Gerado em: {loaded.manifest.generated_at ?? "Nao informado"}
+              Gerado em: {loaded.manifest.generated_at ?? "Não informado"}
             </p>
           </div>
 
@@ -749,7 +749,7 @@ export function ClientRestoreTool() {
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-teal-700">
-                Previa da restauracao
+                Previa da restauração
               </p>
               <h3 className="mt-2 text-lg font-semibold text-slate-950">
                 {restorePackage.client.name}
@@ -757,7 +757,7 @@ export function ClientRestoreTool() {
               <p className="mt-1 text-sm text-slate-600">
                 {restorePackage.client.cpf
                   ? `CPF ${restorePackage.client.cpf}`
-                  : "CPF nao informado"}
+                  : "CPF não informado"}
               </p>
             </div>
             <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
@@ -768,7 +768,7 @@ export function ClientRestoreTool() {
           <div className="mt-5 grid gap-3 md:grid-cols-4">
             <div className="rounded-lg bg-slate-50 p-3">
               <p className="text-xs uppercase tracking-wide text-slate-500">
-                Pre-vendas
+                Pré-vendas
               </p>
               <p className="mt-1 font-semibold text-slate-950">
                 {formatNumber(restorePackage.rows.pre_sales?.length ?? 0)}
@@ -776,7 +776,7 @@ export function ClientRestoreTool() {
             </div>
             <div className="rounded-lg bg-slate-50 p-3">
               <p className="text-xs uppercase tracking-wide text-slate-500">
-                Historico
+                Histórico
               </p>
               <p className="mt-1 font-semibold text-slate-950">
                 {formatNumber(restorePackage.rows.client_timeline_events?.length ?? 0)}
@@ -803,8 +803,8 @@ export function ClientRestoreTool() {
           {restorePackage.missingFiles.length ? (
             <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
               {formatNumber(restorePackage.missingFiles.length)} arquivo(s)
-              estavam referenciados no banco, mas nao foram encontrados dentro
-              do ZIP. Esses campos serao restaurados vazios para evitar links
+              estavam referenciados no banco, mas não foram encontrados dentro
+              do ZIP. Esses campos serão restaurados vazios para evitar links
               quebrados.
             </div>
           ) : null}
@@ -833,11 +833,11 @@ export function ClientRestoreTool() {
 
           <div className="mt-5 rounded-lg border border-red-200 bg-red-50 p-4">
             <p className="text-sm font-semibold text-red-950">
-              Confirmacao obrigatoria
+              Confirmacao obrigatória
             </p>
             <p className="mt-2 text-sm leading-6 text-red-900">
-              Esta acao restaura e sobrescreve os registros deste cliente pelo
-              conteudo do backup selecionado. Para continuar, digite{" "}
+              Esta ação restaura e sobrescreve os registros deste cliente pelo
+              conteúdo do backup selecionado. Para continuar, digite{" "}
               <strong>{clientRestoreConfirmationText}</strong>.
             </p>
             <input
@@ -868,7 +868,7 @@ export function ClientRestoreTool() {
       ) : null}
 
       <p className="text-xs leading-5 text-slate-500">
-        Tabelas consideradas nesta restauracao:{" "}
+        Tabelas consideradas nesta restauração:{" "}
         {clientRestoreDataTables.join(", ")}.
       </p>
     </div>

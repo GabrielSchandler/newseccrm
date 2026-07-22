@@ -22,22 +22,22 @@ function normalizeTemplateSaveError(message: string) {
     lowerMessage.includes("email_templates") &&
     (lowerMessage.includes("does not exist") || lowerMessage.includes("not found"))
   ) {
-    return "A tabela de templates de email ainda nao existe no Supabase. Rode o SQL docs/sql/email-outlook-juridico.sql.";
+    return "A tabela de templates de email ainda não existe no Supabase. Rode o SQL docs/sql/email-outlook-juridico.sql.";
   }
 
   if (lowerMessage.includes("row-level security")) {
-    return "O Supabase bloqueou o cadastro por politica de seguranca. Confirme se seu usuario esta como admin/gerente e se o SQL de email foi rodado completo.";
+    return "O Supabase bloqueou o cadastro por política de segurança. Confirme se seu usuário está como admin/gerente e se o SQL de email foi rodado completo.";
   }
 
   if (lowerMessage.includes("permission denied")) {
-    return "O usuario atual nao tem permissao para salvar templates de email.";
+    return "O usuário atual não tem permissão para salvar templates de email.";
   }
 
   if (lowerMessage.includes("column") && lowerMessage.includes("does not exist")) {
-    return "A tabela de templates de email esta desatualizada. Rode novamente o SQL docs/sql/email-outlook-juridico.sql.";
+    return "A tabela de templates de email está desatualizada. Rode novamente o SQL docs/sql/email-outlook-juridico.sql.";
   }
 
-  return message || "Nao foi possivel salvar o template de email.";
+  return message || "Não foi possível salvar o template de email.";
 }
 
 function formDataToTemplatePayload(formData: FormData) {
@@ -84,7 +84,7 @@ async function resolveEmailTemplateStage(
     .single();
 
   if (error || !data) {
-    throw new Error("A etapa juridica selecionada nao foi encontrada.");
+    throw new Error("A etapa jurídica selecionada não foi encontrada.");
   }
 
   return {

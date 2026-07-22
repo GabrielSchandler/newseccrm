@@ -29,7 +29,7 @@ export async function changeRequiredPasswordAction(
   }
 
   if (password !== confirmPassword) {
-    return friendlyError("As senhas informadas nao conferem.");
+    return friendlyError("As senhas informadas não conferem.");
   }
 
   try {
@@ -40,7 +40,7 @@ export async function changeRequiredPasswordAction(
     } = await supabase.auth.getUser();
 
     if (userError || !user) {
-      return friendlyError("Sessao expirada. Entre novamente para alterar a senha.");
+      return friendlyError("Sessão expirada. Entre novamente para alterar a senha.");
     }
 
     const { error: authError } = await supabase.auth.updateUser({
@@ -60,7 +60,7 @@ export async function changeRequiredPasswordAction(
 
     if (profileError || !profile) {
       return friendlyError(
-        profileError?.message || "Perfil do usuario nao encontrado.",
+        profileError?.message || "Perfil do usuário não encontrado.",
       );
     }
 
@@ -99,7 +99,7 @@ export async function changeRequiredPasswordAction(
     };
   } catch (error) {
     return friendlyError(
-      error instanceof Error ? error.message : "Nao foi possivel alterar a senha.",
+      error instanceof Error ? error.message : "Não foi possível alterar a senha.",
     );
   }
 }

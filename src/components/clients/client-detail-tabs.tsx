@@ -45,7 +45,7 @@ export function ClientDetailTabs({ tabs, children }: ClientDetailTabsProps) {
       <section className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm">
         <div
           role="tablist"
-          aria-label="Secoes do cadastro do cliente"
+          aria-label="Seções do cadastro do cliente"
           className="grid gap-2 sm:grid-cols-2 xl:grid-cols-6"
         >
           {tabs.map((tab) => {

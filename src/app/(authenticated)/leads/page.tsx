@@ -64,21 +64,21 @@ function canManageLeadDistribution(role: string | null, isPlatformOwner: boolean
 function getBannerMessage(params: Awaited<LeadsPageProps["searchParams"]>) {
   if (params.error) {
     const messages: Record<string, string> = {
-      source_query_failed: "Nao foi possivel carregar as fontes de leads.",
+      source_query_failed: "Não foi possível carregar as fontes de leads.",
       no_sources: "Cadastre ao menos uma fonte ativa antes de verificar as planilhas.",
       select_leads: "Selecione pelo menos um lead.",
       select_consultant: "Selecione um consultor comercial.",
       select_consultants: "Selecione os consultores que vao receber os leads.",
       invalid_consultant: "Selecione apenas consultores comerciais ativos.",
-      assign_failed: "Nao foi possivel distribuir os leads selecionados.",
-      lead_query_failed: "Nao foi possivel carregar os leads para distribuicao.",
-      no_new_leads: "Nao ha leads novos para distribuir.",
-      sync_clients_failed: "Nao foi possivel criar os clientes dos leads distribuidos.",
+      assign_failed: "Não foi possível distribuir os leads selecionados.",
+      lead_query_failed: "Não foi possível carregar os leads para distribuição.",
+      no_new_leads: "Não há leads novos para distribuir.",
+      sync_clients_failed: "Não foi possível criar os clientes dos leads distribuidos.",
     };
 
     return {
       tone: "error" as const,
-      text: messages[params.error] ?? "Nao foi possivel concluir a acao.",
+      text: messages[params.error] ?? "Não foi possível concluir a ação.",
     };
   }
 
@@ -110,7 +110,7 @@ function getBannerMessage(params: Awaited<LeadsPageProps["searchParams"]>) {
   if (params.synced_clients) {
     return {
       tone: "success" as const,
-      text: `${params.synced_clients} cliente(s) criado(s) a partir de leads ja distribuidos.`,
+      text: `${params.synced_clients} cliente(s) criado(s) a partir de leads já distribuidos.`,
     };
   }
 
@@ -133,7 +133,7 @@ function formatPhone(value: string | null) {
 
 function getSourceName(sourceMap: Map<string, LeadSource>, sourceId: string | null) {
   if (!sourceId) {
-    return "Fonte nao informada";
+    return "Fonte não informada";
   }
 
   return sourceMap.get(sourceId)?.name ?? "Fonte removida";
@@ -214,7 +214,7 @@ export default async function LeadsPage({ searchParams }: LeadsPageProps) {
   return (
     <>
       <PageHeader
-        title="Distribuicao de leads"
+        title="Distribuição de leads"
         description="Verifique planilhas conectadas, importe novos leads e distribua para os consultores comerciais."
       />
       <div className="space-y-6 p-6">
@@ -243,11 +243,11 @@ export default async function LeadsPage({ searchParams }: LeadsPageProps) {
                 Entrada de leads
               </p>
               <h2 className="mt-2 text-xl font-semibold text-slate-950">
-                {newLeads.length} lead(s) aguardando distribuicao
+                {newLeads.length} lead(s) aguardando distribuição
               </h2>
               <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
                 {activeSources} fonte(s) ativa(s). A verificacao importa apenas
-                linhas novas das planilhas cadastradas em Gestao.
+                linhas novas das planilhas cadastradas em Gestão.
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -280,7 +280,7 @@ export default async function LeadsPage({ searchParams }: LeadsPageProps) {
               </h2>
               <p className="mt-1 text-sm text-slate-600">
                 Selecione um ou mais leads. Se nenhum lead for selecionado na
-                distribuicao automatica, todos os leads novos entram na divisao.
+                distribuição automática, todos os leads novos entram na divisão.
               </p>
             </div>
 
@@ -347,7 +347,7 @@ export default async function LeadsPage({ searchParams }: LeadsPageProps) {
             ) : (
               <div className="p-6">
                 <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center text-sm text-slate-600">
-                  Nenhum lead novo aguardando distribuicao.
+                  Nenhum lead novo aguardando distribuição.
                 </div>
               </div>
             )}
@@ -359,7 +359,7 @@ export default async function LeadsPage({ searchParams }: LeadsPageProps) {
                 Distribuir selecionados
               </h2>
               <p className="mt-1 text-sm leading-6 text-slate-600">
-                Envie os leads marcados para um consultor comercial especifico.
+                Envie os leads marcados para um consultor comercial específico.
               </p>
               <select
                 name="manual_consultant_id"
@@ -383,10 +383,10 @@ export default async function LeadsPage({ searchParams }: LeadsPageProps) {
 
             <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
               <h2 className="text-base font-semibold text-slate-950">
-                Distribuicao automatica
+                Distribuição automática
               </h2>
               <p className="mt-1 text-sm leading-6 text-slate-600">
-                Divida de forma igual entre os consultores escolhidos.
+                Dívida de forma igual entre os consultores escolhidos.
               </p>
               <div className="mt-4 space-y-2">
                 {consultants.map((consultant) => (
@@ -466,7 +466,7 @@ export default async function LeadsPage({ searchParams }: LeadsPageProps) {
                   <p className="text-slate-700">
                     {resolveUserDisplayName(
                       consultantMap.get(lead.assigned_to ?? ""),
-                      "Consultor nao informado",
+                      "Consultor não informado",
                     )}
                   </p>
                   <p className="text-slate-500">{formatDateTime(lead.assigned_at)}</p>

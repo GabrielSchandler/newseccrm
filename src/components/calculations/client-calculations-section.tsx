@@ -14,17 +14,17 @@ export async function ClientCalculationsSection({ clientId }: { clientId: string
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-base font-semibold text-slate-950">
-            Simulacoes do cliente
+            Simulações do cliente
           </h2>
           <p className="mt-1 text-sm leading-6 text-slate-600">
-            Consulte as simulacoes revisionais vinculadas a este cliente.
+            Consulte as simulações revisionais vinculadas a este cliente.
           </p>
         </div>
         <Link
           href={`/calculos/novo?clientId=${clientId}`}
           className="rounded-lg bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-800"
         >
-          Nova simulacao
+          Nova simulação
         </Link>
       </div>
 
@@ -37,14 +37,14 @@ export async function ClientCalculationsSection({ clientId }: { clientId: string
               <th className="px-4 py-3 font-semibold">Economia estimada</th>
               <th className="px-4 py-3 font-semibold">Status</th>
               <th className="px-4 py-3 font-semibold">Criado em</th>
-              <th className="px-4 py-3 font-semibold">Acoes</th>
+              <th className="px-4 py-3 font-semibold">Ações</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
             {calculations.map((calculation) => (
               <tr key={calculation.id} className="transition hover:bg-slate-50">
                 <td className="px-4 py-3 text-slate-700">
-                  {calculation.financial_institution ?? "Nao informado"}
+                  {calculation.financial_institution ?? "Não informado"}
                 </td>
                 <td className="px-4 py-3 text-slate-700">
                   {formatCalculationCurrency(calculation.financed_value)}
@@ -71,7 +71,7 @@ export async function ClientCalculationsSection({ clientId }: { clientId: string
             {!calculations.length ? (
               <tr>
                 <td className="px-4 py-6 text-center text-slate-500" colSpan={6}>
-                  Nenhuma simulacao encontrada para este cliente.
+                  Nenhuma simulação encontrada para este cliente.
                 </td>
               </tr>
             ) : null}

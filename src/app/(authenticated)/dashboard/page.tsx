@@ -274,7 +274,7 @@ function typeLabel(value: string | null | undefined) {
 }
 
 function mediaLabel(value: string | null | undefined) {
-  return leadMediaOptions.find((item) => item.value === value)?.label ?? "Sem midia";
+  return leadMediaOptions.find((item) => item.value === value)?.label ?? "Sem mídia";
 }
 
 function pushBucket(
@@ -364,7 +364,7 @@ function SegmentList({
             </div>
           ))
         ) : (
-          <p className="text-sm text-slate-500">Nenhum pagamento pago neste mes.</p>
+          <p className="text-sm text-slate-500">Nenhum pagamento pago neste mês.</p>
         )}
       </div>
     </section>
@@ -628,7 +628,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
     <>
       <PageHeader
         title="Painel comercial"
-        description="Visao da gestao sobre pagamentos pagos no mes, meta, comissao e cobrancas pendentes."
+        description="Visão da gestão sobre pagamentos pagos no mês, meta, comissão e cobranças pendentes."
       />
       <div className="space-y-6 p-6">
         {preSalesError ? (
@@ -647,11 +647,11 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
             <div>
               <p className="text-sm font-semibold text-teal-700">{scopeLabel}</p>
               <h2 className="mt-2 text-2xl font-semibold text-slate-950">
-                Comercial do mes atual
+                Comercial do mês atual
               </h2>
               <p className="mt-2 text-sm leading-6 text-slate-600">
-                Periodo analisado: {formatYmdDate(monthStartYmd)} ate {formatYmdDate(monthEndYmd)}.
-                Entram na venda total somente pagamentos pagos no periodo.
+                Período analisado: {formatYmdDate(monthStartYmd)} ate {formatYmdDate(monthEndYmd)}.
+                Entram na venda total somente pagamentos pagos no período.
               </p>
             </div>
 
@@ -703,7 +703,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <StatCard
             icon={Target}
-            label="Meta mes"
+            label="Meta mês"
             value={formatCurrency(monthlyGoal)}
             detail="Soma das metas mensais dos consultores filtrados."
           />
@@ -711,14 +711,14 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
             icon={CircleDollarSign}
             label="Venda total"
             value={formatCurrency(salesTotal)}
-            detail="Soma do campo Meta dos pagamentos pagos dentro do mes atual."
+            detail="Soma do campo Meta dos pagamentos pagos dentro do mês atual."
             tone="success"
           />
           <StatCard
             icon={TrendingUp}
             label="Restante pra meta"
             value={formatCurrency(remainingGoal)}
-            detail={`${remainingBusinessDays} dia(s) util(eis) restantes. Meta diaria: ${formatCurrency(dailyGoal)}.`}
+            detail={`${remainingBusinessDays} dia(s) útil(eis) restantes. Meta diaria: ${formatCurrency(dailyGoal)}.`}
             tone={remainingGoal > 0 ? "warning" : "success"}
           />
           <StatCard
@@ -739,14 +739,14 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
           />
           <StatCard
             icon={CheckCircle2}
-            label="Comissao estimada"
+            label="Comissão estimada"
             value={formatCurrency(commission.amount)}
             detail={`Faixa atual: ${commission.percent}% sobre a meta vendida.`}
             tone="success"
           />
           <StatCard
             icon={ArrowUpRight}
-            label="Proxima faixa"
+            label="Próxima faixa"
             value={
               commission.nextTier
                 ? `${commission.nextTier.percent}% em ${formatCurrency(commission.nextTier.target)}`
@@ -755,14 +755,14 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
             detail={
               commission.nextTier
                 ? `Faltam ${formatCurrency(nextTierGap)} para subir a faixa.`
-                : "A maior faixa de comissao ja foi alcancada."
+                : "A maior faixa de comissão já foi alcancada."
             }
           />
           <StatCard
             icon={AlertTriangle}
-            label="Meta nao informada"
+            label="Meta não informada"
             value={numberFormatter.format(missingPaymentGoalCount)}
-            detail={`${formatCurrency(contractTotal)} em contratos com pagamentos pagos no mes para conferencia.`}
+            detail={`${formatCurrency(contractTotal)} em contratos com pagamentos pagos no mês para conferencia.`}
             tone={missingPaymentGoalCount ? "warning" : "success"}
           />
         </section>
@@ -780,7 +780,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
                 Clientes com venda aprovada
               </h2>
               <p className="mt-1 text-sm text-slate-600">
-                Clientes com pagamento pago no periodo, respeitando o consultor filtrado.
+                Clientes com pagamento pago no período, respeitando o consultor filtrado.
               </p>
             </div>
             <div className="overflow-x-auto">
@@ -831,7 +831,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
                   {!preSaleValues.length ? (
                     <tr>
                       <td className="px-5 py-8 text-center text-slate-500" colSpan={6}>
-                        Nenhum pagamento pago neste mes.
+                        Nenhum pagamento pago neste mês.
                       </td>
                     </tr>
                   ) : null}
@@ -843,10 +843,10 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
           <div className="rounded-lg border border-slate-200 bg-white shadow-sm">
             <div className="border-b border-slate-200 px-5 py-4">
               <h2 className="text-base font-semibold text-slate-950">
-                Alertas de cobranca
+                Alertas de cobrança
               </h2>
               <p className="mt-1 text-sm text-slate-600">
-                Pagamentos previstos ainda nao marcados como pagos.
+                Pagamentos previstos ainda não marcados como pagos.
               </p>
             </div>
             <div className="divide-y divide-slate-100">
@@ -898,7 +898,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
               })}
               {!pendingPayments.length ? (
                 <div className="p-5 text-sm text-slate-500">
-                  Nenhum pagamento pendente entre as pre-vendas aprovadas.
+                  Nenhum pagamento pendente entre as pré-vendas aprovadas.
                 </div>
               ) : null}
             </div>
@@ -909,22 +909,22 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
           <div className="flex flex-col gap-3 border-b border-slate-200 px-5 py-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-teal-700">
-                Analises por dia
+                Análises por dia
               </p>
               <h2 className="mt-2 text-base font-semibold text-slate-950">
-                Simulacoes feitas por consultor
+                Simulações feitas por consultor
               </h2>
               <p className="mt-1 text-sm text-slate-600">
-                Quantidade de analises criadas entre {formatYmdDate(monthStartYmd)} e{" "}
+                Quantidade de análises criadas entre {formatYmdDate(monthStartYmd)} e{" "}
                 {formatYmdDate(monthEndYmd)}. Sao exibidos apenas consultores com
-                pelo menos 2 analises no periodo.
+                pelo menos 2 análises no período.
               </p>
             </div>
             <div className="rounded-lg border border-teal-100 bg-teal-50 px-4 py-3 text-sm">
               <span className="font-semibold text-teal-900">
                 {numberFormatter.format(analysisGrandTotal)}
               </span>{" "}
-              <span className="text-teal-800">analise(s) no periodo</span>
+              <span className="text-teal-800">análise(s) no período</span>
             </div>
           </div>
 
@@ -997,7 +997,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
             </div>
           ) : (
             <div className="border-t border-slate-100 px-5 py-6 text-sm text-slate-500">
-              Nenhum consultor comercial teve mais de 1 analise no periodo filtrado.
+              Nenhum consultor comercial teve mais de 1 análise no período filtrado.
             </div>
           )}
         </section>

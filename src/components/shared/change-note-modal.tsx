@@ -72,7 +72,7 @@ export function ChangeNoteModal({
               value={note}
               disabled={pending}
               onChange={(event) => setNote(event.target.value)}
-              placeholder="Ex.: Atualizei os dados do cliente apos envio de comprovante novo e corrigi a divergencia do endereco."
+              placeholder="Ex.: Atualizei os dados do cliente após envio de comprovante novo e corrigi a divergencia do endereço."
               className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
             />
           </div>

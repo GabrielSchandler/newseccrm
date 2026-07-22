@@ -12,7 +12,7 @@ const optionalText = z
   .transform((value) => (typeof value === "string" && value.trim() ? value.trim() : null));
 
 const optionalPhone = optionalText
-  .refine((value) => isValidPhone(value), "Informe um telefone valido.")
+  .refine((value) => isValidPhone(value), "Informe um telefone válido.")
   .transform((value) => (value ? onlyDigits(value) : null));
 
 const optionalCurrency = z
@@ -20,7 +20,7 @@ const optionalCurrency = z
   .transform((value) => parseBrazilianDecimalInput(value))
   .refine(
     (value) => value === null || (!Number.isNaN(value) && value >= 0),
-    "Informe um valor valido.",
+    "Informe um valor válido.",
   );
 
 const usernameSchema = z
@@ -30,7 +30,7 @@ const usernameSchema = z
   .transform((value) => normalizeUsername(value))
   .refine(
     (value) => value.length >= 3 && isUsernameLike(value),
-    "Use apenas letras, numeros, ponto, hifen ou underscore no login.",
+    "Use apenas letras, números, ponto, hifen ou underscore no login.",
   );
 
 function normalizeMonthlyGoal<T extends { business_area: string; role: string; monthly_goal: number | null }>(
@@ -57,8 +57,8 @@ const createCompanyUserBaseSchema = z.object({
   phone: optionalPhone,
   monthly_goal: optionalCurrency,
   business_area: z.enum(["commercial", "legal"], {
-    required_error: "Selecione a area principal.",
-    invalid_type_error: "Selecione a area principal.",
+    required_error: "Selecione a área principal.",
+    invalid_type_error: "Selecione a área principal.",
   }),
   role: z.enum(["admin", "manager", "seller"], {
     required_error: "Selecione o cargo.",
@@ -69,7 +69,7 @@ const createCompanyUserBaseSchema = z.object({
   temporary_password: z
     .string()
     .trim()
-    .min(6, "A senha provisoria deve ter pelo menos 6 caracteres."),
+    .min(6, "A senha provisória deve ter pelo menos 6 caracteres."),
 });
 
 export const createCompanyUserSchema = createCompanyUserBaseSchema.transform(
@@ -83,8 +83,8 @@ const updateCompanyUserBaseSchema = z.object({
   phone: optionalPhone,
   monthly_goal: optionalCurrency,
   business_area: z.enum(["commercial", "legal"], {
-    required_error: "Selecione a area principal.",
-    invalid_type_error: "Selecione a area principal.",
+    required_error: "Selecione a área principal.",
+    invalid_type_error: "Selecione a área principal.",
   }),
   role: z.enum(["admin", "manager", "seller"], {
     required_error: "Selecione o cargo.",

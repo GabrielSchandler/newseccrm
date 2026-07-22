@@ -44,7 +44,7 @@ export async function updateLegalWorkflowStageAction(
   const normalizedChangeNote = changeNote?.trim();
 
   if (!normalizedChangeNote) {
-    return friendlyError("Descreva a movimentacao juridica e o motivo.");
+    return friendlyError("Descreva a movimentação jurídica e o motivo.");
   }
 
   try {
@@ -52,7 +52,7 @@ export async function updateLegalWorkflowStageAction(
       await getCurrentUserContext();
 
     if (!canUseLegalWorkflow(role, businessArea)) {
-      return friendlyError("O usuario atual nao pode movimentar a esteira juridica.");
+      return friendlyError("O usuário atual não pode movimentar a esteira jurídica.");
     }
 
     const preSale = await assertPreSaleAccess(preSaleId);
@@ -66,7 +66,7 @@ export async function updateLegalWorkflowStageAction(
       .single();
 
     if (currentStageError || !currentStageData) {
-      return friendlyError("Pre-venda nao encontrada para atualizar a etapa juridica.");
+      return friendlyError("Pré-venda não encontrada para atualizar a etapa jurídica.");
     }
 
     const { error } = await supabase
@@ -125,7 +125,7 @@ export async function updateLegalWorkflowStageAction(
     return friendlyError(
       error instanceof Error
         ? error.message
-        : "Nao foi possivel atualizar a etapa juridica.",
+        : "Não foi possível atualizar a etapa jurídica.",
     );
   }
 }
@@ -138,7 +138,7 @@ export async function updateLegalArchiveStatusAction(
   const normalizedChangeNote = changeNote?.trim();
 
   if (!normalizedChangeNote) {
-    return friendlyError("Descreva o motivo dessa mudanca de situacao juridica.");
+    return friendlyError("Descreva o motivo dessa mudança de situação jurídica.");
   }
 
   try {
@@ -146,7 +146,7 @@ export async function updateLegalArchiveStatusAction(
       await getCurrentUserContext();
 
     if (!canUseLegalWorkflow(role, businessArea)) {
-      return friendlyError("O usuario atual nao pode alterar a situacao juridica.");
+      return friendlyError("O usuário atual não pode alterar a situação jurídica.");
     }
 
     const preSale = await assertPreSaleAccess(preSaleId);
@@ -158,7 +158,7 @@ export async function updateLegalArchiveStatusAction(
       .single();
 
     if (currentPreSaleError || !currentPreSaleData) {
-      return friendlyError("Pre-venda nao encontrada para alterar a situacao juridica.");
+      return friendlyError("Pré-venda não encontrada para alterar a situação jurídica.");
     }
 
     const { error } = await supabase
@@ -193,7 +193,7 @@ export async function updateLegalArchiveStatusAction(
       clientId: preSale.client_id,
       preSaleId: preSale.id,
       eventType: "pre_sale_status_updated",
-      title: `Situacao juridica alterada para ${legalArchiveStatusLabels[status]}`,
+      title: `Situação juridica alterada para ${legalArchiveStatusLabels[status]}`,
       note: normalizedChangeNote,
       actorUserProfileId: userProfileId,
       actorRole: role,
@@ -211,13 +211,13 @@ export async function updateLegalArchiveStatusAction(
 
     return {
       ok: true,
-      message: `Situacao juridica alterada para ${legalArchiveStatusLabels[status]}.`,
+      message: `Situação juridica alterada para ${legalArchiveStatusLabels[status]}.`,
     };
   } catch (error) {
     return friendlyError(
       error instanceof Error
         ? error.message
-        : "Nao foi possivel alterar a situacao juridica.",
+        : "Não foi possível alterar a situação jurídica.",
     );
   }
 }

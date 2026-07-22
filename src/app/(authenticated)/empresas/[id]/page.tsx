@@ -214,7 +214,7 @@ export default async function CompanySettingsPage({
     ? Math.min(100, Math.round((usedLicenses / licenseLimit) * 100))
     : 0;
   const successMessage =
-    query.success === "settings" ? "Configuracoes salvas com sucesso." : null;
+    query.success === "settings" ? "Configurações salvas com sucesso." : null;
   const errorMessage = query.error ? decodeURIComponent(query.error) : settingsLoad.errorMessage;
 
   return (
@@ -306,7 +306,7 @@ export default async function CompanySettingsPage({
         <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
             <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Usuarios
+              Usuários
             </p>
             <p className="mt-2 text-3xl font-semibold text-slate-950">
               {usedLicenses}/{licenseLimit}
@@ -318,7 +318,7 @@ export default async function CompanySettingsPage({
               />
             </div>
             <p className="mt-2 text-sm text-slate-600">
-              {readCount(usersCount)} usuario(s) cadastrados
+              {readCount(usersCount)} usuário(s) cadastrados
             </p>
           </div>
           <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
@@ -340,13 +340,13 @@ export default async function CompanySettingsPage({
           </div>
           <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
             <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Operacao
+              Operação
             </p>
             <p className="mt-2 text-3xl font-semibold text-slate-950">
               {readCount(clientsCount)}
             </p>
             <p className="mt-2 text-sm text-slate-600">
-              clientes, {readCount(preSalesCount)} pre-venda(s)
+              clientes, {readCount(preSalesCount)} pré-venda(s)
             </p>
           </div>
           <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
@@ -357,7 +357,7 @@ export default async function CompanySettingsPage({
               {readCount(generatedDocumentsCount)}
             </p>
             <p className="mt-2 text-sm text-slate-600">
-              {readCount(templatesCount)} template(s), {readCount(simulationsCount)} simulacao(oes)
+              {readCount(templatesCount)} template(s), {readCount(simulationsCount)} simulações
             </p>
           </div>
         </section>
@@ -398,7 +398,7 @@ export default async function CompanySettingsPage({
               </p>
               <dl className="mt-4 space-y-3 text-sm">
                 <div className="flex items-center justify-between gap-3">
-                  <dt className="text-slate-600">Pre-vendas aprovadas</dt>
+                  <dt className="text-slate-600">Pré-vendas aprovadas</dt>
                   <dd className="font-semibold text-slate-950">
                     {readCount(approvedPreSalesCount)}
                   </dd>

@@ -93,9 +93,9 @@ function getLeadClientId(lead: Pick<LeadToAssign, "raw_data">) {
 
 function buildLeadClientNotes(lead: Pick<LeadToAssign, "campaign" | "notes">) {
   return [
-    "Cliente criado automaticamente pela distribuicao de leads.",
+    "Cliente criado automaticamente pela distribuição de leads.",
     lead.campaign ? `Origem/campanha: ${lead.campaign}` : null,
-    lead.notes ? `Observacao da planilha: ${lead.notes}` : null,
+    lead.notes ? `Observação da planilha: ${lead.notes}` : null,
   ]
     .filter(Boolean)
     .join("\n");

@@ -61,8 +61,8 @@ export function PreSalesStatusSelect({
       {message ? <p className="text-xs text-red-600">{message}</p> : null}
       <ChangeNoteModal
         isOpen={Boolean(pendingStatus)}
-        title="Registrar mudanca de status"
-        description="Explique o que aconteceu nessa movimentacao da pre-venda e por que ela foi para este novo status."
+        title="Registrar mudança de status"
+        description="Explique o que aconteceu nessa movimentação da pré-venda e por que ela foi para este novo status."
         confirmLabel="Alterar com anotacao"
         pending={isPending}
         onClose={() => {

@@ -63,7 +63,7 @@ const docxStyleMap = [
   "p[style-name='Heading 4'] => h4:fresh",
   "p[style-name='Heading 5'] => h5:fresh",
   "p[style-name='Heading 6'] => h6:fresh",
-  "p[style-name='Titulo'] => h1:fresh",
+  "p[style-name='Título'] => h1:fresh",
   "p[style-name='Título'] => h1:fresh",
   "p[style-name='Cabeçalho 1'] => h1:fresh",
   "p[style-name='Cabeçalho 2'] => h2:fresh",
@@ -83,7 +83,7 @@ function normalizeDocumentsStorageErrorMessage(message: string) {
 
   if (normalized.includes("bucket not found")) {
     return (
-      "O bucket privado 'documents' ainda nao existe nesta instancia do Supabase. " +
+      "O bucket privado 'documents' ainda não existe nesta instância do Supabase. " +
       "Crie o bucket antes de subir DOCX/PDF oficiais."
     );
   }
@@ -174,7 +174,7 @@ async function ensureOfficialDocumentSchema(
     if (error) {
       if (isMissingColumnError(error)) {
         return friendlyError(
-          "Esta instancia ainda nao recebeu as colunas oficiais de documentos. Rode o SQL docs/sql/documentos-docx-oficial.sql no Supabase antes de usar DOCX/PDF oficial.",
+          "Esta instância ainda não recebeu as colunas oficiais de documentos. Rode o SQL docs/sql/documentos-docx-oficial.sql no Supabase antes de usar DOCX/PDF oficial.",
         );
       }
 
@@ -191,7 +191,7 @@ async function ensureOfficialDocumentSchema(
     if (error) {
       if (isMissingColumnError(error)) {
         return friendlyError(
-          "A tabela generated_documents desta instancia ainda nao possui as colunas de arquivo oficial. Rode o SQL docs/sql/documentos-docx-oficial.sql no Supabase antes de gerar documentos oficiais.",
+          "A tabela generated_documents desta instância ainda não possui as colunas de arquivo oficial. Rode o SQL docs/sql/documentos-docx-oficial.sql no Supabase antes de gerar documentos oficiais.",
         );
       }
 
@@ -214,7 +214,7 @@ async function ensureDocumentsBucketAvailable() {
 
   if (error.message.toLowerCase().includes("bucket not found")) {
     return friendlyError(
-      "O bucket privado 'documents' ainda nao existe nesta instancia. Crie-o no Supabase Storage antes de usar os arquivos oficiais.",
+      "O bucket privado 'documents' ainda não existe nesta instância. Crie-o no Supabase Storage antes de usar os arquivos oficiais.",
     );
   }
 
@@ -345,7 +345,7 @@ async function getDocumentContext(
   const preSale = preSaleData as PreSale | null;
 
   if (!preSale) {
-    throw new Error("Pre-venda nao encontrada.");
+    throw new Error("Pré-venda não encontrada.");
   }
 
   const [{ data: clientData }, { data: consultantData }] = await Promise.all([
@@ -403,7 +403,7 @@ async function getLegalPaymentDocumentContext(
   const payment = paymentData as LegalPayment | null;
 
   if (!payment) {
-    throw new Error("Pagamento juridico nao encontrado para gerar o documento.");
+    throw new Error("Pagamento jurídico não encontrado para gerar o documento.");
   }
 
   const [{ data: typeData }, { data: responsibleData }] = await Promise.all([
@@ -514,7 +514,7 @@ async function resolveDocumentTemplateStage(
     .single();
 
   if (error || !data) {
-    throw new Error("A etapa juridica selecionada nao foi encontrada.");
+    throw new Error("A etapa jurídica selecionada não foi encontrada.");
   }
 
   return {
@@ -583,7 +583,7 @@ export async function createDocumentTemplateAction(
       });
     } catch (error) {
     return friendlyError(
-      error instanceof Error ? error.message : "Nao foi possivel criar o template.",
+      error instanceof Error ? error.message : "Não foi possível criar o template.",
     );
   }
 
@@ -650,7 +650,7 @@ export async function updateDocumentTemplateAction(
       });
     } catch (error) {
     return friendlyError(
-      error instanceof Error ? error.message : "Nao foi possivel editar o template.",
+      error instanceof Error ? error.message : "Não foi possível editar o template.",
     );
   }
 
@@ -703,7 +703,7 @@ export async function toggleDocumentTemplateActiveAction(
     });
   } catch (error) {
     return friendlyError(
-      error instanceof Error ? error.message : "Nao foi possivel atualizar o template.",
+      error instanceof Error ? error.message : "Não foi possível atualizar o template.",
     );
   }
 
@@ -721,13 +721,13 @@ export async function setDefaultDocumentTemplateAction(
       const { supabase, companyId, role, userProfileId } = await getCurrentUserContext();
 
     if (!canManageTemplates(role)) {
-      return friendlyError("Apenas admin ou gerente podem definir template padrao.");
+      return friendlyError("Apenas admin ou gerente podem definir template padrão.");
     }
 
     const template = await getTemplate(templateId, companyId);
 
     if (!template) {
-      return friendlyError("Template nao encontrado.");
+      return friendlyError("Template não encontrado.");
     }
 
     await ensureDefaultTemplateState(companyId, template.document_type, template.id, true);
@@ -760,14 +760,14 @@ export async function setDefaultDocumentTemplateAction(
     });
   } catch (error) {
     return friendlyError(
-      error instanceof Error ? error.message : "Nao foi possivel definir o padrao.",
+      error instanceof Error ? error.message : "Não foi possível definir o padrão.",
     );
   }
 
   revalidatePath("/documentos/templates");
   return {
     ok: true,
-    message: "Template marcado como padrao.",
+    message: "Template marcado como padrão.",
   };
 }
 
@@ -784,7 +784,7 @@ export async function duplicateDocumentTemplateAction(
     const template = await getTemplate(templateId, companyId);
 
     if (!template) {
-      return friendlyError("Template nao encontrado.");
+      return friendlyError("Template não encontrado.");
     }
 
     const { data, error } = await supabase.from("document_templates").insert({
@@ -818,7 +818,7 @@ export async function duplicateDocumentTemplateAction(
     });
   } catch (error) {
     return friendlyError(
-      error instanceof Error ? error.message : "Nao foi possivel duplicar o template.",
+      error instanceof Error ? error.message : "Não foi possível duplicar o template.",
     );
   }
 
@@ -851,7 +851,7 @@ export async function deleteDocumentTemplateAction(
 
     if ((count ?? 0) > 0) {
       return friendlyError(
-        "Este template ja gerou documentos. Desative-o para preservar o historico.",
+        "Este template já gerou documentos. Desative-o para preservar o histórico.",
       );
     }
 
@@ -876,14 +876,14 @@ export async function deleteDocumentTemplateAction(
       });
     } catch (error) {
     return friendlyError(
-      error instanceof Error ? error.message : "Nao foi possivel excluir o template.",
+      error instanceof Error ? error.message : "Não foi possível excluir o template.",
     );
   }
 
   revalidatePath("/documentos/templates");
   return {
     ok: true,
-    message: "Template excluido com sucesso.",
+    message: "Template excluído com sucesso.",
   };
 }
 
@@ -900,7 +900,7 @@ export async function deleteGeneratedDocumentAction(
     const document = await getGeneratedDocument(documentId, companyId);
 
     if (!document) {
-      return friendlyError("Documento gerado nao encontrado.");
+      return friendlyError("Documento gerado não encontrado.");
     }
 
     const filesToDelete = [
@@ -950,11 +950,11 @@ export async function deleteGeneratedDocumentAction(
 
     return {
       ok: true,
-      message: "Documento excluido com sucesso.",
+      message: "Documento excluído com sucesso.",
     };
   } catch (error) {
     return friendlyError(
-      error instanceof Error ? error.message : "Nao foi possivel excluir o documento.",
+      error instanceof Error ? error.message : "Não foi possível excluir o documento.",
     );
   }
 }
@@ -987,7 +987,7 @@ export async function uploadOfficialDocxTemplateAction(
     const template = await getTemplate(templateId, companyId);
 
     if (!template) {
-      return friendlyError("Template nao encontrado.");
+      return friendlyError("Template não encontrado.");
     }
 
     const file = formData.get("file");
@@ -997,7 +997,7 @@ export async function uploadOfficialDocxTemplateAction(
     }
 
     if (!isValidDocxFile(file)) {
-      return friendlyError("Formato nao suportado. Envie um arquivo .docx.");
+      return friendlyError("Formato não suportado. Envie um arquivo .docx.");
     }
 
     if (file.size <= 0) {
@@ -1005,7 +1005,7 @@ export async function uploadOfficialDocxTemplateAction(
     }
 
     if (file.size > maxDocxSize) {
-      return friendlyError("Envie um DOCX com ate 15 MB.");
+      return friendlyError("Envie um DOCX com até 15 MB.");
     }
 
     const filename = safeFileName(file.name);
@@ -1071,7 +1071,7 @@ export async function uploadOfficialDocxTemplateAction(
     return friendlyError(
       error instanceof Error
         ? error.message
-        : "Nao foi possivel vincular o DOCX oficial.",
+        : "Não foi possível vincular o DOCX oficial.",
     );
   }
 }
@@ -1104,7 +1104,7 @@ export async function uploadOfficialPdfTemplateAction(
     const template = await getTemplate(templateId, companyId);
 
     if (!template) {
-      return friendlyError("Template nao encontrado.");
+      return friendlyError("Template não encontrado.");
     }
 
     const file = formData.get("file");
@@ -1114,7 +1114,7 @@ export async function uploadOfficialPdfTemplateAction(
     }
 
     if (!isValidPdfFile(file)) {
-      return friendlyError("Formato nao suportado. Envie um arquivo .pdf.");
+      return friendlyError("Formato não suportado. Envie um arquivo .pdf.");
     }
 
     if (file.size <= 0) {
@@ -1122,7 +1122,7 @@ export async function uploadOfficialPdfTemplateAction(
     }
 
     if (file.size > maxPdfSize) {
-      return friendlyError("Envie um PDF com ate 20 MB.");
+      return friendlyError("Envie um PDF com até 20 MB.");
     }
 
     const filename = safeFileName(file.name);
@@ -1188,7 +1188,7 @@ export async function uploadOfficialPdfTemplateAction(
     return friendlyError(
       error instanceof Error
         ? error.message
-        : "Nao foi possivel vincular o PDF oficial.",
+        : "Não foi possível vincular o PDF oficial.",
     );
   }
 }
@@ -1212,7 +1212,7 @@ export async function importDocxTemplateAction(
     const fileName = file.name.toLowerCase();
 
     if (!fileName.endsWith(".docx") || !docxMimeTypes.has(file.type)) {
-      return friendlyError("Formato nao suportado. Envie um arquivo .docx.");
+      return friendlyError("Formato não suportado. Envie um arquivo .docx.");
     }
 
     if (file.size <= 0) {
@@ -1220,7 +1220,7 @@ export async function importDocxTemplateAction(
     }
 
     if (file.size > 10 * 1024 * 1024) {
-      return friendlyError("Envie um DOCX com ate 10 MB.");
+      return friendlyError("Envie um DOCX com até 10 MB.");
     }
 
     const arrayBuffer = await file.arrayBuffer();
@@ -1242,7 +1242,7 @@ export async function importDocxTemplateAction(
     const plainText = extractPlainText(contentHtml);
 
     if (!contentHtml || !plainText) {
-      return friendlyError("Nao foi possivel extrair HTML deste DOCX.");
+      return friendlyError("Não foi possível extrair HTML deste DOCX.");
     }
 
     return {
@@ -1256,7 +1256,7 @@ export async function importDocxTemplateAction(
     };
   } catch (error) {
     return friendlyError(
-      error instanceof Error ? error.message : "Nao foi possivel converter o DOCX.",
+      error instanceof Error ? error.message : "Não foi possível converter o DOCX.",
     );
   }
 }
@@ -1273,7 +1273,7 @@ export async function previewDocumentAction(
     ]);
 
     if (!template) {
-      return friendlyError("Template ativo nao encontrado.");
+      return friendlyError("Template ativo não encontrado.");
     }
 
     const rendered = renderDocumentTemplate(getSafeTemplateHtml(template), context);
@@ -1285,7 +1285,7 @@ export async function previewDocumentAction(
     };
   } catch (error) {
     return friendlyError(
-      error instanceof Error ? error.message : "Nao foi possivel gerar preview.",
+      error instanceof Error ? error.message : "Não foi possível gerar preview.",
     );
   }
 }
@@ -1295,7 +1295,7 @@ export async function previewTemplateContentAction(
   contentHtml: string,
 ): Promise<DocumentActionState> {
   if (!contentHtml.trim()) {
-    return friendlyError("Informe o conteudo do template antes do preview.");
+    return friendlyError("Informe o conteúdo do template antes do preview.");
   }
 
   try {
@@ -1319,7 +1319,7 @@ export async function previewTemplateContentAction(
     };
   } catch (error) {
     return friendlyError(
-      error instanceof Error ? error.message : "Nao foi possivel gerar preview.",
+      error instanceof Error ? error.message : "Não foi possível gerar preview.",
     );
   }
 }
@@ -1371,12 +1371,12 @@ export async function generateOfficialDocumentAction(
     ]);
 
     if (!template) {
-      return friendlyError("Template ativo nao encontrado.");
+      return friendlyError("Template ativo não encontrado.");
     }
 
     if (!template.original_docx_path) {
       return friendlyError(
-        "Este template ainda nao possui DOCX oficial. Vincule um DOCX no cadastro do template.",
+        "Este template ainda não possui DOCX oficial. Vincule um DOCX no cadastro do template.",
       );
     }
 
@@ -1387,7 +1387,7 @@ export async function generateOfficialDocumentAction(
     if (downloadError || !storedDocx) {
       return friendlyError(
         normalizeDocumentsStorageErrorMessage(
-          downloadError?.message || "Nao foi possivel baixar o DOCX oficial.",
+          downloadError?.message || "Não foi possível baixar o DOCX oficial.",
         ),
       );
     }
@@ -1442,7 +1442,7 @@ export async function generateOfficialDocumentAction(
     } else {
       pdfErrorMessage =
         `${pdfResult.message}. O DOCX foi gerado e salvo; configure LibreOffice ` +
-        "ou um servico externo para finalizar o PDF neste ambiente.";
+        "ou um serviço externo para finalizar o PDF neste ambiente.";
       console.error("[documents] PDF conversion failed", {
         preSaleId,
         templateId,
@@ -1504,7 +1504,7 @@ export async function generateOfficialDocumentAction(
       ok: true,
       message: pdfResult.ok
         ? "Documento oficial gerado em DOCX e PDF."
-        : "DOCX oficial gerado. PDF ficou pendente porque o conversor nao esta disponivel.",
+        : "DOCX oficial gerado. PDF ficou pendente porque o conversor não está disponível.",
       content: renderedHtml,
       variables,
       documentId: generatedDocumentId,
@@ -1519,7 +1519,7 @@ export async function generateOfficialDocumentAction(
     return friendlyError(
       error instanceof Error
         ? error.message
-        : "Nao foi possivel gerar o documento oficial.",
+        : "Não foi possível gerar o documento oficial.",
     );
   }
 }
@@ -1553,11 +1553,11 @@ export async function generateOfficialPdfDocumentAction(
     ]);
 
     if (!template) {
-      return friendlyError("Template ativo nao encontrado.");
+      return friendlyError("Template ativo não encontrado.");
     }
 
     if (!template.original_pdf_path) {
-      return friendlyError("Este template ainda nao possui PDF oficial.");
+      return friendlyError("Este template ainda não possui PDF oficial.");
     }
 
     const { data: storedPdf, error: downloadError } = await storageAdmin.storage
@@ -1567,7 +1567,7 @@ export async function generateOfficialPdfDocumentAction(
     if (downloadError || !storedPdf) {
       return friendlyError(
         normalizeDocumentsStorageErrorMessage(
-          downloadError?.message || "Nao foi possivel baixar o PDF oficial.",
+          downloadError?.message || "Não foi possível baixar o PDF oficial.",
         ),
       );
     }
@@ -1580,7 +1580,7 @@ export async function generateOfficialPdfDocumentAction(
 
     if (!renderedPdf.filledFields.length) {
       return friendlyError(
-        "O PDF oficial nao possui campos preenchiveis com nomes iguais as variaveis. Crie campos como cliente_nome, cliente_cpf ou contratante_nome no PDF.",
+        "O PDF oficial não possui campos preenchiveis com nomes iguais as variáveis. Crie campos como cliente_nome, cliente_cpf ou contratante_nome no PDF.",
       );
     }
 
@@ -1677,7 +1677,7 @@ export async function generateOfficialPdfDocumentAction(
     return friendlyError(
       error instanceof Error
         ? error.message
-        : "Nao foi possivel gerar o PDF oficial.",
+        : "Não foi possível gerar o PDF oficial.",
     );
   }
 }
@@ -1694,12 +1694,12 @@ export async function generateDocumentAction(
     ]);
 
     if (!template) {
-      return friendlyError("Template ativo nao encontrado.");
+      return friendlyError("Template ativo não encontrado.");
     }
 
     if (template.document_type === "contrato") {
       return friendlyError(
-        "Templates de contrato agora exigem arquivo oficial em DOCX ou PDF. Vincule o arquivo oficial no cadastro do template antes de gerar pela pre-venda.",
+        "Templates de contrato agora exigem arquivo oficial em DOCX ou PDF. Vincule o arquivo oficial no cadastro do template antes de gerar pela pré-venda.",
       );
     }
 
@@ -1752,7 +1752,7 @@ export async function generateDocumentAction(
     };
   } catch (error) {
     return friendlyError(
-      error instanceof Error ? error.message : "Nao foi possivel gerar o documento.",
+      error instanceof Error ? error.message : "Não foi possível gerar o documento.",
     );
   }
 }
@@ -1783,8 +1783,8 @@ export async function createGeneratedDocumentFileUrlAction(
     if (!filePath) {
       return friendlyError(
         fileType === "pdf"
-          ? "Este documento ainda nao possui PDF oficial."
-          : "Este documento ainda nao possui DOCX oficial.",
+          ? "Este documento ainda não possui PDF oficial."
+          : "Este documento ainda não possui DOCX oficial.",
       );
     }
 
@@ -1799,7 +1799,7 @@ export async function createGeneratedDocumentFileUrlAction(
     if (error || !data?.signedUrl) {
       return friendlyError(
         normalizeDocumentsStorageErrorMessage(
-          error?.message || "Nao foi possivel gerar o link do arquivo oficial.",
+          error?.message || "Não foi possível gerar o link do arquivo oficial.",
         ),
       );
     }
@@ -1809,14 +1809,14 @@ export async function createGeneratedDocumentFileUrlAction(
       message:
         mode === "download"
           ? "Download liberado."
-          : "Visualizacao liberada.",
+          : "Visualização liberada.",
       url: data.signedUrl,
     };
   } catch (error) {
     return friendlyError(
       error instanceof Error
         ? error.message
-        : "Nao foi possivel abrir o arquivo oficial.",
+        : "Não foi possível abrir o arquivo oficial.",
     );
   }
 }

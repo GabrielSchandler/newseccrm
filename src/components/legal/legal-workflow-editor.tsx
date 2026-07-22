@@ -70,7 +70,7 @@ function StageForm({
     >
       <div className="grid gap-4 md:grid-cols-2">
         <label className="space-y-1.5 text-sm font-semibold text-slate-700">
-          Titulo da coluna
+          Título da coluna
           <input
             required
             maxLength={100}
@@ -96,7 +96,7 @@ function StageForm({
       </div>
 
       <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
-        Descricao
+        Descrição
         <textarea
           required
           rows={3}
@@ -243,10 +243,10 @@ export function LegalWorkflowEditor({
             <header className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-slate-200 bg-white px-6 py-5">
               <div>
                 <h2 id="workflow-editor-title" className="text-xl font-semibold text-slate-950">
-                  Configurar esteira juridica
+                  Configurar esteira jurídica
                 </h2>
                 <p className="mt-1 text-sm text-slate-600">
-                  Organize ate 20 colunas. A primeira recebe automaticamente os novos clientes aprovados.
+                  Organize até 20 colunas. A primeira recebe automaticamente os novos clientes aprovados.
                 </p>
               </div>
               <button
@@ -261,7 +261,7 @@ export function LegalWorkflowEditor({
             <div className="space-y-6 p-6">
               {!schemaReady ? (
                 <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-900">
-                  A configuracao ainda nao foi ativada no banco. Execute o arquivo{" "}
+                  A configuração ainda não foi ativada no banco. Execute o arquivo{" "}
                   <strong>docs/sql/juridico-esteira-configuravel.sql</strong> no SQL Editor do Supabase.
                 </div>
               ) : null}
@@ -348,7 +348,7 @@ export function LegalWorkflowEditor({
                             disabled={isPending || stages.length <= 1}
                             onClick={() => {
                               const confirmed = window.confirm(
-                                "Excluir esta coluna? A exclusao sera bloqueada se houver clientes ativos, inativos ou em distrato. Os templates serao mantidos sem vinculo.",
+                                "Excluir esta coluna? A exclusão será bloqueada se houver clientes ativos, inativos ou em distrato. Os templates serão mantidos sem vínculo.",
                               );
                               if (!confirmed) {
                                 return;

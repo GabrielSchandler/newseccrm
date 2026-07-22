@@ -68,7 +68,7 @@ export function ReactivateClientButton({ clientId }: ReactivateClientButtonProps
                 disabled={isPending}
                 className="rounded-lg bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-70"
               >
-                {isPending ? "Reativando..." : "Confirmar reativacao"}
+                {isPending ? "Reativando..." : "Confirmar reativação"}
               </button>
             </div>
           </div>

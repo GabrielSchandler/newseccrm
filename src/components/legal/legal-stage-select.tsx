@@ -93,8 +93,8 @@ export function LegalStageSelect({
 
       <ChangeNoteModal
         isOpen={Boolean(pendingStage)}
-        title="Registrar mudanca na etapa juridica"
-        description="Descreva o que foi feito com este cliente e por que ele esta mudando de etapa na esteira."
+        title="Registrar mudança na etapa jurídica"
+        description="Descreva o que foi feito com este cliente e por que ele está mudando de etapa na esteira."
         confirmLabel="Salvar etapa com anotacao"
         pending={isPending}
         onClose={() => {
