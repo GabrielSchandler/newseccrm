@@ -1,4 +1,9 @@
 export type ClientDocumentType =
+  | "documentacao"
+  | "extrajudicial"
+  | "processual";
+
+export type LegacyClientDocumentType =
   | "rg"
   | "cpf"
   | "cnh"
@@ -8,12 +13,17 @@ export type ClientDocumentType =
   | "documento_financiamento"
   | "outro";
 
+export type ClientDocumentStoredType =
+  | ClientDocumentType
+  | LegacyClientDocumentType
+  | (string & {});
+
 export type ClientDocument = {
   id: string;
   company_id: string;
   client_id: string;
   pre_sale_id: string | null;
-  document_type: ClientDocumentType;
+  document_type: ClientDocumentStoredType;
   title: string | null;
   description: string | null;
   file_name: string;
@@ -31,12 +41,15 @@ export const clientDocumentTypes: Array<{
   value: ClientDocumentType;
   label: string;
 }> = [
-  { value: "rg", label: "RG" },
-  { value: "cpf", label: "CPF" },
-  { value: "cnh", label: "CNH" },
-  { value: "comprovante_residencia", label: "Comprovante de residencia" },
-  { value: "contrato_assinado", label: "Contrato assinado" },
-  { value: "procuracao", label: "Procuracao" },
-  { value: "documento_financiamento", label: "Documento de financiamento" },
-  { value: "outro", label: "Outro" },
+  { value: "documentacao", label: "Documentação" },
+  { value: "extrajudicial", label: "Extrajudicial" },
+  { value: "processual", label: "Processual" },
 ];
+
+export function normalizeClientDocumentType(
+  value: ClientDocumentStoredType | string | null | undefined,
+): ClientDocumentType {
+  return clientDocumentTypes.some((type) => type.value === value)
+    ? (value as ClientDocumentType)
+    : "documentacao";
+}

@@ -11,14 +11,9 @@ export const clientDocumentUploadSchema = z.object({
     .transform((value) => (typeof value === "string" && value.trim() ? value : null)),
   document_type: z.enum(
     [
-      "rg",
-      "cpf",
-      "cnh",
-      "comprovante_residencia",
-      "contrato_assinado",
-      "procuracao",
-      "documento_financiamento",
-      "outro",
+      "documentacao",
+      "extrajudicial",
+      "processual",
     ],
     {
       required_error: "Selecione o tipo do documento.",
@@ -41,7 +36,7 @@ export type ClientDocumentUpdatePayload = z.output<typeof clientDocumentUpdateSc
 export const clientDocumentUploadDefaultValues: ClientDocumentUploadFormValues = {
   client_id: "",
   pre_sale_id: "",
-  document_type: "rg",
+  document_type: "documentacao",
   title: "",
   description: "",
 };

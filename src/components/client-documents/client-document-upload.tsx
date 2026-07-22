@@ -25,6 +25,8 @@ function getFriendlyUploadError(message: string) {
   return message;
 }
 
+const defaultDocumentType = clientDocumentTypes[0]?.value ?? "documentacao";
+
 export function ClientDocumentUpload({
   clientId,
   preSaleId = null,
@@ -32,7 +34,7 @@ export function ClientDocumentUpload({
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [files, setFiles] = useState<File[]>([]);
-  const [documentType, setDocumentType] = useState(clientDocumentTypes[0]?.value ?? "rg");
+  const [documentType, setDocumentType] = useState(defaultDocumentType);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [state, setState] = useState<ClientDocumentActionState | null>(null);
@@ -47,7 +49,7 @@ export function ClientDocumentUpload({
 
   function resetForm() {
     setFiles([]);
-    setDocumentType(clientDocumentTypes[0]?.value ?? "rg");
+    setDocumentType(defaultDocumentType);
     setTitle("");
     setDescription("");
   }
