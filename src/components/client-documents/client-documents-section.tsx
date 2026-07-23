@@ -1,5 +1,4 @@
-import { ClientDocumentList } from "@/components/client-documents/client-document-list";
-import { ClientDocumentUpload } from "@/components/client-documents/client-document-upload";
+import { ClientDocumentWorkspace } from "@/components/client-documents/client-document-workspace";
 import {
   canModifyClientDocuments,
   listClientDocumentsByClient,
@@ -45,8 +44,9 @@ export async function ClientDocumentsSection({
           <p className="mt-1 text-sm leading-6 text-slate-600">{description}</p>
         ) : null}
       </div>
-      <ClientDocumentUpload clientId={clientId} preSaleId={preSaleId} />
-      <ClientDocumentList
+      <ClientDocumentWorkspace
+        clientId={clientId}
+        preSaleId={preSaleId}
         documents={enrichedDocuments}
         canManage={canModifyClientDocuments(role, businessArea)}
       />

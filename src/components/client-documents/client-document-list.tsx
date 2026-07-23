@@ -36,6 +36,7 @@ export type ClientDocumentListItem = ClientDocument & {
 type ClientDocumentListProps = {
   documents: ClientDocumentListItem[];
   canManage: boolean;
+  visibleTypes?: ClientDocumentType[];
 };
 
 const initialOpenGroups: Record<ClientDocumentType, boolean> = {
@@ -47,6 +48,7 @@ const initialOpenGroups: Record<ClientDocumentType, boolean> = {
 export function ClientDocumentList({
   documents,
   canManage,
+  visibleTypes,
 }: ClientDocumentListProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -59,7 +61,10 @@ export function ClientDocumentList({
   const [editingDescription, setEditingDescription] = useState("");
   const [replacementFile, setReplacementFile] = useState<File | null>(null);
 
-  const groupedDocuments = clientDocumentTypes.map((type) => ({
+  const documentTypesToShow = visibleTypes?.length
+    ? clientDocumentTypes.filter((type) => visibleTypes.includes(type.value))
+    : clientDocumentTypes;
+  const groupedDocuments = documentTypesToShow.map((type) => ({
     ...type,
     documents: documents.filter(
       (document) => normalizeClientDocumentType(document.document_type) === type.value,
@@ -487,7 +492,7 @@ export function ClientDocumentList({
             Nenhum documento encontrado.
           </p>
           <p className="mt-1 text-sm text-slate-500">
-            Os arquivos enviados aparecerão agrupados em Documentação, Extrajudicial e Processual.
+            Os arquivos enviados aparecerão na categoria correspondente.
           </p>
         </div>
       )}

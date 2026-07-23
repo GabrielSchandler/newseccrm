@@ -14,11 +14,13 @@ import {
   clientDocumentAcceptedFormatsLabel,
   clientDocumentAcceptedInputTypes,
   clientDocumentTypes,
+  type ClientDocumentType,
 } from "@/types/client-document";
 
 type ClientDocumentUploadProps = {
   clientId: string;
   preSaleId?: string | null;
+  fixedDocumentType?: ClientDocumentType;
 };
 
 function getFriendlyUploadError(message: string) {
@@ -34,15 +36,20 @@ const defaultDocumentType = clientDocumentTypes[0]?.value ?? "documentacao";
 export function ClientDocumentUpload({
   clientId,
   preSaleId = null,
+  fixedDocumentType,
 }: ClientDocumentUploadProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [files, setFiles] = useState<File[]>([]);
-  const [documentType, setDocumentType] = useState(defaultDocumentType);
+  const [documentType, setDocumentType] = useState(fixedDocumentType ?? defaultDocumentType);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [state, setState] = useState<ClientDocumentActionState | null>(null);
   const disabled = isPending || files.length === 0;
+  const selectedDocumentType = fixedDocumentType ?? documentType;
+  const selectedDocumentTypeLabel =
+    clientDocumentTypes.find((item) => item.value === selectedDocumentType)?.label ??
+    "Documentação";
   const hintText = useMemo(
     () =>
       preSaleId
@@ -53,7 +60,7 @@ export function ClientDocumentUpload({
 
   function resetForm() {
     setFiles([]);
-    setDocumentType(defaultDocumentType);
+    setDocumentType(fixedDocumentType ?? defaultDocumentType);
     setTitle("");
     setDescription("");
   }
@@ -75,7 +82,7 @@ export function ClientDocumentUpload({
       const payload = {
         client_id: clientId,
         pre_sale_id: preSaleId ?? "",
-        document_type: documentType,
+        document_type: selectedDocumentType,
         title,
         description,
       };
@@ -137,7 +144,7 @@ export function ClientDocumentUpload({
       if (result.ok) {
         resetForm();
         const fileInput = globalThis.document.getElementById(
-          `client-document-file-${preSaleId ?? "client"}`,
+          `client-document-file-${preSaleId ?? "client"}-${selectedDocumentType}`,
         ) as HTMLInputElement | null;
 
         if (fileInput) {
@@ -160,37 +167,46 @@ export function ClientDocumentUpload({
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <div className="space-y-2">
-          <FormFieldLabel
-            htmlFor="document_type"
-            label="Tipo do documento"
-            requirement="required"
-          />
-          <select
-            id="document_type"
-            value={documentType}
-            disabled={isPending}
-            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
-            onChange={(event) =>
-              setDocumentType(event.target.value as (typeof clientDocumentTypes)[number]["value"])
-            }
-          >
-            {clientDocumentTypes.map((item) => (
-              <option key={item.value} value={item.value}>
-                {item.label}
-              </option>
-            ))}
-          </select>
-        </div>
+        {fixedDocumentType ? (
+          <div className="space-y-2">
+            <FormFieldLabel label="Tipo do documento" requirement="required" />
+            <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold text-slate-800">
+              {selectedDocumentTypeLabel}
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            <FormFieldLabel
+              htmlFor="document_type"
+              label="Tipo do documento"
+              requirement="required"
+            />
+            <select
+              id="document_type"
+              value={documentType}
+              disabled={isPending}
+              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
+              onChange={(event) =>
+                setDocumentType(event.target.value as (typeof clientDocumentTypes)[number]["value"])
+              }
+            >
+              {clientDocumentTypes.map((item) => (
+                <option key={item.value} value={item.value}>
+                  {item.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
         <div className="space-y-2">
           <FormFieldLabel
-            htmlFor={`client-document-file-${preSaleId ?? "client"}`}
+            htmlFor={`client-document-file-${preSaleId ?? "client"}-${selectedDocumentType}`}
             label="Arquivo"
             requirement="required"
           />
           <input
-            id={`client-document-file-${preSaleId ?? "client"}`}
+            id={`client-document-file-${preSaleId ?? "client"}-${selectedDocumentType}`}
             type="file"
             multiple
             disabled={isPending}
