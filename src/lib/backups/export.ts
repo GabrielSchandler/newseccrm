@@ -80,6 +80,7 @@ const optionalWorkflowTables = new Set([
   "finance_audit_logs",
   "lead_sources",
   "leads",
+  "totalk_integrations",
   "academy_chapter_progress",
   "academy_exam_attempts",
 ]);

@@ -11,6 +11,8 @@ export type ClientTimelineEventType =
   | "client_document_deleted"
   | "email_draft_created"
   | "email_sent"
+  | "calculation_imported_from_totalk"
+  | "calculation_pdf_sent_totalk"
   | "legal_payment_created"
   | "legal_payment_updated"
   | "legal_payment_deleted"

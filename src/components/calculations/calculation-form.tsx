@@ -15,6 +15,7 @@ import {
 } from "@/lib/calculations/currency";
 import { formatCpf, formatPhone, onlyDigits } from "@/lib/clients/masks";
 import { FormFieldLabel } from "@/components/form-field-label";
+import { TotalkCalculationImportPanel } from "@/components/calculations/totalk-calculation-import-panel";
 import {
   financingCalculationDefaultValues,
   financingCalculationFormSchema,
@@ -195,6 +196,7 @@ export function CalculationForm({
     defaultValues: defaultValues ?? financingCalculationDefaultValues,
   });
   const selectedPreSaleId = watch("pre_sale_id");
+  const clientPhone = watch("client_phone");
   const cashValue = watch("cash_value");
   const downPayment = watch("down_payment");
   const installmentCount = watch("installment_count");
@@ -359,6 +361,21 @@ export function CalculationForm({
     );
   }
 
+  function applyTotalkImportedFields(
+    fields: Partial<FinancingCalculationFormValues>,
+  ) {
+    Object.entries(fields).forEach(([fieldName, value]) => {
+      if (value === undefined || value === null) {
+        return;
+      }
+
+      setValue(fieldName as keyof FinancingCalculationFormValues, value, {
+        shouldDirty: true,
+        shouldValidate: true,
+      });
+    });
+  }
+
   function onValidSubmit(values: FinancingCalculationPayload) {
     setActionState(null);
 
@@ -382,6 +399,12 @@ export function CalculationForm({
       <input type="hidden" {...register("specialist_name")} />
       <input type="hidden" {...register("situation")} />
       <input type="hidden" {...register("attendance_date")} />
+
+      <TotalkCalculationImportPanel
+        disabled={disabled}
+        currentPhone={clientPhone ?? ""}
+        onApply={applyTotalkImportedFields}
+      />
 
       <section className="grid gap-5 rounded-lg border border-slate-200 bg-white p-5 shadow-sm md:grid-cols-2">
         <div className="space-y-2">

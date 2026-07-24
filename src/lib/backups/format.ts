@@ -20,6 +20,7 @@ export const backupRestoreOrder = [
   "finance_audit_logs",
   "lead_sources",
   "leads",
+  "totalk_integrations",
   "clients",
   "pre_sales",
   "pre_sale_client_snapshot",

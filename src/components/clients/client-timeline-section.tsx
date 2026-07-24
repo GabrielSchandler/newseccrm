@@ -83,6 +83,14 @@ function getEventConfig(eventType: ClientTimelineEventType): TimelineEventConfig
         badgeClassName: "border-indigo-200 bg-indigo-50 text-indigo-700",
         iconClassName: "border-indigo-200 bg-indigo-50 text-indigo-700",
       };
+    case "calculation_imported_from_totalk":
+    case "calculation_pdf_sent_totalk":
+      return {
+        label: "Simulação",
+        icon: FileText,
+        badgeClassName: "border-cyan-200 bg-cyan-50 text-cyan-700",
+        iconClassName: "border-cyan-200 bg-cyan-50 text-cyan-700",
+      };
     case "tracking_update_created":
     case "tracking_update_updated":
     case "tracking_update_deleted":

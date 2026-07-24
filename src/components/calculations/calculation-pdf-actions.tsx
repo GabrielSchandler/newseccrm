@@ -1,6 +1,6 @@
 "use client";
 
-import { FileDown, FileText } from "lucide-react";
+import { FileDown, FileText, Send } from "lucide-react";
 import { Eye } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
@@ -9,6 +9,10 @@ import {
   generateCalculationPdfAction,
   type CalculationActionState,
 } from "@/app/(authenticated)/calculos/actions";
+import {
+  sendCalculationAnalysisViaTotalkAction,
+  type TotalkSendAnalysisActionState,
+} from "@/app/(authenticated)/calculos/totalk-actions";
 
 export function CalculationPdfActions({
   calculationId,
@@ -18,7 +22,9 @@ export function CalculationPdfActions({
   hasPdf: boolean;
 }) {
   const router = useRouter();
-  const [state, setState] = useState<CalculationActionState | null>(null);
+  const [state, setState] = useState<
+    CalculationActionState | TotalkSendAnalysisActionState | null
+  >(null);
   const [isPending, startTransition] = useTransition();
 
   function openPdfWindow() {
@@ -97,6 +103,18 @@ export function CalculationPdfActions({
     });
   }
 
+  function handleSendAnalysis() {
+    setState(null);
+    startTransition(async () => {
+      const result = await sendCalculationAnalysisViaTotalkAction(calculationId);
+      setState(result);
+
+      if (result.ok) {
+        router.refresh();
+      }
+    });
+  }
+
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap gap-2">
@@ -126,6 +144,15 @@ export function CalculationPdfActions({
         >
           <FileDown className="h-4 w-4" />
           {hasPdf ? "Baixar PDF" : "PDF indisponível"}
+        </button>
+        <button
+          type="button"
+          disabled={isPending || !hasPdf}
+          onClick={handleSendAnalysis}
+          className="inline-flex items-center gap-2 rounded-lg border border-teal-200 bg-teal-50 px-3 py-2 text-sm font-semibold text-teal-800 transition hover:bg-teal-100 disabled:cursor-not-allowed disabled:opacity-70"
+        >
+          <Send className="h-4 w-4" />
+          {isPending ? "Enviando..." : "Enviar análise"}
         </button>
       </div>
       {state ? (
