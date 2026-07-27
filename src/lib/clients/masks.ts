@@ -61,7 +61,10 @@ export function formatCnpj(value: string | null | undefined) {
 }
 
 export function formatPhone(value: string | null | undefined) {
-  const digits = onlyDigits(value).slice(0, 11);
+  const rawDigits = onlyDigits(value);
+  const digits = rawDigits
+    .replace(/^55(?=\d{10,11}$)/, "")
+    .slice(0, 11);
 
   if (digits.length <= 2) {
     return digits ? `(${digits}` : "";
@@ -89,7 +92,7 @@ export function formatZipCode(value: string | null | undefined) {
 }
 
 export function isValidPhone(value: string | null | undefined, required = false) {
-  const digits = onlyDigits(value);
+  const digits = onlyDigits(value).replace(/^55(?=\d{10,11}$)/, "");
 
   if (!digits) {
     return !required;
@@ -99,7 +102,7 @@ export function isValidPhone(value: string | null | undefined, required = false)
 }
 
 export function getWhatsAppUrl(value: string | null | undefined) {
-  const digits = onlyDigits(value);
+  const digits = onlyDigits(value).replace(/^55(?=\d{10,11}$)/, "");
 
   if (!digits) {
     return null;

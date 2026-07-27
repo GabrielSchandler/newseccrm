@@ -20,7 +20,7 @@ export function TotalkCalculationImportPanel({
   currentPhone,
   onApply,
 }: TotalkCalculationImportPanelProps) {
-  const [phone, setPhone] = useState(currentPhone ?? "");
+  const [phone, setPhone] = useState(formatPhone(currentPhone ?? ""));
   const [state, setState] = useState<TotalkImportCalculationActionState | null>(
     null,
   );
@@ -29,7 +29,7 @@ export function TotalkCalculationImportPanel({
 
   useEffect(() => {
     if (!phone && currentPhone) {
-      setPhone(currentPhone);
+      setPhone(formatPhone(currentPhone));
     }
   }, [currentPhone, phone]);
 
