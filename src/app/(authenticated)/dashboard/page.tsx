@@ -61,15 +61,13 @@ type PendingPayment = PreSalePayment & {
 
 type CalculationSummary = {
   id: string;
-  pre_sale_id: string | null;
   created_by: string | null;
   created_at: string;
 };
 
-type CalculationPreSaleOwner = {
+type AnalysisUser = {
   id: string;
-  consultant_user_id: string | null;
-  created_by: string | null;
+  label: string;
 };
 
 const timeZone = "America/Sao_Paulo";
@@ -276,25 +274,6 @@ function getPreSaleOwnerId(preSale: ApprovedPreSale) {
   return preSale.consultant_user_id ?? preSale.created_by;
 }
 
-function getCalculationOwnerId(
-  calculation: CalculationSummary,
-  preSaleOwnersById: Map<string, CalculationPreSaleOwner>,
-  visibleConsultantIds: Set<string>,
-) {
-  const preSaleOwner = calculation.pre_sale_id
-    ? preSaleOwnersById.get(calculation.pre_sale_id)
-    : null;
-  const ownerCandidates = [
-    preSaleOwner?.consultant_user_id,
-    calculation.created_by,
-    preSaleOwner?.created_by,
-  ];
-
-  return ownerCandidates.find(
-    (ownerId): ownerId is string => Boolean(ownerId && visibleConsultantIds.has(ownerId)),
-  ) ?? null;
-}
-
 function typeLabel(value: string | null | undefined) {
   return preSaleTypes.find((item) => item.value === value)?.label ?? "Sem tipo";
 }
@@ -444,14 +423,18 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         .order("created_at", { ascending: false }),
       supabase
         .from("financing_calculations")
-        .select("id, pre_sale_id, created_by, created_at")
+        .select("id, created_by, created_at")
         .eq("company_id", companyId)
         .gte("created_at", analysisPeriodStartIso)
         .lt("created_at", analysisPeriodEndIso)
         .order("created_at", { ascending: true }),
     ]);
 
-  const commercialConsultants = ((usersData ?? []) as CommercialUser[])
+  const companyUsers = ((usersData ?? []) as CommercialUser[]).sort((left, right) =>
+    resolveUserDisplayName(left, "").localeCompare(resolveUserDisplayName(right, ""), "pt-BR"),
+  );
+  const usersById = new Map(companyUsers.map((user) => [user.id, user]));
+  const commercialConsultants = companyUsers
     .filter((user) => user.role === "seller" && user.business_area === "commercial")
     .sort((left, right) =>
       resolveUserDisplayName(left, "").localeCompare(
@@ -468,27 +451,6 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
     : commercialConsultants;
   const visibleConsultantIds = new Set(visibleConsultants.map((consultant) => consultant.id));
   const calculations = (calculationsData ?? []) as CalculationSummary[];
-  const calculationPreSaleIds = [
-    ...new Set(
-      calculations
-        .map((calculation) => calculation.pre_sale_id)
-        .filter((preSaleId): preSaleId is string => Boolean(preSaleId)),
-    ),
-  ];
-  const { data: calculationPreSalesData, error: calculationPreSalesError } =
-    calculationPreSaleIds.length
-      ? await supabase
-          .from("pre_sales")
-          .select("id, consultant_user_id, created_by")
-          .eq("company_id", companyId)
-          .in("id", calculationPreSaleIds)
-      : { data: [], error: null };
-  const calculationPreSaleOwnersById = new Map(
-    ((calculationPreSalesData ?? []) as CalculationPreSaleOwner[]).map((preSale) => [
-      preSale.id,
-      preSale,
-    ]),
-  );
   const approvedPreSales = ((preSalesData ?? []) as ApprovedPreSale[]).filter((preSale) =>
     visibleConsultantIds.has(getPreSaleOwnerId(preSale)),
   );
@@ -515,7 +477,6 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   const clientsById = new Map(
     ((clientsData ?? []) as ClientSummary[]).map((client) => [client.id, client]),
   );
-  const usersById = new Map(commercialConsultants.map((user) => [user.id, user]));
   const paymentsByPreSaleId = new Map<string, PreSalePayment[]>();
   const monthlyPaidPaymentsByPreSaleId = new Map<string, PreSalePayment[]>();
 
@@ -629,47 +590,42 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   const consultantSegments = [...consultantBuckets.values()].sort(
     (left, right) => right.value - left.value,
   );
+  const unknownAnalysisUserId = "__unknown_analysis_user__";
+  const analysisUsersById = new Map<string, AnalysisUser>();
   const analysisDates = createDateRange(monthStartYmd, monthEndYmd);
   const analysisCountsByDate = new Map<string, Map<string, number>>();
-  const analysisTotalsByConsultant = new Map<string, number>();
-
-  visibleConsultants.forEach((consultant) => {
-    analysisTotalsByConsultant.set(consultant.id, 0);
-  });
+  const analysisTotalsByUser = new Map<string, number>();
 
   calculations.forEach((calculation) => {
-    const consultantId = getCalculationOwnerId(
-      calculation,
-      calculationPreSaleOwnersById,
-      visibleConsultantIds,
-    );
-
-    if (!consultantId) {
-      return;
-    }
-
     const createdYmd = formatDateTimeToSaoPauloYmd(calculation.created_at);
 
     if (!createdYmd || createdYmd < monthStartYmd || createdYmd > monthEndYmd) {
       return;
     }
 
-    const dateCounts = analysisCountsByDate.get(createdYmd) ?? new Map<string, number>();
-    const currentDateConsultantCount = dateCounts.get(consultantId) ?? 0;
+    const userId = calculation.created_by ?? unknownAnalysisUserId;
+    const user = calculation.created_by ? usersById.get(calculation.created_by) : null;
 
-    dateCounts.set(consultantId, currentDateConsultantCount + 1);
+    if (!analysisUsersById.has(userId)) {
+      analysisUsersById.set(userId, {
+        id: userId,
+        label: user ? resolveUserDisplayName(user, "Sem nome") : "Usuário não informado",
+      });
+    }
+
+    const dateCounts = analysisCountsByDate.get(createdYmd) ?? new Map<string, number>();
+    const currentDateUserCount = dateCounts.get(userId) ?? 0;
+
+    dateCounts.set(userId, currentDateUserCount + 1);
     analysisCountsByDate.set(createdYmd, dateCounts);
-    analysisTotalsByConsultant.set(
-      consultantId,
-      (analysisTotalsByConsultant.get(consultantId) ?? 0) + 1,
-    );
+    analysisTotalsByUser.set(userId, (analysisTotalsByUser.get(userId) ?? 0) + 1);
   });
 
-  const analysisConsultants = visibleConsultants.filter(
-    (consultant) => (analysisTotalsByConsultant.get(consultant.id) ?? 0) > 1,
+  const analysisUsers = [...analysisUsersById.values()].sort((left, right) =>
+    left.label.localeCompare(right.label, "pt-BR"),
   );
-  const analysisGrandTotal = analysisConsultants.reduce(
-    (total, consultant) => total + (analysisTotalsByConsultant.get(consultant.id) ?? 0),
+  const analysisGrandTotal = analysisUsers.reduce(
+    (total, user) => total + (analysisTotalsByUser.get(user.id) ?? 0),
     0,
   );
   const scopeLabel = selectedConsultant
@@ -693,12 +649,6 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
             {calculationsError.message}
           </div>
         ) : null}
-        {calculationPreSalesError ? (
-          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            {calculationPreSalesError.message}
-          </div>
-        ) : null}
-
         <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
           <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
             <div>
@@ -969,12 +919,12 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
                 Análises por dia
               </p>
               <h2 className="mt-2 text-base font-semibold text-slate-950">
-                Simulações feitas por consultor
+                Simulações feitas por usuário
               </h2>
               <p className="mt-1 text-sm text-slate-600">
                 Quantidade de análises criadas entre {formatYmdDate(monthStartYmd)} e{" "}
-                {formatYmdDate(monthEndYmd)}. Sao exibidos apenas consultores com
-                pelo menos 2 análises no período.
+                {formatYmdDate(monthEndYmd)}. São exibidos todos os usuários que
+                criaram pelo menos 1 análise no período.
               </p>
             </div>
             <div className="rounded-lg border border-teal-100 bg-teal-50 px-4 py-3 text-sm">
@@ -985,7 +935,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
             </div>
           </div>
 
-          {analysisConsultants.length ? (
+          {analysisUsers.length ? (
             <div className="overflow-x-auto">
               <table className="w-full min-w-[760px] border-collapse text-left">
                 <thead className="bg-slate-50 text-xs uppercase tracking-[0.08em] text-slate-500">
@@ -993,12 +943,12 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
                     <th className="sticky left-0 z-10 min-w-[132px] bg-slate-50 px-5 py-3 font-semibold">
                       Data
                     </th>
-                    {analysisConsultants.map((consultant) => (
+                    {analysisUsers.map((user) => (
                       <th
-                        key={consultant.id}
+                        key={user.id}
                         className="min-w-[150px] border-l border-slate-100 px-4 py-3 text-center font-semibold"
                       >
-                        {resolveUserDisplayName(consultant, "Sem nome")}
+                        {user.label}
                       </th>
                     ))}
                     <th className="sticky right-0 z-10 min-w-[104px] border-l border-slate-200 bg-slate-100 px-4 py-3 text-center font-semibold text-slate-700">
@@ -1009,9 +959,9 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
                 <tbody className="divide-y divide-slate-100">
                   {analysisDates.map((date) => {
                     const dateCounts = analysisCountsByDate.get(date);
-                    const dateTotal = analysisConsultants.reduce(
-                      (total, consultant) =>
-                        total + (dateCounts?.get(consultant.id) ?? 0),
+                    const dateTotal = analysisUsers.reduce(
+                      (total, user) =>
+                        total + (dateCounts?.get(user.id) ?? 0),
                       0,
                     );
 
@@ -1023,10 +973,10 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
                         <th className="sticky left-0 z-10 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition group-hover:bg-teal-50">
                           {formatYmdDate(date)}
                         </th>
-                        {analysisConsultants.map((consultant) => (
+                        {analysisUsers.map((user) => (
                           <AnalysisCountCell
-                            key={consultant.id}
-                            value={dateCounts?.get(consultant.id) ?? 0}
+                            key={user.id}
+                            value={dateCounts?.get(user.id) ?? 0}
                           />
                         ))}
                         <td className="sticky right-0 z-10 border-l border-slate-200 bg-slate-50 px-4 py-3 text-center text-sm font-semibold text-slate-950 transition group-hover:bg-teal-50">
@@ -1039,12 +989,12 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
                 <tfoot>
                   <tr className="border-t border-slate-200 bg-slate-100">
                     <th className="sticky left-0 z-10 bg-slate-100 px-5 py-3 text-sm font-semibold text-slate-950">
-                      Total consultor
+                      Total usuário
                     </th>
-                    {analysisConsultants.map((consultant) => (
+                    {analysisUsers.map((user) => (
                       <AnalysisCountCell
-                        key={consultant.id}
-                        value={analysisTotalsByConsultant.get(consultant.id) ?? 0}
+                        key={user.id}
+                        value={analysisTotalsByUser.get(user.id) ?? 0}
                         strong
                       />
                     ))}
@@ -1057,7 +1007,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
             </div>
           ) : (
             <div className="border-t border-slate-100 px-5 py-6 text-sm text-slate-500">
-              Nenhum consultor comercial teve mais de 1 análise no período filtrado.
+              Nenhum usuário criou análise no período filtrado.
             </div>
           )}
         </section>
