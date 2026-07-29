@@ -61,8 +61,15 @@ type PendingPayment = PreSalePayment & {
 
 type CalculationSummary = {
   id: string;
+  pre_sale_id: string | null;
   created_by: string | null;
   created_at: string;
+};
+
+type CalculationPreSaleOwner = {
+  id: string;
+  consultant_user_id: string | null;
+  created_by: string | null;
 };
 
 const timeZone = "America/Sao_Paulo";
@@ -269,6 +276,25 @@ function getPreSaleOwnerId(preSale: ApprovedPreSale) {
   return preSale.consultant_user_id ?? preSale.created_by;
 }
 
+function getCalculationOwnerId(
+  calculation: CalculationSummary,
+  preSaleOwnersById: Map<string, CalculationPreSaleOwner>,
+  visibleConsultantIds: Set<string>,
+) {
+  const preSaleOwner = calculation.pre_sale_id
+    ? preSaleOwnersById.get(calculation.pre_sale_id)
+    : null;
+  const ownerCandidates = [
+    preSaleOwner?.consultant_user_id,
+    calculation.created_by,
+    preSaleOwner?.created_by,
+  ];
+
+  return ownerCandidates.find(
+    (ownerId): ownerId is string => Boolean(ownerId && visibleConsultantIds.has(ownerId)),
+  ) ?? null;
+}
+
 function typeLabel(value: string | null | undefined) {
   return preSaleTypes.find((item) => item.value === value)?.label ?? "Sem tipo";
 }
@@ -418,7 +444,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         .order("created_at", { ascending: false }),
       supabase
         .from("financing_calculations")
-        .select("id, created_by, created_at")
+        .select("id, pre_sale_id, created_by, created_at")
         .eq("company_id", companyId)
         .gte("created_at", analysisPeriodStartIso)
         .lt("created_at", analysisPeriodEndIso)
@@ -441,6 +467,28 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
     ? [selectedConsultant]
     : commercialConsultants;
   const visibleConsultantIds = new Set(visibleConsultants.map((consultant) => consultant.id));
+  const calculations = (calculationsData ?? []) as CalculationSummary[];
+  const calculationPreSaleIds = [
+    ...new Set(
+      calculations
+        .map((calculation) => calculation.pre_sale_id)
+        .filter((preSaleId): preSaleId is string => Boolean(preSaleId)),
+    ),
+  ];
+  const { data: calculationPreSalesData, error: calculationPreSalesError } =
+    calculationPreSaleIds.length
+      ? await supabase
+          .from("pre_sales")
+          .select("id, consultant_user_id, created_by")
+          .eq("company_id", companyId)
+          .in("id", calculationPreSaleIds)
+      : { data: [], error: null };
+  const calculationPreSaleOwnersById = new Map(
+    ((calculationPreSalesData ?? []) as CalculationPreSaleOwner[]).map((preSale) => [
+      preSale.id,
+      preSale,
+    ]),
+  );
   const approvedPreSales = ((preSalesData ?? []) as ApprovedPreSale[]).filter((preSale) =>
     visibleConsultantIds.has(getPreSaleOwnerId(preSale)),
   );
@@ -589,10 +637,14 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
     analysisTotalsByConsultant.set(consultant.id, 0);
   });
 
-  ((calculationsData ?? []) as CalculationSummary[]).forEach((calculation) => {
-    const consultantId = calculation.created_by;
+  calculations.forEach((calculation) => {
+    const consultantId = getCalculationOwnerId(
+      calculation,
+      calculationPreSaleOwnersById,
+      visibleConsultantIds,
+    );
 
-    if (!consultantId || !visibleConsultantIds.has(consultantId)) {
+    if (!consultantId) {
       return;
     }
 
@@ -639,6 +691,11 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         {calculationsError ? (
           <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             {calculationsError.message}
+          </div>
+        ) : null}
+        {calculationPreSalesError ? (
+          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {calculationPreSalesError.message}
           </div>
         ) : null}
 
@@ -959,8 +1016,11 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
                     );
 
                     return (
-                      <tr key={date} className="transition hover:bg-slate-50">
-                        <th className="sticky left-0 z-10 bg-white px-5 py-3 text-sm font-semibold text-slate-700">
+                      <tr
+                        key={date}
+                        className="group relative transition hover:bg-teal-50/40 hover:shadow-[inset_0_0_0_1px_rgba(15,118,110,0.45)]"
+                      >
+                        <th className="sticky left-0 z-10 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition group-hover:bg-teal-50">
                           {formatYmdDate(date)}
                         </th>
                         {analysisConsultants.map((consultant) => (
@@ -969,7 +1029,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
                             value={dateCounts?.get(consultant.id) ?? 0}
                           />
                         ))}
-                        <td className="sticky right-0 z-10 border-l border-slate-200 bg-slate-50 px-4 py-3 text-center text-sm font-semibold text-slate-950">
+                        <td className="sticky right-0 z-10 border-l border-slate-200 bg-slate-50 px-4 py-3 text-center text-sm font-semibold text-slate-950 transition group-hover:bg-teal-50">
                           {numberFormatter.format(dateTotal)}
                         </td>
                       </tr>
