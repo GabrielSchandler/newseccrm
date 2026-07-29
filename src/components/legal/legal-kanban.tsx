@@ -18,6 +18,7 @@ import {
 } from "@/components/email/send-client-email-modal";
 import { LegalStageSelect } from "@/components/legal/legal-stage-select";
 import { LegalWorkflowEditor } from "@/components/legal/legal-workflow-editor";
+import { PreSaleSearchMatchBadges } from "@/components/pre-sales/pre-sale-search-match-badges";
 import {
   getPreSaleStatusLabel,
   PreSalesStatusBadge,
@@ -33,11 +34,13 @@ import {
   type LegalWorkflowStageDefinition,
 } from "@/lib/legal/workflow";
 import { formatCurrency, formatUserName } from "@/lib/pre-sales/formatters";
+import { getPreSaleSearchMatches } from "@/lib/pre-sales/search";
 import type { DocumentTemplate, GeneratedDocument } from "@/types/document";
 import type { EmailTemplate } from "@/types/email";
 import type {
   ClientOption,
   PreSale,
+  PreSaleDebtHolder,
   PreSaleFinancialCase,
   PreSaleStatus,
   UserProfileOption,
@@ -52,6 +55,7 @@ export type LegalBoardPreSale = PreSale & {
   currentLegalStageId: string;
   stageUpdatedAt: string;
   financialCase: PreSaleFinancialCase | null;
+  debtHolder: Pick<PreSaleDebtHolder, "full_name" | "cpf"> | null;
   clientDocuments: EmailAttachmentOption[];
   generatedDocuments: GeneratedDocument[];
 };
@@ -63,6 +67,7 @@ type LegalKanbanProps = {
   legalAdmins: UserProfileOption[];
   legalConsultants: UserProfileOption[];
   currentUserId: string;
+  initialSearchTerm?: string;
   stages: LegalWorkflowStageDefinition[];
   canEditWorkflow: boolean;
   workflowSchemaReady: boolean;
@@ -140,6 +145,7 @@ export function LegalKanban({
   legalAdmins,
   legalConsultants,
   currentUserId,
+  initialSearchTerm = "",
   stages,
   canEditWorkflow,
   workflowSchemaReady,
@@ -158,6 +164,7 @@ export function LegalKanban({
   const [message, setMessage] = useState<string | null>(null);
   const [messageTone, setMessageTone] = useState<"success" | "error">("success");
   const [isPending, startTransition] = useTransition();
+  const [searchTerm, setSearchTerm] = useState(initialSearchTerm);
   const [statusFilter, setStatusFilter] = useState<LegalStatusFilter>("active");
   const [adminFilter, setAdminFilter] = useState<string>(() =>
     legalAdmins.some((admin) => admin.id === currentUserId) &&
@@ -206,10 +213,13 @@ export function LegalKanban({
           : consultantFilter === "none"
             ? !preSale.legalConsultantUserId
             : preSale.legalConsultantUserId === consultantFilter;
+      const matchesSearch =
+        !searchTerm.trim() ||
+        getPreSaleSearchMatches(searchTerm, preSale.client, preSale.debtHolder).length > 0;
 
-      return matchesStatus && matchesAdmin && matchesConsultant;
+      return matchesStatus && matchesAdmin && matchesConsultant && matchesSearch;
     });
-  }, [adminFilter, consultantFilter, preSales, statusFilter]);
+  }, [adminFilter, consultantFilter, preSales, searchTerm, statusFilter]);
 
   function handleDrop(stage: string) {
     if (!draggedId) {
@@ -422,7 +432,23 @@ export function LegalKanban({
                   A esteira abre filtrada para o responsável logado quando houver vínculo. Se precisar, você pode trocar para outro responsável, ver todos ou localizar clientes sem responsável definido.
                 </p>
               </div>
-              <div className="grid w-full gap-3 md:max-w-4xl md:grid-cols-3">
+              <div className="grid w-full gap-3 md:max-w-6xl md:grid-cols-2 xl:grid-cols-4">
+                <div>
+                  <label
+                    htmlFor="legal-search-filter"
+                    className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500"
+                  >
+                    Buscar cliente/financiado
+                  </label>
+                  <input
+                    id="legal-search-filter"
+                    type="search"
+                    value={searchTerm}
+                    onChange={(event) => setSearchTerm(event.target.value)}
+                    placeholder="Nome ou CPF"
+                    className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
+                  />
+                </div>
                 <div>
                   <label
                     htmlFor="legal-status-filter"
@@ -590,6 +616,11 @@ export function LegalKanban({
                       preSale.generatedDocuments,
                       stageTemplates,
                     );
+                    const searchMatches = getPreSaleSearchMatches(
+                      searchTerm,
+                      preSale.client,
+                      preSale.debtHolder,
+                    );
 
                     return (
                       <article
@@ -622,6 +653,7 @@ export function LegalKanban({
                             <h3 className="text-sm font-semibold text-slate-950">
                               {displayValue(preSale.client?.full_name ?? null)}
                             </h3>
+                            <PreSaleSearchMatchBadges matches={searchMatches} />
                             <p className="mt-1 text-xs text-slate-500">
                               {stageMeta.shortLabel} • {getStageAgeLabel(preSale.stageUpdatedAt)}
                             </p>

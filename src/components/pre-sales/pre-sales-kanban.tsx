@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { WhatsAppLink } from "@/components/clients/whatsapp-link";
 import { PreSaleDeleteButton } from "@/components/pre-sales/pre-sale-delete-button";
+import { PreSaleSearchMatchBadges } from "@/components/pre-sales/pre-sale-search-match-badges";
 import { ChangeNoteModal } from "@/components/shared/change-note-modal";
 import {
   formatCurrency,
@@ -160,6 +161,7 @@ export function PreSalesKanban({ preSales, canDelete = false }: PreSalesKanbanPr
                     >
                       {preSale.client?.full_name ?? "Cliente não encontrado"}
                     </Link>
+                    <PreSaleSearchMatchBadges matches={preSale.searchMatches} />
                     <p className="mt-2 text-sm font-medium text-slate-700">
                       {formatPreSaleType(preSale.pre_sale_type)}
                     </p>

@@ -151,6 +151,15 @@ export type PreSaleWithRelations = PreSale & {
   client: ClientOption | null;
   consultant: UserProfileOption | null;
   creator?: UserProfileOption | null;
+  debtHolder?: Pick<PreSaleDebtHolder, "full_name" | "cpf"> | null;
+  searchMatches?: PreSaleSearchMatch[];
+};
+
+export type PreSaleSearchMatch = {
+  source: "client" | "debt_holder";
+  field: "name" | "cpf";
+  label: string;
+  value: string | null;
 };
 
 export const preSalePipelineStatuses: Array<{

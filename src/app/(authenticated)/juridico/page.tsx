@@ -12,6 +12,7 @@ import type { EmailTemplate } from "@/types/email";
 import type {
   ClientOption,
   PreSale,
+  PreSaleDebtHolder,
   PreSaleFinancialCase,
   UserProfileOption,
 } from "@/types/pre-sale";
@@ -20,7 +21,14 @@ function canUseLegalArea(role: string | null, businessArea: string) {
   return role === "admin" || role === "manager" || (role === "seller" && businessArea === "legal");
 }
 
-export default async function JuridicoPage() {
+type JuridicoPageProps = {
+  searchParams?: Promise<{
+    q?: string;
+  }>;
+};
+
+export default async function JuridicoPage({ searchParams }: JuridicoPageProps) {
+  const params = (await searchParams) ?? {};
   const {
     supabase,
     companyId,
@@ -85,6 +93,7 @@ export default async function JuridicoPage() {
     { data: generatedDocumentsData },
     { data: clientDocumentsData },
     { data: financialCasesData },
+    { data: debtHoldersData },
     { data: emailTemplatesData },
   ] = await Promise.all([
     generatedPreSaleIds.length
@@ -111,6 +120,12 @@ export default async function JuridicoPage() {
       ? supabase
           .from("pre_sale_financial_cases")
           .select("*")
+          .in("pre_sale_id", generatedPreSaleIds)
+      : Promise.resolve({ data: [] }),
+    generatedPreSaleIds.length
+      ? supabase
+          .from("pre_sale_debt_holders")
+          .select("pre_sale_id, full_name, cpf")
           .in("pre_sale_id", generatedPreSaleIds)
       : Promise.resolve({ data: [] }),
     adminClient
@@ -156,6 +171,10 @@ export default async function JuridicoPage() {
     file_size: number;
   }>;
   const financialCases = (financialCasesData ?? []) as PreSaleFinancialCase[];
+  const debtHolders =
+    (debtHoldersData ?? []) as Array<
+      Pick<PreSaleDebtHolder, "pre_sale_id" | "full_name" | "cpf">
+    >;
   const workflowSchemaReady = !workflowStagesError && Boolean(workflowStagesData?.length);
   const workflowStages = workflowSchemaReady
     ? (workflowStagesData ?? []).map(mapLegalWorkflowStageRow)
@@ -187,6 +206,8 @@ export default async function JuridicoPage() {
       financialCase:
         financialCases.find((financialCase) => financialCase.pre_sale_id === preSale.id) ??
         null,
+      debtHolder:
+        debtHolders.find((debtHolder) => debtHolder.pre_sale_id === preSale.id) ?? null,
       clientDocuments: clientDocuments.filter(
         (document) => document.client_id === preSale.client_id,
       ),
@@ -215,6 +236,7 @@ export default async function JuridicoPage() {
           legalAdmins={legalAdmins}
           legalConsultants={legalConsultants}
           currentUserId={userProfileId}
+          initialSearchTerm={(params.q ?? "").trim()}
           stages={workflowStages}
           canEditWorkflow={canEditLegalWorkflow}
           workflowSchemaReady={workflowSchemaReady}

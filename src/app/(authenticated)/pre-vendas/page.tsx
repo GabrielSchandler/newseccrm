@@ -1,4 +1,4 @@
-import { Plus } from "lucide-react";
+import { Plus, Search } from "lucide-react";
 import Link from "next/link";
 import { ClientToast } from "@/components/clients/client-toast";
 import { PageHeader } from "@/components/layout/page-header";
@@ -6,10 +6,12 @@ import { PreSalesKanban } from "@/components/pre-sales/pre-sales-kanban";
 import { PreSalesList } from "@/components/pre-sales/pre-sales-list";
 import { getCurrentUserContext } from "@/lib/auth/current-user";
 import { canAccessAllPreSales, canCreatePreSales } from "@/lib/pre-sales/access";
+import { getPreSaleSearchMatches } from "@/lib/pre-sales/search";
 import { resolveUserDisplayName } from "@/lib/users/account";
 import type {
   ClientOption,
   PreSale,
+  PreSaleDebtHolder,
   PreSaleWithRelations,
   UserProfileOption,
 } from "@/types/pre-sale";
@@ -20,6 +22,7 @@ const clientOptionSelect =
 type PreVendasPageProps = {
   searchParams: Promise<{
     consultant?: string;
+    q?: string;
     success?: string;
   }>;
 };
@@ -28,20 +31,32 @@ function attachRelations(
   preSales: PreSale[],
   clients: ClientOption[],
   consultants: UserProfileOption[],
+  debtHolders: Array<Pick<PreSaleDebtHolder, "pre_sale_id" | "full_name" | "cpf">>,
+  searchTerm: string,
 ): PreSaleWithRelations[] {
   const clientsMap = new Map(clients.map((client) => [client.id, client]));
   const consultantsMap = new Map(
     consultants.map((consultant) => [consultant.id, consultant]),
   );
+  const debtHoldersMap = new Map(
+    debtHolders.map((debtHolder) => [debtHolder.pre_sale_id, debtHolder]),
+  );
 
-  return preSales.map((preSale) => ({
-    ...preSale,
-    client: clientsMap.get(preSale.client_id) ?? null,
-    consultant:
-      consultantsMap.get(preSale.consultant_user_id ?? "") ??
-      consultantsMap.get(preSale.created_by) ??
-      null,
-  }));
+  return preSales.map((preSale) => {
+    const client = clientsMap.get(preSale.client_id) ?? null;
+    const debtHolder = debtHoldersMap.get(preSale.id) ?? null;
+
+    return {
+      ...preSale,
+      client,
+      debtHolder,
+      searchMatches: getPreSaleSearchMatches(searchTerm, client, debtHolder),
+      consultant:
+        consultantsMap.get(preSale.consultant_user_id ?? "") ??
+        consultantsMap.get(preSale.created_by) ??
+        null,
+    };
+  });
 }
 
 export default async function PreVendasPage({ searchParams }: PreVendasPageProps) {
@@ -51,6 +66,7 @@ export default async function PreVendasPage({ searchParams }: PreVendasPageProps
   const canDeletePreSales = role === "admin" || role === "manager";
   const canCreatePreSale = canCreatePreSales(role, businessArea);
   const canFilterCommercialConsultant = role === "admin" || role === "manager";
+  const searchTerm = (params.q ?? "").trim();
   const { data: consultantsData } = await supabase
     .from("user_profiles")
     .select("id, full_name, nickname, username, email, role, business_area, is_active")
@@ -89,10 +105,7 @@ export default async function PreVendasPage({ searchParams }: PreVendasPageProps
     );
   }
 
-  const [
-    { data: preSalesData, error },
-    { data: clientsData },
-  ] = await Promise.all([
+  const [{ data: preSalesData, error }, { data: clientsData }] = await Promise.all([
     preSalesQuery,
     supabase
       .from("clients")
@@ -100,12 +113,35 @@ export default async function PreVendasPage({ searchParams }: PreVendasPageProps
       .eq("company_id", companyId),
   ]);
 
+  const preSaleRows = (preSalesData ?? []) as PreSale[];
+  const { data: debtHoldersData } = preSaleRows.length
+    ? await supabase
+        .from("pre_sale_debt_holders")
+        .select("pre_sale_id, full_name, cpf")
+        .in(
+          "pre_sale_id",
+          preSaleRows.map((preSale) => preSale.id),
+        )
+    : { data: [] };
   const clients = (clientsData ?? []) as ClientOption[];
+  const debtHolders =
+    (debtHoldersData ?? []) as Array<
+      Pick<PreSaleDebtHolder, "pre_sale_id" | "full_name" | "cpf">
+    >;
   const consultants = users.filter((consultant) =>
     canAccessAllPreSales(role, businessArea) ? true : consultant.id === userProfileId,
   );
-  const preSales = attachRelations((preSalesData ?? []) as PreSale[], clients, consultants).filter(
-    (preSale) => preSale.status !== "inativo" && preSale.status !== "distrato",
+  const preSales = attachRelations(
+    preSaleRows,
+    clients,
+    consultants,
+    debtHolders,
+    searchTerm,
+  ).filter(
+    (preSale) =>
+      preSale.status !== "inativo" &&
+      preSale.status !== "distrato" &&
+      (!searchTerm || Boolean(preSale.searchMatches?.length)),
   );
 
   const successMessage =
@@ -120,8 +156,28 @@ export default async function PreVendasPage({ searchParams }: PreVendasPageProps
       <div className="space-y-6 p-6">
         {successMessage ? <ClientToast message={successMessage} /> : null}
         <div className="flex flex-col gap-4 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-          {canFilterCommercialConsultant ? (
-            <form className="grid gap-3 md:grid-cols-[minmax(240px,420px)_auto]">
+          <form
+            className={`grid gap-3 ${
+              canFilterCommercialConsultant
+                ? "lg:grid-cols-[minmax(260px,1fr)_minmax(240px,420px)_auto_auto]"
+                : "lg:grid-cols-[minmax(260px,1fr)_auto_auto]"
+            }`}
+          >
+            <label className="relative block">
+              <span className="sr-only">Buscar por cliente ou financiado</span>
+              <Search
+                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+                aria-hidden="true"
+              />
+              <input
+                type="search"
+                name="q"
+                defaultValue={searchTerm}
+                placeholder="Buscar por nome ou CPF do cliente/financiado"
+                className="w-full rounded-lg border border-slate-300 bg-white py-2.5 pl-9 pr-3 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
+              />
+            </label>
+            {canFilterCommercialConsultant ? (
               <select
                 name="consultant"
                 defaultValue={selectedConsultantId}
@@ -134,14 +190,22 @@ export default async function PreVendasPage({ searchParams }: PreVendasPageProps
                   </option>
                 ))}
               </select>
-              <button
-                type="submit"
-                className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+            ) : null}
+            <button
+              type="submit"
+              className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+            >
+              Filtrar
+            </button>
+            {searchTerm || selectedConsultantId ? (
+              <Link
+                href="/pre-vendas"
+                className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
               >
-                Filtrar
-              </button>
-            </form>
-          ) : null}
+                Limpar
+              </Link>
+            ) : null}
+          </form>
           {canCreatePreSale ? (
             <div>
               <Link

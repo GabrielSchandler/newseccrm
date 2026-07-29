@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { WhatsAppLink } from "@/components/clients/whatsapp-link";
 import { PreSaleDeleteButton } from "@/components/pre-sales/pre-sale-delete-button";
+import { PreSaleSearchMatchBadges } from "@/components/pre-sales/pre-sale-search-match-badges";
 import { ChangeNoteModal } from "@/components/shared/change-note-modal";
 import { displayCpf } from "@/lib/clients/formatters";
 import {
@@ -104,6 +105,7 @@ export function PreSalesList({ preSales, canDelete = false }: PreSalesListProps)
                   <div className="mt-1 text-xs text-slate-500">
                     {displayCpf(preSale.client?.cpf ?? null)}
                   </div>
+                  <PreSaleSearchMatchBadges matches={preSale.searchMatches} />
                 </td>
                 <td className="px-5 py-4 text-slate-700">
                   {formatPreSaleType(preSale.pre_sale_type)}
