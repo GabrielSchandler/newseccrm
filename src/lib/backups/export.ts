@@ -351,6 +351,12 @@ function collectStorageRefs(tables: ExportedTable[]) {
       (row as { pdf_storage_path?: unknown }).pdf_storage_path,
       "financing_calculations.pdf_storage_path",
     );
+    addStorageRef(
+      refs,
+      calculationReportsBucketName,
+      (row as { summary_image_storage_path?: unknown }).summary_image_storage_path,
+      "financing_calculations.summary_image_storage_path",
+    );
   }
 
   for (const row of clientDocumentRows) {

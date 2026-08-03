@@ -286,6 +286,7 @@ export default async function CalculosPage({ searchParams }: CalculosPageProps) 
                           <CalculationPdfActions
                             calculationId={calculation.id}
                             hasPdf={Boolean(calculation.pdf_storage_path)}
+                            variant="compact"
                           />
                         </div>
                       </td>

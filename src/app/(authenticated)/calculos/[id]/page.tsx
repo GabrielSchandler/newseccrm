@@ -20,7 +20,7 @@ import { resolveUserDisplayName } from "@/lib/users/account";
 
 type CalculoPageProps = {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ success?: string }>;
+  searchParams: Promise<{ success?: string; artifacts?: string }>;
 };
 
 function DetailSection({
@@ -90,9 +90,13 @@ export default async function CalculoPage({
   );
   const successMessage =
     queryParams.success === "created"
-      ? "Simulação salva com sucesso."
+      ? queryParams.artifacts === "generated"
+        ? "Simulação salva e arquivos gerados com sucesso."
+        : "Simulação salva com sucesso."
       : queryParams.success === "updated"
-        ? "Simulação atualizada com sucesso."
+        ? queryParams.artifacts === "generated"
+          ? "Simulação atualizada e arquivos gerados com sucesso."
+          : "Simulação atualizada com sucesso."
         : null;
 
   return (
@@ -103,6 +107,13 @@ export default async function CalculoPage({
       />
       <div className="space-y-6 p-6">
         {successMessage ? <ClientToast message={successMessage} /> : null}
+        {queryParams.artifacts === "failed" ? (
+          <div className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            A simulação foi salva, mas os arquivos não puderam ser gerados
+            automaticamente. Use o botão <strong>Gerar arquivos novamente</strong>
+            abaixo.
+          </div>
+        ) : null}
 
         <div className="flex flex-wrap gap-3">
           <Link
@@ -258,10 +269,12 @@ export default async function CalculoPage({
         </DetailSection>
 
         <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="text-base font-semibold text-slate-950">PDF do cliente</h2>
+          <h2 className="text-base font-semibold text-slate-950">
+            Arquivos da simulação
+          </h2>
           <p className="mt-1 text-sm leading-6 text-slate-600">
-            Gere a simulação de análise de correção de juros no bucket privado e baixe por signed URL
-            temporária.
+            O relatório completo em PDF e o resumo visual ficam protegidos no
+            armazenamento privado e são liberados por links temporários.
           </p>
           <div className="mt-5">
             <CalculationPdfActions

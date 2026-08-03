@@ -10,6 +10,7 @@ import {
 } from "@/lib/calculations/financing-calculation";
 import { parseBrazilianDecimalInput } from "@/lib/calculations/currency";
 import { CalculationReportPdf } from "@/lib/calculations/report-pdf";
+import { generateCalculationSummaryImage } from "@/lib/calculations/summary-image";
 import {
   financingCalculationFormSchema,
   type FinancingCalculationPayload,
@@ -19,9 +20,11 @@ import {
   assertClientBelongsToCompany,
   assertPreSaleBelongsToCompany,
   buildCalculationReportPath,
+  buildCalculationSummaryImagePath,
   calculationReportsBucket,
   canManageCalculations,
   createCalculationPdfFileName,
+  createCalculationSummaryImageFileName,
 } from "@/lib/calculations/service";
 
 export type CalculationActionState = {
@@ -287,6 +290,17 @@ function isMissingProtocolColumnError(error: { code?: string; message?: string }
   return error?.code === "42703" || message.includes("protocol_number");
 }
 
+function isMissingSummaryImageColumnError(
+  error: { code?: string; message?: string } | null,
+) {
+  const message = error?.message?.toLowerCase() ?? "";
+
+  return (
+    message.includes("summary_image_storage_path") ||
+    message.includes("summary_image_file_name")
+  );
+}
+
 function inferImageMimeType(filePath: string) {
   const normalizedPath = filePath.toLowerCase();
 
@@ -432,7 +446,7 @@ async function ensureCalculationProtocolNumber(
   return buildFallbackProtocolNumber(companyId, supabase);
 }
 
-async function calculationPdfExists(filePath: string) {
+async function calculationArtifactExists(filePath: string) {
   const adminClient = createAdminClient();
   const pathParts = filePath.split("/");
   const fileName = pathParts.pop();
@@ -557,10 +571,15 @@ export async function createFinancingCalculationAction(
       },
     });
 
+    const artifactResult = await generateCalculationPdfAction(calculationId);
+    const artifactsStatus = artifactResult.ok ? "generated" : "failed";
+
     return {
       ok: true,
-      message: "Simulação salva com sucesso.",
-      redirectTo: `/calculos/${calculationId}?success=created`,
+      message: artifactResult.ok
+        ? "Simulação salva e arquivos gerados com sucesso."
+        : `Simulação salva, mas os arquivos não puderam ser gerados automaticamente. ${artifactResult.message}`,
+      redirectTo: `/calculos/${calculationId}?success=created&artifacts=${artifactsStatus}`,
     };
   } catch (error) {
     return friendlyError(
@@ -652,10 +671,15 @@ export async function updateFinancingCalculationAction(
       },
     });
 
+    const artifactResult = await generateCalculationPdfAction(calculationId);
+    const artifactsStatus = artifactResult.ok ? "generated" : "failed";
+
     return {
       ok: true,
-      message: "Simulação atualizada com sucesso.",
-      redirectTo: `/calculos/${calculationId}?success=updated`,
+      message: artifactResult.ok
+        ? "Simulação atualizada e arquivos gerados com sucesso."
+        : `Simulação atualizada, mas os arquivos não puderam ser gerados automaticamente. ${artifactResult.message}`,
+      redirectTo: `/calculos/${calculationId}?success=updated&artifacts=${artifactsStatus}`,
     };
   } catch (error) {
     return friendlyError(
@@ -679,10 +703,18 @@ export async function deleteFinancingCalculationAction(
     const calculation = await assertCalculationAccess(calculationId);
     const adminClient = createAdminClient();
 
-    if (calculation.pdf_storage_path) {
+    const artifactPaths = [
+      calculation.pdf_storage_path,
+      calculation.summary_image_storage_path ??
+        (calculation.pdf_storage_path
+          ? buildCalculationSummaryImagePath(companyId, calculationId)
+          : null),
+    ].filter((path): path is string => Boolean(path));
+
+    if (artifactPaths.length) {
       const { error: storageError } = await adminClient.storage
         .from(calculationReportsBucket)
-        .remove([calculation.pdf_storage_path]);
+        .remove(artifactPaths);
 
       if (
         storageError &&
@@ -714,6 +746,7 @@ export async function deleteFinancingCalculationAction(
         client_id: calculation.client_id,
         pre_sale_id: calculation.pre_sale_id,
         pdf_storage_path: calculation.pdf_storage_path,
+        summary_image_storage_path: calculation.summary_image_storage_path,
       },
     });
 
@@ -775,45 +808,97 @@ export async function generateCalculationPdfAction(
     const companyLogoSrc = await resolveCompanyLogoDataUrl(
       stringFromUnknown(companyRecord?.logo_path) || null,
     );
-    const filePath = buildCalculationReportPath(companyId, calculationId);
-    const pdfBuffer = await renderToBuffer(
-      CalculationReportPdf({
-        calculation,
-        companyName: resolveCompanyDisplayName(companyRecord),
-        companyDocument: stringFromUnknown(companyRecord?.cnpj) || null,
-        companyLogoSrc,
-        protocolNumber,
-        companyPhone: stringFromUnknown(companyRecord?.phone) || null,
-        companyWebsite: stringFromUnknown(companyRecord?.website) || null,
-        companyAddress: resolveCompanyFooterAddress(companyRecord),
-        simulationGuarantee: resolveSimulationGuarantee(companyRecord),
-      }),
+    const companyName = resolveCompanyDisplayName(companyRecord);
+    const companyPhone = stringFromUnknown(companyRecord?.phone) || null;
+    const companyWebsite = stringFromUnknown(companyRecord?.website) || null;
+    const companyAddress = resolveCompanyFooterAddress(companyRecord);
+    const pdfFilePath = buildCalculationReportPath(companyId, calculationId);
+    const summaryImageFilePath = buildCalculationSummaryImagePath(
+      companyId,
+      calculationId,
     );
-    const fileName =
+    const pdfFileName =
       calculation.pdf_file_name ??
       createCalculationPdfFileName(resolveCalculationClientLabel(calculation.client_name));
-    const { error: uploadError } = await adminClient.storage
-      .from(calculationReportsBucket)
-      .upload(filePath, pdfBuffer, {
-        contentType: "application/pdf",
-        upsert: true,
-    });
+    const summaryImageFileName =
+      calculation.summary_image_file_name ??
+      createCalculationSummaryImageFileName(
+        resolveCalculationClientLabel(calculation.client_name),
+      );
+    const [pdfBuffer, summaryImageBuffer] = await Promise.all([
+      renderToBuffer(
+        CalculationReportPdf({
+          calculation,
+          companyName,
+          companyDocument: stringFromUnknown(companyRecord?.cnpj) || null,
+          companyLogoSrc,
+          protocolNumber,
+          companyPhone,
+          companyWebsite,
+          companyAddress,
+          simulationGuarantee: resolveSimulationGuarantee(companyRecord),
+        }),
+      ),
+      generateCalculationSummaryImage({
+        calculation,
+        companyName,
+        companyLogoSrc,
+        protocolNumber,
+        companyPhone,
+        companyWebsite,
+        companyAddress,
+      }),
+    ]);
+    const [pdfUpload, summaryImageUpload] = await Promise.all([
+      adminClient.storage
+        .from(calculationReportsBucket)
+        .upload(pdfFilePath, pdfBuffer, {
+          contentType: "application/pdf",
+          upsert: true,
+        }),
+      adminClient.storage
+        .from(calculationReportsBucket)
+        .upload(summaryImageFilePath, summaryImageBuffer, {
+          contentType: "image/png",
+          upsert: true,
+        }),
+    ]);
+    const uploadError = pdfUpload.error ?? summaryImageUpload.error;
 
     if (uploadError) {
       return friendlyError(normalizeCalculationErrorMessage(uploadError.message));
     }
 
-    const { error: updateError } = await adminClient
+    const artifactRecord = {
+      pdf_storage_path: pdfFilePath,
+      pdf_file_name: pdfFileName,
+      summary_image_storage_path: summaryImageFilePath,
+      summary_image_file_name: summaryImageFileName,
+      status: "pdf_gerado" as const,
+      updated_by: userProfileId,
+      updated_at: new Date().toISOString(),
+    };
+    let { error: updateError } = await adminClient
       .from("financing_calculations")
-      .update({
-        pdf_storage_path: filePath,
-        pdf_file_name: fileName,
-        status: "pdf_gerado",
-        updated_by: userProfileId,
-        updated_at: new Date().toISOString(),
-      })
+      .update(artifactRecord)
       .eq("id", calculationId)
       .eq("company_id", companyId);
+
+    if (isMissingSummaryImageColumnError(updateError)) {
+      const fallbackUpdate = await adminClient
+        .from("financing_calculations")
+        .update({
+          pdf_storage_path: pdfFilePath,
+          pdf_file_name: pdfFileName,
+          status: "pdf_gerado",
+          updated_by: userProfileId,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", calculationId)
+        .eq("company_id", companyId);
+
+      updateError = fallbackUpdate.error;
+    }
 
     if (updateError) {
       return friendlyError(normalizeCalculationErrorMessage(updateError.message));
@@ -834,13 +919,14 @@ export async function generateCalculationPdfAction(
       entityId: calculationId,
       entityLabel: resolveCalculationClientLabel(calculation.client_name),
       details: {
-        pdf_file_name: fileName,
+        pdf_file_name: pdfFileName,
+        summary_image_file_name: summaryImageFileName,
       },
     });
 
     return {
       ok: true,
-      message: "PDF gerado com sucesso.",
+      message: "PDF e imagem resumida gerados com sucesso.",
     };
   } catch (error) {
     return friendlyError(
@@ -867,11 +953,11 @@ export async function createSignedCalculationPdfUrlAction(
     }
 
     const adminClient = createAdminClient();
-    const fileExists = await calculationPdfExists(calculation.pdf_storage_path);
+    const fileExists = await calculationArtifactExists(calculation.pdf_storage_path);
 
     if (!fileExists) {
       return friendlyError(
-        "O arquivo PDF não foi encontrado no Storage. Clique em Gerar PDF para recriar a simulação.",
+        "O arquivo PDF não foi encontrado no Storage. Clique em Gerar arquivos novamente.",
       );
     }
 
@@ -905,6 +991,71 @@ export async function createSignedCalculationPdfUrlAction(
   } catch (error) {
     return friendlyError(
       error instanceof Error ? error.message : "Não foi possível abrir o PDF.",
+    );
+  }
+}
+
+export async function createSignedCalculationSummaryImageUrlAction(
+  calculationId: string,
+  mode: "view" | "download" = "download",
+): Promise<CalculationActionState> {
+  try {
+    const bucketError = await ensureCalculationReportsBucketAvailable();
+
+    if (bucketError) {
+      return bucketError;
+    }
+
+    const calculation = await assertCalculationAccess(calculationId);
+    const filePath =
+      calculation.summary_image_storage_path ??
+      buildCalculationSummaryImagePath(calculation.company_id, calculation.id);
+    const fileExists = await calculationArtifactExists(filePath);
+
+    if (!fileExists) {
+      return friendlyError(
+        "A imagem resumida ainda não foi gerada. Clique em Gerar arquivos novamente.",
+      );
+    }
+
+    const adminClient = createAdminClient();
+    const { data, error } = await adminClient.storage
+      .from(calculationReportsBucket)
+      .createSignedUrl(
+        filePath,
+        60 * 10,
+        mode === "download"
+          ? {
+              download:
+                calculation.summary_image_file_name ??
+                createCalculationSummaryImageFileName(
+                  resolveCalculationClientLabel(calculation.client_name),
+                ),
+            }
+          : undefined,
+      );
+
+    if (error || !data?.signedUrl) {
+      return friendlyError(
+        normalizeCalculationErrorMessage(
+          error?.message || "Não foi possível gerar o link da imagem resumida.",
+        ),
+      );
+    }
+
+    return {
+      ok: true,
+      message:
+        mode === "download"
+          ? "Download da imagem liberado."
+          : "Visualização da imagem liberada.",
+      url: data.signedUrl,
+    };
+  } catch (error) {
+    return friendlyError(
+      error instanceof Error
+        ? error.message
+        : "Não foi possível abrir a imagem resumida.",
     );
   }
 }

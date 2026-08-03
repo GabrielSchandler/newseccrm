@@ -1020,7 +1020,7 @@ export function CalculationForm({
           disabled={disabled}
           className="rounded-lg bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-70"
         >
-          {disabled ? "Salvando simulação..." : submitLabel}
+          {disabled ? "Salvando e gerando arquivos..." : submitLabel}
         </button>
         <button
           type="button"

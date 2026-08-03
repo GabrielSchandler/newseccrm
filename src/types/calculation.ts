@@ -50,6 +50,8 @@ export type FinancingCalculation = {
   protocol_number: string | null;
   pdf_storage_path: string | null;
   pdf_file_name: string | null;
+  summary_image_storage_path: string | null;
+  summary_image_file_name: string | null;
   status: FinancingCalculationStatus;
   created_by: string | null;
   updated_by: string | null;

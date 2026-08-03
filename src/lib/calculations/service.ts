@@ -118,15 +118,32 @@ export function buildCalculationReportPath(companyId: string, calculationId: str
   return `${companyId}/calculations/${calculationId}/simulacao-analise-de-correcao-de-juros.pdf`;
 }
 
-export function createCalculationPdfFileName(clientName: string) {
-  const safeName = clientName
+export function buildCalculationSummaryImagePath(
+  companyId: string,
+  calculationId: string,
+) {
+  return `${companyId}/calculations/${calculationId}/simulacao-resumida.png`;
+}
+
+function createSafeCalculationClientSlug(clientName: string) {
+  return clientName
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/[^\w.-]+/g, "-")
     .replace(/^-+|-+$/g, "")
     .toLowerCase();
+}
+
+export function createCalculationPdfFileName(clientName: string) {
+  const safeName = createSafeCalculationClientSlug(clientName);
 
   return `simulacao-analise-de-correcao-de-juros-${safeName || randomUUID()}.pdf`;
+}
+
+export function createCalculationSummaryImageFileName(clientName: string) {
+  const safeName = createSafeCalculationClientSlug(clientName);
+
+  return `simulacao-resumida-${safeName || randomUUID()}.png`;
 }
 
 export async function listCalculationCreators(userIds: string[]) {
