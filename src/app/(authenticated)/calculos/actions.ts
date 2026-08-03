@@ -60,7 +60,20 @@ function normalizeCalculationErrorMessage(message: string) {
   return message;
 }
 
-async function ensureCalculationReportsBucketAvailable() {
+function mergeCalculationReportMimeTypes(
+  currentAllowedMimeTypes: string[] | null | undefined,
+) {
+  return Array.from(
+    new Set([
+      ...(Array.isArray(currentAllowedMimeTypes) ? currentAllowedMimeTypes : []),
+      ...calculationReportMimeTypes,
+    ]),
+  );
+}
+
+async function ensureCalculationReportsBucketAvailable(options?: {
+  forceMimeUpdate?: boolean;
+}) {
   const adminClient = createAdminClient();
   const { data: bucket, error } = await adminClient.storage.getBucket(
     calculationReportsBucket,
@@ -68,23 +81,20 @@ async function ensureCalculationReportsBucketAvailable() {
 
   if (!error) {
     const currentAllowedMimeTypes = bucket.allowed_mime_types ?? null;
-    const hasRestrictedMimeTypes = Array.isArray(currentAllowedMimeTypes);
     const isMissingRequiredMimeType =
-      hasRestrictedMimeTypes &&
       calculationReportMimeTypes.some(
-        (mimeType) => !currentAllowedMimeTypes.includes(mimeType),
+        (mimeType) => !currentAllowedMimeTypes?.includes(mimeType),
       );
 
-    if (isMissingRequiredMimeType) {
-      const allowedMimeTypes = Array.from(
-        new Set([...currentAllowedMimeTypes, ...calculationReportMimeTypes]),
-      );
+    if (options?.forceMimeUpdate || isMissingRequiredMimeType) {
       const { error: updateError } = await adminClient.storage.updateBucket(
         calculationReportsBucket,
         {
           public: bucket.public,
           fileSizeLimit: bucket.file_size_limit ?? undefined,
-          allowedMimeTypes,
+          allowedMimeTypes: mergeCalculationReportMimeTypes(
+            currentAllowedMimeTypes,
+          ),
         },
       );
 
@@ -106,6 +116,16 @@ async function ensureCalculationReportsBucketAvailable() {
 
   return friendlyError(
     `Não foi possível consultar o bucket privado '${calculationReportsBucket}'. ${error.message}`,
+  );
+}
+
+function isUnsupportedPngMimeTypeError(message: string | undefined) {
+  const normalizedMessage = message?.toLowerCase() ?? "";
+
+  return (
+    normalizedMessage.includes("mime type") &&
+    normalizedMessage.includes("image/png") &&
+    normalizedMessage.includes("not supported")
   );
 }
 
@@ -880,7 +900,7 @@ export async function generateCalculationPdfAction(
         companyAddress,
       }),
     ]);
-    const [pdfUpload, summaryImageUpload] = await Promise.all([
+    const [pdfUpload, initialSummaryImageUpload] = await Promise.all([
       adminClient.storage
         .from(calculationReportsBucket)
         .upload(pdfFilePath, pdfBuffer, {
@@ -894,6 +914,25 @@ export async function generateCalculationPdfAction(
           upsert: true,
         }),
     ]);
+    let summaryImageUpload = initialSummaryImageUpload;
+
+    if (isUnsupportedPngMimeTypeError(summaryImageUpload.error?.message)) {
+      const bucketUpdateError = await ensureCalculationReportsBucketAvailable({
+        forceMimeUpdate: true,
+      });
+
+      if (bucketUpdateError) {
+        return bucketUpdateError;
+      }
+
+      summaryImageUpload = await adminClient.storage
+        .from(calculationReportsBucket)
+        .upload(summaryImageFilePath, summaryImageBuffer, {
+          contentType: "image/png",
+          upsert: true,
+        });
+    }
+
     const uploadError = pdfUpload.error ?? summaryImageUpload.error;
 
     if (uploadError) {
