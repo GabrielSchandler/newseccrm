@@ -35,6 +35,7 @@ export type CalculationActionState = {
 };
 
 const documentsBucket = "documents";
+const calculationReportMimeTypes = ["application/pdf", "image/png"];
 
 function friendlyError(message: string): CalculationActionState {
   return {
@@ -61,11 +62,39 @@ function normalizeCalculationErrorMessage(message: string) {
 
 async function ensureCalculationReportsBucketAvailable() {
   const adminClient = createAdminClient();
-  const { error } = await adminClient.storage
-    .from(calculationReportsBucket)
-    .list("", { limit: 1 });
+  const { data: bucket, error } = await adminClient.storage.getBucket(
+    calculationReportsBucket,
+  );
 
   if (!error) {
+    const currentAllowedMimeTypes = bucket.allowed_mime_types ?? null;
+    const hasRestrictedMimeTypes = Array.isArray(currentAllowedMimeTypes);
+    const isMissingRequiredMimeType =
+      hasRestrictedMimeTypes &&
+      calculationReportMimeTypes.some(
+        (mimeType) => !currentAllowedMimeTypes.includes(mimeType),
+      );
+
+    if (isMissingRequiredMimeType) {
+      const allowedMimeTypes = Array.from(
+        new Set([...currentAllowedMimeTypes, ...calculationReportMimeTypes]),
+      );
+      const { error: updateError } = await adminClient.storage.updateBucket(
+        calculationReportsBucket,
+        {
+          public: bucket.public,
+          fileSizeLimit: bucket.file_size_limit ?? undefined,
+          allowedMimeTypes,
+        },
+      );
+
+      if (updateError) {
+        return friendlyError(
+          `Não foi possível habilitar imagens PNG no bucket '${calculationReportsBucket}'. ${updateError.message}`,
+        );
+      }
+    }
+
     return null;
   }
 
@@ -75,7 +104,9 @@ async function ensureCalculationReportsBucketAvailable() {
     );
   }
 
-  return null;
+  return friendlyError(
+    `Não foi possível consultar o bucket privado '${calculationReportsBucket}'. ${error.message}`,
+  );
 }
 
 function resolveFinancedValue(
