@@ -1,3 +1,5 @@
+import path from "node:path";
+import { open, type Font } from "fontkit";
 import sharp from "sharp";
 import type { FinancingCalculation } from "@/types/calculation";
 
@@ -20,6 +22,62 @@ type SummaryRow = {
   tone?: "default" | "positive" | "negative";
 };
 
+type SvgTextStyle = {
+  fontSize: number;
+  fontWeight: number;
+  fill?: string;
+  letterSpacing?: number;
+};
+
+const svgTextStyles: Record<string, SvgTextStyle> = {
+  eyebrow: { fontSize: 18, fontWeight: 700, letterSpacing: 2.2 },
+  "header-title": { fontSize: 34, fontWeight: 700 },
+  "header-meta": { fontSize: 17, fontWeight: 500 },
+  "logo-fallback": { fontSize: 32, fontWeight: 800, fill: "#111111" },
+  "hero-label": {
+    fontSize: 19,
+    fontWeight: 800,
+    letterSpacing: 1.5,
+    fill: "#087A55",
+  },
+  "hero-value": { fontSize: 53, fontWeight: 800, fill: "#064E3B" },
+  "hero-copy": { fontSize: 20, fontWeight: 500, fill: "#374151" },
+  status: {
+    fontSize: 16,
+    fontWeight: 800,
+    letterSpacing: 1,
+    fill: "#087A55",
+  },
+  "metric-label": {
+    fontSize: 17,
+    fontWeight: 800,
+    letterSpacing: 0.7,
+    fill: "#4B5563",
+  },
+  "metric-value": { fontSize: 34, fontWeight: 800 },
+  "metric-caption": { fontSize: 14, fontWeight: 500, fill: "#6B7280" },
+  "section-title": { fontSize: 21, fontWeight: 800, fill: "#111827" },
+  "section-kicker": {
+    fontSize: 14,
+    fontWeight: 700,
+    letterSpacing: 1.2,
+    fill: "#6B7280",
+  },
+  "row-label": { fontSize: 16, fontWeight: 500, fill: "#4B5563" },
+  "row-value": { fontSize: 17, fontWeight: 800 },
+  "next-label": {
+    fontSize: 16,
+    fontWeight: 800,
+    letterSpacing: 1.2,
+    fill: "#B91C1C",
+  },
+  "next-copy": { fontSize: 21, fontWeight: 700, fill: "#111827" },
+  footer: { fontSize: 14, fontWeight: 500, fill: "#4B5563" },
+  "footer-strong": { fontSize: 14, fontWeight: 700, fill: "#111827" },
+};
+
+let summaryFontPromise: Promise<Font> | null = null;
+
 const moneyFormatter = new Intl.NumberFormat("pt-BR", {
   style: "currency",
   currency: "BRL",
@@ -37,6 +95,125 @@ function escapeXml(value: string) {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&apos;");
+}
+
+function decodeXml(value: string) {
+  return value
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&gt;/g, ">")
+    .replace(/&lt;/g, "<")
+    .replace(/&amp;/g, "&");
+}
+
+function readSvgAttribute(attributes: string, name: string) {
+  return attributes.match(new RegExp(`\\b${name}="([^"]*)"`))?.[1] ?? null;
+}
+
+async function getSummaryFont() {
+  if (!summaryFontPromise) {
+    const fontPath = path.join(
+      process.cwd(),
+      "public",
+      "fonts",
+      "noto-sans-latin-regular.ttf",
+    );
+
+    summaryFontPromise = open(fontPath).then((font) => {
+      if ("fonts" in font) {
+        const firstFont = font.fonts[0];
+
+        if (!firstFont) {
+          throw new Error("A fonte da imagem resumida não contém glifos.");
+        }
+
+        return firstFont;
+      }
+
+      return font;
+    });
+  }
+
+  return summaryFontPromise;
+}
+
+function renderOutlinedText({
+  font,
+  value,
+  x,
+  y,
+  anchor,
+  style,
+  fill,
+}: {
+  font: Font;
+  value: string;
+  x: number;
+  y: number;
+  anchor: "start" | "middle" | "end";
+  style: SvgTextStyle;
+  fill: string;
+}) {
+  const glyphRun = font.layout(value);
+  const scale = style.fontSize / font.unitsPerEm;
+  const letterSpacing = style.letterSpacing ?? 0;
+  const totalWidth =
+    glyphRun.positions.reduce(
+      (width, position) => width + position.xAdvance * scale,
+      0,
+    ) + Math.max(glyphRun.glyphs.length - 1, 0) * letterSpacing;
+  const startX =
+    anchor === "end" ? x - totalWidth : anchor === "middle" ? x - totalWidth / 2 : x;
+  const shouldEmphasize = style.fontWeight >= 700;
+  let cursorX = startX;
+
+  const paths = glyphRun.glyphs
+    .map((glyph, index) => {
+      const position = glyphRun.positions[index];
+      const glyphX = cursorX + position.xOffset * scale;
+      const glyphY = y - position.yOffset * scale;
+      cursorX += position.xAdvance * scale + letterSpacing;
+
+      if (!glyph.path.commands.length) {
+        return "";
+      }
+
+      return `<path d="${glyph.path.toSVG()}" transform="translate(${glyphX.toFixed(
+        3,
+      )} ${glyphY.toFixed(3)}) scale(${scale.toFixed(6)} ${(-scale).toFixed(
+        6,
+      )})" />`;
+    })
+    .join("");
+
+  return `<g fill="${fill}"${
+    shouldEmphasize
+      ? ` stroke="${fill}" stroke-width="0.55" stroke-linejoin="round" style="paint-order:stroke fill"`
+      : ""
+  }>${paths}</g>`;
+}
+
+function convertSvgTextToPaths(svg: string, font: Font) {
+  return svg.replace(
+    /<text\b([^>]*)>([\s\S]*?)<\/text>/g,
+    (_match, attributes: string, rawValue: string) => {
+      const className = readSvgAttribute(attributes, "class") ?? "";
+      const style = svgTextStyles[className];
+      const x = Number(readSvgAttribute(attributes, "x"));
+      const y = Number(readSvgAttribute(attributes, "y"));
+      const anchorValue = readSvgAttribute(attributes, "text-anchor");
+      const anchor =
+        anchorValue === "middle" || anchorValue === "end" ? anchorValue : "start";
+      const fill = readSvgAttribute(attributes, "fill") ?? style?.fill ?? "#111827";
+      const value = decodeXml(rawValue.trim());
+
+      if (!style || !Number.isFinite(x) || !Number.isFinite(y) || !value) {
+        return "";
+      }
+
+      return renderOutlinedText({ font, value, x, y, anchor, style, fill });
+    },
+  );
 }
 
 function truncate(value: string, maxLength: number) {
@@ -395,8 +572,10 @@ function buildSummarySvg({
 
 export async function generateCalculationSummaryImage(props: SummaryImageProps) {
   const svg = buildSummarySvg(props);
+  const font = await getSummaryFont();
+  const outlinedSvg = convertSvgTextToPaths(svg, font);
 
-  return sharp(Buffer.from(svg))
+  return sharp(Buffer.from(outlinedSvg))
     .png({ compressionLevel: 9, adaptiveFiltering: true })
     .toBuffer();
 }

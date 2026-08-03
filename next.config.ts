@@ -72,6 +72,9 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  outputFileTracingIncludes: {
+    "/*": ["./public/fonts/noto-sans-latin-regular.ttf"],
+  },
   async headers() {
     return [
       {
