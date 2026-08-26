@@ -254,7 +254,6 @@ export async function createCompanyUserAction(
       password_reset_at: new Date().toISOString(),
       password_reset_by: userProfileId,
       password_changed_at: null,
-      last_set_password: parsed.data.temporary_password,
       invited_by: userProfileId,
       deactivated_at: null,
       deactivated_by: null,
@@ -431,7 +430,6 @@ export async function updateCompanyUserAction(
             password_changed_at: parsed.data.force_password_change
               ? null
               : passwordUpdatedAt,
-            last_set_password: parsed.data.new_password,
           }
         : {}),
       deactivated_at: parsed.data.is_active ? null : new Date().toISOString(),

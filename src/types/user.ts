@@ -22,7 +22,6 @@ export type CompanyUserProfile = {
   password_changed_at?: string | null;
   password_reset_at?: string | null;
   password_reset_by?: string | null;
-  last_set_password?: string | null;
   invited_by: string | null;
   deactivated_at: string | null;
   deactivated_by: string | null;

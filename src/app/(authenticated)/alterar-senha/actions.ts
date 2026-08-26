@@ -24,8 +24,8 @@ export async function changeRequiredPasswordAction(
   const password = String(formData.get("password") ?? "");
   const confirmPassword = String(formData.get("confirm_password") ?? "");
 
-  if (password.length < 6) {
-    return friendlyError("A nova senha deve ter pelo menos 6 caracteres.");
+  if (password.length < 12) {
+    return friendlyError("A nova senha deve ter pelo menos 12 caracteres.");
   }
 
   if (password !== confirmPassword) {
@@ -70,7 +70,6 @@ export async function changeRequiredPasswordAction(
       .update({
         password_must_change: false,
         password_changed_at: now,
-        last_set_password: null,
         updated_at: now,
       })
       .eq("id", profile.id);

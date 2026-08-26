@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import {
   AlertTriangle,
   BadgeDollarSign,
@@ -10,8 +11,10 @@ import {
   TrendingUp,
   UsersRound,
 } from "lucide-react";
+import { getCurrentUserContext } from "@/lib/auth/current-user";
+import { getHomeForRole } from "@/lib/workspace";
 
-export const dynamic = "force-static";
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Vendas por UF fiscal | GRS",
@@ -439,7 +442,13 @@ function RegionTable() {
   );
 }
 
-export default function StateConversionReportPage() {
+export default async function StateConversionReportPage() {
+  const { role, businessArea, isPlatformOwner } = await getCurrentUserContext();
+
+  if (!isPlatformOwner && role !== "admin" && role !== "manager") {
+    redirect(getHomeForRole(role, businessArea, isPlatformOwner));
+  }
+
   const preciseRate = totals.preciseStateClients / totals.clients;
 
   return (

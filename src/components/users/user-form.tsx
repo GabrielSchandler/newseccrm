@@ -42,12 +42,11 @@ type EditUserFormProps = {
   onSubmitAction: (values: UpdateCompanyUserPayload) => Promise<UserManagementActionState>;
   canAssignAdmin: boolean;
   canManagePasswords: boolean;
-  canViewCurrentPassword: boolean;
 };
 
 type UserFormProps =
   | ({ mode: "create" } & CreateUserFormProps)
-  | ({ mode: "edit" } & EditUserFormProps & { canViewCurrentPassword: boolean });
+  | ({ mode: "edit" } & EditUserFormProps);
 
 function availableRoles(canAssignAdmin: boolean) {
   return companyUserRoles.filter((item) => canAssignAdmin || item.value !== "admin");
@@ -398,13 +397,11 @@ function EditUserForm({
   onSubmitAction,
   canAssignAdmin,
   canManagePasswords,
-  canViewCurrentPassword,
 }: EditUserFormProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [actionState, setActionState] = useState<UserManagementActionState | null>(null);
   const [showNewPassword, setShowNewPassword] = useState(false);
-  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const roleOptions = availableRoles(canAssignAdmin);
   const {
     register,
@@ -654,32 +651,6 @@ function EditUserForm({
         </label>
       </div>
 
-      {canViewCurrentPassword && defaultValues.last_set_password ? (
-        <div className="rounded-lg border border-blue-200 bg-blue-50 p-5 shadow-sm">
-          <h2 className="text-base font-semibold text-blue-900">
-            Senha provisória atual
-          </h2>
-          <p className="mt-1 text-sm leading-6 text-blue-700">
-            Esta é a última senha provisória definida para este usuário. Será apagada automaticamente quando o usuário criar uma senha definitiva.
-          </p>
-          <div className="mt-3 flex items-center gap-2">
-            <input
-              type={showCurrentPassword ? "text" : "password"}
-              readOnly
-              value={defaultValues.last_set_password}
-              className="min-w-0 flex-1 rounded-lg border border-blue-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none"
-            />
-            <button
-              type="button"
-              onClick={() => setShowCurrentPassword((v) => !v)}
-              className="rounded-lg border border-blue-300 bg-white px-3 py-2 text-sm font-semibold text-blue-800 transition hover:bg-blue-100"
-            >
-              {showCurrentPassword ? "Ocultar" : "Ver"}
-            </button>
-          </div>
-        </div>
-      ) : null}
-
       {canManagePasswords ? (
         <div className="grid gap-5 rounded-lg border border-slate-200 bg-white p-5 shadow-sm md:grid-cols-2">
           <div className="md:col-span-2">
@@ -765,7 +736,6 @@ export function UserForm(props: UserFormProps) {
       onSubmitAction={props.onSubmitAction}
       canAssignAdmin={props.canAssignAdmin}
       canManagePasswords={props.canManagePasswords}
-      canViewCurrentPassword={props.canViewCurrentPassword}
     />
   );
 }

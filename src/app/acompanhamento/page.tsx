@@ -3,6 +3,7 @@ import { CheckCircle2, Clock3, FileSearch, LockKeyhole, Search } from "lucide-re
 import { createAdminClient } from "@/lib/supabase/admin";
 import { displayCpf, formatDate, formatDateTime } from "@/lib/clients/formatters";
 import { formatPreSaleType } from "@/lib/pre-sales/formatters";
+import { checkPublicTrackingRateLimit } from "@/lib/security/public-tracking-rate-limit";
 import {
   formatClientTrackingStatus,
   type ClientTrackingStatus,
@@ -157,7 +158,14 @@ export default async function AcompanhamentoPage({
   const cpf = onlyDigits(params.cpf);
   const protocolo = normalizeProtocol(params.protocolo);
   const hasSearch = Boolean(params.cpf || params.protocolo);
-  const result = hasSearch ? await findTrackingResult(cpf, protocolo) : null;
+  const hasValidSearch = cpf.length === 11 && Boolean(protocolo);
+  const rateLimitStatus = hasValidSearch
+    ? await checkPublicTrackingRateLimit(cpf)
+    : "allowed";
+  const result =
+    hasValidSearch && rateLimitStatus === "allowed"
+      ? await findTrackingResult(cpf, protocolo)
+      : null;
   const companyName =
     result?.company?.trade_name?.trim() ||
     result?.company?.legal_name?.trim() ||
@@ -252,6 +260,32 @@ export default async function AcompanhamentoPage({
                 <p className="mt-3 max-w-md text-sm leading-6 text-slate-600">
                   Assim que CPF e protocolo forem informados, exibiremos uma
                   linha do tempo objetiva com as movimentações publicadas pela equipe.
+                </p>
+              </div>
+            ) : rateLimitStatus === "blocked" ? (
+              <div className="flex min-h-[360px] flex-col items-center justify-center px-6 py-12 text-center">
+                <div className="flex h-14 w-14 items-center justify-center rounded-lg border border-amber-200 bg-amber-50 text-amber-700">
+                  <LockKeyhole className="h-7 w-7" />
+                </div>
+                <h2 className="mt-5 text-xl font-semibold text-slate-950">
+                  Aguarde antes de tentar novamente.
+                </h2>
+                <p className="mt-3 max-w-md text-sm leading-6 text-slate-600">
+                  O limite temporário de consultas foi atingido. Tente novamente
+                  em alguns minutos ou fale com nossa equipe.
+                </p>
+              </div>
+            ) : rateLimitStatus === "unavailable" ? (
+              <div className="flex min-h-[360px] flex-col items-center justify-center px-6 py-12 text-center">
+                <div className="flex h-14 w-14 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-700">
+                  <LockKeyhole className="h-7 w-7" />
+                </div>
+                <h2 className="mt-5 text-xl font-semibold text-slate-950">
+                  Consulta temporariamente indisponível.
+                </h2>
+                <p className="mt-3 max-w-md text-sm leading-6 text-slate-600">
+                  Não foi possível validar esta consulta com segurança. Tente
+                  novamente em alguns minutos.
                 </p>
               </div>
             ) : result ? (

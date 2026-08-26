@@ -69,7 +69,7 @@ const createCompanyUserBaseSchema = z.object({
   temporary_password: z
     .string()
     .trim()
-    .min(6, "A senha provisória deve ter pelo menos 6 caracteres."),
+    .min(12, "A senha provisória deve ter pelo menos 12 caracteres."),
 });
 
 export const createCompanyUserSchema = createCompanyUserBaseSchema.transform(
@@ -97,8 +97,8 @@ const updateCompanyUserBaseSchema = z.object({
     .union([z.string(), z.null(), z.undefined()])
     .transform((value) => (typeof value === "string" && value.trim() ? value.trim() : null))
     .refine(
-      (value) => value === null || value.length >= 6,
-      "A nova senha deve ter pelo menos 6 caracteres.",
+      (value) => value === null || value.length >= 12,
+      "A nova senha deve ter pelo menos 12 caracteres.",
     ),
   force_password_change: z.boolean().default(true),
 });

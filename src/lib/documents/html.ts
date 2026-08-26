@@ -87,7 +87,7 @@ export function sanitizeTemplateHtmlContent(html: string) {
       td: ["colspan", "rowspan"],
       th: ["colspan", "rowspan"],
     },
-    allowedSchemes: ["http", "https", "mailto", "tel", "data"],
+    allowedSchemes: ["http", "https", "mailto", "tel"],
     allowedSchemesByTag: {
       img: ["http", "https", "data"],
     },

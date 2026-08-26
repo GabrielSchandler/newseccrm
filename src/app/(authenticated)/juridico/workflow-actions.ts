@@ -6,7 +6,6 @@ import { recordAuditLog } from "@/lib/audit/log";
 import { getCurrentUserContext } from "@/lib/auth/current-user";
 import { recordClientTimelineEvent } from "@/lib/client-timeline/service";
 import {
-  getLegalWorkflowStage,
   legalWorkflowStages,
   type LegalWorkflowStageDefinition,
 } from "@/lib/legal/workflow";

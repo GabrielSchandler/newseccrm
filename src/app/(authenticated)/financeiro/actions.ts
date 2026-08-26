@@ -5,6 +5,10 @@ import { revalidatePath } from "next/cache";
 import { recordAuditLog } from "@/lib/audit/log";
 import { getCurrentUserContext } from "@/lib/auth/current-user";
 import { parseFinanceWorkbook } from "@/lib/finance/importer";
+import {
+  validateFinanceUploadMetadata,
+  validateFinanceUploadSignature,
+} from "@/lib/finance/upload-validation";
 
 function redirectWithMessage(
   type: "success" | "error",
@@ -974,8 +978,11 @@ export async function importFinanceFilesAction(formData: FormData) {
     const importYear = parseImportYear(formData.get("default_year"));
 
     for (const file of files) {
+      const extension = validateFinanceUploadMetadata(file);
+      const fileBuffer = Buffer.from(await file.arrayBuffer());
+      validateFinanceUploadSignature(fileBuffer, extension);
       const parsed = parseFinanceWorkbook(
-        Buffer.from(await file.arrayBuffer()),
+        fileBuffer,
         file.name,
         importYear,
       );

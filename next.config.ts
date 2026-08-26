@@ -1,5 +1,8 @@
 import type { NextConfig } from "next";
 
+const scriptDevelopmentDirectives =
+  process.env.NODE_ENV === "development" ? ["'unsafe-eval'"] : [];
+
 const securityHeaders = [
   {
     key: "Content-Security-Policy",
@@ -9,7 +12,9 @@ const securityHeaders = [
       "object-src 'none'",
       "frame-ancestors 'none'",
       "form-action 'self' https://login.microsoftonline.com",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+      ["script-src", "'self'", "'unsafe-inline'", ...scriptDevelopmentDirectives].join(
+        " ",
+      ),
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: blob: https:",
       "font-src 'self' data:",

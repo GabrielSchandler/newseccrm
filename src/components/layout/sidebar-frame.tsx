@@ -139,6 +139,8 @@ export function SidebarFrame({
           <summary className="flex cursor-pointer list-none items-center justify-between rounded-lg px-2 py-2 text-sm font-semibold text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600">
             <span className="flex min-w-0 items-center gap-3">
               {companyLogoUrl ? (
+                // Logos cadastrados podem vir de buckets privados ou domínios externos.
+                // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={companyLogoUrl}
                   alt={`Logo da empresa ${companyName}`}
@@ -186,6 +188,7 @@ export function SidebarFrame({
         <div className="px-2">
           <div className="flex items-center gap-3">
             {companyLogoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={companyLogoUrl}
                 alt={`Logo da empresa ${companyName}`}

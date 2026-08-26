@@ -8,3 +8,19 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+*.log
+
+# Local analysis and generated artifacts that can contain customer data.
+.codex_tmp/
+outputs/
+reports/
+tmp/
+render_*/
+*.m4a
+
+# Office files are ignored at the repository root. Versioned application
+# templates and fixtures inside dedicated source folders remain trackable.
+/*.xlsx
+/*.xls
+/*.docx
+/*.pptx

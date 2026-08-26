@@ -942,6 +942,7 @@ export function CalculationReportPdf({
         <View style={styles.header}>
           {companyLogoSrc ? (
             <View style={styles.logoWrap}>
+              {/* eslint-disable-next-line jsx-a11y/alt-text */}
               <Image src={companyLogoSrc} style={styles.logo} />
             </View>
           ) : null}

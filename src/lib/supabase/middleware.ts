@@ -33,6 +33,7 @@ const protectedRoutes = [
   "/juridico",
   "/financeiro",
   "/alterar-senha",
+  "/relatorio-conversao-estados",
 ];
 
 export async function updateSession(request: NextRequest) {
