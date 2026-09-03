@@ -15,6 +15,7 @@ import {
 } from "@/lib/calculations/currency";
 import { formatCpf, formatPhone, onlyDigits } from "@/lib/clients/masks";
 import { FormFieldLabel } from "@/components/form-field-label";
+import { InterestRatePreviewCard } from "@/components/calculations/interest-rate-preview-card";
 import { TotalkCalculationImportPanel } from "@/components/calculations/totalk-calculation-import-panel";
 import {
   financingCalculationDefaultValues,
@@ -200,6 +201,8 @@ export function CalculationForm({
   const cashValue = watch("cash_value");
   const downPayment = watch("down_payment");
   const installmentCount = watch("installment_count");
+  const currentInstallmentValue = watch("current_installment_value");
+  const installmentReductionPercentage = watch("installment_reduction_percentage");
   const paidInstallments = watch("paid_installments");
   const financedValue = watch("financed_value");
   const remainingInstallments = watch("remaining_installments");
@@ -1011,6 +1014,13 @@ export function CalculationForm({
           ) : null}
         </div>
       </section>
+
+      <InterestRatePreviewCard
+        financedValue={computedFinancedValue}
+        installmentCount={installmentCount}
+        currentInstallmentValue={currentInstallmentValue}
+        reductionPercentage={installmentReductionPercentage}
+      />
 
       <CalculationActionMessage state={actionState} />
 
