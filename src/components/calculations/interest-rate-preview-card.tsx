@@ -83,24 +83,44 @@ export function InterestRatePreviewCard({
 
       {comparison ? (
         <div className="space-y-5 p-5">
-          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
-            <p className="text-slate-600">
-              Parcela atual:{" "}
-              <strong className="text-slate-950">
+          <dl className="grid grid-cols-2 border-y border-slate-200 bg-slate-50/70 sm:grid-cols-4">
+            <div className="min-w-0 border-b border-r border-slate-200 px-3 py-3 sm:border-b-0">
+              <dt className="text-xs font-medium text-slate-500">Parcela atual</dt>
+              <dd className="mt-1 break-words text-base font-bold text-slate-950">
                 {currencyFormatter.format(comparison.current.installmentValue)}
-              </strong>
-            </p>
-            <p className="text-slate-600">
-              Parcela com redução:{" "}
-              <strong
-                className={
+              </dd>
+            </div>
+            <div className="min-w-0 border-b border-slate-200 px-3 py-3 sm:border-b-0 sm:border-r">
+              <dt className="text-xs font-medium text-slate-500">Parcela corrigida</dt>
+              <dd
+                className={`mt-1 break-words text-base font-bold ${
                   hasNegativeReducedInterest ? "text-red-700" : "text-teal-800"
-                }
+                }`}
               >
                 {currencyFormatter.format(comparison.reduced.installmentValue)}
-              </strong>
-            </p>
-          </div>
+              </dd>
+            </div>
+            <div className="min-w-0 border-r border-slate-200 px-3 py-3">
+              <dt className="text-xs font-medium text-slate-500">
+                Valor total da dívida
+              </dt>
+              <dd className="mt-1 break-words text-base font-bold text-slate-950">
+                {currencyFormatter.format(comparison.current.totalPaid)}
+              </dd>
+            </div>
+            <div className="min-w-0 px-3 py-3">
+              <dt className="text-xs font-medium text-slate-500">
+                Valor total da dívida corrigida
+              </dt>
+              <dd
+                className={`mt-1 break-words text-base font-bold ${
+                  hasNegativeReducedInterest ? "text-red-700" : "text-teal-800"
+                }`}
+              >
+                {currencyFormatter.format(comparison.reduced.totalPaid)}
+              </dd>
+            </div>
+          </dl>
 
           <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_16rem]">
             <div className="overflow-hidden rounded-lg border border-slate-200">

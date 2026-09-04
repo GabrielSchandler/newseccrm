@@ -54,6 +54,18 @@ describe("interest rate preview", () => {
     );
   });
 
+  it("calculates the current and corrected total debt", () => {
+    const comparison = calculateInterestRateComparison({
+      financedValue: 40_000,
+      installmentCount: 48,
+      currentInstallmentValue: 1_500,
+      reductionPercentage: 10,
+    });
+
+    expect(comparison?.current.totalPaid).toBe(72_000);
+    expect(comparison?.reduced.totalPaid).toBe(64_800);
+  });
+
   it("does not calculate a comparison with incomplete values", () => {
     expect(
       calculateInterestRateComparison({
