@@ -19,6 +19,12 @@ import { type SidebarNavigationItem } from "./sidebar-nav";
 
 const navigation: SidebarNavigationItem[] = [
   { href: "/dashboard", label: "Painel comercial", icon: "dashboard" },
+  {
+    href: "/aprovacoes",
+    label: "Aprovações do cliente",
+    icon: "approvals",
+    managerOnly: true,
+  },
   { href: "/comercial", label: "Painel comercial", icon: "dashboard" },
   { href: "/clientes", label: "Clientes", icon: "clients" },
   { href: "/pre-vendas", label: "Pré-vendas", icon: "preSales" },

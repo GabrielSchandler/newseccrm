@@ -1,4 +1,5 @@
 import { ClientDocumentWorkspace } from "@/components/client-documents/client-document-workspace";
+import type { ClientDocumentPreSaleOption } from "@/components/client-documents/client-document-upload";
 import {
   canModifyClientDocuments,
   listClientDocumentsByClient,
@@ -13,6 +14,7 @@ type ClientDocumentsSectionProps = {
   preSaleId?: string | null;
   title: string;
   description?: string;
+  preSales?: ClientDocumentPreSaleOption[];
 };
 
 export async function ClientDocumentsSection({
@@ -20,6 +22,7 @@ export async function ClientDocumentsSection({
   preSaleId = null,
   title,
   description,
+  preSales = [],
 }: ClientDocumentsSectionProps) {
   const { role, businessArea } = await getCurrentUserContext();
   const documents = preSaleId
@@ -49,6 +52,7 @@ export async function ClientDocumentsSection({
         preSaleId={preSaleId}
         documents={enrichedDocuments}
         canManage={canModifyClientDocuments(role, businessArea)}
+        preSales={preSales}
       />
     </section>
   );

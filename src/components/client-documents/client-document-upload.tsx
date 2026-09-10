@@ -1,5 +1,6 @@
 "use client";
 
+import { Download, Eye, ShieldCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
 import {
@@ -21,6 +22,14 @@ type ClientDocumentUploadProps = {
   clientId: string;
   preSaleId?: string | null;
   fixedDocumentType?: ClientDocumentType;
+  preSales?: ClientDocumentPreSaleOption[];
+};
+
+export type ClientDocumentPreSaleOption = {
+  id: string;
+  tracking_protocol: string | null;
+  service_type: string | null;
+  created_at: string;
 };
 
 function getFriendlyUploadError(message: string) {
@@ -37,6 +46,7 @@ export function ClientDocumentUpload({
   clientId,
   preSaleId = null,
   fixedDocumentType,
+  preSales = [],
 }: ClientDocumentUploadProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -44,6 +54,9 @@ export function ClientDocumentUpload({
   const [documentType, setDocumentType] = useState(fixedDocumentType ?? defaultDocumentType);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [selectedPreSaleId, setSelectedPreSaleId] = useState(preSaleId ?? "");
+  const [clientVisibilityRequested, setClientVisibilityRequested] = useState(false);
+  const [clientDownloadRequested, setClientDownloadRequested] = useState(false);
   const [state, setState] = useState<ClientDocumentActionState | null>(null);
   const disabled = isPending || files.length === 0;
   const selectedDocumentType = fixedDocumentType ?? documentType;
@@ -63,6 +76,9 @@ export function ClientDocumentUpload({
     setDocumentType(fixedDocumentType ?? defaultDocumentType);
     setTitle("");
     setDescription("");
+    setSelectedPreSaleId(preSaleId ?? "");
+    setClientVisibilityRequested(false);
+    setClientDownloadRequested(false);
   }
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -76,15 +92,31 @@ export function ClientDocumentUpload({
       return;
     }
 
+    if (
+      selectedDocumentType === "extrajudicial" &&
+      clientVisibilityRequested &&
+      !selectedPreSaleId
+    ) {
+      setState({
+        ok: false,
+        message: "Selecione a pré-venda para vincular a publicação ao protocolo correto.",
+      });
+      return;
+    }
+
     setState(null);
 
     startTransition(async () => {
       const payload = {
         client_id: clientId,
-        pre_sale_id: preSaleId ?? "",
+        pre_sale_id: selectedPreSaleId,
         document_type: selectedDocumentType,
         title,
         description,
+        client_visibility_requested:
+          selectedDocumentType === "extrajudicial" && clientVisibilityRequested,
+        client_download_requested:
+          selectedDocumentType === "extrajudicial" && clientDownloadRequested,
       };
       const prepared = await prepareClientDocumentsBulkUploadAction(
         payload,
@@ -221,6 +253,32 @@ export function ClientDocumentUpload({
           ) : null}
         </div>
 
+        {!preSaleId && selectedDocumentType === "extrajudicial" ? (
+          <div className="space-y-2 md:col-span-2">
+            <FormFieldLabel
+              htmlFor="document_pre_sale_id"
+              label="Pré-venda / protocolo"
+              requirement={clientVisibilityRequested ? "required" : "optional"}
+              hint="O vínculo garante que o arquivo apareça somente na consulta deste protocolo."
+            />
+            <select
+              id="document_pre_sale_id"
+              value={selectedPreSaleId}
+              disabled={isPending}
+              onChange={(event) => setSelectedPreSaleId(event.target.value)}
+              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
+            >
+              <option value="">Selecione uma pré-venda</option>
+              {preSales.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.tracking_protocol || "Sem protocolo"}
+                  {item.service_type ? ` | ${item.service_type}` : ""}
+                </option>
+              ))}
+            </select>
+          </div>
+        ) : null}
+
         <div className="space-y-2">
           <FormFieldLabel htmlFor="title" label="Título" requirement="optional" />
           <input
@@ -249,6 +307,68 @@ export function ClientDocumentUpload({
           />
         </div>
       </div>
+
+      {selectedDocumentType === "extrajudicial" ? (
+        <section className="rounded-lg border border-teal-200 bg-teal-50/60 p-4">
+          <div className="flex items-start gap-3">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-white text-teal-700 shadow-sm">
+              <ShieldCheck className="h-5 w-5" />
+            </span>
+            <div>
+              <h4 className="text-sm font-semibold text-slate-950">Acesso do cliente</h4>
+              <p className="mt-1 text-xs leading-5 text-slate-600">
+                Cada opção solicitada ficará pendente até a aprovação da Gestão.
+              </p>
+            </div>
+          </div>
+          <div className="mt-4 grid gap-3 md:grid-cols-2">
+            <label className="flex cursor-pointer items-start gap-3 rounded-md border border-slate-200 bg-white p-3">
+              <input
+                type="checkbox"
+                checked={clientVisibilityRequested}
+                disabled={isPending}
+                onChange={(event) => {
+                  const checked = event.target.checked;
+                  setClientVisibilityRequested(checked);
+                  if (!checked) setClientDownloadRequested(false);
+                }}
+                className="mt-1 h-4 w-4 rounded border-slate-300 text-teal-700 focus:ring-teal-600"
+              />
+              <span>
+                <span className="flex items-center gap-2 text-sm font-semibold text-slate-950">
+                  <Eye className="h-4 w-4 text-teal-700" />
+                  Mostrar que o arquivo existe
+                </span>
+                <span className="mt-1 block text-xs leading-5 text-slate-500">
+                  O cliente verá o título e a situação do documento.
+                </span>
+              </span>
+            </label>
+            <label className="flex cursor-pointer items-start gap-3 rounded-md border border-slate-200 bg-white p-3">
+              <input
+                type="checkbox"
+                checked={clientDownloadRequested}
+                disabled={isPending}
+                onChange={(event) => {
+                  const checked = event.target.checked;
+                  setClientDownloadRequested(checked);
+                  if (checked) setClientVisibilityRequested(true);
+                }}
+                className="mt-1 h-4 w-4 rounded border-slate-300 text-teal-700 focus:ring-teal-600"
+              />
+              <span>
+                <span className="flex items-center gap-2 text-sm font-semibold text-slate-950">
+                  <Download className="h-4 w-4 text-teal-700" />
+                  Permitir download
+                </span>
+                <span className="mt-1 block text-xs leading-5 text-slate-500">
+                  Inclui a visualização e libera o arquivo após aprovação.
+                </span>
+              </span>
+            </label>
+          </div>
+        </section>
+      ) : null}
 
       <p className="text-xs text-slate-500">
         Formatos aceitos: {clientDocumentAcceptedFormatsLabel}. Tamanho maximo: 20 MB.

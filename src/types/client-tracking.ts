@@ -1,3 +1,5 @@
+import type { ClientApprovalStatus } from "@/types/client-approval";
+
 export type ClientTrackingStatus = "in_progress" | "completed" | "cancelled";
 
 export type ClientTrackingUpdate = {
@@ -9,6 +11,12 @@ export type ClientTrackingUpdate = {
   description: string;
   status: ClientTrackingStatus;
   visible_to_client: boolean;
+  approval_status: ClientApprovalStatus;
+  approval_requested_by: string | null;
+  approval_requested_at: string | null;
+  approval_reviewed_by: string | null;
+  approval_reviewed_at: string | null;
+  approval_review_note: string | null;
   event_at: string;
   created_by: string | null;
   created_at: string;

@@ -1,3 +1,5 @@
+import type { ClientApprovalStatus } from "@/types/client-approval";
+
 export type ClientDocumentType =
   | "documentacao"
   | "extrajudicial"
@@ -31,6 +33,14 @@ export type ClientDocument = {
   mime_type: string | null;
   file_size: number;
   uploaded_by: string | null;
+  client_visibility_requested: boolean;
+  client_download_requested: boolean;
+  client_access_status: ClientApprovalStatus;
+  client_access_requested_by: string | null;
+  client_access_requested_at: string | null;
+  client_access_reviewed_by: string | null;
+  client_access_reviewed_at: string | null;
+  client_access_review_note: string | null;
   created_at: string;
   updated_at: string | null;
   deleted_at: string | null;

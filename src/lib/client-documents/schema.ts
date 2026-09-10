@@ -22,14 +22,19 @@ export const clientDocumentUploadSchema = z.object({
   ),
   title: optionalText,
   description: optionalText,
+  client_visibility_requested: z.boolean().default(false),
+  client_download_requested: z.boolean().default(false),
 });
 
 export type ClientDocumentUploadFormValues = z.input<typeof clientDocumentUploadSchema>;
 export type ClientDocumentUploadPayload = z.output<typeof clientDocumentUploadSchema>;
 export const clientDocumentUpdateSchema = clientDocumentUploadSchema.pick({
+  pre_sale_id: true,
   document_type: true,
   title: true,
   description: true,
+  client_visibility_requested: true,
+  client_download_requested: true,
 });
 export type ClientDocumentUpdatePayload = z.output<typeof clientDocumentUpdateSchema>;
 
@@ -39,4 +44,6 @@ export const clientDocumentUploadDefaultValues: ClientDocumentUploadFormValues =
   document_type: "documentacao",
   title: "",
   description: "",
+  client_visibility_requested: false,
+  client_download_requested: false,
 };

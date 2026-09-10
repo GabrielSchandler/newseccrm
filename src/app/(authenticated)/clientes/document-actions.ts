@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { recordAuditLog } from "@/lib/audit/log";
 import { getCurrentUserContext } from "@/lib/auth/current-user";
 import { recordClientTimelineEvent } from "@/lib/client-timeline/service";
+import { normalizeDocumentClientAccessRequest } from "@/lib/client-approvals/workflow";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
   acceptedClientDocumentMimeTypes,
@@ -67,6 +68,34 @@ function prepareFriendlyError(message: string): ClientDocumentPrepareUploadState
 function getTitleFromFileName(fileName: string) {
   const lastDotIndex = fileName.lastIndexOf(".");
   return (lastDotIndex > 0 ? fileName.slice(0, lastDotIndex) : fileName).trim() || fileName;
+}
+
+function buildClientAccessRequestFields(
+  documentType: ClientDocumentUploadPayload["document_type"],
+  visibleToClient: boolean,
+  downloadableByClient: boolean,
+  userProfileId: string,
+) {
+  const request = normalizeDocumentClientAccessRequest({
+    documentType,
+    visibleToClient,
+    downloadableByClient,
+  });
+  const requestedAt = request.status === "pending" ? new Date().toISOString() : null;
+
+  return {
+    ...request,
+    fields: {
+      client_visibility_requested: request.visibleToClient,
+      client_download_requested: request.downloadableByClient,
+      client_access_status: request.status,
+      client_access_requested_by: request.status === "pending" ? userProfileId : null,
+      client_access_requested_at: requestedAt,
+      client_access_reviewed_by: null,
+      client_access_reviewed_at: null,
+      client_access_review_note: null,
+    },
+  };
 }
 
 function mergeClientDocumentMimeTypes(
@@ -159,6 +188,12 @@ export async function uploadClientDocumentAction(
 
   const { client_id: clientId, pre_sale_id: preSaleId } = parsed.data;
 
+  if (parsed.data.client_visibility_requested && !preSaleId) {
+    return friendlyError(
+      "Selecione a pré-venda para vincular a publicação ao protocolo correto.",
+    );
+  }
+
   try {
     const { supabase, companyId, userProfileId, role, businessArea, profile } =
       await getCurrentUserContext();
@@ -182,6 +217,12 @@ export async function uploadClientDocumentAction(
 
     const { documentId, filePath } = buildClientDocumentPath(companyId, clientId, file.name);
     const contentType = resolveClientDocumentContentType(file);
+    const clientAccess = buildClientAccessRequestFields(
+      parsed.data.document_type,
+      parsed.data.client_visibility_requested,
+      parsed.data.client_download_requested,
+      userProfileId,
+    );
     const buffer = Buffer.from(await file.arrayBuffer());
     const { error: uploadError } = await adminSupabase.storage
       .from(clientDocumentsBucket)
@@ -207,6 +248,7 @@ export async function uploadClientDocumentAction(
       mime_type: contentType,
       file_size: file.size,
       uploaded_by: userProfileId,
+      ...clientAccess.fields,
     });
 
     if (insertError) {
@@ -227,6 +269,8 @@ export async function uploadClientDocumentAction(
         pre_sale_id: preSaleId,
         document_type: parsed.data.document_type,
         file_name: file.name,
+        client_access_status: clientAccess.status,
+        client_download_requested: clientAccess.downloadableByClient,
       },
     });
 
@@ -248,6 +292,7 @@ export async function uploadClientDocumentAction(
     });
 
     revalidatePath(`/clientes/${clientId}`);
+    revalidatePath("/aprovacoes");
 
     if (preSaleId) {
       revalidatePath(`/pre-vendas/${preSaleId}`);
@@ -297,6 +342,12 @@ export async function uploadClientDocumentsBulkAction(
   const { client_id: clientId, pre_sale_id: preSaleId } = parsed.data;
   const uploadedPaths: string[] = [];
 
+  if (parsed.data.client_visibility_requested && !preSaleId) {
+    return friendlyError(
+      "Selecione a pré-venda para vincular a publicação ao protocolo correto.",
+    );
+  }
+
   try {
     const { supabase, companyId, userProfileId, role, businessArea, profile } =
       await getCurrentUserContext();
@@ -344,6 +395,12 @@ export async function uploadClientDocumentsBulkAction(
         files.length === 1 && parsed.data.title
           ? parsed.data.title
           : getTitleFromFileName(file.name);
+      const clientAccess = buildClientAccessRequestFields(
+        parsed.data.document_type,
+        parsed.data.client_visibility_requested,
+        parsed.data.client_download_requested,
+        userProfileId,
+      );
 
       documentsToInsert.push({
         id: documentId,
@@ -358,6 +415,7 @@ export async function uploadClientDocumentsBulkAction(
         mime_type: contentType,
         file_size: file.size,
         uploaded_by: userProfileId,
+        ...clientAccess.fields,
       });
     }
 
@@ -383,6 +441,8 @@ export async function uploadClientDocumentsBulkAction(
         pre_sale_id: preSaleId,
         document_type: parsed.data.document_type,
         file_names: files.map((file) => file.name),
+        client_visibility_requested: parsed.data.client_visibility_requested,
+        client_download_requested: parsed.data.client_download_requested,
       },
     });
 
@@ -412,6 +472,7 @@ export async function uploadClientDocumentsBulkAction(
     });
 
     revalidatePath(`/clientes/${clientId}`);
+    revalidatePath("/aprovacoes");
 
     if (preSaleId) {
       revalidatePath(`/pre-vendas/${preSaleId}`);
@@ -471,6 +532,12 @@ export async function prepareClientDocumentsBulkUploadAction(
   }
 
   const { client_id: clientId, pre_sale_id: preSaleId } = parsed.data;
+
+  if (parsed.data.client_visibility_requested && !preSaleId) {
+    return prepareFriendlyError(
+      "Selecione a pré-venda para vincular a publicação ao protocolo correto.",
+    );
+  }
 
   try {
     const { companyId, role } = await getCurrentUserContext();
@@ -564,6 +631,12 @@ export async function completeClientDocumentsBulkUploadAction(
   const { client_id: clientId, pre_sale_id: preSaleId } = parsed.data;
   const uploadedPaths = uploads.map((upload) => upload.filePath);
 
+  if (parsed.data.client_visibility_requested && !preSaleId) {
+    return friendlyError(
+      "Selecione a pré-venda para vincular a publicação ao protocolo correto.",
+    );
+  }
+
   try {
     const { supabase, companyId, userProfileId, role, businessArea, profile } =
       await getCurrentUserContext();
@@ -601,6 +674,12 @@ export async function completeClientDocumentsBulkUploadAction(
       mime_type: upload.mimeType,
       file_size: upload.fileSize,
       uploaded_by: userProfileId,
+      ...buildClientAccessRequestFields(
+        parsed.data.document_type,
+        parsed.data.client_visibility_requested,
+        parsed.data.client_download_requested,
+        userProfileId,
+      ).fields,
     }));
 
     const { error: insertError } = await adminSupabase
@@ -626,6 +705,8 @@ export async function completeClientDocumentsBulkUploadAction(
         pre_sale_id: preSaleId,
         document_type: parsed.data.document_type,
         file_names: uploads.map((upload) => upload.fileName),
+        client_visibility_requested: parsed.data.client_visibility_requested,
+        client_download_requested: parsed.data.client_download_requested,
       },
     });
 
@@ -655,6 +736,7 @@ export async function completeClientDocumentsBulkUploadAction(
     });
 
     revalidatePath(`/clientes/${clientId}`);
+    revalidatePath("/aprovacoes");
 
     if (preSaleId) {
       revalidatePath(`/pre-vendas/${preSaleId}`);
@@ -785,6 +867,28 @@ export async function updateClientDocumentAction(
     }
 
     const document = await getClientDocumentWithAccess(documentId);
+    const nextPreSaleId = parsed.data.pre_sale_id;
+
+    if (nextPreSaleId) {
+      await assertPreSaleBelongsToClient(
+        nextPreSaleId,
+        document.client_id,
+        companyId,
+      );
+    }
+
+    if (parsed.data.client_visibility_requested && !nextPreSaleId) {
+      return friendlyError(
+        "Selecione a pré-venda para vincular a publicação ao protocolo correto.",
+      );
+    }
+
+    const clientAccess = buildClientAccessRequestFields(
+      parsed.data.document_type,
+      parsed.data.client_visibility_requested,
+      parsed.data.client_download_requested,
+      userProfileId,
+    );
     let nextFilePath = document.file_path;
     let nextFileName = document.file_name;
     let nextMimeType = document.mime_type;
@@ -817,9 +921,10 @@ export async function updateClientDocumentAction(
       nextFileSize = replacementFile.size;
     }
 
-    const { error } = await supabase
+    const { error } = await adminSupabase
       .from("client_documents")
       .update({
+        pre_sale_id: nextPreSaleId,
         document_type: parsed.data.document_type,
         title: parsed.data.title,
         description: parsed.data.description,
@@ -827,6 +932,7 @@ export async function updateClientDocumentAction(
         file_name: nextFileName,
         mime_type: nextMimeType,
         file_size: nextFileSize,
+        ...clientAccess.fields,
         updated_at: new Date().toISOString(),
       })
       .eq("id", documentId)
@@ -858,15 +964,18 @@ export async function updateClientDocumentAction(
       details: {
         client_id: document.client_id,
         pre_sale_id: document.pre_sale_id,
+        next_pre_sale_id: nextPreSaleId,
         document_type: parsed.data.document_type,
         replaced_file: Boolean(uploadedReplacementPath),
+        client_access_status: clientAccess.status,
+        client_download_requested: clientAccess.downloadableByClient,
       },
     });
 
     await recordClientTimelineEvent({
       companyId,
       clientId: document.client_id,
-      preSaleId: document.pre_sale_id,
+      preSaleId: nextPreSaleId,
       eventType:
         replacementFile instanceof File && replacementFile.size > 0
           ? "client_document_replaced"
@@ -890,16 +999,26 @@ export async function updateClientDocumentAction(
     });
 
     revalidatePath(`/clientes/${document.client_id}`);
+    revalidatePath("/aprovacoes");
+    revalidatePath("/acompanhamento");
 
-    if (document.pre_sale_id) {
+    if (nextPreSaleId) {
+      revalidatePath(`/pre-vendas/${nextPreSaleId}`);
+    }
+
+    if (document.pre_sale_id && document.pre_sale_id !== nextPreSaleId) {
       revalidatePath(`/pre-vendas/${document.pre_sale_id}`);
     }
 
     return {
       ok: true,
       message: uploadedReplacementPath
-        ? "Documento substituido com sucesso."
-        : "Documento atualizado com sucesso.",
+        ? clientAccess.status === "pending"
+          ? "Documento substituído e enviado para nova aprovação."
+          : "Documento substituído com sucesso."
+        : clientAccess.status === "pending"
+          ? "Documento atualizado e enviado para aprovação."
+          : "Documento atualizado com sucesso.",
     };
   } catch (error) {
     return friendlyError(
@@ -968,6 +1087,8 @@ export async function softDeleteClientDocumentAction(
     });
 
     revalidatePath(`/clientes/${document.client_id}`);
+    revalidatePath("/aprovacoes");
+    revalidatePath("/acompanhamento");
 
     if (document.pre_sale_id) {
       revalidatePath(`/pre-vendas/${document.pre_sale_id}`);

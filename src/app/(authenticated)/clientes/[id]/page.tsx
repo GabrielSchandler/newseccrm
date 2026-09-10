@@ -692,6 +692,12 @@ export default async function ClientePage({
                 clientId={client.id}
                 title="Documentos do cliente"
                 description="Anexe e consulte documentos vinculados a este cliente usando links temporarios e bucket privado."
+                preSales={clientPreSales.map((preSale) => ({
+                  id: preSale.id,
+                  tracking_protocol: preSale.tracking_protocol,
+                  service_type: preSale.service_type,
+                  created_at: preSale.created_at,
+                }))}
               />
 
         <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">

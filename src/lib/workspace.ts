@@ -114,6 +114,7 @@ export function formatBusinessAreaLabel(area: CompanyBusinessArea | string | nul
 
 const managementPrefixes = [
   "/dashboard",
+  "/aprovacoes",
   "/usuarios",
   "/empresa",
   "/backups",

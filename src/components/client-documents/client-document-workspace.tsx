@@ -6,6 +6,7 @@ import {
   type ClientDocumentListItem,
 } from "@/components/client-documents/client-document-list";
 import { ClientDocumentUpload } from "@/components/client-documents/client-document-upload";
+import type { ClientDocumentPreSaleOption } from "@/components/client-documents/client-document-upload";
 import {
   clientDocumentBadgeClass,
   clientDocumentGroupAccentClass,
@@ -21,6 +22,7 @@ type ClientDocumentWorkspaceProps = {
   preSaleId?: string | null;
   documents: ClientDocumentListItem[];
   canManage: boolean;
+  preSales?: ClientDocumentPreSaleOption[];
 };
 
 const documentTypeDescriptions: Record<ClientDocumentType, string> = {
@@ -34,6 +36,7 @@ export function ClientDocumentWorkspace({
   preSaleId = null,
   documents,
   canManage,
+  preSales = [],
 }: ClientDocumentWorkspaceProps) {
   const [activeDocumentType, setActiveDocumentType] =
     useState<ClientDocumentType>("documentacao");
@@ -141,12 +144,14 @@ export function ClientDocumentWorkspace({
           clientId={clientId}
           preSaleId={preSaleId}
           fixedDocumentType={activeDocumentType}
+          preSales={preSales}
         />
         <ClientDocumentList
           key={`list-${activeDocumentType}`}
           documents={activeDocuments}
           canManage={canManage}
           visibleTypes={[activeDocumentType]}
+          preSales={preSales}
         />
       </div>
     </div>

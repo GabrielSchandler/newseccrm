@@ -4,6 +4,7 @@ import {
   BarChart3,
   Building2,
   Calculator,
+  ClipboardCheck,
   ClipboardList,
   FileSignature,
   FileText,
@@ -23,6 +24,7 @@ export type SidebarNavigationItem = {
   label: string;
   icon:
     | "dashboard"
+    | "approvals"
     | "clients"
     | "preSales"
     | "calculations"
@@ -51,6 +53,7 @@ type SidebarNavProps = {
 
 const icons = {
   dashboard: LayoutDashboard,
+  approvals: ClipboardCheck,
   clients: Users,
   preSales: Handshake,
   calculations: Calculator,

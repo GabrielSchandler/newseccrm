@@ -1,6 +1,16 @@
 "use client";
 
-import { CheckCircle2, Clock3, Eye, EyeOff, PenLine, Plus, Trash2 } from "lucide-react";
+import {
+  CheckCircle2,
+  Clock3,
+  Eye,
+  EyeOff,
+  PenLine,
+  Plus,
+  ShieldAlert,
+  ShieldCheck,
+  Trash2,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
 import {
@@ -10,6 +20,7 @@ import {
 } from "@/app/(authenticated)/clientes/tracking-actions";
 import { formatDateTime } from "@/lib/clients/formatters";
 import { formatPreSaleType } from "@/lib/pre-sales/formatters";
+import { formatClientApprovalStatus } from "@/types/client-approval";
 import {
   clientTrackingStatusOptions,
   formatClientTrackingStatus,
@@ -87,6 +98,22 @@ function getPreSaleLabel(preSale: TrackingPreSaleOption) {
   const type = formatPreSaleType(preSale.pre_sale_type as PreSaleType);
   const service = preSale.service_type ? ` — ${preSale.service_type}` : "";
   return `${protocol} | ${type}${service}`;
+}
+
+function getApprovalClassName(status: ClientTrackingUpdate["approval_status"]) {
+  if (status === "approved") {
+    return "border-emerald-200 bg-emerald-50 text-emerald-700";
+  }
+
+  if (status === "pending") {
+    return "border-amber-200 bg-amber-50 text-amber-800";
+  }
+
+  if (status === "rejected") {
+    return "border-rose-200 bg-rose-50 text-rose-700";
+  }
+
+  return "border-slate-200 bg-slate-50 text-slate-600";
 }
 
 export function ClientTrackingSection({
@@ -228,7 +255,8 @@ export function ClientTrackingSection({
             </h2>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
               Registre movimentações claras para reduzir cobranças repetidas do
-              cliente. Apenas itens marcados como visíveis aparecem na consulta pública.
+              cliente. Informações destinadas ao portal só aparecem depois da
+              aprovação da Gestão.
             </p>
           </div>
           <div className="rounded-lg border border-teal-200 bg-white px-4 py-3 text-sm text-slate-700 shadow-sm">
@@ -322,7 +350,7 @@ export function ClientTrackingSection({
               </label>
             </div>
 
-            <label className="flex items-start gap-3 rounded-lg border border-teal-100 bg-white p-3 text-sm text-slate-700">
+            <label className="flex items-start gap-3 rounded-lg border border-teal-200 bg-white p-3 text-sm text-slate-700">
               <input
                 type="checkbox"
                 checked={form.visible_to_client}
@@ -333,10 +361,10 @@ export function ClientTrackingSection({
               />
               <span>
                 <span className="block font-semibold text-slate-950">
-                  Mostrar no portal do cliente
+                  Enviar para aprovação no portal
                 </span>
                 <span className="mt-1 block text-xs leading-5 text-slate-500">
-                  Desmarque para registrar apenas como controle interno.
+                  A informação ficará invisível ao cliente até a Gestão revisar e aprovar. Desmarque para manter apenas como controle interno.
                 </span>
               </span>
             </label>
@@ -348,7 +376,7 @@ export function ClientTrackingSection({
               className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <Plus className="h-4 w-4" />
-              Registrar acompanhamento
+              {form.visible_to_client ? "Enviar para aprovação" : "Registrar internamente"}
             </button>
 
             {feedback ? (
@@ -438,9 +466,14 @@ export function ClientTrackingSection({
                                 }
                                 className="h-4 w-4 rounded border-slate-300 text-teal-700 focus:ring-teal-600"
                               />
-                              Visível ao cliente
+                              Solicitar publicação
                             </label>
                           </div>
+                          {update.approval_status === "approved" ? (
+                            <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-800">
+                              Ao salvar, a aprovação atual será removida e a edição voltará para análise da Gestão.
+                            </p>
+                          ) : null}
                           <div className="flex flex-wrap gap-2">
                             <button
                               type="button"
@@ -471,16 +504,27 @@ export function ClientTrackingSection({
                                 >
                                   {formatClientTrackingStatus(update.status)}
                                 </span>
-                                <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-600">
-                                  {update.visible_to_client ? (
-                                    <Eye className="h-3.5 w-3.5" />
+                                <span
+                                  className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-semibold ${getApprovalClassName(
+                                    update.approval_status,
+                                  )}`}
+                                >
+                                  {update.approval_status === "approved" ? (
+                                    <ShieldCheck className="h-3.5 w-3.5" />
+                                  ) : update.approval_status === "pending" ? (
+                                    <Clock3 className="h-3.5 w-3.5" />
+                                  ) : update.approval_status === "rejected" ? (
+                                    <ShieldAlert className="h-3.5 w-3.5" />
                                   ) : (
                                     <EyeOff className="h-3.5 w-3.5" />
                                   )}
-                                  {update.visible_to_client
-                                    ? "Visível ao cliente"
-                                    : "Interno"}
+                                  {formatClientApprovalStatus(update.approval_status)}
                                 </span>
+                                {update.approval_status === "approved" ? (
+                                  <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700">
+                                    <Eye className="h-3.5 w-3.5" /> Visível no portal
+                                  </span>
+                                ) : null}
                               </div>
                               <h3 className="mt-3 text-base font-semibold text-slate-950">
                                 {update.title}
@@ -508,6 +552,12 @@ export function ClientTrackingSection({
                           <p className="mt-3 whitespace-pre-line text-sm leading-6 text-slate-700">
                             {update.description}
                           </p>
+                          {update.approval_status === "rejected" && update.approval_review_note ? (
+                            <div className="mt-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs leading-5 text-rose-800">
+                              <span className="font-semibold">Ajuste solicitado pela Gestão:</span>{" "}
+                              {update.approval_review_note}
+                            </div>
+                          ) : null}
                           <div className="mt-4 flex flex-wrap gap-3 border-t border-slate-100 pt-3 text-xs font-medium text-slate-500">
                             <span>{formatDateTime(update.event_at)}</span>
                             <span>

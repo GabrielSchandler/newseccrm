@@ -1,6 +1,15 @@
 "use client";
 
-import { ChevronDown, FileText } from "lucide-react";
+import {
+  CheckCircle2,
+  ChevronDown,
+  Clock3,
+  Download,
+  Eye,
+  EyeOff,
+  FileText,
+  ShieldAlert,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Fragment, useState, useTransition } from "react";
 import {
@@ -21,6 +30,7 @@ import {
   prepareDocumentTab,
 } from "@/lib/browser/open-document-tab";
 import { displayValue, formatDateTime } from "@/lib/clients/formatters";
+import { formatClientApprovalStatus } from "@/types/client-approval";
 import {
   clientDocumentAcceptedInputTypes,
   clientDocumentTypes,
@@ -28,6 +38,7 @@ import {
   type ClientDocument,
   type ClientDocumentType,
 } from "@/types/client-document";
+import type { ClientDocumentPreSaleOption } from "./client-document-upload";
 
 export type ClientDocumentListItem = ClientDocument & {
   uploaded_by_name: string | null;
@@ -37,6 +48,7 @@ type ClientDocumentListProps = {
   documents: ClientDocumentListItem[];
   canManage: boolean;
   visibleTypes?: ClientDocumentType[];
+  preSales?: ClientDocumentPreSaleOption[];
 };
 
 const initialOpenGroups: Record<ClientDocumentType, boolean> = {
@@ -49,6 +61,7 @@ export function ClientDocumentList({
   documents,
   canManage,
   visibleTypes,
+  preSales = [],
 }: ClientDocumentListProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -59,6 +72,9 @@ export function ClientDocumentList({
   const [editingType, setEditingType] = useState<ClientDocumentType>("documentacao");
   const [editingTitle, setEditingTitle] = useState("");
   const [editingDescription, setEditingDescription] = useState("");
+  const [editingPreSaleId, setEditingPreSaleId] = useState("");
+  const [editingClientVisibility, setEditingClientVisibility] = useState(false);
+  const [editingClientDownload, setEditingClientDownload] = useState(false);
   const [replacementFile, setReplacementFile] = useState<File | null>(null);
 
   const documentTypesToShow = visibleTypes?.length
@@ -76,6 +92,9 @@ export function ClientDocumentList({
     setEditingType(normalizeClientDocumentType(document.document_type));
     setEditingTitle(document.title ?? "");
     setEditingDescription(document.description ?? "");
+    setEditingPreSaleId(document.pre_sale_id ?? "");
+    setEditingClientVisibility(Boolean(document.client_visibility_requested));
+    setEditingClientDownload(Boolean(document.client_download_requested));
     setReplacementFile(null);
     setState(null);
   }
@@ -151,9 +170,14 @@ export function ClientDocumentList({
       const result = await updateClientDocumentAction(
         documentId,
         {
+          pre_sale_id: editingPreSaleId,
           document_type: editingType,
           title: editingTitle,
           description: editingDescription,
+          client_visibility_requested:
+            editingType === "extrajudicial" && editingClientVisibility,
+          client_download_requested:
+            editingType === "extrajudicial" && editingClientDownload,
         },
         formData,
       );
@@ -176,9 +200,14 @@ export function ClientDocumentList({
       const result = await updateClientDocumentAction(
         document.id,
         {
+          pre_sale_id: document.pre_sale_id ?? "",
           document_type: nextType,
           title: document.title,
           description: document.description,
+          client_visibility_requested:
+            nextType === "extrajudicial" && Boolean(document.client_visibility_requested),
+          client_download_requested:
+            nextType === "extrajudicial" && Boolean(document.client_download_requested),
         },
         new FormData(),
       );
@@ -256,7 +285,7 @@ export function ClientDocumentList({
                 {isOpen ? (
                   group.documents.length ? (
                     <div className="overflow-x-auto">
-                      <table className="w-full min-w-[980px] border-collapse text-left text-sm">
+                      <table className="w-full min-w-[1180px] border-collapse text-left text-sm">
                         <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
                           <tr>
                             <th className="px-4 py-3 font-semibold">Tipo</th>
@@ -265,6 +294,9 @@ export function ClientDocumentList({
                             <th className="px-4 py-3 font-semibold">Tamanho</th>
                             <th className="px-4 py-3 font-semibold">Enviado por</th>
                             <th className="px-4 py-3 font-semibold">Data</th>
+                            {group.value === "extrajudicial" ? (
+                              <th className="px-4 py-3 font-semibold">Portal do cliente</th>
+                            ) : null}
                             <th className="px-4 py-3 font-semibold">Ações</th>
                           </tr>
                         </thead>
@@ -332,6 +364,51 @@ export function ClientDocumentList({
                                   <td className="px-4 py-3 text-slate-700">
                                     {formatDateTime(document.created_at)}
                                   </td>
+                                  {group.value === "extrajudicial" ? (
+                                    <td className="px-4 py-3">
+                                      <div className="space-y-2">
+                                        <span
+                                          className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold ${
+                                            document.client_access_status === "approved"
+                                              ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                                              : document.client_access_status === "pending"
+                                                ? "border-amber-200 bg-amber-50 text-amber-800"
+                                                : document.client_access_status === "rejected"
+                                                  ? "border-rose-200 bg-rose-50 text-rose-700"
+                                                  : "border-slate-200 bg-slate-50 text-slate-600"
+                                          }`}
+                                        >
+                                          {document.client_access_status === "approved" ? (
+                                            <CheckCircle2 className="h-3.5 w-3.5" />
+                                          ) : document.client_access_status === "pending" ? (
+                                            <Clock3 className="h-3.5 w-3.5" />
+                                          ) : document.client_access_status === "rejected" ? (
+                                            <ShieldAlert className="h-3.5 w-3.5" />
+                                          ) : (
+                                            <EyeOff className="h-3.5 w-3.5" />
+                                          )}
+                                          {formatClientApprovalStatus(document.client_access_status)}
+                                        </span>
+                                        {document.client_visibility_requested ? (
+                                          <div className="flex flex-wrap gap-2 text-xs text-slate-500">
+                                            <span className="inline-flex items-center gap-1">
+                                              <Eye className="h-3.5 w-3.5" /> Existência
+                                            </span>
+                                            {document.client_download_requested ? (
+                                              <span className="inline-flex items-center gap-1">
+                                                <Download className="h-3.5 w-3.5" /> Download
+                                              </span>
+                                            ) : null}
+                                          </div>
+                                        ) : null}
+                                        {document.client_access_review_note ? (
+                                          <p className="max-w-56 text-xs leading-5 text-rose-700">
+                                            {document.client_access_review_note}
+                                          </p>
+                                        ) : null}
+                                      </div>
+                                    </td>
+                                  ) : null}
                                   <td className="px-4 py-3">
                                     <div className="flex flex-wrap gap-2">
                                       <button
@@ -375,7 +452,10 @@ export function ClientDocumentList({
                                 </tr>
                                 {editingDocumentId === document.id ? (
                                   <tr className="bg-slate-50/70">
-                                    <td colSpan={7} className="px-4 py-4">
+                                    <td
+                                      colSpan={group.value === "extrajudicial" ? 8 : 7}
+                                      className="px-4 py-4"
+                                    >
                                       <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
                                         <p className="text-sm font-semibold text-slate-950">
                                           Editar ou substituir documento
@@ -447,6 +527,81 @@ export function ClientDocumentList({
                                               do documento atual.
                                             </p>
                                           </div>
+                                          {editingType === "extrajudicial" ? (
+                                            <div className="space-y-3 rounded-lg border border-teal-200 bg-teal-50/60 p-4 md:col-span-2">
+                                              <div>
+                                                <p className="text-sm font-semibold text-slate-950">
+                                                  Solicitar acesso no portal do cliente
+                                                </p>
+                                                <p className="mt-1 text-xs leading-5 text-slate-600">
+                                                  Alterar qualquer opção envia o documento para análise da Gestão. Enquanto estiver pendente, nada será exibido ao cliente.
+                                                </p>
+                                              </div>
+                                              <div className="space-y-2">
+                                                <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                                  Pré-venda / protocolo
+                                                </label>
+                                                <select
+                                                  value={editingPreSaleId}
+                                                  onChange={(event) => setEditingPreSaleId(event.target.value)}
+                                                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
+                                                >
+                                                  <option value="">Selecione uma pré-venda</option>
+                                                  {preSales.map((item) => (
+                                                    <option key={item.id} value={item.id}>
+                                                      {item.tracking_protocol || "Sem protocolo"}
+                                                      {item.service_type ? ` | ${item.service_type}` : ""}
+                                                    </option>
+                                                  ))}
+                                                </select>
+                                                <p className="text-xs leading-5 text-slate-500">
+                                                  Obrigatório para qualquer acesso no portal do cliente.
+                                                </p>
+                                              </div>
+                                              <div className="grid gap-3 sm:grid-cols-2">
+                                                <label className="flex items-start gap-3 rounded-md border border-slate-200 bg-white p-3 text-sm text-slate-700">
+                                                  <input
+                                                    type="checkbox"
+                                                    checked={editingClientVisibility}
+                                                    onChange={(event) => {
+                                                      const checked = event.target.checked;
+                                                      setEditingClientVisibility(checked);
+                                                      if (!checked) setEditingClientDownload(false);
+                                                    }}
+                                                    className="mt-1 h-4 w-4 rounded border-slate-300 text-teal-700 focus:ring-teal-600"
+                                                  />
+                                                  <span>
+                                                    <span className="block font-semibold text-slate-950">
+                                                      Mostrar que existe
+                                                    </span>
+                                                    <span className="mt-1 block text-xs text-slate-500">
+                                                      Exibe nome e situação, sem abrir o arquivo.
+                                                    </span>
+                                                  </span>
+                                                </label>
+                                                <label className="flex items-start gap-3 rounded-md border border-slate-200 bg-white p-3 text-sm text-slate-700">
+                                                  <input
+                                                    type="checkbox"
+                                                    checked={editingClientDownload}
+                                                    onChange={(event) => {
+                                                      const checked = event.target.checked;
+                                                      setEditingClientDownload(checked);
+                                                      if (checked) setEditingClientVisibility(true);
+                                                    }}
+                                                    className="mt-1 h-4 w-4 rounded border-slate-300 text-teal-700 focus:ring-teal-600"
+                                                  />
+                                                  <span>
+                                                    <span className="block font-semibold text-slate-950">
+                                                      Permitir download
+                                                    </span>
+                                                    <span className="mt-1 block text-xs text-slate-500">
+                                                      Libera o arquivo apenas após a aprovação.
+                                                    </span>
+                                                  </span>
+                                                </label>
+                                              </div>
+                                            </div>
+                                          ) : null}
                                         </div>
                                         <div className="mt-4 flex flex-wrap gap-2">
                                           <button

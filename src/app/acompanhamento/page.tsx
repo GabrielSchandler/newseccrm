@@ -1,5 +1,13 @@
 import Link from "next/link";
-import { CheckCircle2, Clock3, FileSearch, LockKeyhole, Search } from "lucide-react";
+import {
+  CheckCircle2,
+  Clock3,
+  Download,
+  FileSearch,
+  FileText,
+  LockKeyhole,
+  Search,
+} from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { displayCpf, formatDate, formatDateTime } from "@/lib/clients/formatters";
 import { formatPreSaleType } from "@/lib/pre-sales/formatters";
@@ -9,6 +17,7 @@ import {
   type ClientTrackingStatus,
   type ClientTrackingUpdate,
 } from "@/types/client-tracking";
+import type { ClientDocument } from "@/types/client-document";
 import type { PreSale, PreSaleType } from "@/types/pre-sale";
 
 export const dynamic = "force-dynamic";
@@ -31,6 +40,26 @@ type PublicCompany = {
   id: string;
   trade_name: string | null;
   legal_name: string | null;
+};
+
+type PublicTrackingUpdate = Pick<
+  ClientTrackingUpdate,
+  "id" | "title" | "description" | "status" | "event_at"
+>;
+
+type PublicClientDocument = Pick<
+  ClientDocument,
+  | "id"
+  | "title"
+  | "description"
+  | "file_name"
+  | "file_path"
+  | "mime_type"
+  | "created_at"
+  | "client_access_reviewed_at"
+  | "client_download_requested"
+> & {
+  download_url: string | null;
 };
 
 function onlyDigits(value: string | null | undefined) {
@@ -125,7 +154,7 @@ async function findTrackingResult(cpf: string, protocol: string) {
     return null;
   }
 
-  const [{ data: companyData }, { data: updatesData }] = await Promise.all([
+  const [companyResult, updatesResult, documentsResult] = await Promise.all([
     adminSupabase
       .from("companies")
       .select("id, trade_name, legal_name")
@@ -133,21 +162,62 @@ async function findTrackingResult(cpf: string, protocol: string) {
       .maybeSingle(),
     adminSupabase
       .from("client_tracking_updates")
-      .select("*")
+      .select("id, title, description, status, event_at")
       .eq("company_id", preSale.company_id)
       .eq("client_id", client.id)
       .eq("pre_sale_id", preSale.id)
       .eq("visible_to_client", true)
+      .eq("approval_status", "approved")
       .is("deleted_at", null)
       .order("event_at", { ascending: false })
       .order("created_at", { ascending: false }),
+    adminSupabase
+      .from("client_documents")
+      .select(
+        "id, title, description, file_name, file_path, mime_type, created_at, client_access_reviewed_at, client_download_requested",
+      )
+      .eq("company_id", preSale.company_id)
+      .eq("client_id", client.id)
+      .eq("pre_sale_id", preSale.id)
+      .eq("document_type", "extrajudicial")
+      .eq("client_access_status", "approved")
+      .eq("client_visibility_requested", true)
+      .is("deleted_at", null)
+      .order("created_at", { ascending: false }),
   ]);
+
+  if (companyResult.error) throw companyResult.error;
+  if (updatesResult.error) throw updatesResult.error;
+  if (documentsResult.error) throw documentsResult.error;
+
+  const documents = (documentsResult.data ?? []) as Array<
+    Omit<PublicClientDocument, "download_url">
+  >;
+  const publicDocuments = await Promise.all(
+    documents.map(async (document) => {
+      if (!document.client_download_requested) {
+        return { ...document, download_url: null };
+      }
+
+      const { data: signedData, error: signedError } = await adminSupabase.storage
+        .from("client-documents")
+        .createSignedUrl(document.file_path, 60 * 10, {
+          download: document.file_name,
+        });
+
+      return {
+        ...document,
+        download_url: signedError ? null : signedData?.signedUrl ?? null,
+      };
+    }),
+  );
 
   return {
     client,
     preSale,
-    company: companyData as PublicCompany | null,
-    updates: (updatesData ?? []) as ClientTrackingUpdate[],
+    company: companyResult.data as PublicCompany | null,
+    updates: (updatesResult.data ?? []) as PublicTrackingUpdate[],
+    documents: publicDocuments,
   };
 }
 
@@ -194,8 +264,8 @@ export default async function AcompanhamentoPage({
               Consulta protegida
             </div>
             <p className="mt-1 max-w-sm">
-              Nenhum dado financeiro, documento pessoal ou informação sensível é
-              exibido nesta página.
+              Nenhum documento pessoal é exibido. Somente movimentações e
+              arquivos extrajudiciais aprovados pela equipe ficam disponíveis.
             </p>
           </div>
         </div>
@@ -376,6 +446,76 @@ export default async function AcompanhamentoPage({
                     </div>
                   )}
                 </div>
+
+                <section className="border-t border-slate-200 px-6 py-6">
+                  <div className="flex items-start gap-3">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-sky-200 bg-sky-50 text-sky-700">
+                      <FileText className="h-5 w-5" />
+                    </span>
+                    <div>
+                      <h3 className="text-lg font-semibold text-slate-950">
+                        Documentos extrajudiciais
+                      </h3>
+                      <p className="mt-1 text-sm leading-6 text-slate-600">
+                        A disponibilidade para download depende da autorização
+                        concedida pela equipe responsável.
+                      </p>
+                    </div>
+                  </div>
+
+                  {result.documents.length ? (
+                    <div className="mt-5 divide-y divide-slate-200 rounded-lg border border-slate-200 bg-white">
+                      {result.documents.map((document) => (
+                        <article
+                          key={document.id}
+                          className="flex flex-col gap-4 p-4 transition hover:bg-slate-50 sm:flex-row sm:items-center sm:justify-between"
+                        >
+                          <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <h4 className="break-words font-semibold text-slate-950">
+                                {document.title || document.file_name}
+                              </h4>
+                              <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700">
+                                Documento registrado
+                              </span>
+                            </div>
+                            {document.description ? (
+                              <p className="mt-2 text-sm leading-6 text-slate-600">
+                                {document.description}
+                              </p>
+                            ) : null}
+                            <p className="mt-2 text-xs font-medium text-slate-500">
+                              Disponibilizado em{" "}
+                              {formatDate(
+                                document.client_access_reviewed_at ?? document.created_at,
+                              )}
+                            </p>
+                          </div>
+                          {document.download_url ? (
+                            <a
+                              href={document.download_url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-800"
+                            >
+                              <Download className="h-4 w-4" />
+                              Baixar arquivo
+                            </a>
+                          ) : (
+                            <span className="shrink-0 text-xs font-semibold text-slate-500">
+                              Download não liberado
+                            </span>
+                          )}
+                        </article>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="mt-5 rounded-lg border border-dashed border-slate-300 bg-slate-50 px-5 py-6 text-sm leading-6 text-slate-600">
+                      Nenhum documento extrajudicial foi liberado para este
+                      protocolo até o momento.
+                    </div>
+                  )}
+                </section>
               </div>
             ) : (
               <div className="flex min-h-[360px] flex-col items-center justify-center px-6 py-12 text-center">

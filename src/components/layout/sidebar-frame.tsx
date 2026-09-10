@@ -86,6 +86,7 @@ export function SidebarFrame({
       ((currentWorkspace === "management" &&
         [
           "/dashboard",
+          "/aprovacoes",
           "/documentos/templates",
           "/emails/templates",
           "/integracoes",

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { getCurrentUserContext } from "@/lib/auth/current-user";
 import { recordClientTimelineEvent } from "@/lib/client-timeline/service";
+import { getTrackingApprovalStatus } from "@/lib/client-approvals/workflow";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { ClientTrackingStatus, ClientTrackingUpdate } from "@/types/client-tracking";
 
@@ -132,6 +133,8 @@ export async function createClientTrackingUpdateAction(
     }
 
     const adminSupabase = createAdminClient();
+    const approvalStatus = getTrackingApprovalStatus(parsed.data.visible_to_client);
+    const requestedAt = approvalStatus === "pending" ? new Date().toISOString() : null;
     const { data, error } = await adminSupabase
       .from("client_tracking_updates")
       .insert({
@@ -142,6 +145,12 @@ export async function createClientTrackingUpdateAction(
         description: parsed.data.description,
         status: parsed.data.status,
         visible_to_client: parsed.data.visible_to_client,
+        approval_status: approvalStatus,
+        approval_requested_by: approvalStatus === "pending" ? userProfileId : null,
+        approval_requested_at: requestedAt,
+        approval_reviewed_by: null,
+        approval_reviewed_at: null,
+        approval_review_note: null,
         event_at: eventAt,
         created_by: userProfileId,
       })
@@ -167,16 +176,21 @@ export async function createClientTrackingUpdateAction(
         tracking_update_id: (data as { id: string }).id,
         tracking_status: parsed.data.status,
         visible_to_client: parsed.data.visible_to_client,
+        approval_status: approvalStatus,
         event_at: eventAt,
       },
     });
 
     revalidatePath(`/clientes/${parsed.data.client_id}`);
+    revalidatePath("/aprovacoes");
     revalidatePath("/acompanhamento");
 
     return {
       ok: true,
-      message: "Acompanhamento registrado com sucesso.",
+      message:
+        approvalStatus === "pending"
+          ? "Atualização enviada para aprovação da Gestão."
+          : "Atualização interna registrada com sucesso.",
     };
   } catch (error) {
     return friendlyError(
@@ -217,6 +231,8 @@ export async function updateClientTrackingUpdateAction(
     }
 
     const adminSupabase = createAdminClient();
+    const approvalStatus = getTrackingApprovalStatus(parsed.data.visible_to_client);
+    const requestedAt = approvalStatus === "pending" ? new Date().toISOString() : null;
     const { error } = await adminSupabase
       .from("client_tracking_updates")
       .update({
@@ -224,6 +240,12 @@ export async function updateClientTrackingUpdateAction(
         description: parsed.data.description,
         status: parsed.data.status as ClientTrackingStatus,
         visible_to_client: parsed.data.visible_to_client,
+        approval_status: approvalStatus,
+        approval_requested_by: approvalStatus === "pending" ? userProfileId : null,
+        approval_requested_at: requestedAt,
+        approval_reviewed_by: null,
+        approval_reviewed_at: null,
+        approval_review_note: null,
         event_at: eventAt,
         updated_by: userProfileId,
         updated_at: new Date().toISOString(),
@@ -251,16 +273,21 @@ export async function updateClientTrackingUpdateAction(
         previous_status: existing.status,
         next_status: parsed.data.status,
         visible_to_client: parsed.data.visible_to_client,
+        approval_status: approvalStatus,
         event_at: eventAt,
       },
     });
 
     revalidatePath(`/clientes/${existing.client_id}`);
+    revalidatePath("/aprovacoes");
     revalidatePath("/acompanhamento");
 
     return {
       ok: true,
-      message: "Acompanhamento atualizado com sucesso.",
+      message:
+        approvalStatus === "pending"
+          ? "Edição enviada para uma nova aprovação da Gestão."
+          : "Atualização mantida apenas para uso interno.",
     };
   } catch (error) {
     return friendlyError(
@@ -320,6 +347,7 @@ export async function deleteClientTrackingUpdateAction(
     });
 
     revalidatePath(`/clientes/${existing.client_id}`);
+    revalidatePath("/aprovacoes");
     revalidatePath("/acompanhamento");
 
     return {
