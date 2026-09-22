@@ -1,3 +1,14 @@
+# NewSec (base derivada do GRSCRM)
+
+> Este repositório é a base do produto **NewSec**, que unifica o CRM (GRSCRM,
+> em produção), o atendimento (newsecchat) e a produtividade (newsecfocus) em
+> um único sistema. Ele nasceu como um clone completo do GRSCRM (histórico Git
+> preservado) em 22/09/2026. Leia `CLAUDE.md`, `AGENTS.md` e
+> `docs/PROJECT_SPEC.md` antes de mexer em qualquer coisa — eles apontam para
+> a especificação completa e o checkpoint de progresso. O texto abaixo é o
+> README original do CRM e ainda descreve partes do sistema real; não reflete
+> o estado atual do app (339+ arquivos em `src/app`), só o scaffold inicial.
+
 # CRM SaaS Multiempresa
 
 Projeto base em Next.js com App Router, TypeScript, Tailwind CSS e Supabase Auth.

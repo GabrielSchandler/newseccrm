@@ -1,5 +1,5 @@
 {
-  "name": "crm-saas-multiempresa",
+  "name": "newseccrm",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -62,14 +62,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/GabrielSchandler/GRSCRM.git"
+    "url": "git+https://github.com/GabrielSchandler/newseccrm.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "bugs": {
-    "url": "https://github.com/GabrielSchandler/GRSCRM/issues"
+    "url": "https://github.com/GabrielSchandler/newseccrm/issues"
   },
-  "homepage": "https://github.com/GabrielSchandler/GRSCRM#readme"
+  "homepage": "https://github.com/GabrielSchandler/newseccrm#readme"
 }
