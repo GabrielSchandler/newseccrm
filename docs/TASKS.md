@@ -52,21 +52,49 @@ Ver critério de aceite de cada fase na especificação, seção 17.
 
 ## Fase 1 — Base unificada e sistema visual
 
-- [ ] Tokens de tema claro/escuro (CSS custom properties), sem flash de tema,
-      persistência por usuário.
-- [ ] Shell/navegação: menu lateral canônico (baseado nas imagens 02/05/06/09/10
-      — família NewSec sidebar escura, ver `reference-images/`), preservando
-      todas as rotas existentes do CRM.
-- [ ] Tela de atendimento navegável (`/atendimento`) com dados sintéticos em
-      modo demo explícito: lista de conversas, conversa, painel de contexto.
-- [ ] Drawer de ações (pré-venda/cadastro/análise) com estados de
-      loading/vazio/erro reais, sem simular backend concluído.
+- [x] Tokens de tema claro/escuro (CSS custom properties escopadas em
+      `.ns-shell`, `src/app/globals.css`), sem flash de tema (script inline
+      em `ThemeScript`, resolve tema salvo ou preferência do sistema antes
+      da primeira pintura), persistência por usuário via `localStorage`
+      (`newsec-theme`). `@custom-variant dark` redefinido para seguir
+      `data-theme`, não `prefers-color-scheme` puro.
+- [x] Shell/navegação: menu lateral (`NewSecSidebarNav`) com os 9 itens da
+      especificação seção 8.2. Atendimento abre o novo shell; Clientes/
+      Comercial/Jurídico/Financeiro/Academia linkam para as rotas reais já
+      existentes do CRM (fora do novo shell); Dashboards/Produtividade/
+      Configurações aparecem desabilitados ("ainda não implementado") em vez
+      de link morto. Nenhuma rota existente do CRM foi tocada.
+- [x] Tela de atendimento navegável (`/atendimento`, fora do grupo
+      `(authenticated)` — não depende de sessão Supabase) com dados
+      sintéticos em `src/lib/demo/atendimento-data.ts`, claramente
+      identificados (`DemoBanner` fixo no topo): lista de conversas
+      (abas Meus/Equipe/IA, busca, badges de estado), conversa (mensagens,
+      documento, nota interna diferenciada, composer com aviso de
+      demonstração ao "enviar"), painel de contexto (resumo, telefones,
+      pré-venda/pós-venda/vendas, faltantes, ações rápidas).
+- [x] Drawer de "Criar pré-venda" com as seções e campos **reais** do CRM
+      (Contratante, Titular da dívida, Dados financeiros, Contratação e
+      negociação, Dados jurídicos, Pagamentos previstos — espelhando
+      `src/components/pre-sales/pre-sales-form.tsx` e a obrigatoriedade real
+      de `src/lib/pre-sales/schema.ts`), com marcação de obrigatório e de
+      campo sugerido pela IA, e estado de erro recuperável explícito ao
+      "salvar" (Fase 1 é só demonstração visual — gravação real é Fase 3).
+      Ação "Criar pré-venda" fica desabilitada com explicação quando o
+      contato não tem cliente cadastrado.
+- [x] Verificado em navegador de verdade (Playwright headless, não só
+      build): shell claro e escuro, troca de conversa, abertura/fechamento
+      do drawer nos dois temas, zero erros de console. Um bug real de
+      hidratação foi encontrado e corrigido nesse processo (faltava
+      `suppressHydrationWarning` no wrapper que o script de tema manipula
+      via DOM) — ver `PROGRESS.md`.
 - [ ] Fundação de identidade/empresa/permissão: modelo de vínculos
       usuário↔empresa↔equipe, migrações aditivas em homologação (ou SQL
-      preparado + execução pendente registrada se não houver ambiente).
-- [ ] Build, typecheck e lint passando; regressões relevantes do CRM
-      verificadas.
-- [ ] Atualizar `PROGRESS.md` com checkpoint completo ao final da fase.
+      preparado + execução pendente registrada se não houver ambiente) —
+      ainda não iniciado nesta entrega; ver decisões propostas em
+      `PERMISSIONS.md` seção 3.
+- [x] Build, typecheck e lint passando; regressões relevantes do CRM
+      verificadas (61→62 rotas, nenhuma existente alterada).
+- [x] Atualizar `PROGRESS.md` com checkpoint completo ao final da fase.
 
 ## Fases 2–6
 

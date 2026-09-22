@@ -135,13 +135,132 @@ separado do banco de produção do CRM.
   sugerido como provisório na especificação), porque o Gabriel já criou e
   informou o repositório real `github.com/GabrielSchandler/newseccrm`.
 
-**Próximo passo executável:** iniciar a Fase 1 (tokens de tema
-claro/escuro, shell/navegação baseada na família de mockups sidebar escura
-canônica, tela de atendimento navegável com dados sintéticos, drawers de
-ação) conforme `TASKS.md`, preservando as 61 rotas atuais do CRM confirmadas
-no build. Escrever `docs/ARCHITECTURE.md` e `docs/METRICS_CATALOG.md`
-formais pode acontecer em paralelo ou logo em seguida — o conteúdo factual
-já está levantado.
+**Próximo passo executável (histórico — superado pelo checkpoint abaixo):**
+iniciar a Fase 1. Ver checkpoint seguinte para o que foi de fato entregue.
+
+---
+
+## Checkpoint 2026-09-22 (2) — Fase 1: shell, tema e atendimento demo
+
+**Fase e tarefa atual:** Fase 1 em andamento. Entregue: tokens de tema,
+shell/navegação, `/atendimento` navegável com dados sintéticos, drawer de
+pré-venda. Pendente: fundação real de empresa/vínculo/permissão (schema),
+`ARCHITECTURE.md` e `METRICS_CATALOG.md` formais.
+
+**Branch e commit base:** `main`, a partir do commit `0641b48` (fim do
+checkpoint anterior).
+
+**Mudanças concluídas:**
+
+- `src/app/globals.css`: tokens de tema claro/escuro escopados em
+  `.ns-shell` (não colide com `--background`/`--foreground` do CRM
+  existente), seguindo a tabela da especificação seção 8.3.
+  `@custom-variant dark` redefinido para seguir `[data-theme="dark"]` em vez
+  do `prefers-color-scheme` padrão do Tailwind (conferido antes: nenhum
+  outro arquivo do projeto usava `dark:`, seguro redefinir globalmente).
+- `src/components/newsec/`: novos componentes —
+  `theme-script.tsx` (script inline sem flash, resolve tema salvo ou do
+  sistema antes da 1ª pintura), `theme-toggle.tsx`, `sidebar-nav.tsx` (9
+  itens da especificação §8.2; Atendimento abre o novo shell, Clientes/
+  Comercial/Jurídico/Financeiro/Academia linkam para as rotas reais do CRM
+  atual, Dashboards/Produtividade/Configurações aparecem desabilitados com
+  indicador visual em vez de link morto), `top-bar.tsx`, `demo-banner.tsx`,
+  `estado-badge.tsx`, `conversation-list.tsx`, `conversation-view.tsx`,
+  `context-panel.tsx`, `pre-sale-drawer.tsx`, `atendimento-workspace.tsx`
+  (orquestrador client-side).
+- `src/lib/demo/atendimento-data.ts`: dados sintéticos (5 conversas, estados
+  variados — IA/aguardando humano/humano/aguardando cliente/encerrada) e as
+  seções/campos **reais** do drawer de pré-venda, extraídos de
+  `src/components/pre-sales/pre-sales-form.tsx` (títulos das seções:
+  Contratante, Titular da dívida, Dados financeiros, Contratação e
+  negociação, Dados jurídicos, Pagamentos previstos) e da obrigatoriedade
+  real em `src/lib/pre-sales/schema.ts` (só `snapshot_full_name`,
+  `snapshot_cpf`, `financer_name`, `pre_sale_type`, `contract_value`,
+  `payment_description` são de fato obrigatórios no Zod — o resto, inclusive
+  toda a seção jurídica, é opcional hoje).
+- `src/app/atendimento/layout.tsx` + `page.tsx`: nova rota **fora** do grupo
+  `(authenticated)` — não depende de sessão Supabase nem de `.env.local`,
+  então abre sem nenhuma configuração. Link "← voltar ao CRM atual" aponta
+  para `/dashboard`.
+- Nenhum arquivo do CRM existente foi alterado nesta entrega (além do que já
+  constava do checkpoint anterior).
+
+**Arquivos relevantes:** listados acima; todos novos, nenhum edita rota
+existente do CRM.
+
+**Migrações criadas/aplicadas e ambiente:** nenhuma — a fundação de
+empresa/vínculo/permissão (spec seção 5) ainda não foi iniciada.
+
+**Comandos executados e resultados:**
+
+- `npm run typecheck` → limpo (exit 0), duas vezes (antes e depois do
+  polish final).
+- `npm run lint` → limpo (exit 0).
+- `npm run build` → limpo (exit 0), 62 rotas (61 anteriores + `/atendimento`
+  nova, estática `○`), nenhuma rota existente alterada de tamanho/tipo.
+- Verificação em navegador de verdade via Playwright headless (Chromium
+  baixado localmente para isso, não é dependência do projeto): `npm run dev`
+  + navegação real em `/atendimento`. Cobriu: carregamento inicial, troca de
+  conversa (lista + contexto atualizam), abertura/preenchimento/fechamento
+  do drawer de pré-venda, alternância de tema claro↔escuro, drawer reaberto
+  no tema escuro. Screenshots tiradas (ficaram no scratchpad da sessão, não
+  fazem parte do repositório).
+  - **Bug real encontrado e corrigido**: primeira rodada acusou erro de
+    hidratação no console (`data-theme` divergente entre servidor e
+    cliente) — faltava `suppressHydrationWarning` no wrapper `#ns-shell-root`
+    que o `ThemeScript` manipula via `setAttribute` fora do controle do
+    React. Corrigido em `src/app/atendimento/layout.tsx`; reverificado,
+    console limpo (0 erros) depois.
+  - **Achado de polish**: rótulos "Dashboards"/"Produtividade"/
+    "Configurações" truncavam feio com o badge "em breve" nos 200px do
+    menu — trocado por um indicador de ponto pequeno; reverificado
+    visualmente, ok.
+  - Dev server parado ao final (`lsof -ti:3000 | xargs kill`) — nada ficou
+    rodando em segundo plano.
+
+**Pendências externas reais:**
+
+- Fundação de empresa/vínculo/permissão (schema real, migrações) — não
+  iniciada. É o maior item restante da Fase 1 conforme a especificação.
+- `docs/ARCHITECTURE.md` e `docs/METRICS_CATALOG.md` formais.
+- Nenhum ambiente de homologação Supabase configurado ainda.
+- Push para `github.com/GabrielSchandler/newseccrm` continua não feito —
+  aguardando decisão do Gabriel (perguntado no checkpoint anterior, sem
+  resposta ainda).
+
+**Decisões tomadas e justificativa:**
+
+- Construir o novo shell como rota **isolada** (`/atendimento`, fora de
+  `(authenticated)`) em vez de modificar `AppSidebar`/`AuthenticatedShell`
+  existentes: o shell atual é compartilhado por todas as 61 rotas do CRM em
+  uso; uma mudança nele tem alcance grande demais para validar sem o Gabriel
+  por perto. A troca definitiva de shell (fazer `/atendimento` virar a tela
+  principal de fato, integrada com o CRM) é decisão de produto para a Fase 2
+  em diante, não algo a fazer silenciosamente agora.
+- Itens de menu para áreas que já existem no CRM (Clientes, Comercial,
+  Jurídico, Financeiro, Academia) linkam para as rotas reais atuais em vez
+  de ficarem desabilitados ou de ganhar uma versão fake dentro do novo
+  shell — evita link morto e demonstra concretamente a coexistência dos
+  dois shells durante a transição.
+- Drawer de pré-venda mostra as seções/campos reais (não a versão
+  simplificada dos mockups) mas não tenta replicar a validação/gravação
+  completa — isso é textualmente Fase 3 na especificação. O botão "Salvar"
+  sempre mostra um erro recuperável explicando isso, para não fingir que a
+  gravação funciona.
+- Escopei os tokens de tema em `.ns-shell` (classe) em vez de `:root`
+  para garantir zero risco de regressão visual nas 61 rotas existentes do
+  CRM, que usam `--background`/`--foreground` próprios.
+
+**Próximo passo executável:** com o Gabriel — decidir se revisa
+`PERMISSIONS.md` antes de eu tocar em schema de permissão, e se autoriza o
+push do repositório. Sem depender dessa resposta, o próximo trabalho local
+seguro é a fundação de empresa/vínculo/permissão (migrações aditivas) e/ou
+`docs/ARCHITECTURE.md`/`docs/METRICS_CATALOG.md`.
+
+**Cuidados de compatibilidade:** confirmado por build que nenhuma das 61
+rotas existentes do CRM mudou de tamanho ou tipo — a única rota nova é
+`/atendimento`. `globals.css` só recebeu adições (nenhuma variável/regra
+existente foi removida ou redefinida).
 
 **Cuidados de compatibilidade:** nenhuma edição de código de produto feita
 ainda além de `package.json` (nome/URLs) e `README.md` (aviso no topo) — o

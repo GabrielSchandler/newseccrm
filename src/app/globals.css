@@ -1,5 +1,13 @@
 @import "tailwindcss";
 
+/*
+ * Redefine o variant `dark:` do Tailwind para seguir o data-theme do shell
+ * NewSec (escopado em .ns-shell), em vez do prefers-color-scheme padrao.
+ * Nada fora de src/components/newsec usa `dark:` hoje (conferido antes de
+ * mudar isso globalmente), entao e seguro.
+ */
+@custom-variant dark (&:where(.ns-shell[data-theme="dark"], .ns-shell[data-theme="dark"] *));
+
 :root {
   --background: #f7f8fa;
   --foreground: #172033;
@@ -19,4 +27,62 @@ body {
 button,
 input {
   font: inherit;
+}
+
+/*
+ * Tokens do shell NewSec (especificacao secao 8.3), escopados em `.ns-shell`
+ * para nao colidir com --background/--foreground do CRM existente.
+ * Claro é o padrao; escuro por preferencia do sistema (a menos que o usuario
+ * tenha escolhido claro explicitamente) ou por `data-theme="dark"` explicito.
+ */
+.ns-shell {
+  --ns-bg: #f6f8fb;
+  --ns-surface: #ffffff;
+  --ns-surface-hover: #eef2f8;
+  --ns-text: #15243b;
+  --ns-text-secondary: #64748b;
+  --ns-border: #e2e8f0;
+  --ns-primary: #2563eb;
+  --ns-primary-foreground: #ffffff;
+  --ns-danger: #dc2626;
+  --ns-warning: #d97706;
+  --ns-success: #16a34a;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  .ns-shell:not([data-theme="light"]) {
+    --ns-bg: #0b1220;
+    --ns-surface: #111b2d;
+    --ns-surface-hover: #182640;
+    --ns-text: #e7eef8;
+    --ns-text-secondary: #9cacbf;
+    --ns-border: #26344b;
+    --ns-primary: #6094ff;
+    --ns-primary-foreground: #0b1220;
+    --ns-danger: #f87171;
+    --ns-warning: #fbbf24;
+    --ns-success: #4ade80;
+    color-scheme: dark;
+  }
+}
+
+.ns-shell[data-theme="dark"] {
+  --ns-bg: #0b1220;
+  --ns-surface: #111b2d;
+  --ns-surface-hover: #182640;
+  --ns-text: #e7eef8;
+  --ns-text-secondary: #9cacbf;
+  --ns-border: #26344b;
+  --ns-primary: #6094ff;
+  --ns-primary-foreground: #0b1220;
+  --ns-danger: #f87171;
+  --ns-warning: #fbbf24;
+  --ns-success: #4ade80;
+  color-scheme: dark;
+}
+
+.ns-shell {
+  background: var(--ns-bg);
+  color: var(--ns-text);
 }
