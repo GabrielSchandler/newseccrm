@@ -16,24 +16,39 @@ Ver critério de aceite de cada fase na especificação, seção 17.
 - [x] Salvar as 11 imagens de referência recebidas em `docs/reference-images/`,
       com nota sobre marca/nav inconsistentes e telas 07/08 sem referência
       visual (ver `../COMECE-AQUI-CLAUDE-CODE.md`).
-- [~] Inventário factual profundo do CRM (papéis/permissões, schema de
+- [x] Inventário factual profundo do CRM (papéis/permissões, schema de
       cliente, análise sem cliente vs pré-venda com cliente, integração
-      Totalk, Academia, mapa de rotas) — agente de exploração em execução,
-      resultado ainda não incorporado a `SOURCE_INVENTORY.md`.
-- [~] Inventário factual profundo do newsecchat (máquina de estados,
+      Totalk, Academia, mapa de rotas) — em `SOURCE_INVENTORY.md` §1.
+- [x] Inventário factual profundo do newsecchat (máquina de estados,
       contexto por IA, credencial OpenAI, envio/webhook, transcrição) —
-      agente de exploração em execução.
-- [~] Inventário factual profundo do newsecfocus (agregação, liderança
+      em `SOURCE_INVENTORY.md` §2.
+- [x] Inventário factual profundo do newsecfocus (agregação, liderança
       multi-equipe, ingestão, limites de coleta, catálogo de indicadores) —
-      agente de exploração em execução.
-- [ ] Consolidar os três inventários em `SOURCE_INVENTORY.md`.
-- [ ] Mapa de permissões (`PERMISSIONS.md`): equivalência entre
-      `admin`/`manager`/`seller` do CRM atual e o modelo alvo
-      Master/Gerente/Supervisor/Consultor.
-- [ ] Mapa de paridade (`FEATURE_PARITY.md`): toda função hoje existente nos
-      três sistemas, com origem e destino proposto.
-- [ ] Catálogo inicial de métricas (`METRICS_CATALOG.md`).
-- [ ] Documento de arquitetura (`ARCHITECTURE.md`) com riscos concretos.
+      em `SOURCE_INVENTORY.md` §3.
+- [x] Consolidar os três inventários em `SOURCE_INVENTORY.md`.
+- [x] Mapa de permissões (`PERMISSIONS.md`): equivalência entre o modelo
+      atual de cada sistema (CRM: role/business_area/legal_role, 1:1
+      empresa; Chat: papel SUPERVISOR + departamentos; Focus:
+      OWNER/MANAGER/TEAM_LEAD/VIEWER, 1:1 equipe) e o modelo alvo
+      Master/Gerente/Supervisor/Consultor com vínculos N:N.
+- [x] Mapa de paridade (`FEATURE_PARITY.md`): funções dos três sistemas com
+      origem, status (Base/Portar/Redesenhar/Novo) e observação — Comercial/
+      Jurídico/Financeiro do CRM ficaram só no nível de diretório, a
+      aprofundar ao tocar cada área.
+- [ ] Catálogo inicial de métricas (`METRICS_CATALOG.md`) — Focus já tem o
+      catálogo de indicadores levantado em `SOURCE_INVENTORY.md` §3.7;
+      falta formalizar como catálogo versionado (especificação seção 12) e
+      acrescentar os indicadores de atendimento/comercial/financeiro/IA.
+- [ ] Documento de arquitetura (`ARCHITECTURE.md`) com riscos concretos —
+      os riscos já identificados (multi-empresa/equipe ausente, sobrescrita
+      silenciosa de contexto por IA, credencial de IA global, suspensão de
+      coleta decorativa, obrigatoriedade de cliente só em Zod) estão
+      espalhados em `SOURCE_INVENTORY.md`/`PERMISSIONS.md`/
+      `FEATURE_PARITY.md`; falta consolidar num documento de arquitetura
+      único com diagrama/decisão por risco.
+- [x] Baseline do CRM clonado: `npm install` e `npm run typecheck` executados
+      com sucesso (exit 0). `npm run build` em execução — ver `PROGRESS.md`
+      para o resultado.
 
 ## Fase 1 — Base unificada e sistema visual
 

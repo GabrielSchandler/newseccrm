@@ -81,18 +81,43 @@ separado do banco de produção do CRM.
   Bash nem em PowerShell) — inspeção do repositório remoto feita só via
   `git ls-remote`.
 
+**Atualização (mesmo dia, após os três inventários retornarem):**
+
+- Os três agentes de inventário retornaram e foram incorporados a
+  `SOURCE_INVENTORY.md` (seções 1, 2 e 3 completas), `PERMISSIONS.md` e
+  `FEATURE_PARITY.md`.
+- `npm install`, `npm run typecheck` e `npm run build` do newseccrm clonado
+  rodaram **limpos** (exit 0 nos três). Build gerou 61 rotas sem erro,
+  nenhum warning de tipo. Baseline do CRM confirmado antes de qualquer
+  edição de código de produto.
+- Achados que mudam decisão de arquitetura (detalhe em
+  `SOURCE_INVENTORY.md`/`PERMISSIONS.md`): (1) nenhum dos três sistemas
+  suporta hoje usuário multiempresa nem supervisor multiequipe — é 1:1 em
+  todos, com a restrição do Focus imposta em RLS real; (2) o Chat sobrescreve
+  silenciosamente campo de contato confirmado manualmente quando a IA
+  diverge — sem proteção hoje, apesar da coluna `origem` já existir; (3)
+  credencial OpenAI do Chat é singleton global por processo, não por
+  empresa; (4) suspensão administrativa de conta no Focus é decorativa —
+  campo existe de ponta a ponta mas nada o lê no agente nem o servidor
+  rejeita ingestão; (5) confirmado positivamente que o Focus não coleta
+  tecla digitada, captura de tela nem conteúdo de conversa; (6) integração
+  Totalk do CRM tem superfície pequena (2 chamadas de API, 1 arquivo
+  central) — bom sinal para o prazo de 07/10.
+
 **Pendências externas reais:**
 
-- Resultado dos três agentes de inventário (GRSCRM, newsecchat, newsecfocus)
-  ainda não retornou.
-- `npm install` / build / typecheck do newseccrm ainda não rodados nesta
-  sessão.
 - Nenhum ambiente Supabase de homologação confirmado — precisa decidir/achar
   antes de qualquer migração real (mesmo aditiva).
 - Push do commit inicial para `github.com/GabrielSchandler/newseccrm` ainda
-  não feito.
+  não feito — aguardando confirmação do Gabriel.
 - Acesso à documentação/API do Totalk (`flwchat.readme.io`) ainda não
   revalidado nesta sessão.
+- `docs/ARCHITECTURE.md` e `docs/METRICS_CATALOG.md` ainda não escritos como
+  documentos formais (o conteúdo factual já existe espalhado em
+  `SOURCE_INVENTORY.md`/`PERMISSIONS.md`/`FEATURE_PARITY.md`).
+- Decisões de arquitetura propostas em `PERMISSIONS.md` seção 3 ainda não
+  confirmadas pelo Gabriel (não bloqueiam início da Fase 1, mas valem
+  revisão).
 
 **Decisões tomadas e justificativa:**
 
@@ -110,12 +135,13 @@ separado do banco de produção do CRM.
   sugerido como provisório na especificação), porque o Gabriel já criou e
   informou o repositório real `github.com/GabrielSchandler/newseccrm`.
 
-**Próximo passo executável:** aguardar os três agentes de inventário,
-consolidar os achados em `docs/SOURCE_INVENTORY.md`, `docs/PERMISSIONS.md` e
-`docs/FEATURE_PARITY.md`, rodar `npm install` + `npm run build` + `npm run
-typecheck` no newseccrm clonado para confirmar baseline antes de qualquer
-edição de código, e então iniciar a Fase 1 (shell/tema/navegação/atendimento
-demo) conforme `TASKS.md`.
+**Próximo passo executável:** iniciar a Fase 1 (tokens de tema
+claro/escuro, shell/navegação baseada na família de mockups sidebar escura
+canônica, tela de atendimento navegável com dados sintéticos, drawers de
+ação) conforme `TASKS.md`, preservando as 61 rotas atuais do CRM confirmadas
+no build. Escrever `docs/ARCHITECTURE.md` e `docs/METRICS_CATALOG.md`
+formais pode acontecer em paralelo ou logo em seguida — o conteúdo factual
+já está levantado.
 
 **Cuidados de compatibilidade:** nenhuma edição de código de produto feita
 ainda além de `package.json` (nome/URLs) e `README.md` (aviso no topo) — o
