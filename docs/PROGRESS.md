@@ -224,9 +224,15 @@ empresa/vínculo/permissão (spec seção 5) ainda não foi iniciada.
   iniciada. É o maior item restante da Fase 1 conforme a especificação.
 - `docs/ARCHITECTURE.md` e `docs/METRICS_CATALOG.md` formais.
 - Nenhum ambiente de homologação Supabase configurado ainda.
-- Push para `github.com/GabrielSchandler/newseccrm` continua não feito —
-  aguardando decisão do Gabriel (perguntado no checkpoint anterior, sem
-  resposta ainda).
+- ~~Push para `github.com/GabrielSchandler/newseccrm` continua não feito~~
+  — **feito em 22/09/2026**, autorizado pelo Gabriel pra conectar a Vercel e
+  acompanhar o desenvolvimento. `main` empurrado (3 commits: base clonada,
+  inventário Fase 0, shell/tema/atendimento demo Fase 1). Nenhum ambiente
+  configurado na Vercel ainda por mim — Gabriel vai conectar pelo painel.
+  ⚠️ Sem `.env.local`/variáveis configuradas no projeto Vercel, todas as
+  rotas que dependem de Supabase (praticamente todo o CRM, exceto
+  `/atendimento`) vão dar erro em produção — isso é esperado até as env vars
+  serem cadastradas lá, não é regressão de código.
 
 **Decisões tomadas e justificativa:**
 
