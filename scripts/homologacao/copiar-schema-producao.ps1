@@ -1,4 +1,4 @@
-# Copia so a ESTRUTURA (nenhum dado de cliente) do banco de producao do CRM
+﻿# Copia so a ESTRUTURA (nenhum dado de cliente) do banco de producao do CRM
 # para o banco novo de homologacao usado pelo newseccrm.
 #
 # Como usar: da duplo-clique em "copiar-schema-producao.bat" nesta mesma
@@ -56,7 +56,7 @@ npx --yes supabase db push --db-url "$destinoUrl" --include-all --file "$saida" 
 if ($LASTEXITCODE -ne 0) {
     Write-Host ""
     Write-Host "O comando automatico do passo 2 nao funcionou nesta versao do supabase." -ForegroundColor Yellow
-    Write-Host "Sem problema — faz assim, e mais visual mesmo:" -ForegroundColor Yellow
+    Write-Host "Sem problema - faz assim, e mais visual mesmo:" -ForegroundColor Yellow
     Write-Host "  1. Abre o Supabase, entra no projeto NOVO (o de homologacao)." -ForegroundColor Yellow
     Write-Host "  2. No menu da esquerda, clica em 'SQL Editor'." -ForegroundColor Yellow
     Write-Host "  3. Abre o arquivo abaixo num editor de texto, copia tudo:" -ForegroundColor Yellow
