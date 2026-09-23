@@ -7,9 +7,13 @@ sem depender de memória de conversa anterior.
 **Resumo no topo (o que importa agora, sem precisar ler o histórico
 abaixo):** Fase 0 e Fase 1 completas, deploy funcionando com login real
 (`newseccrm.vercel.app`), Entrega A (correções da revisão de 23/09) também
-completa e testada. Nenhuma integração real (Chat/worker/IA/Totalk) existe
-ainda — tudo em `/atendimento`, `/dashboards`, `/produtividade` continua
-demonstração com dados sintéticos, deliberadamente. **Revisão de
+completa e testada. **`/atendimento` deixou de ser demonstração** —
+consulta o banco real (Entrega C, ver checkpoint "Entrega C" mais abaixo);
+`/atendimento/supervisao`, `/dashboards`, `/produtividade` continuam
+demonstração com dados sintéticos, deliberadamente. **Bloqueio real único
+agora**: `0001` a `0005` (equipes + schema do chat) não estão aplicadas em
+homologação — sem isso o chat real não tem tabela pra gravar e o teste de
+aceite completo não roda. **Revisão de
 fidelidade visual concluída em 23/09** — as 5 telas da Fase 1
 (`/dashboards`, `/dashboards/personalizar`, `/produtividade`,
 `/atendimento/supervisao`, `/atendimento`) foram comparadas contra as
@@ -915,3 +919,163 @@ real" (do Gabriel) com "ter algum worker/Redis rodando localmente pra
 testar" (não depende de ninguém). Entrega C foi iniciada e uma fatia
 funcional entregue com worker local + adaptador de WhatsApp simulado — ver
 checkpoint "Entrega C" logo abaixo.
+
+---
+
+## Checkpoint 2026-09-23 (7) — Entrega C: fatia funcional do chat humano real
+
+**Fase e tarefa atual:** primeira fatia funcional da Entrega C entregue —
+schema, RLS, worker, webhook de teste, actions e UI real de `/atendimento`
+existem e foram verificados no que dava pra verificar sem banco aplicado
+em homologação. **Não é a Entrega C inteira** — falta aplicar as migrações
+em homologação (bloqueio real, ver abaixo) e, depois disso, o teste de
+aceite ponta a ponta com 2 empresas ainda precisa rodar de verdade.
+
+**Branch e commits:** `main`, `04f6877` → `88a3d3a` (6 commits), a partir
+de `d67dc2e`.
+
+**Decisão de infraestrutura (sem Docker disponível neste ambiente):** em
+vez de Redis/BullMQ, a fila é uma tabela Postgres (`outbound_jobs`) com um
+worker Node persistente fazendo poll via uma RPC atômica
+(`claim_outbound_jobs`, `FOR UPDATE SKIP LOCKED`). É uma decisão consciente
+e documentada (não um atalho escondido) — outbox pattern é um padrão real
+de produção, evita introduzir uma peça de infra nova (Redis) antes de
+precisar dela de verdade, e já usa o Postgres que o projeto já tem
+configurado. Redis pode entrar depois se a escala exigir; nada no desenho
+impede a troca.
+
+**O que foi construído (código):**
+
+1. `supabase/migrations/0004_atendimento_chat.sql` — `channels`,
+   `contacts`, `contact_phone_numbers`, `conversations`,
+   `conversation_transfers`, `messages`, `message_attachments`,
+   `inbound_events` (dedup de webhook), `outbound_jobs` (fila). RLS no
+   MESMO padrão já usado em toda tabela real do CRM (confirmado por
+   investigação no dump de produção antes de escrever): duas policies por
+   tabela, uma por empresa (`get_my_company_id()`) e uma pro master
+   (`current_user_is_platform_owner()`, sem checar empresa — o corte pra
+   empresa específica quando o master troca de contexto é responsabilidade
+   da aplicação em toda tabela existente, não só nas novas). Visibilidade
+   por papel/equipe (admin/manager veem tudo; supervisor vê a equipe que
+   supervisiona; consultor vê o que é seu + a fila da própria equipe)
+   centralizada em `user_can_access_conversation()`, reaproveitando
+   `teams`/`team_memberships` de 0001/0002/0003. Triggers estruturais:
+   autor de mensagem tem que ser da mesma empresa (NS010), `company_id` da
+   mensagem tem que bater com o da conversa (NS012), nota interna nunca
+   pode virar job de envio (NS014).
+2. `supabase/migrations/0005_atendimento_worker_rpc.sql` — RPC
+   `claim_outbound_jobs()` pro worker reivindicar jobs sem dois processos
+   pegarem o mesmo (PostgREST não expõe `FOR UPDATE SKIP LOCKED`
+   diretamente).
+3. `src/lib/atendimento/` — interface de provedor + adaptador simulado
+   (não fala com WhatsApp nenhum) + seleção explícita por
+   `ATENDIMENTO_PROVEDOR` (nunca cai num fallback silencioso).
+4. `src/app/api/atendimento/webhook-teste/[channelId]/route.ts` —
+   ingestão de teste, segredo obrigatório
+   (`ATENDIMENTO_WEBHOOK_TESTE_SECRET`), dedup real via
+   `inbound_events`, cria/reaproveita contato e conversa.
+5. `src/app/(newsec)/atendimento/actions.ts` — enviar (idempotency_key do
+   cliente), nota interna, assumir (claim atômico), transferir (RLS
+   decide quem pode), concluir/reabrir, reenviar mensagem com falha.
+6. `scripts/atendimento-worker/worker.mjs` — poll contínuo, backoff
+   exponencial (até 60s), falha definitiva ao esgotar tentativas.
+7. `/atendimento` trocado de demonstração pra real — Server Component
+   resolve o usuário via `getCurrentUserContext()`, workspace novo
+   (`atendimento-workspace-real.tsx`) consulta o banco de verdade via
+   client Supabase do navegador (RLS aplica sozinha). `DemoBanner` virou
+   client component que se esconde só em `/atendimento` — as outras rotas
+   do shell novo continuam demonstração.
+
+**Testes executados e resultados (separando o que foi testado com
+Postgres real do que só foi verificado por tipo/build):**
+
+- **Schema + RLS + triggers (0004)**: Postgres 17 real (não mock),
+  15/15 casos passando — isolamento entre empresas, visibilidade por
+  papel/equipe, transferência indevida bloqueada (0 linhas afetadas) vs.
+  autorizada (1 linha), as 3 SQLSTATEs de integridade, idempotência de
+  envio e de replay de webhook (unique_violation nas duas), duas
+  tentativas concorrentes de "assumir" a mesma conversa (claim atômico).
+- **RPC do worker (0005)**: verificado sob concorrência real (não só
+  lendo o SQL) — sessão A segura 2 jobs por 4s numa transação aberta,
+  sessão B concorrente voltou em 132ms com só o job restante, sem
+  overlap. Script reexecutável em
+  `supabase/tests/testar-concorrencia-outbound-jobs.sh`.
+- **Aplicação (provedor, webhook, actions, UI)**: `npm run typecheck` /
+  `lint` / `test` (vitest, 16 testes) / `build` — limpos. **Isso é
+  verificação de tipo/sintaxe, não teste funcional contra banco real** —
+  ainda não dava pra ir além porque 0004/0005 não estão aplicadas em
+  nenhum Supabase alcançável (nem homologação, nem um Supabase local —
+  não tem Docker neste ambiente pra subir a stack completa com
+  PostgREST).
+- **Degradação sem crash (verificado de verdade, navegador real e
+  homologação real)**: subi `npm run dev` local apontando pro Supabase de
+  homologação de verdade, logei via Playwright com o usuário master de
+  teste (reaproveitado da Entrega B) e abri `/atendimento` — a página
+  carrega sem quebrar e mostra "Não foi possível carregar as conversas:
+  Could not find the table 'public.conversations' in the schema cache"
+  (esperado, honesto, sem cair pra dado fictício). Testei também o
+  webhook via `curl`: sem o segredo configurado recusa com 503; com o
+  segredo certo mas sem a tabela `channels`, responde 404 "Canal não
+  encontrado" — nenhum dos dois caminhos derruba o processo.
+- **Deploy em produção (Vercel) conferido depois do push**: `/atendimento`
+  sem sessão agora responde 307 pro `/login` (antes era 200 aberto, era
+  demonstração) — confirmado com `curl -I` direto na URL pública. `/`,
+  `/login`, `/dashboards` continuam respondendo normal — sem regressão
+  nas rotas que não mudaram.
+
+**O que é dado real de homologação versus simulado:** tudo que já existia
+(empresas, usuários, `teams`) é real, no banco de homologação de verdade.
+O adaptador de WhatsApp é 100% simulado (não fala com nenhum número real,
+nenhuma API de provedor real) — é o que a especificação pede
+explicitamente pra essa fatia. Nenhuma mensagem real foi enviada, nenhum
+dos dois números de WhatsApp em produção foi tocado ou tem qualquer
+conexão com este código.
+
+**Pendências e bloqueios externos (reais, não retórica):**
+
+- **Bloqueio real nº 1**: `0001` a `0005` não aplicadas em homologação —
+  mesma situação de sempre, precisa do Gabriel colar no SQL Editor (não
+  precisa de nenhum segredo pra isso) ou me dar `SENHA_BANCO` pra eu
+  automatizar. **Sem isso, o teste de aceite completo (2 empresas,
+  supervisor + consultor, webhook → worker → UI, replay) não pode rodar
+  de verdade** — é o próximo passo mais valioso disponível.
+- Depois de aplicado: rodar o worker (`npm run atendimento:worker`) e o
+  cenário de aceite completo, com evidência real (não só o que já foi
+  verificado aqui).
+- Ordem definida pra depois da fatia funcional (seção 5 do prompt de
+  continuidade): cadastro/análise/pré-venda reais no drawer, IA com
+  credencial por empresa, importador Totalk conectado aos registros
+  novos, adaptador de WhatsApp de teste real, dashboards com dado real,
+  Focus portado, personalização de dashboards, responsividade — nenhuma
+  dessas foi iniciada nesta sessão, de propósito (a especificação pede
+  não gastar o ciclo em mais telas demonstrativas antes do chat
+  funcionar).
+- `/atendimento/supervisao` continua demonstração — não foi trocado por
+  dado real nesta entrega (escopo já grande o suficiente; fica pro
+  próximo incremento depois do teste de aceite).
+
+**Decisões tomadas e justificativa:**
+
+- Fila em tabela Postgres em vez de Redis/BullMQ — ver seção de
+  infraestrutura acima.
+- RLS das tabelas novas replicando exatamente o padrão do resto do CRM
+  (duas policies, sem GUC de sessão nova) — evita fragmentar o modelo de
+  segurança do banco; documentado em detalhe no cabeçalho de
+  `0004_atendimento_chat.sql`.
+- Lógica do provedor simulado duplicada em `worker.mjs` (não importada de
+  `src/lib/atendimento/`) — `scripts/` é Node puro sem os imports de alias
+  que só o Next.js resolve; nota deixada no próprio arquivo pra quando
+  isso deixar de fazer sentido (provedor real, worker vira TypeScript de
+  verdade).
+- Não tentei nenhum workaround pra testar contra banco real sem Docker
+  nem homologação aplicada (ex: mockar PostgREST) — preferi deixar
+  explícito o que foi verificado com Postgres real (schema/RLS/RPC, com
+  bastante rigor) versus o que só foi verificado por tipo/build
+  (aplicação), em vez de fingir uma cobertura que não existe.
+
+**Próximo passo executável:** com o Gabriel — aplicar `0001` a `0005` em
+homologação (SQL Editor, sem segredo nenhum, ou `SENHA_BANCO` pra eu
+automatizar). Assim que isso acontecer, o próximo trabalho é rodar o
+cenário de aceite completo (2 empresas, supervisor + consultor, 2 canais
+simulados) com o worker de verdade ligado, e registrar a evidência real
+disso no checkpoint seguinte.
