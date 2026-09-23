@@ -81,6 +81,21 @@ const loadCurrentUserContext = cache(async () => {
   }
 
   const isPlatformOwner = Boolean(profile.is_platform_owner);
+
+  // O platform owner nunca e bloqueado por empresa suspensa — ele precisa
+  // continuar acessando (inclusive a propria empresa suspensa) pra revisar/
+  // reativar. So os usuarios da propria empresa suspensa perdem acesso.
+  if (!isPlatformOwner) {
+    const { data: platformSettings } = await supabase
+      .from("company_platform_settings")
+      .select("status")
+      .eq("company_id", profile.company_id)
+      .maybeSingle();
+
+    if (platformSettings?.status === "suspended" || platformSettings?.status === "cancelled") {
+      redirect("/empresa-suspensa");
+    }
+  }
   const cookieStore = await cookies();
   const selectedCompanyId = isPlatformOwner
     ? cookieStore.get(ACTIVE_COMPANY_COOKIE_NAME)?.value ?? null
