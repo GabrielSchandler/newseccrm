@@ -35,10 +35,10 @@ Ver critério de aceite de cada fase na especificação, seção 17.
       origem, status (Base/Portar/Redesenhar/Novo) e observação — Comercial/
       Jurídico/Financeiro do CRM ficaram só no nível de diretório, a
       aprofundar ao tocar cada área.
-- [ ] Catálogo inicial de métricas (`METRICS_CATALOG.md`) — Focus já tem o
-      catálogo de indicadores levantado em `SOURCE_INVENTORY.md` §3.7;
-      falta formalizar como catálogo versionado (especificação seção 12) e
-      acrescentar os indicadores de atendimento/comercial/financeiro/IA.
+- [x] Catálogo inicial de métricas (`METRICS_CATALOG.md`) — Atendimento,
+      Equipe, Comercial, Financeiro, IA e Produtividade (Focus, integral).
+      Nenhuma métrica implementada ainda, é a definição formal pra
+      implementar depois sem ambiguidade de fórmula/fonte/coorte.
 - [x] Documento de arquitetura (`ARCHITECTURE.md`) com riscos concretos e
       diagrama.
 - [x] Baseline do CRM clonado: `npm install` e `npm run typecheck` executados
