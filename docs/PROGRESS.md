@@ -14,10 +14,15 @@ fidelidade visual concluída em 23/09** — as 5 telas da Fase 1
 (`/dashboards`, `/dashboards/personalizar`, `/produtividade`,
 `/atendimento/supervisao`, `/atendimento`) foram comparadas contra as
 imagens de referência originais e ajustadas; ver checkpoint "fidelidade
-visual" mais abaixo para o detalhe de cada uma. Próximo trabalho real:
-Entrega B (fundação multiempresa) ou Entrega C (chat humano persistente),
-que exige decisões de infraestrutura do Gabriel antes de começar — ver
-seção "Bloqueios reais" no checkpoint da Entrega A.
+visual" mais abaixo para o detalhe de cada uma. **Entrega E (importador
+Totalk) entregue em dry-run em 23/09** — pronto e testado, só falta o
+token real do Totalk pra sair do modo fixture. **Entrega B bloqueada**:
+falta promover um usuário de teste a `is_platform_owner`, só possível via
+SQL direto, sem `SENHA_BANCO`/`SUPABASE_SERVICE_ROLE_KEY` disponível
+localmente — decisão do Gabriel entre testar manualmente ou liberar
+acesso. **Entrega C** segue bloqueada em decisão de infraestrutura
+(worker/Redis, adapter de WhatsApp de teste) do Gabriel — ver checkpoint
+"Entrega E" mais abaixo para o detalhe dos dois bloqueios.
 
 ---
 
@@ -674,3 +679,129 @@ multiempresa, pode começar sem decisão externa) ou Entrega C (chat
 humano real, bloqueada até o Gabriel decidir infraestrutura de
 worker/Redis e confirmar acesso a um adapter de WhatsApp de teste) — ver
 "Bloqueios reais" no checkpoint da Entrega A.
+
+---
+
+## Checkpoint 2026-09-23 (5) — Entrega E: importador Totalk em dry-run; Entrega B bloqueada
+
+**Fase e tarefa atual:** continuando o roadmap depois da revisão de
+fidelidade visual. Entrega B verificada e bloqueada (não executável sem
+input do Gabriel); Entrega E executada e entregue (não dependia de nada
+externo).
+
+**Branch e commit:** `main`, `9f8b562`, a partir de `f4498bc`.
+
+**Entrega B — por que não avancei:**
+
+Fui checar o que faltava pra "testar ponta a ponta o fluxo de master"
+(`docs/PERMISSIONS.md` §2.0) e confirmei por busca no código
+(`current-user.ts`, `middleware.ts`, `actions/auth.ts`) que
+`is_platform_owner` **só é lido**, nunca escrito — não existe nenhuma tela
+no CRM pra promover um usuário a master, isso sempre foi feito via SQL
+direto (provavelmente na criação da conta do próprio Gabriel). Pra criar um
+segundo usuário de teste `is_platform_owner=true` eu precisaria de
+`SENHA_BANCO` (mesmo padrão já usado em `supabase/aplicar.mjs`) ou
+`SUPABASE_SERVICE_ROLE_KEY` — conferi o `.env.local` local (só nomes de
+variável, sem imprimir valor) e **nenhum dos dois está presente**, só
+`NEXT_PUBLIC_SUPABASE_URL`/`NEXT_PUBLIC_SUPABASE_ANON_KEY`. Isso não é algo
+pra resolver pedindo o segredo pelo chat (regra já registrada mais acima
+neste arquivo, do incidente de 14/09). Registrei como bloqueio explícito em
+`docs/TASKS.md` com as duas saídas possíveis, nenhuma delas tomada ainda.
+
+**Entrega E — importador de histórico do Totalk (dry-run):**
+
+Antes de desenhar qualquer coisa, consultei a documentação real da API
+(https://flwchat.readme.io/, via `llms.txt`/`llms-full.txt` e as páginas de
+referência de sessão/mensagem/contato/nota/paginação/rate-limit) — a
+integração Totalk que já existe no CRM (`src/lib/totalk/api.ts`) é só 2
+chamadas (buscar contato por telefone, enviar PDF) e **não tem nada** de
+listar histórico de conversa, então o formato do importador precisava vir
+da API de verdade, não de suposição.
+
+Entregue em `scripts/totalk-importer/`:
+
+- `cliente-totalk.mjs` — cliente com dois modos (`fixture`/`real`),
+  paginação por `pageNumber`/`pageSize` até `hasMorePages=false`, retry com
+  backoff exponencial em `429`/5xx (limites reais documentados:
+  1000 req/5min contínuo, rajada 200 req/5s).
+- `fixtures/` — 3 sessões representativas (reaproveitando os nomes já
+  usados nas telas de demonstração de `/atendimento`, de propósito, pra
+  manter a história consistente): Mariana (concluída, com documento, áudio
+  com mídia propositalmente ausente, e nota interna), Rafael (em
+  andamento), Clara (pendente, sem agente designado).
+- `mapeamento-agentes.json` — mapeamento manual de agente Totalk → usuário
+  NewSec; um agente mapeado (exemplo, UUID fictício) e um deliberadamente
+  não mapeado, pra provar que o importador nunca cria usuário novo sozinho.
+- `importar.mjs` — pipeline completo (departamentos → agentes → contatos →
+  sessões → mensagens/notas por sessão), checkpoint em
+  `.checkpoint/estado.json` (fora do git), saída normalizada em `saida/*`
+  (fora do git) + relatório de reconciliação (`.json` e `.md`).
+- `testar-retry.mjs` — teste isolado do backoff (fixture nunca toca rede,
+  então esse caminho não seria exercido de outro jeito).
+- `README.md` — runbook completo: como funciona, como habilitar o modo real
+  mais tarde (variável de ambiente, nunca token colado no chat), as duas
+  suposições não confirmadas contra a API real (semântica de
+  `FROM_HUB`/`TO_HUB`; endpoint de arquivo por ID), e o que muda quando a
+  Entrega C existir (só a etapa final de escrita).
+
+**Comandos executados e resultados — testado de verdade, não só inspeção:**
+
+- Rodada limpa: 2 departamentos, 2 agentes, 3 contatos, 3 sessões, 12
+  mensagens, 1 nota — todos "novos". Relatório mostra 1 agente sem
+  mapeamento e 1 mídia indisponível (esperado, de propósito nas fixtures).
+- Rodada repetida sem `--reiniciar`: todos os recursos com `novos: 0`,
+  tudo em `jaVistos` — confirma que importar duas vezes não duplica.
+- `--reiniciar --falhar-apos-sessao=sessao-mariana-0001`: interrompe de
+  propósito logo depois da sessão da Mariana. **Bug real encontrado nesse
+  teste**: a primeira versão marcava a sessão como concluída *depois* do
+  gancho de interrupção, então na prática nunca marcava nada antes de
+  lançar o erro — a rodada seguinte reprocessava (embora sem duplicar,
+  porque o dedupe por id de mensagem/nota ainda pegava) a sessão inteira em
+  vez de pular. Corrigido: marcar `sessoesConcluidas` **antes** do gancho de
+  teste. Reverificado: rodada seguinte mostra a sessão da Mariana inteira
+  pulada (nem sequer refaz a chamada de mensagens/notas dela).
+- `npm run totalk:testar-retry`: 2 respostas `429` simuladas seguidas de
+  sucesso — confirma 3 chamadas e ~1.5s de espera acumulada (backoff
+  500ms→1000ms); erro permanente (`401`) simulado confirma 0 retentativas.
+- `npm run lint` / `typecheck` / `test` (vitest, 16 testes) / `build` —
+  todos limpos depois de tudo.
+
+**Integrações reais versus simuladas:** nenhuma chamada real ao Totalk foi
+feita — modo fixture o tempo todo, sem token configurado em lugar nenhum.
+
+**Pendências externas reais:**
+
+- Token de API do Totalk — decisão/acesso do Gabriel, pra sair do modo
+  fixture.
+- As duas suposições documentadas no README (`FROM_HUB`/`TO_HUB`; endpoint
+  de arquivo por ID) precisam ser confirmadas contra uma chamada real assim
+  que o token existir.
+- `mapeamento-agentes.json` real (hoje só tem um exemplo com UUID fictício).
+- Entrega B segue bloqueada — ver acima, decisão do Gabriel entre testar
+  manualmente ou me dar acesso à `SUPABASE_SERVICE_ROLE_KEY` local.
+
+**Decisões tomadas e justificativa:**
+
+- Importador escreve em arquivo JSON local, não em tabela nova do Supabase
+  — criar schema definitivo antes da Entrega C decidir o desenho real do
+  chat arriscaria migração errada/retrabalho; a lógica do importador
+  (paginação, dedupe, checkpoint, retry, relatório) é o que precisa existir
+  agora, o destino final é só trocar depois.
+- Documentei as suposições não confirmadas em vez de apresentá-las como
+  certeza — a documentação do Totalk não descreve a semântica de
+  `FROM_HUB`/`TO_HUB` explicitamente, e inventar isso silenciosamente
+  poderia inverter quem é "cliente" numa mensagem importada.
+- Não tentei contornar a falta de `SENHA_BANCO`/`SUPABASE_SERVICE_ROLE_KEY`
+  da Entrega B de nenhuma forma (ex: pedir pro Gabriel colar o valor no
+  chat) — registrei o bloqueio e segui pra trabalho independente executável
+  (Entrega E), como o próprio documento de correção pede seção 14: "avance
+  em trabalho independente seguro, deixe explícito o bloqueio".
+
+**Próximo passo executável:** com o Gabriel — decidir como destravar a
+Entrega B (testar manualmente vs. me dar acesso à
+`SUPABASE_SERVICE_ROLE_KEY` local) e, quando quiser, configurar
+`TOTALK_IMPORT_TOKEN`/`TOTALK_IMPORT_BASE_URL` pra validar as duas
+suposições da Entrega E contra a API real. Sem depender de nenhuma
+resposta, o próximo trabalho local seguro é continuar preparando a Entrega
+C (schema/contratos da seção 9, sem pipeline real) ou avançar itens da
+Entrega F que não dependem de B/C/D.

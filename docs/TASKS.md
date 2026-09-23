@@ -158,12 +158,29 @@ documento fonte é `NEWSEC-CORRECOES-E-CONTINUACAO-CLAUDE.md` seções 7–13.
   própria empresa (já é assim, não muda). **Não é** criar
   `company_memberships` N:N pra todo mundo — isso foi descartado. O que
   falta é testar ponta a ponta o fluxo de master que já existe.
+  **Bloqueado (23/09, verificado)**: `is_platform_owner` só é *lido* em todo
+  o código (`current-user.ts`, `middleware.ts`, `actions/auth.ts`) — não
+  existe nenhuma tela pra promover um usuário a master, só é possível via
+  SQL direto na coluna. Promover um segundo usuário de teste exige
+  `SENHA_BANCO` (mesmo padrão de `supabase/aplicar.mjs`) ou
+  `SUPABASE_SERVICE_ROLE_KEY`, nenhum dos dois presente no `.env.local`
+  local — e não é algo a resolver colando segredo no chat. Duas saídas,
+  nenhuma tomada ainda: (a) o Gabriel roda o SQL de promoção ele mesmo no
+  SQL Editor de homologação e testa manualmente o fluxo; (b) o Gabriel
+  adiciona `SUPABASE_SERVICE_ROLE_KEY` ao `.env.local` local (ele mesmo, no
+  terminal dele) pra eu automatizar a promoção + teste via Playwright.
 - **C — Chat humano real**: bloqueado até o Gabriel decidir onde roda o
   worker/Redis e confirmar acesso a um adapter de WhatsApp de teste. Sem
   isso, o máximo executável é schema/contratos preparados, sem pipeline
   real.
 - **D — Ações do CRM no atendimento**: depende de B e C.
-- **E — Importador Totalk**: dry-run com fixtures pode começar cedo
-  (não depende de C), mas token real do Totalk é decisão externa.
+- **E — Importador Totalk**: **dry-run entregue em 23/09**
+  (`scripts/totalk-importer/`) — cliente da API real (consultada em
+  https://flwchat.readme.io/), fixtures representativas, checkpoint/resume,
+  retry com backoff, relatório de reconciliação. Testado (duas importações
+  seguidas não duplicam, retomada após queda simulada não reprocessa sessão
+  concluída, mídia indisponível e agente sem mapeamento ficam explícitos no
+  relatório). Falta só o token real do Totalk (decisão do Gabriel) pra sair
+  do modo fixture — ver `scripts/totalk-importer/README.md`.
 - **F — Focus completo, dashboards reais, Academia ampliada**: último da
   fila, não atrasar B/C/D por isso.
