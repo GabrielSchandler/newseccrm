@@ -32,7 +32,8 @@ create table public.user_profiles (
     email text not null,
     username text not null,
     role public.user_role default 'seller' not null,
-    is_active boolean default true not null
+    is_active boolean default true not null,
+    is_platform_owner boolean default false not null
 );
 
 -- Copiado verbatim de scripts/homologacao/schema-producao.sql linhas 189-280
@@ -77,6 +78,30 @@ create function public.current_user_profile_id() returns uuid
   select up.id
   from public.user_profiles up
   where up.auth_user_id = (select auth.uid())
+  limit 1
+$$;
+
+-- Copiado verbatim de scripts/homologacao/schema-producao.sql linhas 255-265
+create function public.current_user_is_platform_owner() returns boolean
+    language sql stable security definer
+    set search_path to 'public', 'pg_temp'
+    as $$
+  select coalesce((
+    select up.is_active and up.is_platform_owner
+    from public.user_profiles up
+    where up.auth_user_id = (select auth.uid())
+    limit 1
+  ), false)
+$$;
+
+-- Copiado verbatim de scripts/homologacao/schema-producao.sql linhas 302-310
+create function public.get_my_company_id() returns uuid
+    language sql stable security definer
+    set search_path to 'public'
+    as $$
+  select company_id
+  from public.user_profiles
+  where auth_user_id = auth.uid()
   limit 1
 $$;
 
