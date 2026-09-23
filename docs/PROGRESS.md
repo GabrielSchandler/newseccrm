@@ -9,14 +9,15 @@ abaixo):** Fase 0 e Fase 1 completas, deploy funcionando com login real
 (`newseccrm.vercel.app`), Entrega A (correções da revisão de 23/09) também
 completa e testada. Nenhuma integração real (Chat/worker/IA/Totalk) existe
 ainda — tudo em `/atendimento`, `/dashboards`, `/produtividade` continua
-demonstração com dados sintéticos, deliberadamente. Em andamento agora:
-revisão de fidelidade visual contra as imagens de referência originais
-(pedido do Gabriel) — `/dashboards` e o novo `/dashboards/personalizar`
-já revisados; `/produtividade`, `/atendimento/supervisao` e `/atendimento`
-ainda faltam. Depois disso, próximo trabalho real: Entrega B (fundação
-multiempresa) ou Entrega C (chat humano persistente), que exige decisões
-de infraestrutura do Gabriel antes de começar — ver seção "Bloqueios
-reais" no checkpoint mais recente abaixo.
+demonstração com dados sintéticos, deliberadamente. **Revisão de
+fidelidade visual concluída em 23/09** — as 5 telas da Fase 1
+(`/dashboards`, `/dashboards/personalizar`, `/produtividade`,
+`/atendimento/supervisao`, `/atendimento`) foram comparadas contra as
+imagens de referência originais e ajustadas; ver checkpoint "fidelidade
+visual" mais abaixo para o detalhe de cada uma. Próximo trabalho real:
+Entrega B (fundação multiempresa) ou Entrega C (chat humano persistente),
+que exige decisões de infraestrutura do Gabriel antes de começar — ver
+seção "Bloqueios reais" no checkpoint da Entrega A.
 
 ---
 
@@ -589,3 +590,87 @@ telas restantes, comparando contra a imagem de referência de cada uma:
 `/atendimento/supervisao` (`04-supervisao-atendoai-offbrand.png`),
 `/atendimento` (`01-atendimento-claro-newsec-com-drawer-prevenda.png` e
 `02-atendimento-escuro-newsec-sidebar-canonico.png`).
+
+---
+
+## Checkpoint 2026-09-23 (4) — fidelidade visual: produtividade, supervisão, atendimento
+
+**Fase e tarefa atual:** conclui a revisão de fidelidade visual iniciada
+no checkpoint anterior — as 5 telas da Fase 1 estão todas comparadas
+contra a imagem de referência original.
+
+**Branch e commits:** `main`, `f12956b` (produtividade), `44c8d5e`
+(supervisão), `eda2e54` (atendimento), a partir de `15d2943`.
+
+**Mudanças concluídas:**
+
+1. **`/produtividade`** (`f12956b`) — comparado contra
+   `06-produtividade-newsec-sidebar-escuro-canonico.png`. Adicionado
+   título+subtítulo, botões Exportar/Dispositivos, abas (só "Visão geral"
+   navegável) e filtros, seguindo o mesmo padrão já usado em
+   `/dashboards`. Cards ganham ícone colorido por tipo; painel de
+   aplicativos ganha ícone por app e cabeçalho de coluna; tabela de
+   pessoas ganha coluna "Ações" e cor de avatar distinta por pessoa;
+   aviso de dados ilustrativos migrado pro rodapé como card informativo,
+   igual à referência. **Correção de contraste**: texto branco sobre
+   fundo quase branco no segmento "Sem dados" do gráfico de distribuição
+   — trocado pra texto escuro nesse segmento específico. `FiltroPill`
+   extraído de `dashboards-workspace.tsx` (agora duplicado em 2 lugares)
+   pra um componente compartilhado; `StatCard` ganha variante de cor
+   "info" (roxo) pro card Cobertura.
+2. **`/atendimento/supervisao`** (`44c8d5e`) — comparado contra
+   `04-supervisao-atendoai-offbrand.png`. Essa imagem é da marca fictícia
+   "AtendoAI", fora do padrão NewSec adotado como canônico (ver nota em
+   `COMECE-AQUI-CLAUDE-CODE.md`) — o conteúdo/layout foi usado como
+   fonte, sem copiar a marca (logo, sidebar própria, relógio do canto).
+   Adicionado título+subtítulo, abas e filtros no topo. Fila de
+   atendimento ganha coluna "Tipo" (Humano/IA) que existia no dado mas
+   nunca era exibida. Carga da equipe vira tabela com a coluna "mais
+   antigo" (dado que já existia sem lugar pra aparecer) e ganha o botão
+   "Distribuir atendimentos". Atenção necessária ganha link "Ver todos",
+   ícone e botão de ação por item. **Seção inteira nova**: "Tempo de
+   primeira resposta", com gráfico de linha (SVG próprio, eixo Y em
+   minutos) por hora do dia e card "Tempo médio hoje" — não existia
+   nenhuma versão antes. Diálogo de transferência ganha campo de
+   mensagem opcional com contador de caracteres.
+3. **`/atendimento`** (`eda2e54`) — última tela, comparada contra as duas
+   imagens (`01-...-com-drawer-prevenda.png` claro e
+   `02-...-sidebar-canonico.png` escuro). Lista de conversas ganha
+   cabeçalho "Atendimento"+subtítulo e contador por aba. Painel de
+   contexto ganha abas (só "Resumo" tem conteúdo, as outras mostram "em
+   breve"), telefone rotulado (Principal/Outro + final do número),
+   email/localização (campo novo em `atendimento-data.ts`), "cliente
+   desde", cards de venda com indicador de status, e "Ações rápidas"
+   reorganizado num grid de 3 botões compactos mantendo "Criar pré-venda"
+   como botão largo separado (por causa do estado condicional que já
+   tinha). **Tipo de mensagem "áudio"**: existia no schema de dados mas
+   nunca era renderizado nem usado em nenhum exemplo — agora tem
+   player+forma de onda+transcrição, com uma mensagem de exemplo nova.
+   Drawer de pré-venda ganha estado de erro visual (borda vermelha +
+   texto) nos campos obrigatórios sem valor — sem mudar a decisão já
+   tomada (`docs/decisions/`) de manter as seções reais do CRM em vez de
+   reagrupar como o mockup faz (Obrigatórios/Jurídico/Opcionais).
+
+**Comandos executados e resultados:**
+
+- `npm run typecheck` / `npm run lint` / `npm run build` — limpos (exit 0)
+  em cada uma das 3 entregas, sequencialmente.
+- Playwright contra `next start` real (processo único confirmado via
+  `Get-Process node`/`Get-NetTCPConnection -LocalPort 3000` antes de
+  cada rodada) — claro e escuro em cada tela, mais o diálogo de
+  transferência aberto (supervisão), o drawer de pré-venda aberto e um
+  contato sem cliente cadastrado (Clara Nunes, atendimento). Zero erro
+  de console em todas as rodadas. Comparação visual direta contra as
+  imagens de referência confirmou os elementos de cada lista acima.
+
+**Integrações reais versus simuladas:** nenhuma — as 3 telas continuam
+100% dado sintético (`src/lib/demo/`), sem chamada a Supabase.
+
+**Pendências externas reais:** nenhuma nova.
+
+**Próximo passo executável:** a revisão de fidelidade visual pedida pelo
+Gabriel está completa. Retomar o roadmap: Entrega B (fundação
+multiempresa, pode começar sem decisão externa) ou Entrega C (chat
+humano real, bloqueada até o Gabriel decidir infraestrutura de
+worker/Redis e confirmar acesso a um adapter de WhatsApp de teste) — ver
+"Bloqueios reais" no checkpoint da Entrega A.
