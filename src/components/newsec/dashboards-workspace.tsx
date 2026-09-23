@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { AlertTriangle, ChevronDown, Clock, Info, Settings2 } from "lucide-react";
+import { AlertTriangle, Clock, Info, Settings2 } from "lucide-react";
 import {
   cardsGestaoDemo,
   desempenhoEquipeDemo,
@@ -7,24 +7,12 @@ import {
   insightsGestaoDemo,
   vendasPorSemanaDemo,
 } from "@/lib/demo/dashboards-data";
+import { FiltroPill } from "./filtro-pill";
 
 const CORES_FUNIL = ["#3b82f6", "#8b5cf6", "#c4b5fd", "#34d399"];
 
 function formatarReais(valor: number) {
   return `R$ ${valor.toLocaleString("pt-BR")}`;
-}
-
-function FiltroPill({ label }: { label: string }) {
-  return (
-    <button
-      type="button"
-      title="Filtro (demonstração)"
-      className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--ns-border)] bg-[var(--ns-surface)] px-3 py-1.5 text-xs font-medium text-[var(--ns-text)] transition hover:bg-[var(--ns-surface-hover)]"
-    >
-      {label}
-      <ChevronDown aria-hidden="true" className="h-3.5 w-3.5 text-[var(--ns-text-secondary)]" />
-    </button>
-  );
 }
 
 export function DashboardsWorkspace() {

@@ -11,13 +11,14 @@ export function StatCard({
   label: string;
   value: string;
   hint?: string;
-  accent?: "primary" | "warning" | "success" | "danger";
+  accent?: "primary" | "warning" | "success" | "danger" | "info";
 }) {
   const accentClass = {
     primary: "bg-[var(--ns-primary)]/15 text-[var(--ns-primary)]",
     warning: "bg-[var(--ns-warning)]/15 text-[var(--ns-warning)]",
     success: "bg-[var(--ns-success)]/15 text-[var(--ns-success)]",
     danger: "bg-[var(--ns-danger)]/15 text-[var(--ns-danger)]",
+    info: "bg-[#8b5cf6]/15 text-[#8b5cf6]",
   }[accent];
 
   return (

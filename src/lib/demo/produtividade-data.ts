@@ -4,6 +4,8 @@
  * explicito na tela, como o Focus real ja faz.
  */
 
+export const abasProdutividadeDemo = ["Visão geral", "Equipes", "Pessoas", "Jornada", "Aplicativos", "Relatórios"];
+
 export const cardsProdutividadeDemo = [
   { rotulo: "Jornada prevista", valor: "40h" },
   { rotulo: "Tempo ativo", valor: "32h" },
