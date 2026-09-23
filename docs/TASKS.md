@@ -135,10 +135,13 @@ Ver `NEWSEC-CORRECOES-E-CONTINUACAO-CLAUDE.md` na raiz e checkpoint
 Detalhar cada uma quando for começar de verdade, não com antecedência —
 documento fonte é `NEWSEC-CORRECOES-E-CONTINUACAO-CLAUDE.md` seções 7–13.
 
-- **B — Fundação multiempresa**: `company_memberships` N:N, backfill,
-  reescrever `current-user.ts`/`middleware.ts`. Não depende de decisão
-  externa do Gabriel — pode começar quando houver sessão dedicada (é
-  código crítico de auth).
+- **B — Fundação multiempresa (escopo corrigido em 23/09, ver
+  `PERMISSIONS.md` §2.0)**: o Gabriel confirmou que o modelo é master vendo
+  todas as empresas (já existe: `/empresas`, `is_platform_owner`,
+  `ACTIVE_COMPANY_COOKIE_NAME`) + gerente/supervisor/consultor 1:1 com a
+  própria empresa (já é assim, não muda). **Não é** criar
+  `company_memberships` N:N pra todo mundo — isso foi descartado. O que
+  falta é testar ponta a ponta o fluxo de master que já existe.
 - **C — Chat humano real**: bloqueado até o Gabriel decidir onde roda o
   worker/Redis e confirmar acesso a um adapter de WhatsApp de teste. Sem
   isso, o máximo executável é schema/contratos preparados, sem pipeline
