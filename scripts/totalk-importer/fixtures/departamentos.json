@@ -1,0 +1,20 @@
+{
+  "items": [
+    {
+      "id": "dep-comercial-0001",
+      "companyId": "empresa-demo-0001",
+      "name": "Comercial",
+      "description": "Atendimento comercial — novos contatos e negociação",
+      "isDefault": true,
+      "isSupervisor": false
+    },
+    {
+      "id": "dep-juridico-0001",
+      "companyId": "empresa-demo-0001",
+      "name": "Jurídico",
+      "description": "Atendimento jurídico — acompanhamento de processos",
+      "isDefault": false,
+      "isSupervisor": false
+    }
+  ]
+}

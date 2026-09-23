@@ -1,0 +1,49 @@
+{
+  "items": [
+    {
+      "id": "msg-rafael-0001",
+      "createdAt": "2025-12-02T09:38:00Z",
+      "updatedAt": "2025-12-02T09:38:00Z",
+      "timestamp": "2025-12-02T09:38:00Z",
+      "type": "TEXT",
+      "sessionId": "sessao-rafael-0002",
+      "userId": null,
+      "direction": "TO_HUB",
+      "status": "READ",
+      "origin": "DEFAULT",
+      "text": "Consegue me confirmar amanhã?",
+      "fileId": null,
+      "filesIds": []
+    },
+    {
+      "id": "msg-rafael-0002",
+      "createdAt": "2025-12-02T09:40:00Z",
+      "updatedAt": "2025-12-02T09:40:00Z",
+      "timestamp": "2025-12-02T09:40:00Z",
+      "type": "TEXT",
+      "sessionId": "sessao-rafael-0002",
+      "userId": "agente-bruno-0002",
+      "direction": "FROM_HUB",
+      "status": "READ",
+      "origin": "DEFAULT",
+      "text": "Confirmo sim, te aviso pela manhã.",
+      "fileId": null,
+      "filesIds": []
+    },
+    {
+      "id": "msg-rafael-0003",
+      "createdAt": "2025-12-02T09:41:00Z",
+      "updatedAt": "2025-12-02T09:41:00Z",
+      "timestamp": "2025-12-02T09:41:00Z",
+      "type": "TEXT",
+      "sessionId": "sessao-rafael-0002",
+      "userId": null,
+      "direction": "TO_HUB",
+      "status": "READ",
+      "origin": "DEFAULT",
+      "text": "Perfeito, muito obrigado!",
+      "fileId": null,
+      "filesIds": []
+    }
+  ]
+}

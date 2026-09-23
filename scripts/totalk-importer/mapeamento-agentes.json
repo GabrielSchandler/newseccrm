@@ -1,0 +1,13 @@
+{
+  "_comentario": "Mapeia agente do Totalk (agentId) para o user_profiles.id real do NewSec. Preenchido manualmente pelo Gabriel/quem conduzir o piloto — o importador NUNCA cria usuário novo sozinho a partir de um agente legado (ver NEWSEC-CORRECOES-E-CONTINUACAO-CLAUDE.md secao 12). Entrada ausente ou com userIdNewSec null fica marcada como 'requer mapeamento manual' no relatorio de reconciliacao, e a conversa/mensagem e importada mesmo assim (sem responsavel atribuido em vez de travar o piloto).",
+  "mapeamentos": {
+    "agente-ana-0001": {
+      "userIdNewSec": "00000000-0000-0000-0000-000000000001",
+      "observacao": "Exemplo de mapeamento preenchido — id fictício, trocar pelo user_profiles.id real antes do piloto."
+    },
+    "agente-bruno-0002": {
+      "userIdNewSec": null,
+      "observacao": "Ainda não mapeado — exemplo proposital do caso 'requer mapeamento manual'."
+    }
+  }
+}

@@ -14,6 +14,11 @@ pnpm-debug.log*
 # muda a cada execucao e nao precisa acompanhar o historico do repo).
 scripts/homologacao/schema-producao*.sql
 
+# Estado de execucao e saida do importador Totalk (dry-run) — reexecutavel a
+# qualquer momento a partir das fixtures versionadas, nao precisa historico.
+scripts/totalk-importer/.checkpoint/
+scripts/totalk-importer/saida/
+
 # Local analysis and generated artifacts that can contain customer data.
 .codex_tmp/
 outputs/

@@ -1,0 +1,58 @@
+{
+  "items": [
+    {
+      "id": "contato-mariana-0001",
+      "createdAt": "2025-11-03T13:05:00Z",
+      "updatedAt": "2026-01-10T09:12:00Z",
+      "companyId": "empresa-demo-0001",
+      "name": "Mariana Costa",
+      "phoneNumber": "5511994824821",
+      "phoneNumberFormatted": "(11) 9 9482-4821",
+      "email": null,
+      "instagram": null,
+      "tagIds": [],
+      "tagNames": [],
+      "status": "ACTIVE",
+      "customFields": null,
+      "portfolioIds": [],
+      "portfolioNames": [],
+      "metadata": null
+    },
+    {
+      "id": "contato-rafael-0002",
+      "createdAt": "2025-08-20T18:40:00Z",
+      "updatedAt": "2025-12-02T11:30:00Z",
+      "companyId": "empresa-demo-0001",
+      "name": "Rafael Almeida",
+      "phoneNumber": "5511981234455",
+      "phoneNumberFormatted": "(11) 9 8123-4455",
+      "email": null,
+      "instagram": null,
+      "tagIds": [],
+      "tagNames": [],
+      "status": "ACTIVE",
+      "customFields": null,
+      "portfolioIds": [],
+      "portfolioNames": [],
+      "metadata": null
+    },
+    {
+      "id": "contato-clara-0003",
+      "createdAt": "2026-01-05T16:00:00Z",
+      "updatedAt": "2026-01-05T16:11:00Z",
+      "companyId": "empresa-demo-0001",
+      "name": "Clara Nunes",
+      "phoneNumber": "5511970112233",
+      "phoneNumberFormatted": "(11) 9 7011-2233",
+      "email": null,
+      "instagram": null,
+      "tagIds": [],
+      "tagNames": [],
+      "status": "ACTIVE",
+      "customFields": null,
+      "portfolioIds": [],
+      "portfolioNames": [],
+      "metadata": null
+    }
+  ]
+}

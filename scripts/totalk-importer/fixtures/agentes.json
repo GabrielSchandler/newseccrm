@@ -1,0 +1,24 @@
+{
+  "items": [
+    {
+      "id": "agente-ana-0001",
+      "userId": "agente-ana-0001",
+      "name": "Ana Cardoso",
+      "shortName": "Ana",
+      "phoneNumber": "+5511990000001",
+      "email": "ana@exemplo-totalk.com.br",
+      "pictureFileId": null,
+      "pictureUrl": null
+    },
+    {
+      "id": "agente-bruno-0002",
+      "userId": "agente-bruno-0002",
+      "name": "Bruno Ribeiro",
+      "shortName": "Bruno",
+      "phoneNumber": "+5511990000002",
+      "email": "bruno@exemplo-totalk.com.br",
+      "pictureFileId": null,
+      "pictureUrl": null
+    }
+  ]
+}

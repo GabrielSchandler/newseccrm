@@ -1,0 +1,49 @@
+{
+  "items": [
+    {
+      "id": "msg-clara-0001",
+      "createdAt": "2026-01-05T16:02:00Z",
+      "updatedAt": "2026-01-05T16:02:00Z",
+      "timestamp": "2026-01-05T16:02:00Z",
+      "type": "TEXT",
+      "sessionId": "sessao-clara-0003",
+      "userId": null,
+      "direction": "TO_HUB",
+      "status": "READ",
+      "origin": "DEFAULT",
+      "text": "Boa tarde, vi o anúncio de vocês. Como funciona a análise?",
+      "fileId": null,
+      "filesIds": []
+    },
+    {
+      "id": "msg-clara-0002",
+      "createdAt": "2026-01-05T16:10:00Z",
+      "updatedAt": "2026-01-05T16:10:00Z",
+      "timestamp": "2026-01-05T16:10:00Z",
+      "type": "TEXT",
+      "sessionId": "sessao-clara-0003",
+      "userId": "agente-ana-0001",
+      "direction": "FROM_HUB",
+      "status": "READ",
+      "origin": "DEFAULT",
+      "text": "Boa tarde, Clara! Explico rapidinho: analisamos seu contrato em busca de juros e taxas indevidas.",
+      "fileId": null,
+      "filesIds": []
+    },
+    {
+      "id": "msg-clara-0003",
+      "createdAt": "2026-01-05T16:11:00Z",
+      "updatedAt": "2026-01-05T16:11:00Z",
+      "timestamp": "2026-01-05T16:11:00Z",
+      "type": "TEXT",
+      "sessionId": "sessao-clara-0003",
+      "userId": "agente-ana-0001",
+      "direction": "FROM_HUB",
+      "status": "DELIVERED",
+      "origin": "DEFAULT",
+      "text": "Qualquer dúvida, estou à disposição.",
+      "fileId": null,
+      "filesIds": []
+    }
+  ]
+}
