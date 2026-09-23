@@ -108,9 +108,43 @@ Ver critério de aceite de cada fase na especificação, seção 17.
       verificadas (61→62 rotas, nenhuma existente alterada).
 - [x] Atualizar `PROGRESS.md` com checkpoint completo ao final da fase.
 
-## Fases 2–6
+## Entrega A — correções da revisão externa (23/09/2026)
 
-Não iniciar automaticamente. Detalhar cada uma em `TASKS.md` só quando a
-fase anterior estiver com critério de aceite cumprido e Gabriel autorizar a
-próxima entrega concreta (ver `../COMECE-AQUI-CLAUDE-CODE.md`, "Prompt de
-continuidade").
+Ver `NEWSEC-CORRECOES-E-CONTINUACAO-CLAUDE.md` na raiz e checkpoint
+`docs/PROGRESS.md` "Entrega A" pra evidência completa.
+
+- [x] Integridade equipe/empresa: trigger estrutural em
+      `supabase/migrations/0002_equipes_integridade_empresa.sql`, testado
+      com 9/9 casos passando num Postgres real (não mock) — suíte
+      reexecutável em `supabase/tests/`.
+- [x] Rascunho por conversa não some mais ao trocar (A→B→A), testado com
+      Playwright.
+- [x] Script de homologação verifica exit code de verdade, gera saída
+      única por execução, confirma origem≠destino antes de aplicar.
+- [x] Colisão de prefixo `/dashboard` vs `/dashboards` corrigida
+      (`matchesPathPrefix`), testada isoladamente.
+- [x] Linguagem interna (Fase 1/Fase 3, caminho de arquivo) removida da UI
+      do drawer de pré-venda.
+- [x] Decisão documentada de manter rotas do shell novo em `/atendimento`
+      em vez de mover pra `/demo/...`.
+- [ ] Responsividade nos breakpoints pedidos (1920/1366/1280/768/390) —
+      não testada nesta entrega, sem bloquear o resto.
+
+## Entregas B–F — backlog ordenado, não iniciado
+
+Detalhar cada uma quando for começar de verdade, não com antecedência —
+documento fonte é `NEWSEC-CORRECOES-E-CONTINUACAO-CLAUDE.md` seções 7–13.
+
+- **B — Fundação multiempresa**: `company_memberships` N:N, backfill,
+  reescrever `current-user.ts`/`middleware.ts`. Não depende de decisão
+  externa do Gabriel — pode começar quando houver sessão dedicada (é
+  código crítico de auth).
+- **C — Chat humano real**: bloqueado até o Gabriel decidir onde roda o
+  worker/Redis e confirmar acesso a um adapter de WhatsApp de teste. Sem
+  isso, o máximo executável é schema/contratos preparados, sem pipeline
+  real.
+- **D — Ações do CRM no atendimento**: depende de B e C.
+- **E — Importador Totalk**: dry-run com fixtures pode começar cedo
+  (não depende de C), mas token real do Totalk é decisão externa.
+- **F — Focus completo, dashboards reais, Academia ampliada**: último da
+  fila, não atrasar B/C/D por isso.

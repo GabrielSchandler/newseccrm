@@ -4,6 +4,16 @@ Formato de checkpoint conforme especificação, seção 20. Atualizar ao final
 de cada ciclo de trabalho — este arquivo precisa permitir retomar o projeto
 sem depender de memória de conversa anterior.
 
+**Resumo no topo (o que importa agora, sem precisar ler o histórico
+abaixo):** Fase 0 e Fase 1 completas, deploy funcionando com login real
+(`newseccrm.vercel.app`), Entrega A (correções da revisão de 23/09) também
+completa e testada. Nenhuma integração real (Chat/worker/IA/Totalk) existe
+ainda — tudo em `/atendimento`, `/dashboards`, `/produtividade` continua
+demonstração com dados sintéticos, deliberadamente. Próximo trabalho
+real: Entrega B (fundação multiempresa) ou Entrega C (chat humano
+persistente), que exige decisões de infraestrutura do Gabriel antes de
+começar — ver seção "Bloqueios reais" no checkpoint mais recente abaixo.
+
 ---
 
 ## Checkpoint 2026-09-22 — início do projeto (Fase 0 em andamento)
@@ -381,3 +391,137 @@ das rotas antigas do CRM mudou de tamanho/tipo. `sidebar-nav.tsx` e
 `top-bar.tsx` foram os únicos arquivos do shell novo *editados* (não
 criados) nesta entrega — ambos só receberam extensões (props novas com
 default seguro), nenhum comportamento anterior removido.
+
+---
+
+## Checkpoint 2026-09-23 (2) — Entrega A: correções da revisão externa
+
+**Entrega e tarefa:** Entrega A completa (`NEWSEC-CORRECOES-E-CONTINUACAO-CLAUDE.md`,
+seções 3–8). Entregas B–F não iniciadas — ver "Próximo passo executável".
+
+**Branch e HEAD:** `main`, commit `ecebcb3` (a partir de `9065dc9`).
+
+**Mudanças implementadas:**
+
+1. **Integridade equipe/empresa** (`supabase/migrations/0002_equipes_integridade_empresa.sql`):
+   trigger estrutural `enforce_team_membership_company` impede vincular
+   `user_profile` de empresa diferente da equipe — roda mesmo com bypass de
+   RLS (service role), não só via policy. Trigger adicional
+   `prevent_team_company_change` torna `teams.company_id` imutável após
+   criado. Helper `user_belongs_to_company()` isolado (será redirecionado
+   pra `company_memberships` quando essa tabela existir, sem tocar no
+   trigger).
+2. **Rascunho por conversa** (`atendimento-workspace.tsx`,
+   `conversation-view.tsx`): estado movido do `ConversationView` (que
+   desmontava a cada troca via `key={conversa.id}`) pro workspace pai,
+   indexado por `conversa.id`.
+3. **Script de homologação** (`copiar-schema-producao.ps1`): checa
+   `$LASTEXITCODE` de `pg_dump`/`psql` imediatamente, `-v ON_ERROR_STOP=1`
+   no psql, arquivo de saída com timestamp único por execução, extrai e
+   exibe o identificador do projeto origem/destino com confirmação
+   explícita antes de aplicar (bloqueia se forem o mesmo projeto), nunca
+   propaga "Pronto" depois de erro.
+4. **Colisão de prefixo de rota** (`workspace.ts`, `middleware.ts`): nova
+   `matchesPathPrefix()`/`matchesAnyPathPrefix()` com fronteira de
+   segmento, substituindo `pathname.startsWith(prefixo)` cru em 6 pontos
+   (`isProtectedRoute`, `isDashboardRoute`, `isPublicTrackingRoute`, checagem
+   de `/empresas`, e os 5 arrays de prefixo em `classifyWorkspacePath`).
+5. **Linguagem interna na UI** (`pre-sale-drawer.tsx`): removidas
+   referências a "Fase 1"/"Fase 3" e caminho de arquivo do código, texto
+   reescrito mantendo a honestidade de que a gravação real não existe
+   ainda.
+6. **Decisão documentada** (`docs/decisions/0001-rotas-demo-nao-renomeadas.md`):
+   por que as rotas do shell novo continuam em `/atendimento` em vez de
+   `/demo/...`.
+
+**Migrações criadas:** `0002_equipes_integridade_empresa.sql` (correção
+incremental sobre `0001_equipes.sql`, idempotente — funciona seja `0001`
+já aplicada em algum ambiente ou não).
+
+**Migrações aplicadas, em qual ambiente e com qual evidência:** Nenhuma
+aplicada em homologação ou produção ainda — só testadas localmente (ver
+abaixo). `0001`/`0002` continuam pendentes de aplicação real; Gabriel não
+confirmou ter rodado `0001` ainda.
+
+**Comandos/testes executados e resultados:**
+
+- **Teste de banco real, não mock**: subi um Postgres 17 local descartável
+  (`initdb`/`pg_ctl`, limpo depois), apliquei uma fixture mínima que copia
+  verbatim as 4 funções `current_user_*` do dump real de produção
+  (`scripts/homologacao/schema-producao.sql` linhas 189–280) trocando só
+  `auth.uid()` por um mock via GUC de sessão (`app.test_uid`), depois
+  `0001_equipes.sql` + `0002_equipes_integridade_empresa.sql` +
+  `supabase/tests/0002_equipes_integridade_empresa.test.sql` — **9/9 casos
+  do checklist de aceite passaram**, incluindo os 8 do documento de correção
+  (gerente vincula membro da própria empresa: sucesso; vincula de empresa
+  diferente: bloqueado pelo trigger; administra equipe alheia: bloqueado
+  por RLS; consultor se autopromove: bloqueado por RLS; UPDATE contornando
+  empresa: bloqueado pelo trigger; revogação remove acesso: confirmado;
+  inserção direta sem `SET ROLE` simulando bypass de RLS: bloqueada pelo
+  trigger mesmo assim) mais 1 bônus (mudar `company_id` de equipe
+  existente: bloqueado). Script e fixture ficaram versionados em
+  `supabase/tests/` pra rodar de novo quando a migração mudar — não é
+  print, é suíte reexecutável.
+- `npm run typecheck` / `npm run lint` / `npm run build` — limpos (exit 0)
+  depois de todas as mudanças de código.
+- Playwright contra build de produção local (`next start`, processo
+  confirmado único via `Get-NetTCPConnection`/`Get-Process node` no
+  PowerShell antes de testar — lição da sessão anterior sobre processo
+  zombie): troca A→B→A preserva os dois rascunhos independentes, zero erro
+  de console.
+- Teste direto da função `matchesPathPrefix` (script Node isolado): confirma
+  que `"/dashboards".startsWith("/dashboard")` era `true` (o bug) e que
+  `matchesPathPrefix("/dashboards", "/dashboard")` agora é `false`.
+- Deploy na Vercel (`newseccrm.vercel.app`) conferido depois do push: `/`,
+  `/login`, `/atendimento`, `/atendimento/supervisao`, `/dashboards`,
+  `/produtividade` todos 200/307 como esperado.
+
+**Integrações reais versus simuladas:** Tudo nesta entrega é correção de
+código/schema já existente, não integração nova. `/atendimento` e as
+telas irmãs continuam 100% dado sintético — nenhuma chamada a Supabase
+nelas (confirmado por busca de import, registrado na decisão 0001). O
+trigger de integridade é real e testado, mas as tabelas `teams`/
+`team_memberships` que ele protege ainda não têm nenhuma tela/ação
+gravando nelas.
+
+**Pendências e bloqueios externos:**
+
+- `0001`/`0002` não aplicadas em homologação — depende do Gabriel rodar
+  (SQL Editor do Supabase, sem segredo envolvido).
+- Testes de RLS validam a **lógica** das policies com papéis simulados;
+  não substituem testar com o usuário real de homologação depois de
+  aplicado.
+- Responsividade (seção 8 do documento de correção) não testada nos
+  breakpoints pedidos (1920/1366/1280/768/390) — adiado, não bloqueia nada
+  a seguir.
+- **Bloqueio real pra Entrega C (chat humano)**: precisa de decisões de
+  infraestrutura que só o Gabriel pode tomar — onde roda o worker
+  (BullMQ/Redis precisa de um processo de vida longa, não serverless da
+  Vercel), qual Redis usar, e se já existe (ou como conseguir) acesso a um
+  adapter de WhatsApp de teste antes de sequer pensar nos dois números
+  reais. Sem isso, Entrega C fica limitada a schema/contratos preparados,
+  sem pipeline de verdade rodando ponta a ponta.
+
+**Compatibilidade com o CRM antigo:** build confirma que nenhuma rota
+existente mudou de tamanho/tipo. A mudança em `middleware.ts`/`workspace.ts`
+(prefixo com fronteira de segmento) é estritamente mais restritiva que o
+`startsWith` cru só no sentido de não capturar rotas que não deveriam —
+todo caminho que baixa hoje (`/dashboard`, `/dashboard/x`, `/financeiro`
+etc.) continua batendo exatamente igual; só `/dashboards` (que antes
+`/dashboard` capturava por engano) para de ser afetado pelas regras do CRM
+antigo.
+
+**Próximo passo executável:** Duas opções concretas, sem depender uma da
+outra:
+1. **Entrega B (fundação multiempresa)** — pode começar sem nenhuma decisão
+   externa do Gabriel: criar `company_memberships`, fazer backfill do
+   `company_id` legado, atualizar `current-user.ts`/`middleware.ts` pra ler
+   vínculos em vez de 1 campo, com os mesmos testes de dois usuários/duas
+   empresas que já uso pra equipes. É código crítico de auth — pede sessão
+   dedicada com o tempo certo pra testar direito, não uma mudança de
+   passagem.
+2. **Entrega C (chat humano)** — só pode avançar de verdade depois do
+   Gabriel decidir onde roda o worker/Redis e confirmar acesso a um
+   adapter de WhatsApp de teste. Sem isso, o que dá pra fazer é preparar
+   schema/contratos (tabelas de conversa/mensagem, idempotência,
+   outbox) sem pipeline real — valor limitado sem a infraestrutura.
