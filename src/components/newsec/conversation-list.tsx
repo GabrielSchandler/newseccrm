@@ -7,6 +7,14 @@ import { EstadoBadge } from "./estado-badge";
 
 type Aba = "meus" | "equipe" | "ia";
 
+function filtrarPorAba(lista: ConversaDemo[], aba: Aba) {
+  return lista.filter((conversa) => {
+    if (aba === "ia") return conversa.estado === "IA";
+    if (aba === "equipe") return conversa.responsavel !== "Você";
+    return conversa.responsavel === "Você";
+  });
+}
+
 export function ConversationList({
   conversas,
   selecionadaId,
@@ -19,11 +27,14 @@ export function ConversationList({
   const [aba, setAba] = useState<Aba>("meus");
   const [busca, setBusca] = useState("");
 
+  const contagens = {
+    meus: filtrarPorAba(conversas, "meus").length,
+    equipe: filtrarPorAba(conversas, "equipe").length,
+    ia: filtrarPorAba(conversas, "ia").length,
+  };
+
   const filtradas = useMemo(() => {
-    return conversas.filter((conversa) => {
-      if (aba === "ia" && conversa.estado !== "IA") return false;
-      if (aba === "equipe" && conversa.responsavel === "Você") return false;
-      if (aba === "meus" && conversa.responsavel !== "Você") return false;
+    return filtrarPorAba(conversas, aba).filter((conversa) => {
       if (busca.trim() && !conversa.nome.toLowerCase().includes(busca.trim().toLowerCase())) {
         return false;
       }
@@ -33,6 +44,10 @@ export function ConversationList({
 
   return (
     <div className="flex h-full w-full flex-col border-r border-[var(--ns-border)]">
+      <div className="border-b border-[var(--ns-border)] px-3 pt-3">
+        <h1 className="text-lg font-semibold text-[var(--ns-text)]">Atendimento</h1>
+        <p className="mb-3 text-xs text-[var(--ns-text-secondary)]">Converse, organize e avance com seus clientes.</p>
+      </div>
       <div className="flex flex-col gap-3 border-b border-[var(--ns-border)] p-3">
         <div className="relative">
           <Search
@@ -50,11 +65,11 @@ export function ConversationList({
         <div className="flex gap-1 rounded-lg bg-[var(--ns-surface-hover)] p-1 text-sm">
           {(
             [
-              ["meus", "Meus"],
-              ["equipe", "Equipe"],
-              ["ia", "IA"],
+              ["meus", "Meus", contagens.meus],
+              ["equipe", "Equipe", contagens.equipe],
+              ["ia", "IA", contagens.ia],
             ] as const
-          ).map(([value, label]) => (
+          ).map(([value, label, contagem]) => (
             <button
               key={value}
               type="button"
@@ -65,7 +80,7 @@ export function ConversationList({
                   : "text-[var(--ns-text-secondary)] hover:text-[var(--ns-text)]"
               }`}
             >
-              {label}
+              {label} {contagem}
             </button>
           ))}
         </div>

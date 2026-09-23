@@ -140,9 +140,10 @@ dashboards" pra evidência completa.
       construída do zero, não existia antes.
 - [x] `/dashboards` revisado contra `05-gestao-newsec-sidebar-escuro-canonico.png`
       (título, filtros, eixo R$, funil trapezoidal, botões de insight).
-- [ ] `/produtividade` revisado contra `06-produtividade-newsec-sidebar-escuro-canonico.png`.
-- [ ] `/atendimento/supervisao` revisado contra `04-supervisao-atendoai-offbrand.png`.
-- [ ] `/atendimento` revisado contra `01-atendimento-claro-newsec-com-drawer-prevenda.png`
+- [x] `/produtividade` revisado contra `06-produtividade-newsec-sidebar-escuro-canonico.png`.
+- [x] `/atendimento/supervisao` revisado contra `04-supervisao-atendoai-offbrand.png` (imagem
+      fora de marca — conteúdo/layout usados como fonte, marca AtendoAI ignorada).
+- [x] `/atendimento` revisado contra `01-atendimento-claro-newsec-com-drawer-prevenda.png`
       e `02-atendimento-escuro-newsec-sidebar-canonico.png`.
 
 ## Entregas B–F — backlog ordenado, não iniciado

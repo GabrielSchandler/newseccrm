@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { FileText, Paperclip, Phone, Send, StickyNote } from "lucide-react";
+import { FileText, Paperclip, Phone, Play, Send, StickyNote } from "lucide-react";
 import type { ConversaDemo } from "@/lib/demo/atendimento-data";
 import { EstadoBadge } from "./estado-badge";
 
@@ -103,6 +103,35 @@ export function ConversationView({
                   <div className="flex items-center gap-2">
                     <FileText aria-hidden="true" className="h-4 w-4 shrink-0" />
                     <span className="underline">{mensagem.nomeArquivo}</span>
+                  </div>
+                ) : mensagem.tipo === "audio" ? (
+                  <div className="min-w-[220px]">
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        title="Reproduzir (demonstração)"
+                        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
+                          doCliente ? "bg-[var(--ns-primary)] text-white" : "bg-white/20 text-white"
+                        }`}
+                      >
+                        <Play aria-hidden="true" className="h-3.5 w-3.5" />
+                      </button>
+                      <div className="flex h-6 flex-1 items-center gap-0.5">
+                        {Array.from({ length: 24 }).map((_, index) => (
+                          <span
+                            key={index}
+                            className={`w-0.5 rounded-full ${doCliente ? "bg-[var(--ns-text-secondary)]" : "bg-white/60"}`}
+                            style={{ height: `${((index * 7) % 18) + 4}px` }}
+                          />
+                        ))}
+                      </div>
+                      <span className="text-[10px] shrink-0">{mensagem.duracao}</span>
+                    </div>
+                    <p
+                      className={`mt-1.5 text-xs italic ${doCliente ? "text-[var(--ns-text-secondary)]" : "text-[var(--ns-primary-foreground)]/80"}`}
+                    >
+                      Transcrição: &ldquo;{mensagem.texto}&rdquo;
+                    </p>
                   </div>
                 ) : (
                   <p>{mensagem.texto}</p>

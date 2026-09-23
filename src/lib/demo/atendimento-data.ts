@@ -19,10 +19,13 @@ export type ConversaEstado =
 export type MensagemDemo = {
   id: string;
   autor: "cliente" | "consultor" | "sistema";
+  /** Para tipo "audio", este e o texto da transcricao. */
   texto: string;
   hora: string;
   tipo?: "texto" | "documento" | "audio" | "nota";
   nomeArquivo?: string;
+  /** Só para tipo "audio". */
+  duracao?: string;
 };
 
 export type ConversaDemo = {
@@ -37,6 +40,9 @@ export type ConversaDemo = {
   naoLidas: number;
   esperaMinutos: number | null;
   clienteCadastrado: boolean;
+  clienteDesde: string | null;
+  email: string | null;
+  localizacao: string | null;
   telefones: string[];
   mensagens: MensagemDemo[];
   contexto: {
@@ -62,6 +68,9 @@ export const conversasDemo: ConversaDemo[] = [
     naoLidas: 0,
     esperaMinutos: 12,
     clienteCadastrado: true,
+    clienteDesde: "jan/2024",
+    email: "mariana.costa@email.com",
+    localizacao: "São Paulo - SP",
     telefones: ["(11) 9 9482-4821", "(11) 9 9770-7702"],
     mensagens: [
       { id: "m1", autor: "cliente", texto: "Oi, tudo bem? Gostaria de solicitar a análise das parcelas do meu financiamento.", hora: "10:12" },
@@ -69,7 +78,8 @@ export const conversasDemo: ConversaDemo[] = [
       { id: "m3", autor: "cliente", texto: "Claro! Segue o contrato.", hora: "10:16", tipo: "documento", nomeArquivo: "contrato.pdf" },
       { id: "m4", autor: "consultor", texto: "Recebido, obrigada! Vou preparar a análise e retorno ainda hoje.", hora: "10:17" },
       { id: "m5", autor: "sistema", texto: "Cliente demonstra interesse em portabilidade. Verificar condições comerciais e retorno ainda hoje.", hora: "10:20", tipo: "nota" },
-      { id: "m6", autor: "consultor", texto: "Perfeito, vou te enviar ainda hoje.", hora: "10:24" },
+      { id: "m6", autor: "cliente", texto: "então a ideia é manter as mesmas condições, mas com o ajuste no escopo, conforme falamos na reunião", hora: "10:22", tipo: "audio", duracao: "00:46" },
+      { id: "m7", autor: "consultor", texto: "Perfeito, vou te enviar ainda hoje.", hora: "10:24" },
     ],
     contexto: {
       resumo: "Revisão de financiamento de veículo. Contrato recebido, análise em preparo.",
@@ -92,6 +102,9 @@ export const conversasDemo: ConversaDemo[] = [
     naoLidas: 0,
     esperaMinutos: null,
     clienteCadastrado: true,
+    clienteDesde: "mar/2023",
+    email: "rafael.almeida@email.com",
+    localizacao: "Campinas - SP",
     telefones: ["(11) 9 8123-4455"],
     mensagens: [
       { id: "m1", autor: "cliente", texto: "Consegue me confirmar amanhã?", hora: "09:38" },
@@ -119,6 +132,9 @@ export const conversasDemo: ConversaDemo[] = [
     naoLidas: 2,
     esperaMinutos: 340,
     clienteCadastrado: false,
+    clienteDesde: null,
+    email: null,
+    localizacao: null,
     telefones: ["(11) 9 7011-2233"],
     mensagens: [
       { id: "m1", autor: "cliente", texto: "Boa tarde, vi o anúncio de vocês. Como funciona a análise?", hora: "Ontem 16:02" },
@@ -146,6 +162,9 @@ export const conversasDemo: ConversaDemo[] = [
     naoLidas: 1,
     esperaMinutos: 8,
     clienteCadastrado: true,
+    clienteDesde: "jun/2023",
+    email: "pedro.martins@email.com",
+    localizacao: "Ribeirão Preto - SP",
     telefones: ["(11) 9 6654-1198"],
     mensagens: [
       { id: "m1", autor: "cliente", texto: "Segue o comprovante que vocês pediram.", hora: "Seg 11:20", tipo: "documento", nomeArquivo: "comprovante.pdf" },
@@ -172,6 +191,9 @@ export const conversasDemo: ConversaDemo[] = [
     naoLidas: 0,
     esperaMinutos: null,
     clienteCadastrado: true,
+    clienteDesde: "out/2022",
+    email: "juliana.ferreira@email.com",
+    localizacao: "Santos - SP",
     telefones: ["(11) 9 5544-7788"],
     mensagens: [
       { id: "m1", autor: "consultor", texto: "Ligação registrada manualmente: cliente pediu prazo para reunir documentos.", hora: "Seg 15:05", tipo: "nota" },

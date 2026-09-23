@@ -73,30 +73,40 @@ export function PreSaleDrawer({
                 {secao.titulo}
               </legend>
               <div className="space-y-2">
-                {secao.campos.map((campo) => (
-                  <label key={campo.campo} className="block">
-                    <span className="mb-1 flex items-center gap-1.5 text-xs font-medium text-[var(--ns-text)]">
-                      {campo.rotulo}
-                      {campo.obrigatorio && <span className="text-[var(--ns-danger)]">*</span>}
-                      {campo.sugeridoPelaIa && (
-                        <span
-                          title="Sugerido pela IA a partir da conversa — revise antes de salvar"
-                          className="inline-flex items-center gap-0.5 rounded-full bg-violet-500/15 px-1.5 py-0.5 text-[10px] font-medium text-violet-600 dark:text-violet-300"
-                        >
-                          <Sparkles aria-hidden="true" className="h-2.5 w-2.5" />
-                          IA
+                {secao.campos.map((campo) => {
+                  const faltando = campo.obrigatorio && !campo.valor;
+                  return (
+                    <label key={campo.campo} className="block">
+                      <span className="mb-1 flex items-center gap-1.5 text-xs font-medium text-[var(--ns-text)]">
+                        {campo.rotulo}
+                        {campo.obrigatorio && <span className="text-[var(--ns-danger)]">*</span>}
+                        {campo.sugeridoPelaIa && (
+                          <span
+                            title="Sugerido pela IA a partir da conversa — revise antes de salvar"
+                            className="inline-flex items-center gap-0.5 rounded-full bg-violet-500/15 px-1.5 py-0.5 text-[10px] font-medium text-violet-600 dark:text-violet-300"
+                          >
+                            <Sparkles aria-hidden="true" className="h-2.5 w-2.5" />
+                            IA
+                          </span>
+                        )}
+                      </span>
+                      <input
+                        type="text"
+                        readOnly
+                        defaultValue={campo.valor ?? ""}
+                        placeholder={campo.valor ? undefined : "Não preenchido"}
+                        className={`w-full rounded-lg border bg-[var(--ns-surface)] px-2.5 py-1.5 text-sm text-[var(--ns-text)] outline-none placeholder:text-[var(--ns-text-secondary)] focus-visible:ring-2 focus-visible:ring-[var(--ns-primary)] ${
+                          faltando ? "border-[var(--ns-danger)]" : "border-[var(--ns-border)]"
+                        }`}
+                      />
+                      {faltando && (
+                        <span className="mt-1 block text-[11px] text-[var(--ns-danger)]">
+                          Complete os campos obrigatórios do CRM
                         </span>
                       )}
-                    </span>
-                    <input
-                      type="text"
-                      readOnly
-                      defaultValue={campo.valor ?? ""}
-                      placeholder={campo.valor ? undefined : "Não preenchido"}
-                      className="w-full rounded-lg border border-[var(--ns-border)] bg-[var(--ns-surface)] px-2.5 py-1.5 text-sm text-[var(--ns-text)] outline-none placeholder:text-[var(--ns-text-secondary)] focus-visible:ring-2 focus-visible:ring-[var(--ns-primary)]"
-                    />
-                  </label>
-                ))}
+                    </label>
+                  );
+                })}
               </div>
             </fieldset>
           ))}
