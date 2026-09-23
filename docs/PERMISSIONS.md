@@ -22,12 +22,17 @@ schema/RLS da Fase 1, em pelo menos 6 tabelas do Focus (`teams`, `employees`,
 `resumo_app_diario`) mais o que for equivalente no CRM e no Chat. Não tratar
 como um ajuste de enum.
 
+**Retificado em §2.0 abaixo (23/09/2026)**: "usuário em múltiplas empresas"
+só se aplica ao master (já resolvido, sem schema novo); só a parte
+"supervisor em múltiplas equipes" era trabalho real de schema, e já foi
+entregue (`0001_equipes.sql`/`0002_equipes_integridade_empresa.sql`).
+
 ## 2. Proposta de equivalência para o modelo alvo
 
 | Alvo (especificação seção 5) | Equivalente mais próximo hoje | Observação |
 | --- | --- | --- |
 | **Master** (plataforma) | CRM `is_platform_owner`; conceito próximo de painel `/plataforma` do Focus (admin de plataforma, RLS já nega acesso a telemetria por padrão) | O CRM já resolve "master não vê dado privado por padrão" para módulos; o Focus já resolve isso para telemetria. Herdar os dois princípios, não reinventar. |
-| **Gerente** (empresas vinculadas) | CRM `role=admin`/`manager`; Focus `MANAGER` (enxerga a empresa inteira, `equipeEscopo=null`) | Hoje 1:1 com a empresa — vínculo N:N é o que falta. |
+| **Gerente** (empresas vinculadas) | CRM `role=admin`/`manager`; Focus `MANAGER` (enxerga a empresa inteira, `equipeEscopo=null`) | Hoje 1:1 com a empresa. **Retificado em §2.0**: continua 1:1 de propósito — não existe vínculo N:N a construir aqui. |
 | **Supervisor** (equipes autorizadas) | Chat papel `SUPERVISOR` (gate em `/relatorios`); Focus `TEAM_LEAD` (restrito a 1 equipe hoje) | Ponto de maior esforço de migração: Focus tem a restrição de 1 equipe **imposta em RLS**, não só em UI. |
 | **Consultor** | CRM `role=seller`; Chat atendente/membro padrão; Focus implícito (colaborador comum, sem papel de gestão) | Dimensão `business_area` (comercial/jurídico) do CRM é ortogonal a este papel e deve ser preservada como está — a especificação (seção 5) já avisa para não colapsar isso numa única enumeração. |
 
@@ -79,10 +84,9 @@ migração "de passagem" junto com outra coisa.
 
 ## 3. Decisões que a Fase 1 precisa tomar (não resolvidas aqui)
 
-- Formato do vínculo N:N usuário↔empresa: nova tabela de
-  membership/vínculo, papel por vínculo (não por usuário global), e como o
-  `is_platform_owner` do CRM e o painel `/plataforma` do Focus convergem
-  para o papel Master único.
+- ~~Formato do vínculo N:N usuário↔empresa~~ — **resolvido em §2.0**: não
+  existe esse vínculo pra construir. `is_platform_owner` já é o papel
+  Master único (cookie `ACTIVE_COMPANY_COOKIE_NAME`, sem tabela nova).
 - Formato do vínculo N:N supervisor↔equipe: substituir `team_id` escalar do
   Focus por tabela de junção, com migração de dados (cada `team_id` atual
   vira uma linha na nova tabela) e atualização de todas as policies RLS que

@@ -39,9 +39,12 @@ agente e conector WhatsApp são trabalho das Fases 2, 3 e 5.
 
 ## Riscos identificados e decisão de arquitetura
 
-1. **Sem multi-empresa/multi-equipe hoje** (`PERMISSIONS.md` §1-3) — CRM,
-   Chat e Focus são todos 1:1 usuário↔empresa, Focus trava líder numa
-   equipe só via RLS. Migração real de schema, ainda não iniciada.
+1. **Sem multi-equipe hoje** (`PERMISSIONS.md` §1-3, retificado em §2.0) —
+   Focus trava líder numa equipe só via RLS. Migração real de schema já
+   entregue (`0001_equipes.sql`/`0002_equipes_integridade_empresa.sql`,
+   pendente só de aplicação em homologação). Multi-**empresa** por usuário
+   comum não é mais escopo — só o master acessa várias empresas, e isso já
+   existe sem schema novo (`is_platform_owner`).
 2. **Sobrescrita silenciosa de contexto por IA** (`SOURCE_INVENTORY.md`
    §2.3) — Chat sobrescreve campo confirmado manualmente sem checar
    origem. Vira o mecanismo `ProposedFact`/revisão explícita da

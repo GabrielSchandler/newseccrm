@@ -96,14 +96,19 @@ Ver critério de aceite de cada fase na especificação, seção 17.
       hidratação foi encontrado e corrigido nesse processo (faltava
       `suppressHydrationWarning` no wrapper que o script de tema manipula
       via DOM) — ver `PROGRESS.md`.
-- [~] Fundação de identidade/empresa/permissão: `supabase/migrations/0001_equipes.sql`
+- [x] Fundação de identidade/empresa/permissão: `supabase/migrations/0001_equipes.sql`
       cria `teams`/`team_memberships` (N:N usuário↔equipe, com RLS
       reaproveitando as funções `current_user_*` já existentes) — resolve a
-      metade "supervisor em várias equipes". SQL pronto, execução no banco
-      de homologação depende do Gabriel colar no SQL Editor (não aplicado
-      por mim ainda). **Falta**: usuário↔empresa N:N, que exige mudar
-      `current-user.ts`/`middleware.ts` (código crítico de auth) — decisão
-      registrada em `PERMISSIONS.md` §2.1 de não fazer isso "de passagem".
+      metade "supervisor em várias equipes". **Retificado 23/09**: o item
+      "falta usuário↔empresa N:N" ficou obsoleto no mesmo dia —
+      `PERMISSIONS.md` §2.0 (não §2.1, que é a proposta descartada) confirmou
+      que gerente/supervisor/consultor ficam 1:1 com a empresa de propósito,
+      sem vínculo N:N nenhum. A Entrega B (ver abaixo) fechou isso testando
+      o fluxo de master já existente, não criando `company_memberships`.
+      **Ainda pendente, isso sim real**: confirmado em 23/09 que `0001`/
+      `0002` nunca foram de fato aplicadas no banco de homologação (SQL
+      pronto e versionado, mas as tabelas não existem lá) — aplicar antes
+      de qualquer tela consumir `teams`/`team_memberships`.
 - [x] Build, typecheck e lint passando; regressões relevantes do CRM
       verificadas (61→62 rotas, nenhuma existente alterada).
 - [x] Atualizar `PROGRESS.md` com checkpoint completo ao final da fase.
@@ -167,10 +172,11 @@ documento fonte é `NEWSEC-CORRECOES-E-CONTINUACAO-CLAUDE.md` seções 7–13.
   `current-user.ts`/`middleware.ts`. Corrigido em `current-user.ts`
   (redirect pra `/empresa-suspensa`, página nova, pro usuário não-master de
   uma empresa suspensa/cancelada) — o master nunca é bloqueado por isso.
-- **C — Chat humano real**: bloqueado até o Gabriel decidir onde roda o
-  worker/Redis e confirmar acesso a um adapter de WhatsApp de teste. Sem
-  isso, o máximo executável é schema/contratos preparados, sem pipeline
-  real.
+- **C — Chat humano real**: **retificado 23/09** — só a escolha de
+  hospedagem paga/Redis pago/número real de WhatsApp depende do Gabriel.
+  Worker/fila local e adaptador de WhatsApp simulado não dependem de
+  decisão nenhuma — ver checkpoint "Entrega C" em `PROGRESS.md` para a
+  fatia funcional entregue nesse modelo.
 - **D — Ações do CRM no atendimento**: depende de B e C.
 - **E — Importador Totalk**: **dry-run entregue em 23/09**
   (`scripts/totalk-importer/`) — cliente da API real (consultada em

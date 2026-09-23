@@ -4,6 +4,18 @@ Versão: 1.0 · 22/09/2026 · Produto e nome de trabalho sujeitos à aprovação
 
 Este documento é uma instrução de implementação para o agente de desenvolvimento. As imagens entregues junto dele são referências conceituais de interface. As regras escritas e o comportamento existente no CRM têm precedência sobre textos, números, campos ou detalhes eventualmente imprecisos das imagens.
 
+> **Retificação (23/09/2026, ver `docs/PERMISSIONS.md` §2.0 — documento
+> mantido íntegro abaixo, sem editar o corpo):** a seção 5 pede "vínculos
+> muitos-para-muitos para usuário/empresa e supervisor/equipe" e fala de
+> "gerente multiempresa". O Gabriel confirmou que isso não é o modelo real:
+> só o master (`is_platform_owner`) acessa várias empresas — já existe,
+> sem tabela nova. Gerente/supervisor/consultor ficam 1:1 com a própria
+> empresa, de propósito. Só a parte "supervisor em várias equipes" era
+> trabalho real de schema, e já foi entregue
+> (`supabase/migrations/0001_equipes.sql`/`0002_equipes_integridade_empresa.sql`).
+> Onde a seção 5 abaixo falar de vínculo N:N usuário↔empresa ou troca de
+> empresa por um não-master, vale o `PERMISSIONS.md` §2.0, não este texto.
+
 ## 1. Missão e resultado esperado
 
 Você é o agente responsável por implementar a unificação dos sistemas abaixo em um produto multiempresa, preservando o CRM e colocando o atendimento no centro da experiência:

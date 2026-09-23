@@ -20,9 +20,13 @@ token real do Totalk pra sair do modo fixture. **Entrega B concluída em
 23/09** — fluxo de master testado ponta a ponta de verdade (Playwright
 contra o app publicado), 8/8 etapas; um bug real foi encontrado e
 corrigido nesse processo (suspender empresa não bloqueava ninguém) — ver
-checkpoint "Entrega B concluída" mais abaixo. **Entrega C** segue
-bloqueada em decisão de infraestrutura (worker/Redis, adapter de WhatsApp
-de teste) do Gabriel — único bloqueio real restante no roadmap B–E.
+checkpoint "Entrega B concluída" mais abaixo. **Retificação (23/09,
+posterior ao texto acima): Entrega C não estava de fato bloqueada** — só
+a escolha de hospedagem paga/Redis pago/número real de WhatsApp depende do
+Gabriel. Redis/worker local (ou alternativa local documentada) e adaptador
+de WhatsApp simulado não dependem de nenhuma decisão externa — dá pra
+construir e testar o pipeline inteiro agora. Ver checkpoint "Entrega C"
+mais abaixo para o que foi de fato entregue nesse modelo.
 
 ---
 
@@ -903,9 +907,11 @@ só no `.env.local` local (fora do git, confirmado antes de qualquer commit).
   ponta reais conforme as próximas entregas (C especialmente) avançam;
   formalizar agora evita reinstalar toda vez.
 
-**Próximo passo executável:** Entrega B fechada. Retomar Entrega C (chat
+**Próximo passo executável:** Entrega B fechada. ~~Retomar Entrega C (chat
 humano real) só quando o Gabriel decidir infraestrutura de worker/Redis e
-confirmar acesso a um adapter de WhatsApp de teste — até lá, trabalho
-independente seguro segue disponível: validar as duas suposições da
-Entrega E contra o token real do Totalk (quando o Gabriel configurar), ou
-avançar itens da Entrega F que não dependem de B/C/D.
+confirmar acesso a um adapter de WhatsApp de teste~~ — **retificado em
+23/09, mesmo dia**: essa frase misturava "decisão de infra paga/número
+real" (do Gabriel) com "ter algum worker/Redis rodando localmente pra
+testar" (não depende de ninguém). Entrega C foi iniciada e uma fatia
+funcional entregue com worker local + adaptador de WhatsApp simulado — ver
+checkpoint "Entrega C" logo abaixo.

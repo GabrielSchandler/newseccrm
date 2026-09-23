@@ -4,6 +4,19 @@ Data: 23/09/2026.
 Repositório: https://github.com/GabrielSchandler/newseccrm
 Versão revisada: `9065dc954f7bfb08a434ab59c55281b00022fbfb`.
 
+> **Retificação (23/09/2026, mesmo dia, ver `docs/PERMISSIONS.md` §2.0 —
+> documento mantido íntegro abaixo, sem editar o corpo):** a seção 7
+> inteira ("Completar fundação multiempresa e multiequipe") pede criar
+> vínculo N:N usuário↔empresa (`company_memberships`, backfill, RLS nova).
+> O Gabriel confirmou depois que esse vínculo não existe pra
+> gerente/supervisor/consultor — eles ficam 1:1 com a empresa, de
+> propósito. Só a parte "supervisor em várias equipes" da seção 7 continua
+> válida, e já foi entregue. A Entrega B (seção 14) foi concluída com esse
+> escopo menor: testar ponta a ponta o fluxo de master que já existe, não
+> construir o vínculo N:N. Onde o texto abaixo falar de "gerente
+> multiempresa" ou vínculo N:N usuário↔empresa, vale o `PERMISSIONS.md`
+> §2.0, não este texto.
+
 ## Como usar
 
 Coloque este arquivo na raiz do checkout `newseccrm` e peça ao Claude Code:

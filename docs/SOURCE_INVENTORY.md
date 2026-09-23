@@ -60,6 +60,11 @@ Fase 1, não um ajuste cosmético; precisa de migração e de mapear o
 `is_platform_owner` atual para o papel Master do modelo alvo sem quebrar o
 fallback existente.
 
+**Retificado (`PERMISSIONS.md` §2.0, 23/09/2026)**: só a metade
+supervisor↔equipe virou migração real (entregue). Usuário↔empresa N:N foi
+descartado — o mecanismo de override do `is_platform_owner` já É o modelo
+Master final, não um fallback a substituir.
+
 ### 1.2 Módulos e configuração de empresa
 
 `src/lib/company/platform-settings.ts` define 11 módulos via
