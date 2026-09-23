@@ -39,6 +39,18 @@ chromium` na primeira vez, se ainda não tiver o binário baixado.
   que pule o `finally` (ex. `Ctrl+C` bruto), os IDs ficam impressos no
   console pra limpeza manual.
 
+## Resultado (23/09/2026, contra `newseccrm.vercel.app` real)
+
+8/8 etapas passando, em duas rodadas seguidas (login do master, criar
+empresa, configurar módulos/limite e persistir, criar usuário na empresa,
+suspender e persistir, usuário da empresa suspensa bloqueado, master nunca
+bloqueado). Achado de robustez no processo: o client admin (processo local)
+às vezes lia uma linha recém-criada pela Server Action (processo da Vercel)
+antes dela ficar visível — não é bug de aplicação, é leitura rápida demais
+logo depois de uma escrita feita por outro processo. Corrigido com
+`reconsultarAteAchar()` (retry curto, até 6 tentativas / ~1s de intervalo)
+em vez de assumir visibilidade imediata.
+
 ## Achado real desta verificação (23/09/2026)
 
 A primeira rodada revelou que **suspender uma empresa não tirava o acesso

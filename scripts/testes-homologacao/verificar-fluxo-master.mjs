@@ -49,6 +49,28 @@ function gerarSenha() {
   return crypto.randomBytes(16).toString("base64url");
 }
 
+function dormir(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Reconsulta algumas vezes com pequeno atraso antes de desistir — na
+ * primeira rodada desta verificação, ler pelo client admin logo depois de
+ * um insert feito pela Server Action (processo/conexão diferente, via
+ * Vercel) às vezes não enxergava a linha na hora, mesmo a escrita já tendo
+ * de fato acontecido (confirmado: a linha aparecia segundos depois). Não é
+ * bug de aplicação — é o client de verificação lendo rápido demais depois
+ * de uma escrita feita por outro processo.
+ */
+async function reconsultarAteAchar(consultaFn, { tentativas = 6, atrasoMs = 1000 } = {}) {
+  for (let tentativa = 1; tentativa <= tentativas; tentativa += 1) {
+    const resultado = await consultaFn();
+    if (resultado) return resultado;
+    if (tentativa < tentativas) await dormir(atrasoMs);
+  }
+  return null;
+}
+
 async function garantirEmpresaSede() {
   const { data: existente } = await admin
     .from("companies")
@@ -155,11 +177,10 @@ async function main() {
     await paginaMaster.locator('#nova-empresa button[type="submit"]').click();
     await paginaMaster.waitForLoadState("networkidle");
 
-    const { data: empresaCriada } = await admin
-      .from("companies")
-      .select("id")
-      .eq("trade_name", nomeEmpresaTeste)
-      .maybeSingle();
+    const empresaCriada = await reconsultarAteAchar(async () => {
+      const { data } = await admin.from("companies").select("id").eq("trade_name", nomeEmpresaTeste).maybeSingle();
+      return data?.id ? data : null;
+    });
     empresaTesteId = empresaCriada?.id ?? null;
     registrar("Criar empresa via UI", Boolean(empresaTesteId), empresaTesteId ?? "não encontrada no banco");
     if (!empresaTesteId) throw new Error("Empresa de teste não foi criada — abortando.");
@@ -194,11 +215,14 @@ async function main() {
     await paginaMaster.getByRole("button", { name: "Criar usuário" }).click();
     await paginaMaster.waitForLoadState("networkidle");
 
-    const { data: perfilUsuarioTeste } = await admin
-      .from("user_profiles")
-      .select("id, auth_user_id")
-      .eq("username", usernameUsuarioTeste)
-      .maybeSingle();
+    const perfilUsuarioTeste = await reconsultarAteAchar(async () => {
+      const { data } = await admin
+        .from("user_profiles")
+        .select("id, auth_user_id")
+        .eq("username", usernameUsuarioTeste)
+        .maybeSingle();
+      return data?.id ? data : null;
+    });
     usuarioTesteAuthId = perfilUsuarioTeste?.auth_user_id ?? null;
     registrar("Criar usuário dentro da empresa via UI", Boolean(usuarioTesteAuthId), usernameUsuarioTeste);
     if (!perfilUsuarioTeste) throw new Error("Usuário de teste não foi criado — abortando.");
@@ -213,8 +237,14 @@ async function main() {
     await paginaMaster.getByRole("button", { name: "Salvar configurações" }).click();
     await paginaMaster.waitForLoadState("networkidle");
 
-    await paginaMaster.reload({ waitUntil: "networkidle" });
-    const statusSalvo = await paginaMaster.locator('select[name="status"]').inputValue();
+    const statusSalvo = await reconsultarAteAchar(
+      async () => {
+        await paginaMaster.reload({ waitUntil: "networkidle" });
+        const valor = await paginaMaster.locator('select[name="status"]').inputValue();
+        return valor === "suspended" ? valor : null;
+      },
+      { tentativas: 6, atrasoMs: 1000 },
+    );
     registrar("Suspender a empresa via UI e persistir", statusSalvo === "suspended", `status=${statusSalvo}`);
 
     // Usuário da empresa suspensa tenta logar — deve cair em /empresa-suspensa.
@@ -235,11 +265,6 @@ async function main() {
     const masterAindaTemAcesso = paginaMaster.url().includes(`/empresas/${empresaTesteId}`);
     registrar("Master nunca perde acesso, mesmo à empresa que ele suspendeu", masterAindaTemAcesso, paginaMaster.url());
 
-    // Limpeza: reativa a empresa (não é o foco do teste, só deixa o estado sadio).
-    await paginaMaster.selectOption('select[name="status"]', "active");
-    await paginaMaster.getByRole("button", { name: "Salvar configurações" }).click();
-    await paginaMaster.waitForLoadState("networkidle");
-
     await contextoMaster.close();
   } catch (erro) {
     relatorio.erro = erro.message;
@@ -248,8 +273,20 @@ async function main() {
     await browser.close();
 
     // Limpa os artefatos criados NESTA rodada (não mexe na empresa sede nem no master reaproveitável).
-    if (usuarioTesteAuthId) await admin.auth.admin.deleteUser(usuarioTesteAuthId).catch(() => {});
-    if (empresaTesteId) await admin.from("companies").delete().eq("id", empresaTesteId).catch(() => {});
+    if (usuarioTesteAuthId) {
+      try {
+        await admin.auth.admin.deleteUser(usuarioTesteAuthId);
+      } catch {
+        // Ignorado — se falhar, o ID fica no log acima pra limpeza manual.
+      }
+    }
+    if (empresaTesteId) {
+      try {
+        await admin.from("companies").delete().eq("id", empresaTesteId);
+      } catch {
+        // Ignorado — se falhar, o ID fica no log acima pra limpeza manual.
+      }
+    }
   }
 
   const falhas = relatorio.etapas.filter((e) => !e.ok);
