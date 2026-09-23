@@ -1,6 +1,18 @@
+"use client";
+
+import { usePathname } from "next/navigation";
 import { FlaskConical } from "lucide-react";
 
+/**
+ * Escondido especificamente em /atendimento — essa rota passou a consultar
+ * dados reais do banco (Entrega C). As demais rotas do shell novo
+ * (supervisão, dashboards, produtividade) continuam 100% demonstração até
+ * as próximas entregas, então continuam mostrando o aviso.
+ */
 export function DemoBanner() {
+  const pathname = usePathname();
+  if (pathname === "/atendimento") return null;
+
   return (
     <div className="flex items-center gap-2 border-b border-[var(--ns-border)] bg-[var(--ns-warning)]/10 px-4 py-1.5 text-xs font-medium text-[var(--ns-warning)]">
       <FlaskConical aria-hidden="true" className="h-3.5 w-3.5 shrink-0" />
