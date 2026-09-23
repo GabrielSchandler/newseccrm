@@ -152,23 +152,21 @@ Detalhar cada uma quando for começar de verdade, não com antecedência —
 documento fonte é `NEWSEC-CORRECOES-E-CONTINUACAO-CLAUDE.md` seções 7–13.
 
 - **B — Fundação multiempresa (escopo corrigido em 23/09, ver
-  `PERMISSIONS.md` §2.0)**: o Gabriel confirmou que o modelo é master vendo
-  todas as empresas (já existe: `/empresas`, `is_platform_owner`,
-  `ACTIVE_COMPANY_COOKIE_NAME`) + gerente/supervisor/consultor 1:1 com a
-  própria empresa (já é assim, não muda). **Não é** criar
-  `company_memberships` N:N pra todo mundo — isso foi descartado. O que
-  falta é testar ponta a ponta o fluxo de master que já existe.
-  **Bloqueado (23/09, verificado)**: `is_platform_owner` só é *lido* em todo
-  o código (`current-user.ts`, `middleware.ts`, `actions/auth.ts`) — não
-  existe nenhuma tela pra promover um usuário a master, só é possível via
-  SQL direto na coluna. Promover um segundo usuário de teste exige
-  `SENHA_BANCO` (mesmo padrão de `supabase/aplicar.mjs`) ou
-  `SUPABASE_SERVICE_ROLE_KEY`, nenhum dos dois presente no `.env.local`
-  local — e não é algo a resolver colando segredo no chat. Duas saídas,
-  nenhuma tomada ainda: (a) o Gabriel roda o SQL de promoção ele mesmo no
-  SQL Editor de homologação e testa manualmente o fluxo; (b) o Gabriel
-  adiciona `SUPABASE_SERVICE_ROLE_KEY` ao `.env.local` local (ele mesmo, no
-  terminal dele) pra eu automatizar a promoção + teste via Playwright.
+  `PERMISSIONS.md` §2.0)** — **concluída em 23/09/2026**: o fluxo de master
+  já existente foi testado ponta a ponta de verdade (Playwright contra
+  `newseccrm.vercel.app`, ver `scripts/testes-homologacao/`), 8/8 etapas em
+  duas rodadas seguidas: login do master → criar empresa → configurar
+  módulos/limite e persistir → criar usuário na empresa → suspender a
+  empresa e persistir → usuário da empresa suspensa é bloqueado → master
+  nunca é bloqueado. Gabriel liberou `SUPABASE_SERVICE_ROLE_KEY` no
+  `.env.local` local pra viabilizar (ver histórico do incidente de segredo
+  colado no chat em `../CLAUDE.md`, repetido em 23/09).
+  **Bug real encontrado e corrigido nesse processo**: suspender uma empresa
+  não tirava o acesso de ninguém — `company_platform_settings.status` só
+  era lido pra exibir o badge no painel do master, nunca checado em
+  `current-user.ts`/`middleware.ts`. Corrigido em `current-user.ts`
+  (redirect pra `/empresa-suspensa`, página nova, pro usuário não-master de
+  uma empresa suspensa/cancelada) — o master nunca é bloqueado por isso.
 - **C — Chat humano real**: bloqueado até o Gabriel decidir onde roda o
   worker/Redis e confirmar acesso a um adapter de WhatsApp de teste. Sem
   isso, o máximo executável é schema/contratos preparados, sem pipeline

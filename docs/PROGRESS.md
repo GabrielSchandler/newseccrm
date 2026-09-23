@@ -16,13 +16,13 @@ fidelidade visual concluída em 23/09** — as 5 telas da Fase 1
 imagens de referência originais e ajustadas; ver checkpoint "fidelidade
 visual" mais abaixo para o detalhe de cada uma. **Entrega E (importador
 Totalk) entregue em dry-run em 23/09** — pronto e testado, só falta o
-token real do Totalk pra sair do modo fixture. **Entrega B bloqueada**:
-falta promover um usuário de teste a `is_platform_owner`, só possível via
-SQL direto, sem `SENHA_BANCO`/`SUPABASE_SERVICE_ROLE_KEY` disponível
-localmente — decisão do Gabriel entre testar manualmente ou liberar
-acesso. **Entrega C** segue bloqueada em decisão de infraestrutura
-(worker/Redis, adapter de WhatsApp de teste) do Gabriel — ver checkpoint
-"Entrega E" mais abaixo para o detalhe dos dois bloqueios.
+token real do Totalk pra sair do modo fixture. **Entrega B concluída em
+23/09** — fluxo de master testado ponta a ponta de verdade (Playwright
+contra o app publicado), 8/8 etapas; um bug real foi encontrado e
+corrigido nesse processo (suspender empresa não bloqueava ninguém) — ver
+checkpoint "Entrega B concluída" mais abaixo. **Entrega C** segue
+bloqueada em decisão de infraestrutura (worker/Redis, adapter de WhatsApp
+de teste) do Gabriel — único bloqueio real restante no roadmap B–E.
 
 ---
 
@@ -805,3 +805,107 @@ suposições da Entrega E contra a API real. Sem depender de nenhuma
 resposta, o próximo trabalho local seguro é continuar preparando a Entrega
 C (schema/contratos da seção 9, sem pipeline real) ou avançar itens da
 Entrega F que não dependem de B/C/D.
+
+---
+
+## Checkpoint 2026-09-23 (6) — Entrega B concluída: fluxo de master testado ponta a ponta
+
+**Fase e tarefa atual:** Entrega B fechada. Gabriel liberou
+`SUPABASE_SERVICE_ROLE_KEY` no `.env.local` local (depois de um segundo
+incidente de segredo colado direto no chat — ver `../CLAUDE.md`, regra
+"Segredo não passa pelo chat" — o Claude Code bloqueou a tentativa de
+gravar o valor num arquivo, nada foi persistido a partir do valor colado;
+o Gabriel colou o valor definitivo ele mesmo no arquivo depois).
+
+**Branch e commits:** `main`, `f958354` (fix + teste) e `5312bc2` (correção
+do teste), a partir de `08fa61c`.
+
+**O que foi verificado, e como:**
+
+Escrevi `scripts/testes-homologacao/verificar-fluxo-master.mjs` — Playwright
+de verdade (browser real) contra `newseccrm.vercel.app` publicado, não
+contra localhost nem chamada direta de API. Fluxo completo: cria/reaproveita
+um usuário master de teste (`master.teste.automatizado`, senha regenerada a
+cada rodada via Admin API, nunca persistida) → login via UI → cria empresa
+via form real (`Nova empresa`) → configura módulos/limite via form real
+(`/empresas/[id]`) e confirma que persiste (reload + reler o DOM) → acessa a
+empresa e cria um usuário dentro dela via `/usuarios/novo` real → suspende a
+empresa (mesmo form, campo `status`) e confirma que persiste → **usuário
+novo da empresa tenta logar → confirma que cai em `/empresa-suspensa`** →
+confirma que o master, acessando a mesma empresa suspensa, nunca é
+bloqueado. Limpa os artefatos da rodada (empresa + usuário de teste) no
+final, mesmo se algo falhar no meio — só a empresa-sede e o master de teste
+ficam (reaproveitáveis entre rodadas).
+
+**Bug real encontrado (não hipótese, comportamento observado)**: na
+primeira rodada, suspender a empresa **não bloqueava nada** — o usuário
+novo conseguia logar e navegar normalmente numa empresa `suspended`.
+Investigação confirmou: `company_platform_settings.status` só era lido em
+`src/lib/company/platform-settings.ts` (pro badge visual) e em nenhum outro
+lugar — `current-user.ts` e `middleware.ts` nunca consultavam essa coluna.
+Corrigido em `src/lib/auth/current-user.ts`, logo depois do check já
+existente de `is_active` → `/conta-inativa` (mesmo padrão): se o perfil não
+é `is_platform_owner` e a empresa dele está `suspended`/`cancelled`,
+redireciona pra `/empresa-suspensa` (página nova, mesmo estilo de
+`/conta-inativa`). O master nunca é bloqueado por isso — precisa continuar
+acessando (inclusive a própria empresa que ele suspendeu) pra revisar/
+reativar.
+
+**Comandos executados e resultados:**
+
+- `npm run typecheck` / `npm run lint` / `npm run build` — limpos (exit 0)
+  depois da mudança em `current-user.ts` e da página nova.
+- Deploy conferido de verdade: fiz polling em
+  `https://newseccrm.vercel.app/empresa-suspensa` (esperando sair de 404)
+  antes de rodar a verificação, pra garantir que estava testando o código
+  novo publicado, não uma versão anterior ainda em cache/propagação.
+- `node scripts/testes-homologacao/verificar-fluxo-master.mjs`: **8/8
+  etapas em duas rodadas seguidas**. Achado de robustez no processo de
+  teste em si (não bug de aplicação): o client admin (rodando aqui local)
+  às vezes lia uma linha recém-criada pela Server Action (rodando na
+  Vercel) antes dela estar visível pra leitura — corrigido com
+  `reconsultarAteAchar()` (retry curto) no script de verificação. Achei
+  também um bug de verdade no próprio script de limpeza
+  (`.catch()` não existe do jeito que encadeei no query builder do
+  supabase-js) — corrigido com try/catch de verdade, e reconferido que a
+  limpeza de fato apaga os artefatos da rodada (empresa + usuário de
+  teste), checado direto no banco depois.
+- Adicionado `playwright` como devDependency de verdade do projeto (antes
+  só existia via instalação solta numa pasta de scratch) — infraestrutura
+  reutilizável pra qualquer teste ponta a ponta futuro, não só este.
+
+**Integrações reais versus simuladas:** tudo real — Supabase de
+homologação de verdade, app publicado de verdade na Vercel, sem mock em
+nenhuma camada. Único uso de `SUPABASE_SERVICE_ROLE_KEY` foi pra
+criar/promover o usuário master de teste e limpar os artefatos no final; a
+verificação do fluxo em si (criar empresa, configurar, criar usuário,
+suspender, logar) foi sempre via formulário real/sessão normal.
+
+**Pendências e bloqueios externos:** nenhum novo. A chave de serviço fica
+só no `.env.local` local (fora do git, confirmado antes de qualquer commit).
+
+**Decisões tomadas e justificativa:**
+
+- Corrigi o bug de suspensão em vez de só documentá-lo como gap conhecido
+  — a Entrega B só podia ser considerada concluída se o fluxo descrito em
+  `PERMISSIONS.md` §2.0 ("bloquear → confirmar que bloqueio tira acesso")
+  de fato funcionasse; documentar sem corrigir deixaria a entrega
+  formalmente aberta pra sempre.
+- Coloquei o check em `current-user.ts`, não em `middleware.ts` — mesmo
+  padrão arquitetural já usado pro check de `is_active`, mudança isolada
+  num arquivo só (menor risco que mexer no `middleware.ts`, mais denso e
+  com bastante lógica de rota já encadeada), e o platform owner precisa
+  continuar acessando mesmo uma empresa suspensa (pra revisar/reativar) —
+  o `middleware.ts` já tem lógica específica que trataria isso de forma
+  diferente pro platform owner, então ficaria redundante/conflitante.
+- `playwright` virou devDependency de verdade em vez de continuar solto
+  numa pasta de scratch — este projeto vai precisar de mais testes ponta a
+  ponta reais conforme as próximas entregas (C especialmente) avançam;
+  formalizar agora evita reinstalar toda vez.
+
+**Próximo passo executável:** Entrega B fechada. Retomar Entrega C (chat
+humano real) só quando o Gabriel decidir infraestrutura de worker/Redis e
+confirmar acesso a um adapter de WhatsApp de teste — até lá, trabalho
+independente seguro segue disponível: validar as duas suposições da
+Entrega E contra o token real do Totalk (quando o Gabriel configurar), ou
+avançar itens da Entrega F que não dependem de B/C/D.
