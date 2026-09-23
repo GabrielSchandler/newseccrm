@@ -9,10 +9,14 @@ abaixo):** Fase 0 e Fase 1 completas, deploy funcionando com login real
 (`newseccrm.vercel.app`), Entrega A (correções da revisão de 23/09) também
 completa e testada. Nenhuma integração real (Chat/worker/IA/Totalk) existe
 ainda — tudo em `/atendimento`, `/dashboards`, `/produtividade` continua
-demonstração com dados sintéticos, deliberadamente. Próximo trabalho
-real: Entrega B (fundação multiempresa) ou Entrega C (chat humano
-persistente), que exige decisões de infraestrutura do Gabriel antes de
-começar — ver seção "Bloqueios reais" no checkpoint mais recente abaixo.
+demonstração com dados sintéticos, deliberadamente. Em andamento agora:
+revisão de fidelidade visual contra as imagens de referência originais
+(pedido do Gabriel) — `/dashboards` e o novo `/dashboards/personalizar`
+já revisados; `/produtividade`, `/atendimento/supervisao` e `/atendimento`
+ainda faltam. Depois disso, próximo trabalho real: Entrega B (fundação
+multiempresa) ou Entrega C (chat humano persistente), que exige decisões
+de infraestrutura do Gabriel antes de começar — ver seção "Bloqueios
+reais" no checkpoint mais recente abaixo.
 
 ---
 
@@ -525,3 +529,63 @@ outra:
    adapter de WhatsApp de teste. Sem isso, o que dá pra fazer é preparar
    schema/contratos (tabelas de conversa/mensagem, idempotência,
    outbox) sem pipeline real — valor limitado sem a infraestrutura.
+
+---
+
+## Checkpoint 2026-09-23 (3) — fidelidade visual: editor de dashboards + dashboards
+
+**Fase e tarefa atual:** revisão de fidelidade visual das telas da Fase 1
+contra as imagens de referência originais, pedido explícito do Gabriel
+("Preciso dela o mais proximo possivel das telas"). Não é uma entrega nova
+do roadmap B–F — é polish sobre o que já existe.
+
+**Branch e commits:** `main`, `2a6b43e` (tela nova) e `8d36f37` (rewrite de
+fidelidade), a partir de `29a4b90`.
+
+**Mudanças concluídas:**
+
+1. **Tela nova: Editor de dashboards** (`/dashboards/personalizar`, Tela 09
+   da especificação) — `2a6b43e`. Layout de 3 painéis: catálogo de
+   indicadores arrastável (visual, não funcional) à esquerda, grade de
+   cards com preview real (`src/components/newsec/mini-charts.tsx`:
+   `MiniLineChart`/`MiniBarChart`/`MiniDonutChart`, SVG puro sem lib
+   externa) ao centro, painel de configuração do card selecionado
+   (fórmula, compartilhamento, tamanho) à direita. Dados em
+   `src/lib/demo/editor-dashboards-data.ts`. Link de entrada adicionado em
+   `/dashboards` ("Personalizar").
+2. **Rewrite de fidelidade: `/dashboards`** (Tela 05) — `8d36f37`,
+   comparado contra `docs/reference-images/05-gestao-newsec-sidebar-escuro-canonico.png`.
+   Adicionado: título "Visão da empresa" + subtítulo, 3 filtros pill (Este
+   mês/Todas as equipes/Comercial e Jurídico), eixo Y em R$ no gráfico de
+   vendas por semana (antes só tinha o valor em cima da barra, sem escala),
+   funil comercial com formato de trapézio de verdade via `clip-path`
+   (antes eram barras retangulares de uma cor só) e cores distintas por
+   etapa, botões de ação por insight ("Ver conversas"/"Ver lista") e "Ver
+   todos →" no cabeçalho do painel.
+
+**Comandos executados e resultados:**
+
+- `npm run typecheck` / `npm run lint` — limpos (exit 0) nas duas entregas.
+- `npm run build` — limpo, rotas novas (`/dashboards/personalizar`) e
+  alteradas geradas sem erro (confirmado por timestamp dos artefatos em
+  `.next/server/app/(newsec)/` quando o log do build ficou vazio por uma
+  particularidade de buffering da ferramenta).
+- Playwright contra `next start` real (processo único confirmado via
+  `Get-Process node`/`Get-NetTCPConnection -LocalPort 3000` antes de
+  testar, lição já registrada nos checkpoints anteriores): screenshot
+  claro e escuro das duas telas, zero erro de console. Comparação visual
+  direta contra a imagem de referência confirmou: título, filtros, botão
+  Personalizar, eixo R$ com valores corretos, funil com cores e números
+  batendo, insights com botões de ação — tudo presente nos dois temas.
+
+**Integrações reais versus simuladas:** nenhuma — ambas continuam 100%
+dado sintético (`src/lib/demo/`), sem chamada a Supabase.
+
+**Pendências externas reais:** nenhuma nova.
+
+**Próximo passo executável:** continuar a mesma revisão de fidelidade nas
+telas restantes, comparando contra a imagem de referência de cada uma:
+`/produtividade` (`06-produtividade-newsec-sidebar-escuro-canonico.png`),
+`/atendimento/supervisao` (`04-supervisao-atendoai-offbrand.png`),
+`/atendimento` (`01-atendimento-claro-newsec-com-drawer-prevenda.png` e
+`02-atendimento-escuro-newsec-sidebar-canonico.png`).

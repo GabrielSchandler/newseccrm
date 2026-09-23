@@ -130,6 +130,21 @@ Ver `NEWSEC-CORRECOES-E-CONTINUACAO-CLAUDE.md` na raiz e checkpoint
 - [ ] Responsividade nos breakpoints pedidos (1920/1366/1280/768/390) —
       não testada nesta entrega, sem bloquear o resto.
 
+## Fidelidade visual — revisão contra imagens de referência (pedido 23/09)
+
+Não é entrega do roadmap B–F, é polish sobre a Fase 1 já entregue. Ver
+checkpoint `docs/PROGRESS.md` "fidelidade visual: editor de dashboards +
+dashboards" pra evidência completa.
+
+- [x] Tela de Editor de dashboards (`/dashboards/personalizar`, Tela 09) —
+      construída do zero, não existia antes.
+- [x] `/dashboards` revisado contra `05-gestao-newsec-sidebar-escuro-canonico.png`
+      (título, filtros, eixo R$, funil trapezoidal, botões de insight).
+- [ ] `/produtividade` revisado contra `06-produtividade-newsec-sidebar-escuro-canonico.png`.
+- [ ] `/atendimento/supervisao` revisado contra `04-supervisao-atendoai-offbrand.png`.
+- [ ] `/atendimento` revisado contra `01-atendimento-claro-newsec-com-drawer-prevenda.png`
+      e `02-atendimento-escuro-newsec-sidebar-canonico.png`.
+
 ## Entregas B–F — backlog ordenado, não iniciado
 
 Detalhar cada uma quando for começar de verdade, não com antecedência —
