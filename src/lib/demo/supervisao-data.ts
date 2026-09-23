@@ -3,6 +3,8 @@
  * Nada aqui vem de banco real.
  */
 
+export const abasSupervisaoDemo = ["Visão geral", "Conversas", "Disparos", "Treinar equipe"];
+
 export type FilaEstado = "Aguardando" | "Em atendimento";
 export type FilaTipo = "Humano" | "IA";
 
@@ -55,12 +57,32 @@ export const indicadoresSupervisaoDemo = {
 export const atencaoNecessariaDemo = [
   {
     id: "a1",
+    icone: "clock" as const,
     titulo: "Thiago Fernandes",
     descricao: "Aguardando há 25 minutos. Cliente deseja cancelar e ainda não tem responsável.",
+    acaoLabel: "Atribuir agora",
   },
   {
     id: "a2",
+    icone: "semResponsavel" as const,
     titulo: "Sem responsável",
     descricao: "4 atendimentos na fila sem ninguém designado no momento.",
+    acaoLabel: "Distribuir",
   },
 ];
+
+export const tempoRespostaSeriesDemo = [
+  { hora: "00h", minutos: 6 },
+  { hora: "02h", minutos: 4 },
+  { hora: "04h", minutos: 3 },
+  { hora: "06h", minutos: 3 },
+  { hora: "08h", minutos: 9 },
+  { hora: "10h", minutos: 14 },
+  { hora: "12h", minutos: 11 },
+  { hora: "14h", minutos: 13 },
+  { hora: "16h", minutos: 10 },
+  { hora: "18h", minutos: 7 },
+  { hora: "20h", minutos: 8 },
+];
+
+export const tempoMedioHojeDemo = { minutos: 8, variacaoPercent: -32 };
