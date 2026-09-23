@@ -1,14 +1,9 @@
-import type { Metadata } from "next";
 import Link from "next/link";
 import { ThemeScript } from "@/components/newsec/theme-script";
 import { NewSecSidebarNav } from "@/components/newsec/sidebar-nav";
 import { DemoBanner } from "@/components/newsec/demo-banner";
 
-export const metadata: Metadata = {
-  title: "Atendimento · NewSec (demonstração)",
-};
-
-export default function AtendimentoLayout({ children }: { children: React.ReactNode }) {
+export default function NewSecLayout({ children }: { children: React.ReactNode }) {
   return (
     <div
       id="ns-shell-root"

@@ -1,9 +1,30 @@
+import Link from "next/link";
 import { Bell, Search } from "lucide-react";
 import { ThemeToggle } from "./theme-toggle";
 
-export function TopBar({ companyName }: { companyName: string }) {
+export function TopBar({
+  companyName,
+  links = [],
+}: {
+  companyName: string;
+  /** Links de contexto (ex.: "Supervisão", "← Atendimento") antes da busca. */
+  links?: Array<{ href: string; label: string }>;
+}) {
   return (
     <div className="flex items-center gap-3 border-b border-[var(--ns-border)] px-4 py-2.5">
+      {links.length > 0 && (
+        <nav className="flex shrink-0 items-center gap-1">
+          {links.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className="rounded-lg px-2.5 py-1.5 text-sm font-medium text-[var(--ns-text-secondary)] transition hover:bg-[var(--ns-surface-hover)] hover:text-[var(--ns-text)]"
+            >
+              {link.label}
+            </Link>
+          ))}
+        </nav>
+      )}
       <div className="relative w-full max-w-md">
         <Search
           aria-hidden="true"

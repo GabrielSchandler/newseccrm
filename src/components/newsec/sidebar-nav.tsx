@@ -31,8 +31,8 @@ const ITEMS: NavItem[] = [
   { href: "/comercial", label: "Comercial", icon: Briefcase, disponivel: true, externo: true },
   { href: "/juridico", label: "Jurídico", icon: Scale, disponivel: true, externo: true },
   { href: "/financeiro", label: "Financeiro", icon: Wallet, disponivel: true, externo: true },
-  { href: "/dashboards", label: "Dashboards", icon: LayoutDashboard, disponivel: false },
-  { href: "/produtividade", label: "Produtividade", icon: Activity, disponivel: false },
+  { href: "/dashboards", label: "Dashboards", icon: LayoutDashboard, disponivel: true },
+  { href: "/produtividade", label: "Produtividade", icon: Activity, disponivel: true },
   { href: "/academy", label: "Academia", icon: GraduationCap, disponivel: true, externo: true },
   { href: "/configuracoes", label: "Configurações", icon: Settings, disponivel: false },
 ];

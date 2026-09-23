@@ -31,6 +31,28 @@ como um ajuste de enum.
 | **Supervisor** (equipes autorizadas) | Chat papel `SUPERVISOR` (gate em `/relatorios`); Focus `TEAM_LEAD` (restrito a 1 equipe hoje) | Ponto de maior esforço de migração: Focus tem a restrição de 1 equipe **imposta em RLS**, não só em UI. |
 | **Consultor** | CRM `role=seller`; Chat atendente/membro padrão; Focus implícito (colaborador comum, sem papel de gestão) | Dimensão `business_area` (comercial/jurídico) do CRM é ortogonal a este papel e deve ser preservada como está — a especificação (seção 5) já avisa para não colapsar isso numa única enumeração. |
 
+## 2.1 Implementado (22-23/09/2026)
+
+`supabase/migrations/0001_equipes.sql` cria `public.teams` e
+`public.team_memberships` (N:N usuário↔equipe, com `membership_role`
+`supervisor`/`member`) dentro do próprio CRM — resolve a metade
+"supervisor em várias equipes" da lacuna descrita acima, de forma aditiva
+(nenhuma tabela existente alterada, nenhum código hoje lê estas tabelas,
+RLS reaproveitando as funções `current_user_*` já existentes no CRM). Ainda
+não aplicado em nenhum ambiente — SQL pronto para colar no SQL Editor do
+Supabase de homologação. Nenhuma tela ainda usa isso (fundação de dado, não
+de produto).
+
+**Não incluído nesta migração, de propósito**: usuário em várias empresas.
+Isso exige mudar `src/lib/auth/current-user.ts` e
+`src/lib/supabase/middleware.ts` — código de autenticação crítico, usado
+por todas as rotas autenticadas — e generalizar o mecanismo que hoje só
+existe para `is_platform_owner` (troca de empresa ativa via cookie
+`ACTIVE_COMPANY_COOKIE_NAME`) para qualquer usuário com mais de um
+`user_profiles`. É mudança de maior risco, que merece sessão dedicada com
+teste de dois usuários em duas empresas antes de aplicar — não entra numa
+migração "de passagem" junto com outra coisa.
+
 ## 3. Decisões que a Fase 1 precisa tomar (não resolvidas aqui)
 
 - Formato do vínculo N:N usuário↔empresa: nova tabela de
