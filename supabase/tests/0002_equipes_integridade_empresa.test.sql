@@ -1,7 +1,25 @@
 -- Suite de aceite pra supabase/migrations/0001_equipes.sql +
 -- 0002_equipes_integridade_empresa.sql, cobrindo o checklist de
--- "Aceite obrigatorio no PostgreSQL de teste" (docs/PROGRESS.md,
--- checkpoint de correcoes 2026-09-23).
+-- "Aceite obrigatorio no PostgreSQL de teste" (docs/PROGRESS.md).
+--
+-- Reescrita em 23/09/2026 pra ser automatizada de verdade — a versao
+-- anterior rodava com `\set ON_ERROR_STOP off` e dependia de alguem ler as
+-- mensagens de ERROR no log e comparar manualmente com o RAISE NOTICE
+-- esperado. Isso tem dois problemas reais: (1) `psql` sempre retorna exit
+-- code 0 nesse modo, entao "a suite rodou" nao provava "os testes
+-- passaram" — um CI ou script rodando isto nunca detectaria regressao; (2)
+-- o TESTE 4 original (auto-promocao) inseria o MESMO par (team_id,
+-- user_profile_id) que o TESTE 1 ja tinha inserido antes — a falha
+-- observada podia ser a violacao de RLS esperada OU a violacao da
+-- constraint `team_memberships_unique`, e nao havia como saber qual das
+-- duas realmente disparou.
+--
+-- Agora cada caso "esperado FALHA" roda dentro de um bloco DO com
+-- EXCEPTION que checa o SQLSTATE especifico esperado — se a operacao tiver
+-- sucesso (nao deveria), ou falhar por um motivo diferente do esperado
+-- (teste contaminado por outra causa), o proprio script levanta um erro
+-- SEM handler pra ele, que aborta a transacao/script com `ON_ERROR_STOP=1`
+-- e devolve exit code != 0 pro psql — de verdade automatizavel.
 --
 -- Como rodar (precisa de um Postgres vazio, local ou descartavel — NUNCA
 -- rodar isto contra homologacao ou producao, ele cria roles e tabelas):
@@ -12,13 +30,12 @@
 --   psql -d testeequipes -c "grant select, insert, update, delete on public.teams, public.team_memberships to authenticated, service_role;"
 --   psql -d testeequipes -v ON_ERROR_STOP=1 -f supabase/migrations/0002_equipes_integridade_empresa.sql
 --   psql -d testeequipes -v ON_ERROR_STOP=1 -f supabase/tests/0002_equipes_integridade_empresa.test.sql
+--   echo "exit code: $?"   # 0 = todos os testes passaram; != 0 = alguma falhou (mensagem indica qual)
 --   dropdb testeequipes
 --
--- Executado manualmente em 2026-09-23 (Postgres 17 local, ver
--- docs/PROGRESS.md para o registro) — todos os 9 casos abaixo passaram.
 -- Reexecutar sempre que 0001/0002 mudar.
 
-\set ON_ERROR_STOP off
+\set ON_ERROR_STOP on
 
 insert into public.companies (id, legal_name) values
     ('00000000-0000-0000-0000-0000000000a1', 'Empresa de teste A'),
@@ -37,11 +54,25 @@ insert into public.teams (id, company_id, name) values
     ('00000000-0000-0000-0000-0000000030b1', '00000000-0000-0000-0000-0000000000b1', 'Equipe de teste B')
 on conflict (id) do nothing;
 
+\echo '=== TESTE 1: Membro A (seller) tenta se auto-vincular como supervisor, SEM vinculo previo -> esperado FALHA (RLS, nao unique_violation) ==='
 do $$
 begin
-    raise notice '=== TESTE 1: Gerente A vincula Membro A a Equipe A -> esperado SUCESSO ===';
-end $$;
+    set local app.test_uid = '00000000-0000-0000-0000-0000000020a2';
+    set local role authenticated;
 
+    insert into public.team_memberships (team_id, user_profile_id, membership_role)
+    values ('00000000-0000-0000-0000-0000000030a1', '00000000-0000-0000-0000-0000000010a2', 'supervisor');
+
+    raise exception 'TESTE 1 FALHOU: insercao deveria ter sido bloqueada por RLS mas teve sucesso';
+exception
+    when insufficient_privilege then
+        raise notice 'TESTE 1 OK: bloqueado por RLS (SQLSTATE %)', sqlstate;
+    when unique_violation then
+        raise exception 'TESTE 1 CONTAMINADO: falhou por unique_violation, nao por RLS — dado de teste com colisao';
+end;
+$$;
+
+\echo '=== TESTE 2: Gerente A vincula Membro A a Equipe A -> esperado SUCESSO ==='
 begin;
 set local app.test_uid = '00000000-0000-0000-0000-0000000020a1';
 set local role authenticated;
@@ -49,91 +80,119 @@ insert into public.team_memberships (team_id, user_profile_id, membership_role)
 values ('00000000-0000-0000-0000-0000000030a1', '00000000-0000-0000-0000-0000000010a2', 'member');
 commit;
 
+\echo '=== TESTE 3: Gerente A tenta vincular Membro B (empresa diferente) a Equipe A -> esperado FALHA (trigger NS002, nao RLS) ==='
 do $$
 begin
-    raise notice '=== TESTE 2: Gerente A tenta vincular Membro B (empresa diferente) a Equipe A -> esperado FALHA ===';
-end $$;
+    set local app.test_uid = '00000000-0000-0000-0000-0000000020a1';
+    set local role authenticated;
 
-begin;
-set local app.test_uid = '00000000-0000-0000-0000-0000000020a1';
-set local role authenticated;
-insert into public.team_memberships (team_id, user_profile_id, membership_role)
-values ('00000000-0000-0000-0000-0000000030a1', '00000000-0000-0000-0000-0000000010b2', 'member');
-commit;
+    insert into public.team_memberships (team_id, user_profile_id, membership_role)
+    values ('00000000-0000-0000-0000-0000000030a1', '00000000-0000-0000-0000-0000000010b2', 'member');
 
+    raise exception 'TESTE 3 FALHOU: insercao cross-empresa deveria ter sido bloqueada mas teve sucesso';
+exception
+    when sqlstate 'NS002' then
+        raise notice 'TESTE 3 OK: bloqueado pelo trigger de integridade (SQLSTATE %)', sqlstate;
+    when insufficient_privilege then
+        raise exception 'TESTE 3 CONTAMINADO: bloqueado por RLS antes do trigger rodar — confira a ordem/policy de team_memberships_insert';
+end;
+$$;
+
+\echo '=== TESTE 4: Gerente A tenta administrar Equipe B (equipe de outra empresa) -> esperado FALHA (RLS) ==='
 do $$
 begin
-    raise notice '=== TESTE 3: Gerente A tenta administrar Equipe B -> esperado FALHA (RLS) ===';
-end $$;
+    set local app.test_uid = '00000000-0000-0000-0000-0000000020a1';
+    set local role authenticated;
 
-begin;
-set local app.test_uid = '00000000-0000-0000-0000-0000000020a1';
-set local role authenticated;
-insert into public.team_memberships (team_id, user_profile_id, membership_role)
-values ('00000000-0000-0000-0000-0000000030b1', '00000000-0000-0000-0000-0000000010b2', 'member');
-commit;
+    insert into public.team_memberships (team_id, user_profile_id, membership_role)
+    values ('00000000-0000-0000-0000-0000000030b1', '00000000-0000-0000-0000-0000000010b2', 'member');
 
+    raise exception 'TESTE 4 FALHOU: administrar equipe alheia deveria ter sido bloqueado mas teve sucesso';
+exception
+    when insufficient_privilege then
+        raise notice 'TESTE 4 OK: bloqueado por RLS (SQLSTATE %)', sqlstate;
+    when sqlstate 'NS002' then
+        raise exception 'TESTE 4 CONTAMINADO: bloqueado pelo trigger de integridade em vez de RLS — os dados desse caso nao deveriam violar integridade';
+end;
+$$;
+
+\echo '=== TESTE 5: UPDATE tentando trocar o usuario do vinculo pra empresa diferente -> esperado FALHA (trigger NS002) ==='
 do $$
 begin
-    raise notice '=== TESTE 4: Membro A (seller) tenta se auto-vincular como supervisor -> esperado FALHA (RLS) ===';
-end $$;
+    set local app.test_uid = '00000000-0000-0000-0000-0000000020a1';
+    set local role authenticated;
 
-begin;
-set local app.test_uid = '00000000-0000-0000-0000-0000000020a2';
-set local role authenticated;
-insert into public.team_memberships (team_id, user_profile_id, membership_role)
-values ('00000000-0000-0000-0000-0000000030a1', '00000000-0000-0000-0000-0000000010a2', 'supervisor');
-commit;
+    update public.team_memberships
+    set user_profile_id = '00000000-0000-0000-0000-0000000010b2'
+    where team_id = '00000000-0000-0000-0000-0000000030a1'
+      and user_profile_id = '00000000-0000-0000-0000-0000000010a2';
 
+    raise exception 'TESTE 5 FALHOU: UPDATE cross-empresa deveria ter sido bloqueado mas teve sucesso';
+exception
+    when sqlstate 'NS002' then
+        raise notice 'TESTE 5 OK: bloqueado pelo trigger de integridade (SQLSTATE %)', sqlstate;
+    when insufficient_privilege then
+        raise exception 'TESTE 5 CONTAMINADO: bloqueado por RLS antes do trigger rodar';
+end;
+$$;
+
+\echo '=== TESTE 6: Revogacao remove o vinculo (DELETE) -> esperado SUCESSO, 0 linhas restantes ==='
+do $$
+declare
+    v_restantes integer;
+begin
+    set local app.test_uid = '00000000-0000-0000-0000-0000000020a1';
+    set local role authenticated;
+
+    delete from public.team_memberships
+    where team_id = '00000000-0000-0000-0000-0000000030a1'
+      and user_profile_id = '00000000-0000-0000-0000-0000000010a2';
+
+    select count(*) into v_restantes
+    from public.team_memberships
+    where team_id = '00000000-0000-0000-0000-0000000030a1'
+      and user_profile_id = '00000000-0000-0000-0000-0000000010a2';
+
+    if v_restantes <> 0 then
+        raise exception 'TESTE 6 FALHOU: esperava 0 linhas restantes apos DELETE, achou %', v_restantes;
+    end if;
+
+    raise notice 'TESTE 6 OK: vinculo revogado, 0 linhas restantes';
+end;
+$$;
+
+\echo '=== TESTE 7: insercao inconsistente direta, sem SET ROLE (equivalente a bypass de RLS via service_role) -> esperado FALHA (trigger NS002, roda mesmo sem RLS) ==='
+-- Cada DO acima roda como sua propria transacao implicita (autocommit) — o
+-- `set local role`/`set local app.test_uid` de TESTE 4/5 ja expirou junto
+-- com aquela transacao, entao este bloco ja roda com a role/sessao padrao
+-- da conexao (tipicamente superuser local, que ignora RLS por definicao —
+-- e exatamente o "equivalente a bypass" que este teste quer exercitar).
 do $$
 begin
-    raise notice '=== TESTE 5: UPDATE tentando trocar o usuario do vinculo pra empresa diferente -> esperado FALHA ===';
-end $$;
+    insert into public.team_memberships (team_id, user_profile_id, membership_role)
+    values ('00000000-0000-0000-0000-0000000030a1', '00000000-0000-0000-0000-0000000010b2', 'member');
 
-begin;
-set local app.test_uid = '00000000-0000-0000-0000-0000000020a1';
-set local role authenticated;
-update public.team_memberships
-set user_profile_id = '00000000-0000-0000-0000-0000000010b2'
-where team_id = '00000000-0000-0000-0000-0000000030a1'
-  and user_profile_id = '00000000-0000-0000-0000-0000000010a2';
-commit;
+    raise exception 'TESTE 7 FALHOU: insercao inconsistente deveria ter sido bloqueada pelo trigger mesmo sem RLS, mas teve sucesso';
+exception
+    when sqlstate 'NS002' then
+        raise notice 'TESTE 7 OK: trigger estrutural bloqueou mesmo com bypass de RLS (SQLSTATE %)', sqlstate;
+end;
+$$;
 
+\echo '=== TESTE 8: tentar mudar a empresa de uma equipe existente -> esperado FALHA (trigger NS003) ==='
 do $$
 begin
-    raise notice '=== TESTE 6: Revogacao remove o vinculo (DELETE) e ele some da consulta -> esperado SUCESSO, 0 linhas restantes ===';
-end $$;
+    update public.teams set company_id = '00000000-0000-0000-0000-0000000000b1'
+    where id = '00000000-0000-0000-0000-0000000030a1';
 
-begin;
-set local app.test_uid = '00000000-0000-0000-0000-0000000020a1';
-set local role authenticated;
-delete from public.team_memberships
-where team_id = '00000000-0000-0000-0000-0000000030a1'
-  and user_profile_id = '00000000-0000-0000-0000-0000000010a2';
-select count(*) as deve_ser_zero from public.team_memberships where team_id = '00000000-0000-0000-0000-0000000030a1';
-commit;
+    raise exception 'TESTE 8 FALHOU: mudar empresa da equipe deveria ter sido bloqueado mas teve sucesso';
+exception
+    when sqlstate 'NS003' then
+        raise notice 'TESTE 8 OK: bloqueado pelo trigger de imutabilidade (SQLSTATE %)', sqlstate;
+end;
+$$;
 
-do $$
-begin
-    raise notice '=== TESTE 7: insercao inconsistente direta, sem SET ROLE (equivalente a bypass de RLS) -> esperado FALHA (trigger estrutural) ===';
-end $$;
-
-insert into public.team_memberships (team_id, user_profile_id, membership_role)
-values ('00000000-0000-0000-0000-0000000030a1', '00000000-0000-0000-0000-0000000010b2', 'member');
-
-do $$
-begin
-    raise notice '=== TESTE 8: tentar mudar a empresa de uma equipe existente -> esperado FALHA ===';
-end $$;
-
-update public.teams set company_id = '00000000-0000-0000-0000-0000000000b1'
-where id = '00000000-0000-0000-0000-0000000030a1';
-
-do $$
-begin
-    raise notice '=== TESTE 9 (simetria): Gerente B vincula Membro B a Equipe B -> esperado SUCESSO ===';
-end $$;
-
+\echo '=== TESTE 9 (simetria): Gerente B vincula Membro B a Equipe B -> esperado SUCESSO ==='
 begin;
 set local app.test_uid = '00000000-0000-0000-0000-0000000020b1';
 set local role authenticated;
@@ -141,7 +200,4 @@ insert into public.team_memberships (team_id, user_profile_id, membership_role)
 values ('00000000-0000-0000-0000-0000000030b1', '00000000-0000-0000-0000-0000000010b2', 'supervisor');
 commit;
 
-do $$
-begin
-    raise notice '=== FIM DA SUITE — confira acima: testes 1 e 9 devem mostrar INSERT sem erro; 2,3,4,5,7,8 devem mostrar ERROR; teste 6 deve mostrar deve_ser_zero=0 ===';
-end $$;
+\echo '=== TODOS OS 9 TESTES PASSARAM (se chegou ate aqui sem ON_ERROR_STOP abortar, esta linha e a prova) ==='

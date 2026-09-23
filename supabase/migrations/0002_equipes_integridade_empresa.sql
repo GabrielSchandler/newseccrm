@@ -24,6 +24,14 @@
 -- tela), nao ha necessidade de reassociar dados existentes — mas, por
 -- seguranca, o bloco abaixo verifica e aborta com erro claro em vez de
 -- corrigir silenciosamente, caso encontre uma linha ja inconsistente.
+--
+-- SQLSTATEs customizados usados nos triggers abaixo (retificado 23/09,
+-- sem mudar a logica de validacao — so pra permitir teste automatizado
+-- de verdade em vez de inspecao manual de mensagem, ver
+-- supabase/tests/0002_equipes_integridade_empresa.test.sql):
+--   NS001 — equipe do vinculo nao existe.
+--   NS002 — usuario-alvo de empresa diferente da equipe (integridade).
+--   NS003 — tentativa de mudar company_id de uma equipe existente.
 
 do $$
 declare
@@ -85,13 +93,15 @@ begin
     where id = new.team_id;
 
     if v_team_company_id is null then
-        raise exception 'Equipe % nao encontrada.', new.team_id;
+        raise exception 'Equipe % nao encontrada.', new.team_id
+            using errcode = 'NS001';
     end if;
 
     if not public.user_belongs_to_company(new.user_profile_id, v_team_company_id) then
         raise exception
             'Usuario % nao pertence a mesma empresa da equipe % — vinculo recusado.',
-            new.user_profile_id, new.team_id;
+            new.user_profile_id, new.team_id
+            using errcode = 'NS002';
     end if;
 
     return new;
@@ -121,7 +131,8 @@ begin
         raise exception
             'Nao e permitido mudar a empresa de uma equipe existente (equipe %). '
             'Crie uma equipe nova na empresa correta em vez de mover esta.',
-            old.id;
+            old.id
+            using errcode = 'NS003';
     end if;
     return new;
 end;
