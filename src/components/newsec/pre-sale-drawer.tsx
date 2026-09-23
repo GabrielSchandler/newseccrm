@@ -22,9 +22,9 @@ export function PreSaleDrawer({
   function salvarDemo() {
     setEstado("salvando");
     window.setTimeout(() => {
-      // Demonstração determinística: sempre mostra o estado de erro
-      // recuperável, porque não há backend real nesta fase (Fase 1) — a
-      // gravação de verdade entra na Fase 3, ligada às actions reais do CRM.
+      // Demonstracao deterministica: sempre mostra o estado de erro
+      // recuperavel, porque este drawer ainda nao esta ligado as actions
+      // reais do CRM (nao ha gravacao de verdade aqui ainda).
       setEstado("erro");
     }, 900);
   }
@@ -62,11 +62,9 @@ export function PreSaleDrawer({
 
         <div className="flex-1 overflow-y-auto px-4 py-4">
           <p className="mb-4 rounded-lg border border-[var(--ns-border)] bg-[var(--ns-surface-hover)] px-3 py-2 text-xs text-[var(--ns-text-secondary)]">
-            As seções e campos abaixo são os mesmos de{" "}
-            <code className="text-[11px]">src/components/pre-sales/pre-sales-form.tsx</code>{" "}
-            e a obrigatoriedade é a real de{" "}
-            <code className="text-[11px]">src/lib/pre-sales/schema.ts</code> — não a versão
-            simplificada do mockup.
+            As seções e a obrigatoriedade dos campos abaixo seguem exatamente o
+            cadastro de pré-venda já usado no CRM — nenhum campo foi
+            simplificado para esta demonstração.
           </p>
 
           {secoesPreVendaDemo.map((secao) => (
@@ -108,9 +106,9 @@ export function PreSaleDrawer({
               role="alert"
               className="mb-2 rounded-lg border border-[var(--ns-danger)]/40 bg-[var(--ns-danger)]/10 px-3 py-2 text-xs text-[var(--ns-danger)]"
             >
-              Não foi possível salvar: esta é a Fase 1 (demonstração visual),
-              a gravação real na pré-venda entra na Fase 3, ligada às regras
-              do CRM. Nada foi perdido — o rascunho continua preenchido.
+              Não foi possível salvar: esta tela ainda não está conectada ao
+              cadastro real de pré-vendas do CRM. Nada foi perdido — o
+              rascunho continua preenchido.
             </div>
           )}
         </div>

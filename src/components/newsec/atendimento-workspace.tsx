@@ -11,6 +11,12 @@ export function AtendimentoWorkspace() {
   const [selecionadaId, setSelecionadaId] = useState(conversasDemo[0].id);
   const [drawerAberto, setDrawerAberto] = useState(false);
   const [contextoRecolhido, setContextoRecolhido] = useState(false);
+  // Rascunho vive aqui, fora do ciclo de vida do ConversationView, e
+  // indexado por conversa — trocar de conversa e voltar preserva o texto
+  // de cada uma em vez de perder tudo (o componente antes guardava isso em
+  // useState proprio + `key={conversa.id}`, que forcava remontagem e
+  // descartava o rascunho a cada troca).
+  const [rascunhos, setRascunhos] = useState<Record<string, string>>({});
 
   const conversa = conversasDemo.find((item) => item.id === selecionadaId) ?? conversasDemo[0];
 
@@ -27,7 +33,14 @@ export function AtendimentoWorkspace() {
         />
       </div>
 
-      <ConversationView key={conversa.id} conversa={conversa} />
+      <ConversationView
+        conversa={conversa}
+        rascunho={rascunhos[conversa.id] ?? ""}
+        onRascunhoChange={(texto) =>
+          setRascunhos((atual) => ({ ...atual, [conversa.id]: texto }))
+        }
+        onEnviar={() => setRascunhos((atual) => ({ ...atual, [conversa.id]: "" }))}
+      />
 
       <div className="hidden shrink-0 lg:block" style={{ width: contextoRecolhido ? 0 : 340 }}>
         {!contextoRecolhido && (

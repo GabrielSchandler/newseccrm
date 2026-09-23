@@ -12,7 +12,7 @@ pnpm-debug.log*
 
 # Dump de schema gerado localmente pelo script de homologacao (nao versiona,
 # muda a cada execucao e nao precisa acompanhar o historico do repo).
-scripts/homologacao/schema-producao.sql
+scripts/homologacao/schema-producao*.sql
 
 # Local analysis and generated artifacts that can contain customer data.
 .codex_tmp/

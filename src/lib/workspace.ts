@@ -55,6 +55,23 @@ export const workspaceOptions: Array<{
   },
 ];
 
+/**
+ * Compara caminho e prefixo respeitando fronteira de segmento: "/dashboard"
+ * bate com "/dashboard" e "/dashboard/x", mas nao com "/dashboards" (que e
+ * uma rota diferente). Usar sempre isto em vez de pathname.startsWith(prefix)
+ * cru para comparar rotas — startsWith puro classificou incorretamente
+ * "/dashboards" (tela nova do NewSec) como a rota "/dashboard" (gestao do
+ * CRM antigo) em pelo menos dois lugares (middleware e classifyWorkspacePath),
+ * o que redirecionava vendedores para fora da tela nova.
+ */
+export function matchesPathPrefix(pathname: string, prefix: string): boolean {
+  return pathname === prefix || pathname.startsWith(`${prefix}/`);
+}
+
+export function matchesAnyPathPrefix(pathname: string, prefixes: readonly string[]): boolean {
+  return prefixes.some((prefix) => matchesPathPrefix(pathname, prefix));
+}
+
 export function normalizeBusinessArea(value: string | null | undefined): CompanyBusinessArea {
   return value === "legal" ? "legal" : "commercial";
 }
@@ -139,23 +156,23 @@ const commercialPrefixes = ["/comercial", "/calculos", "/leads"];
 const sharedOperationalPrefixes = ["/clientes", "/pre-vendas", "/documentos"];
 
 export function classifyWorkspacePath(pathname: string): WorkspaceView | null {
-  if (financePrefixes.some((prefix) => pathname.startsWith(prefix))) {
+  if (matchesAnyPathPrefix(pathname, financePrefixes)) {
     return "finance";
   }
 
-  if (managementPrefixes.some((prefix) => pathname.startsWith(prefix))) {
+  if (matchesAnyPathPrefix(pathname, managementPrefixes)) {
     return "management";
   }
 
-  if (legalPrefixes.some((prefix) => pathname.startsWith(prefix))) {
+  if (matchesAnyPathPrefix(pathname, legalPrefixes)) {
     return "legal";
   }
 
-  if (academyPrefixes.some((prefix) => pathname.startsWith(prefix))) {
+  if (matchesAnyPathPrefix(pathname, academyPrefixes)) {
     return "academy";
   }
 
-  if (commercialPrefixes.some((prefix) => pathname.startsWith(prefix))) {
+  if (matchesAnyPathPrefix(pathname, commercialPrefixes)) {
     return "commercial";
   }
 
@@ -163,5 +180,5 @@ export function classifyWorkspacePath(pathname: string): WorkspaceView | null {
 }
 
 export function isSharedOperationalPath(pathname: string) {
-  return sharedOperationalPrefixes.some((prefix) => pathname.startsWith(prefix));
+  return matchesAnyPathPrefix(pathname, sharedOperationalPrefixes);
 }

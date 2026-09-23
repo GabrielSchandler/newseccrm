@@ -6,6 +6,8 @@ import {
   classifyWorkspacePath,
   getHomeForRole,
   isSharedOperationalPath,
+  matchesAnyPathPrefix,
+  matchesPathPrefix,
   normalizeBusinessArea,
   WORKSPACE_COOKIE_NAME,
 } from "@/lib/workspace";
@@ -69,13 +71,11 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const isProtectedRoute = protectedRoutes.some((route) =>
-    request.nextUrl.pathname.startsWith(route),
-  );
+  const isProtectedRoute = matchesAnyPathPrefix(request.nextUrl.pathname, protectedRoutes);
   const isLoginRoute = request.nextUrl.pathname === "/login";
   const isPasswordChangeRoute = request.nextUrl.pathname === "/alterar-senha";
-  const isDashboardRoute = request.nextUrl.pathname.startsWith("/dashboard");
-  const isPublicTrackingRoute = request.nextUrl.pathname.startsWith("/acompanhamento");
+  const isDashboardRoute = matchesPathPrefix(request.nextUrl.pathname, "/dashboard");
+  const isPublicTrackingRoute = matchesPathPrefix(request.nextUrl.pathname, "/acompanhamento");
 
   if (!user && isProtectedRoute) {
     const url = request.nextUrl.clone();
@@ -167,7 +167,7 @@ export async function updateSession(request: NextRequest) {
     user &&
     profileIsPlatformOwner &&
     isProtectedRoute &&
-    !request.nextUrl.pathname.startsWith("/empresas") &&
+    !matchesPathPrefix(request.nextUrl.pathname, "/empresas") &&
     !isPasswordChangeRoute
   ) {
     if (!activeCompanyCookie) {

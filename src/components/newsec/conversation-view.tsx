@@ -1,19 +1,35 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { FileText, Paperclip, Phone, Send, StickyNote } from "lucide-react";
 import type { ConversaDemo } from "@/lib/demo/atendimento-data";
 import { EstadoBadge } from "./estado-badge";
 
-export function ConversationView({ conversa }: { conversa: ConversaDemo }) {
-  const [rascunho, setRascunho] = useState("");
+export function ConversationView({
+  conversa,
+  rascunho,
+  onRascunhoChange,
+  onEnviar,
+}: {
+  conversa: ConversaDemo;
+  /** Controlado pelo componente pai (por conversa) — ver atendimento-workspace.tsx. */
+  rascunho: string;
+  onRascunhoChange: (texto: string) => void;
+  onEnviar: () => void;
+}) {
   const [aviso, setAviso] = useState<string | null>(null);
+
+  // Sem componente sendo remontado por conversa (nao ha mais `key`), o aviso
+  // efemero de envio precisa ser limpo manualmente ao trocar de conversa.
+  useEffect(() => {
+    setAviso(null);
+  }, [conversa.id]);
 
   function enviarDemo(event: React.FormEvent) {
     event.preventDefault();
     if (!rascunho.trim()) return;
     setAviso("Modo de demonstração: nada foi enviado de verdade.");
-    setRascunho("");
+    onEnviar();
     window.setTimeout(() => setAviso(null), 3000);
   }
 
@@ -128,7 +144,7 @@ export function ConversationView({ conversa }: { conversa: ConversaDemo }) {
         <input
           type="text"
           value={rascunho}
-          onChange={(event) => setRascunho(event.target.value)}
+          onChange={(event) => onRascunhoChange(event.target.value)}
           placeholder="Digite uma mensagem..."
           className="flex-1 rounded-lg border border-[var(--ns-border)] bg-[var(--ns-surface)] px-3 py-2 text-sm text-[var(--ns-text)] outline-none placeholder:text-[var(--ns-text-secondary)] focus-visible:ring-2 focus-visible:ring-[var(--ns-primary)]"
         />
