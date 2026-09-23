@@ -39,13 +39,8 @@ Ver critério de aceite de cada fase na especificação, seção 17.
       catálogo de indicadores levantado em `SOURCE_INVENTORY.md` §3.7;
       falta formalizar como catálogo versionado (especificação seção 12) e
       acrescentar os indicadores de atendimento/comercial/financeiro/IA.
-- [ ] Documento de arquitetura (`ARCHITECTURE.md`) com riscos concretos —
-      os riscos já identificados (multi-empresa/equipe ausente, sobrescrita
-      silenciosa de contexto por IA, credencial de IA global, suspensão de
-      coleta decorativa, obrigatoriedade de cliente só em Zod) estão
-      espalhados em `SOURCE_INVENTORY.md`/`PERMISSIONS.md`/
-      `FEATURE_PARITY.md`; falta consolidar num documento de arquitetura
-      único com diagrama/decisão por risco.
+- [x] Documento de arquitetura (`ARCHITECTURE.md`) com riscos concretos e
+      diagrama.
 - [x] Baseline do CRM clonado: `npm install` e `npm run typecheck` executados
       com sucesso (exit 0). `npm run build` em execução — ver `PROGRESS.md`
       para o resultado.
@@ -59,11 +54,25 @@ Ver critério de aceite de cada fase na especificação, seção 17.
       (`newsec-theme`). `@custom-variant dark` redefinido para seguir
       `data-theme`, não `prefers-color-scheme` puro.
 - [x] Shell/navegação: menu lateral (`NewSecSidebarNav`) com os 9 itens da
-      especificação seção 8.2. Atendimento abre o novo shell; Clientes/
-      Comercial/Jurídico/Financeiro/Academia linkam para as rotas reais já
-      existentes do CRM (fora do novo shell); Dashboards/Produtividade/
-      Configurações aparecem desabilitados ("ainda não implementado") em vez
-      de link morto. Nenhuma rota existente do CRM foi tocada.
+      especificação seção 8.2, reorganizado num route group `(newsec)`
+      reaproveitável (`src/app/(newsec)/layout.tsx`) em vez de duplicado por
+      rota. Atendimento/Dashboards/Produtividade abrem o shell novo;
+      Clientes/Comercial/Jurídico/Financeiro/Academia linkam pras rotas reais
+      já existentes do CRM (fora do shell novo); só Configurações continua
+      desabilitado ("ainda não implementado"). Nenhuma rota existente do CRM
+      foi tocada.
+- [x] Tela de Supervisão (`/atendimento/supervisao`, sub-rota de Atendimento
+      conforme especificação Anexo A.5): fila operacional com estado/canal/
+      setor/espera, carga dos 5 consultores (disponibilidade + capacidade,
+      não só quantidade bruta), dialog de transferência, painel "Atenção
+      necessária". Link cruzado com Atendimento nos dois sentidos.
+- [x] Tela de Dashboards/Gestão (`/dashboards`): cards de vendas/recebido/
+      pré-vendas/SLA, gráfico de vendas por semana, funil comercial,
+      desempenho por equipe, insights.
+- [x] Tela de Produtividade (`/produtividade`): cards de jornada, barra de
+      distribuição (produtivo/neutro/improdutivo/ocioso/sem dados),
+      aplicativos e sites, tabela de pessoas da equipe — aviso de "dados
+      ilustrativos" explícito, como a especificação pede.
 - [x] Tela de atendimento navegável (`/atendimento`, fora do grupo
       `(authenticated)` — não depende de sessão Supabase) com dados
       sintéticos em `src/lib/demo/atendimento-data.ts`, claramente
@@ -87,11 +96,14 @@ Ver critério de aceite de cada fase na especificação, seção 17.
       hidratação foi encontrado e corrigido nesse processo (faltava
       `suppressHydrationWarning` no wrapper que o script de tema manipula
       via DOM) — ver `PROGRESS.md`.
-- [ ] Fundação de identidade/empresa/permissão: modelo de vínculos
-      usuário↔empresa↔equipe, migrações aditivas em homologação (ou SQL
-      preparado + execução pendente registrada se não houver ambiente) —
-      ainda não iniciado nesta entrega; ver decisões propostas em
-      `PERMISSIONS.md` seção 3.
+- [~] Fundação de identidade/empresa/permissão: `supabase/migrations/0001_equipes.sql`
+      cria `teams`/`team_memberships` (N:N usuário↔equipe, com RLS
+      reaproveitando as funções `current_user_*` já existentes) — resolve a
+      metade "supervisor em várias equipes". SQL pronto, execução no banco
+      de homologação depende do Gabriel colar no SQL Editor (não aplicado
+      por mim ainda). **Falta**: usuário↔empresa N:N, que exige mudar
+      `current-user.ts`/`middleware.ts` (código crítico de auth) — decisão
+      registrada em `PERMISSIONS.md` §2.1 de não fazer isso "de passagem".
 - [x] Build, typecheck e lint passando; regressões relevantes do CRM
       verificadas (61→62 rotas, nenhuma existente alterada).
 - [x] Atualizar `PROGRESS.md` com checkpoint completo ao final da fase.

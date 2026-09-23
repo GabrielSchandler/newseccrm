@@ -271,3 +271,113 @@ existente foi removida ou redefinida).
 **Cuidados de compatibilidade:** nenhuma edição de código de produto feita
 ainda além de `package.json` (nome/URLs) e `README.md` (aviso no topo) — o
 CRM clonado está, em comportamento, idêntico ao GRSCRM original.
+
+---
+
+## Checkpoint 2026-09-23 — deploy funcionando, login real, 3 telas novas
+
+**Fase e tarefa atual:** Fase 1 quase completa. Falta só a parte de
+usuário↔empresa N:N (adiada de propósito, ver `PERMISSIONS.md` §2.1).
+
+**Branch e commit base:** `main`, commit `53b5286` (a partir de `d4bf1c3`,
+fim do checkpoint anterior).
+
+**Mudanças concluídas:**
+
+- **Deploy na Vercel resolvido de ponta a ponta** (`newseccrm.vercel.app`),
+  com banco de homologação Supabase próprio (schema copiado da produção via
+  `scripts/homologacao/`, sem nenhum dado de cliente). Gabriel já loga de
+  verdade e navega. Causa raiz de uma sessão de debugging longa: as três
+  variáveis `NEXT_PUBLIC_SUPABASE_URL`/`NEXT_PUBLIC_SUPABASE_ANON_KEY`/
+  `SUPABASE_SERVICE_ROLE_KEY` foram criadas no tipo **"Secret"** na Vercel,
+  que por design não expõe o valor no momento da compilação — variáveis
+  `NEXT_PUBLIC_*` **precisam** disso, então chegavam vazias em produção,
+  causando "Missing Supabase environment variables" em toda página que
+  toca `getCurrentUserContext()`. **Precisam ser tipo "Config"**, não
+  "Secret" — guardar essa regra, ela não é óbvia e não aparece em nenhum
+  aviso claro da Vercel até você tentar editar o valor depois de criado.
+  Diagnosticado com uma rota temporária (`/api/diagnostico-env`, já
+  removida) que reporta presença/tamanho/prefixo de cada variável sem
+  nunca expor o valor — útil de recriar se isso voltar a acontecer.
+- Script `scripts/homologacao/copiar-schema-producao.ps1` corrigido duas
+  vezes: (1) um travessão especial quebrava o parser do PowerShell 5.1 sem
+  BOM UTF-8 (mesma causa raiz já documentada pro `Instalar.ps1` do NewSec
+  Focus); (2) trocado de `supabase db dump` (exige Docker) para
+  `pg_dump`/`psql` nativos, com detecção automática em
+  `C:\Program Files\PostgreSQL\*\bin` e instruções de instalação leve
+  quando não encontrado.
+- Layout novo reorganizado num route group `src/app/(newsec)/`
+  reaproveitável — antes o shell (sidebar + tema + banner) estava duplicado
+  dentro de `atendimento/layout.tsx`; agora qualquer rota nova só precisa
+  de um `page.tsx`.
+- Três telas novas (dados sintéticos, ver `TASKS.md` para detalhe):
+  `/atendimento/supervisao`, `/dashboards`, `/produtividade`. Menu lateral
+  atualizado — Dashboards e Produtividade deixam de estar desabilitados.
+- `supabase/migrations/0001_equipes.sql`: fundação aditiva de equipes
+  (`teams`/`team_memberships`, N:N, RLS reaproveitando funções
+  `current_user_*` já existentes no CRM). Não aplicada em nenhum banco
+  ainda — SQL pronto pra colar no SQL Editor quando Gabriel quiser.
+
+**Comandos executados e resultados:**
+
+- `npm run typecheck` / `npm run lint` / `npm run build` — limpos (exit 0)
+  depois da reorganização em route group e das 3 telas novas. 62→65 rotas,
+  nenhuma existente alterada.
+- Verificação em navegador real (Playwright) das 3 telas novas, claro e
+  escuro, navegação cruzada Atendimento↔Supervisão, zero erros de console.
+- **Bug real pego nesse processo**: o gráfico "Vendas por semana" em
+  `/dashboards` usava `height` em `%` num elemento cujo pai não tinha
+  altura própria definida (só `align-items: flex-end` no avô) — a barra
+  sempre resolvia pra `0px`. Corrigido pra altura em `px` calculada a
+  partir do maior valor da série. Only found because o build/typecheck não
+  pega isso — só apareceu ao inspecionar o DOM renderizado de verdade
+  (`getBoundingClientRect()`), a screenshot sozinha já mostrava o sintoma
+  mas não a causa.
+- **Armadilha local registrada**: depois de matar processos `node` via
+  `lsof -ti:3000 | xargs kill` (Git Bash), o processo real do Windows
+  às vezes continua vivo e servindo a versão antiga por baixo — mesmo com
+  `.next` limpo e rebuild novo, o navegador continuava vendo o código
+  velho porque o `npm run start` antigo nunca tinha realmente morrido.
+  Confirmar sempre via `Get-Process node`/`Get-NetTCPConnection -LocalPort
+  3000` no PowerShell antes de concluir "não reproduz" — `lsof`/`kill` do
+  Git Bash não é confiável pra matar processos nativos do Windows.
+
+**Pendências externas reais:**
+
+- Gabriel ainda não aplicou `supabase/migrations/0001_equipes.sql` no
+  banco de homologação (opcional, sem tela consumindo ainda).
+- Vínculo usuário↔empresa N:N continua não implementado, de propósito —
+  precisa de sessão dedicada mexendo em `current-user.ts`/`middleware.ts`.
+- `docs/METRICS_CATALOG.md` formal ainda não escrito.
+- Nenhum teste do fluxo real de Chat/Focus — Fase 2/5, não começou.
+- Chaves `sb_secret_...`/`service_role` antigas coladas no chat durante o
+  debugging foram invalidadas pela recriação do projeto Supabase — nada a
+  fazer aqui, já resolvido por consequência, só registrando o que
+  aconteceu.
+
+**Decisões tomadas e justificativa:**
+
+- Diagnosticar a variável de ambiente quebrada com uma rota HTTP temporária
+  em vez de continuar tentando ler o painel da Vercel a distância — depois
+  de várias rodadas de mal-entendido sobre qual campo tinha qual valor,
+  uma fonte de verdade única (o próprio runtime respondendo) resolveu em
+  um request o que quatro rodadas de "confere isso no painel" não
+  resolveram.
+- Supervisão entra como sub-rota de Atendimento (`/atendimento/supervisao`),
+  não item novo no menu principal — é o que a especificação define
+  (Anexo A.5) e evita um 10º item que não está no desenho original.
+- Academia continua linkando pro CRM real em vez de ganhar uma versão de
+  demonstração — já tem conteúdo/progresso reais funcionando lá, duplicar
+  seria regressão de valor, não ganho.
+
+**Próximo passo executável:** aplicar `0001_equipes.sql` em homologação
+(Gabriel, quando quiser) e, com isso testado, seguir pra fundação
+usuário↔empresa N:N com sessão dedicada de teste (dois usuários, duas
+empresas). Em paralelo, `docs/METRICS_CATALOG.md` pode ser escrito a
+qualquer momento — não depende de nada pendente.
+
+**Cuidados de compatibilidade:** build confirma 65 rotas totais, nenhuma
+das rotas antigas do CRM mudou de tamanho/tipo. `sidebar-nav.tsx` e
+`top-bar.tsx` foram os únicos arquivos do shell novo *editados* (não
+criados) nesta entrega — ambos só receberam extensões (props novas com
+default seguro), nenhum comportamento anterior removido.
