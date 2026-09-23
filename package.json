@@ -14,7 +14,8 @@
     "import:legacy-rd": "node ./scripts/import-legacy-rd.mjs",
     "import:rd-crm-activities": "node ./scripts/import-rd-crm-activities.mjs",
     "totalk:importar": "node ./scripts/totalk-importer/importar.mjs",
-    "totalk:testar-retry": "node ./scripts/totalk-importer/testar-retry.mjs"
+    "totalk:testar-retry": "node ./scripts/totalk-importer/testar-retry.mjs",
+    "atendimento:worker": "node ./scripts/atendimento-worker/worker.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.0.1",
