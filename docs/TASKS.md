@@ -172,18 +172,17 @@ documento fonte é `NEWSEC-CORRECOES-E-CONTINUACAO-CLAUDE.md` seções 7–13.
   `current-user.ts`/`middleware.ts`. Corrigido em `current-user.ts`
   (redirect pra `/empresa-suspensa`, página nova, pro usuário não-master de
   uma empresa suspensa/cancelada) — o master nunca é bloqueado por isso.
-- **C — Chat humano real**: **fatia funcional entregue em 23/09**
-  (schema+RLS+triggers testados com Postgres real, RPC do worker testada
-  sob concorrência real, worker/webhook/actions/UI reais escritos e
-  verificados por tipo/build + degradação-sem-crash contra homologação de
-  verdade — ver checkpoint "Entrega C" em `PROGRESS.md`). **Bloqueada
-  agora só em**: aplicar `0001`-`0005` em homologação (SQL Editor, sem
-  segredo, ou `SENHA_BANCO`) — depois disso, falta rodar o cenário de
-  aceite completo (2 empresas, webhook→worker→UI, replay) pra fechar de
-  vez. Só a infra paga/número real de WhatsApp segue dependendo do
-  Gabriel além disso.
-- **D — Ações do CRM no atendimento**: depende de B (fechada) e C (fatia
-  funcional pronta, aceite completo pendente da aplicação das migrações).
+- **C — Chat humano real**: **fatia funcional FECHADA em 24/09** — cenário
+  de aceite completo (2 empresas, webhook→banco→worker→UI→transferência→
+  isolamento→replay→resiliência) rodado contra homologação real, 19/19
+  etapas, exit code 0 (`scripts/testes-homologacao/verificar-fluxo-chat-completo.mjs`,
+  reexecutável). Dois bugs reais achados e corrigidos nesse processo
+  (`0006_atendimento_outbound_jobs_policy.sql`) — ver checkpoint "Entrega C
+  fechada" em `PROGRESS.md`. **Nenhum bloqueio real restante** nesta fatia.
+  Só a infra paga/número real de WhatsApp segue dependendo do Gabriel pra
+  ir além do adaptador simulado.
+- **D — Ações do CRM no atendimento**: depende de B (fechada) e C (fechada)
+  — pode começar quando for prioridade.
 - **E — Importador Totalk**: **dry-run entregue em 23/09**
   (`scripts/totalk-importer/`) — cliente da API real (consultada em
   https://flwchat.readme.io/), fixtures representativas, checkpoint/resume,

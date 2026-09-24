@@ -7,13 +7,17 @@ sem depender de memória de conversa anterior.
 **Resumo no topo (o que importa agora, sem precisar ler o histórico
 abaixo):** Fase 0 e Fase 1 completas, deploy funcionando com login real
 (`newseccrm.vercel.app`), Entrega A (correções da revisão de 23/09) também
-completa e testada. **`/atendimento` deixou de ser demonstração** —
-consulta o banco real (Entrega C, ver checkpoint "Entrega C" mais abaixo);
-`/atendimento/supervisao`, `/dashboards`, `/produtividade` continuam
-demonstração com dados sintéticos, deliberadamente. **Bloqueio real único
-agora**: `0001` a `0005` (equipes + schema do chat) não estão aplicadas em
-homologação — sem isso o chat real não tem tabela pra gravar e o teste de
-aceite completo não roda. **Revisão de
+completa e testada. **`/atendimento` deixou de ser demonstração e a
+Entrega C (fatia funcional do chat real) está fechada e comprovada**:
+cenário de aceite completo (2 empresas, webhook → banco → worker → UI →
+transferência → isolamento → replay → resiliência) rodou contra
+homologação real, 19/19 etapas, dois bugs reais achados e corrigidos nesse
+processo (`0006_atendimento_outbound_jobs_policy.sql`) — ver checkpoint
+"Entrega C fechada" mais abaixo. `/atendimento/supervisao`, `/dashboards`,
+`/produtividade` continuam demonstração com dados sintéticos,
+deliberadamente. **Nenhum bloqueio real restante nesta fatia** — próximo
+trabalho é escolha de prioridade (ações do CRM no atendimento, IA,
+Totalk conectado, WhatsApp de teste real, ou itens da Entrega F). **Revisão de
 fidelidade visual concluída em 23/09** — as 5 telas da Fase 1
 (`/dashboards`, `/dashboards/personalizar`, `/produtividade`,
 `/atendimento/supervisao`, `/atendimento`) foram comparadas contra as
@@ -1079,3 +1083,111 @@ automatizar). Assim que isso acontecer, o próximo trabalho é rodar o
 cenário de aceite completo (2 empresas, supervisor + consultor, 2 canais
 simulados) com o worker de verdade ligado, e registrar a evidência real
 disso no checkpoint seguinte.
+
+---
+
+## Checkpoint 2026-09-24 — Entrega C fechada: teste de aceite completo, 19/19
+
+**Fase e tarefa atual:** a fatia funcional da Entrega C está fechada de
+verdade — não só schema testado isoladamente, mas o cenário de aceite
+inteiro (webhook → banco → worker → UI → transferência → isolamento →
+replay → resiliência) rodando contra homologação real, com o app real
+(`next dev` local apontando pro Supabase de homologação) e o worker real.
+
+**Branch e commits:** `main`, `cdc63fd` (fix + teste) até este checkpoint,
+a partir de `8c1783a`.
+
+**O que aconteceu:** o Gabriel aplicou `0001`-`0005` em homologação (SQL
+Editor). Rodei o cenário de aceite completo pela primeira vez contra banco
+de verdade — achou **2 bugs reais** que nenhum teste isolado anterior
+pegaria:
+
+1. **RLS de `outbound_jobs` bloqueava o próprio consultor de enfileirar o
+   envio da mensagem que ele mesmo estava mandando** — a policy só liberava
+   INSERT pra admin/manager/platform-owner, tratando a tabela como "só
+   webhook/worker mexem aqui", mas `enviarMensagemAction` roda com a sessão
+   do usuário real, não `service_role`. Sintoma: mensagem gravada, nunca
+   enviada, presa em "pendente" pra sempre — silencioso, sem erro visível
+   pro usuário além do estado que nunca mudava. Corrigido em
+   `0006_atendimento_outbound_jobs_policy.sql`: INSERT/SELECT liberados pra
+   quem tem acesso à conversa (`user_can_access_conversation`); UPDATE/
+   DELETE continuam só admin/manager/platform-owner (o worker usa
+   `service_role`, que ignora RLS de qualquer forma).
+2. **Conversa nova do webhook nascia sem `team_id`** — nem o membro da
+   equipe nem o supervisor viam a fila, só admin/manager. Corrigido: o
+   webhook busca a equipe padrão da empresa pra área (comercial/jurídico)
+   do canal e atribui na criação.
+
+O Gabriel aplicou `0006` em homologação (mesmo processo, SQL Editor). Depois
+disso, mais duas rodadas do teste completo esbarraram num problema
+**de ambiente, não de código**: o `next dev` local, depois de muitas horas
+ligado com bastante hot-reload, teve o cache `.next` corrompido
+("Cannot find module './1331.js'", erro clássico do Next em dev no
+Windows depois de sessão longa — mesma família do que já está registrado
+mais acima neste arquivo sobre cache/disco). `rm -rf .next` + reiniciar o
+servidor resolveu na hora.
+
+**Resultado final: 19/19 etapas do cenário de aceite completo, exit code 0**
+(`scripts/testes-homologacao/verificar-fluxo-chat-completo.mjs`, reexecutável):
+
+- Setup real: 2 empresas, 1 supervisora + 2 consultores numa equipe, 1
+  consultor numa empresa separada, 1 canal simulado.
+- Webhook cria contato + conversa real (sem `team_id` nulo — roteada pra
+  equipe certa).
+- Consultor da equipe vê a conversa na fila ("Equipe"), assume — atribuição
+  confirmada no banco.
+- Nota interna gravada; confirmado que **não** gera `outbound_jobs` (nem
+  antes nem depois de 0006 — trigger estrutural de 0004 nunca foi o
+  problema, só a policy de quem *pode* criar um job legítimo).
+- Mensagem real enviada pela UI → gravada → worker (processo separado)
+  processa → status final "enviada" confirmado no banco e refletido na UI
+  após reload.
+- Supervisora vê a conversa mesmo atribuída a outro consultor, transfere
+  pra uma terceira pessoa — histórico de transferência com 2 registros.
+- Consultora que recebeu a transferência vê a atualização (outro usuário,
+  outra sessão).
+- Consultor de empresa diferente: não vê a conversa (isolamento) e tem
+  tentativa de auto-atribuição bloqueada (0 linhas afetadas via RLS, sem
+  erro alto — silenciosamente inofensivo).
+- Replay do mesmo evento de webhook: detectado como duplicado, não criou
+  segunda mensagem de entrada.
+- Job criado por este processo foi processado por um worker rodando num
+  **processo separado** (prova de que o estado vive no Postgres, não em
+  memória de nenhum processo específico — sobrevive a reinício).
+
+**Comandos executados:** `npm run typecheck` / `lint` / `build` limpos após
+cada mudança. Suite `0006_atendimento_outbound_jobs_policy.test.sql` (3/3,
+Postgres real) provando a correção sem reabrir buraco de nota interna nem
+liberar empresa alheia. Regressão conferida: suite de `0004` (15/15)
+continua passando depois de `0006`.
+
+**Integrações reais versus simuladas:** tudo real agora (empresas, canais,
+conversas, mensagens, worker rodando de verdade em homologação) — só o
+adaptador WhatsApp continua simulado, como sempre foi o objetivo desta
+fatia. Empresas/usuários de teste (`Empresa Chat Aceite A/B`,
+`ana.supervisora.aceite` etc.) ficam no banco pra reuso em próximas
+rodadas — só conversas/canais/contatos são limpos entre execuções.
+
+**Pendências e bloqueios externos:** nenhum bloqueio real restante nesta
+fatia. O que segue é o roadmap pós-fatia-funcional (seção 5 do prompt de
+continuidade): cadastro/análise/pré-venda reais no drawer, IA, importador
+Totalk conectado, WhatsApp de teste real, dashboards reais, Focus, etc. —
+nenhum desses foi iniciado, de propósito.
+
+**Decisões tomadas e justificativa:**
+
+- Corrigi os dois bugs achados no teste de aceite em vez de contornar o
+  teste pra "passar" — o objetivo era validar o pipeline de verdade, não
+  produzir um relatório verde artificialmente.
+- Guardei o `.env.local` do problema de cache `.next` como lição registrada
+  (mesma família do problema de espaço em disco já documentado) — vale
+  lembrar de limpar `.next` se `next dev` ficar rodando muitas horas com
+  bastante hot-reload antes de confiar num erro estranho como bug de
+  código.
+
+**Próximo passo executável:** com o Gabriel — decidir a próxima prioridade
+entre: (a) ações reais do CRM no atendimento (cadastro/análise/pré-venda,
+depende desta fatia, que agora está pronta); (b) IA com credencial por
+empresa; (c) adaptador de WhatsApp de teste real quando houver acesso; (d)
+Totalk conectado aos registros novos do chat; (e) itens da Entrega F
+(dashboards reais, Focus, Academia) que não dependem de nada disso.
