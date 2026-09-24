@@ -34,7 +34,16 @@ a escolha de hospedagem paga/Redis pago/número real de WhatsApp depende do
 Gabriel. Redis/worker local (ou alternativa local documentada) e adaptador
 de WhatsApp simulado não dependem de nenhuma decisão externa — dá pra
 construir e testar o pipeline inteiro agora. Ver checkpoint "Entrega C"
-mais abaixo para o que foi de fato entregue nesse modelo.
+mais abaixo para o que foi de fato entregue nesse modelo. **Retificação
+(24/09): Entrega C ganhou uma rodada de confiabilidade** (transação atômica
+no envio, reenvio idempotente, lease de job travado, fail-closed de
+provedor — migração `0007_atendimento_confiabilidade.sql`) e **Entrega E
+(importador Totalk) saiu do dry-run — grava de verdade em homologação**
+desde 24/09 (`--destino=homologacao`), idempotente por consulta direta ao
+banco, comprovado com 4 rodadas reais (incluindo 2 quebradas de propósito
+no meio de uma sessão e 1 com checkpoint local apagado) sem nenhuma
+duplicata. Ver checkpoint "Prioridade 0 fechada + Totalk grava em
+homologação" mais abaixo para o detalhe completo.
 
 ---
 
@@ -1191,3 +1200,102 @@ depende desta fatia, que agora está pronta); (b) IA com credencial por
 empresa; (c) adaptador de WhatsApp de teste real quando houver acesso; (d)
 Totalk conectado aos registros novos do chat; (e) itens da Entrega F
 (dashboards reais, Focus, Academia) que não dependem de nada disso.
+
+---
+
+## Checkpoint 2026-09-24 — Prioridade 0 fechada (confiabilidade do chat) + Totalk grava em homologação
+
+**Fase e tarefa atual:** ciclo de revisão externa pós-Entrega C, estruturado
+em 3 prioridades. Prioridade 0 (confiabilidade) e o núcleo da Prioridade 1
+(importador Totalk até homologação) fechados neste ciclo. Prioridade 2
+(runbook de promoção pra produção) não iniciada.
+
+**Branch e commits:** `main`, `48c8a33` (início do ciclo) → `4081629` (fix
+confiabilidade) → `e0749ea` (fix resolução de arquivo do Totalk) →
+`17ca635` (feat: `conversations.external_id`) → `c684cbf` (feat: importador
+grava em homologação).
+
+**Prioridade 0 — 4 lacunas reais corrigidas** (não hipotéticas — cada uma
+com caminho de reprodução):
+
+1. `enviarMensagemAction` fazia 2 INSERTs separados (mensagem, depois job)
+   — se o segundo falhasse, mensagem ficava presa em "pendente" pra sempre.
+   Corrigido: `enviar_mensagem_com_job()` (RPC, uma transação só,
+   `0007_atendimento_confiabilidade.sql`).
+2. Reenviar mensagem com falha criava um SEGUNDO job pro mesmo
+   `message_id` — batia em `outbound_jobs_message_unique` (bug real, não
+   hipótese). Corrigido: `reenviar_mensagem_falhada()` reseta o job
+   existente via UPDATE.
+3. `claim_outbound_jobs()` não recuperava job travado em "processando" se o
+   worker morresse no meio. Corrigido: lease de 2min, job com lease vencida
+   volta a ser reivindicável.
+4. Worker usava o simulador direto sem checar se o canal era mesmo
+   simulado — um canal real ligado por engano ao simulador fabricaria um
+   "enviada" falso. Corrigido: fail-closed real em `worker.mjs`, verificado
+   contra homologação (canal com `provider` real foi recusado sem nunca
+   chamar o simulador).
+
+**Testes:** 37/37 SQL locais (Postgres 17 descartável, 0001-0007 do zero,
+9+3+15+3+7 por suite) + `verificar-worker-fail-closed.mjs` contra
+homologação real + **19/19** no teste de aceite completo
+(`verificar-fluxo-chat-completo.mjs`) — que também ganhou correção de um
+bug real nele mesmo (3 checagens de visibilidade sem esperar o React
+re-renderizar, e processo que ficava pendurado pra sempre se uma etapa
+lançasse exceção com o browser do Playwright ainda aberto).
+
+**Prioridade 1 — importador do Totalk, núcleo pronto e verificado:**
+
+- Duas suposições da API resolvidas contra a documentação oficial
+  (flwchat.readme.io), não por hipótese: `GET /v2/file/{id}` não existe —
+  `GET`/`POST /v2/file` são o fluxo de upload, não consulta. O arquivo de
+  uma mensagem já vem embutido nela mesma (`details.file`/`details.files`,
+  com `publicUrl`/`publicUrlDownload` prontos) — zero chamada extra
+  necessária. `resolverArquivo()` (que chamava um endpoint inexistente,
+  sempre falharia com 404 em modo real) foi removida.
+- `conversations` ganhou `external_id` (migração `0008`, aditiva, única por
+  canal) — sem isso, perder o checkpoint local faria uma reimportação criar
+  sessão duplicada.
+- `importar.mjs` ganhou `--destino=homologacao` (com `--empresa-id`/
+  `--canal-id` explícitos, nunca escolhidos sozinho) e `--dry-run`. Grava
+  contato (por telefone)/conversa (por `external_id`)/mensagem (por
+  `external_id`) idempotentemente, verificado por consulta ao PRÓPRIO
+  BANCO — não só pelo checkpoint local, que pode ser perdido sem duplicar
+  nada. Mensagem histórica é INSERT direto, nunca passa por
+  `enviar_mensagem_com_job()` nem cria `outbound_jobs`.
+- **Verificado contra homologação de verdade**, não só em teoria: empresa
+  real "GRS Soluções" (destino informado pelo Gabriel) criada em
+  homologação com canal Totalk dedicado. 4 rodadas (2 quebradas de
+  propósito no meio do processamento de uma sessão pra testar recuperação
+  de queda real, 1 completa, 1 com checkpoint local inteiramente apagado)
+  — resultado final sempre 3 contatos/3 conversas/13 mensagens, sem
+  duplicata nenhuma, `outbound_jobs` sempre 0 linhas.
+- **2 bugs reais encontrados rodando de verdade** (só apareceram contra o
+  banco real, não em fixture): responsável mapeado em
+  `mapeamento-agentes.json` pra um `user_profiles.id` que não existe no
+  ambiente de destino derrubava a criação da conversa inteira (violação de
+  FK) — corrigido pra cair sem responsável e ficar registrado no relatório,
+  em vez de travar a sessão inteira. Nota interna gravava
+  `author_type: "consultor"`, valor que `messages_author_type_check` nem
+  aceita — corrigido pra `"humano"` (mesma convenção do sistema ao vivo).
+
+**Integrações reais versus simuladas:** tudo real (chat: empresas, canais,
+conversas, mensagens, worker; Totalk: leitura via fixtures — token real
+ainda não configurado, decisão do Gabriel — mas a ESCRITA em homologação já
+é real). Nenhuma chamada real foi feita ao Totalk; nenhum WhatsApp real foi
+conectado.
+
+**Pendências e bloqueios externos:**
+
+- Token de API do Totalk — decisão/acesso do Gabriel, pra confirmar a
+  suposição de `direction: FROM_HUB`/`TO_HUB` (a única suposição real ainda
+  aberta; resolução de arquivo já não depende mais disso) e sair do modo
+  fixture de leitura.
+- `mapeamento-agentes.json` de verdade (hoje só tem um exemplo fictício)
+  antes de qualquer importação real.
+- Prioridade 2 (runbook de promoção pra produção) não iniciada — nenhuma
+  decisão de produção foi tomada ou inferida neste ciclo.
+
+**Próximo passo executável:** com o Gabriel — token real do Totalk (se/
+quando decidir), preencher `mapeamento-agentes.json` de verdade, ou seguir
+pra Prioridade 2 (runbook de promoção pra produção, sem executar nada nela
+sem autorização específica por operação).

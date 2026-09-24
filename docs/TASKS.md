@@ -183,13 +183,20 @@ documento fonte é `NEWSEC-CORRECOES-E-CONTINUACAO-CLAUDE.md` seções 7–13.
   ir além do adaptador simulado.
 - **D — Ações do CRM no atendimento**: depende de B (fechada) e C (fechada)
   — pode começar quando for prioridade.
-- **E — Importador Totalk**: **dry-run entregue em 23/09**
-  (`scripts/totalk-importer/`) — cliente da API real (consultada em
-  https://flwchat.readme.io/), fixtures representativas, checkpoint/resume,
-  retry com backoff, relatório de reconciliação. Testado (duas importações
-  seguidas não duplicam, retomada após queda simulada não reprocessa sessão
-  concluída, mídia indisponível e agente sem mapeamento ficam explícitos no
-  relatório). Falta só o token real do Totalk (decisão do Gabriel) pra sair
-  do modo fixture — ver `scripts/totalk-importer/README.md`.
+- **E — Importador Totalk**: **grava de verdade em homologação desde
+  24/09** (`scripts/totalk-importer/`) — `--destino=homologacao
+  --empresa-id=<uuid> --canal-id=<uuid>` (com `--dry-run` pra preview sem
+  gravar). Idempotente por consulta direta ao banco (telefone,
+  `conversations.external_id`, `messages.external_id`), não só pelo
+  checkpoint local — sobrevive a checkpoint apagado e a queda no meio de
+  uma sessão, provado contra homologação de verdade (empresa "GRS Soluções"
+  criada lá, 3 contatos/3 conversas/13 mensagens, 0 `outbound_jobs`, 4
+  rodadas sem duplicata). 2 bugs reais corrigidos nesse processo
+  (responsável mapeado inexistente derrubava a conversa; `author_type` de
+  nota interna não batia com a constraint real). Falta só o token real do
+  Totalk (decisão do Gabriel) pra sair do modo fixture de leitura — ver
+  `scripts/totalk-importer/README.md`. Promoção pra produção (schema,
+  importação real, número de WhatsApp, cancelamento do Totalk) continua
+  fora do escopo desta entrega, quatro decisões distintas do Gabriel.
 - **F — Focus completo, dashboards reais, Academia ampliada**: último da
   fila, não atrasar B/C/D por isso.
