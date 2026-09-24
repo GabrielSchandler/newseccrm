@@ -211,11 +211,11 @@ export function ClientForm({
 
   return (
     <form className="space-y-8" onSubmit={handleSubmit(onValidSubmit)}>
-      <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+      <div className="rounded-lg border border-[var(--ns-warning)]/30 bg-[var(--ns-warning)]/10 px-4 py-3 text-sm text-[var(--ns-warning)]">
         Obrigatoriedade alinhada com os contratos e recibos atuais. Os campos marcados como obrigatórios
         são os que entram diretamente nesses documentos.
       </div>
-      <div className="rounded-lg border border-violet-200 bg-violet-50 px-4 py-3 text-sm text-violet-800">
+      <div className="rounded-lg border border-[#8b5cf6]/30 bg-[#8b5cf6]/10 px-4 py-3 text-sm text-[#8b5cf6]">
         Os campos marcados como Jurídico são usados em documentos da esteira jurídica, como procuracoes
         e declaracoes.
       </div>
@@ -236,7 +236,7 @@ export function ClientForm({
             {field.type === "select" ? (
               <select
                 id={field.name}
-                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
+                className="ns-input"
                 disabled={disabled}
                 {...register(field.name)}
               >
@@ -260,7 +260,7 @@ export function ClientForm({
                     : undefined
                 }
                 maxLength={getMaxLength(field.name)}
-                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
+                className="ns-input"
                 disabled={disabled}
                 {...register(field.name, {
                   onChange(event: ChangeEvent<HTMLInputElement>) {
@@ -271,7 +271,7 @@ export function ClientForm({
               />
             )}
             {errors[field.name]?.message ? (
-              <p className="text-sm text-red-600">
+              <p className="text-sm text-[var(--ns-danger)]">
                 {String(errors[field.name]?.message)}
               </p>
             ) : null}
@@ -283,7 +283,7 @@ export function ClientForm({
           <textarea
             id="notes"
             rows={5}
-            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
+            className="ns-input"
             disabled={disabled}
             {...register("notes")}
           />
@@ -298,7 +298,7 @@ export function ClientForm({
           />
           <select
             id="commercial_consultant_user_id"
-            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
+            className="ns-input"
             disabled={disabled}
             {...register("commercial_consultant_user_id")}
           >
@@ -311,7 +311,7 @@ export function ClientForm({
             ))}
           </select>
           {errors.commercial_consultant_user_id?.message ? (
-            <p className="text-sm text-red-600">
+            <p className="text-sm text-[var(--ns-danger)]">
               {String(errors.commercial_consultant_user_id?.message)}
             </p>
           ) : null}
@@ -326,7 +326,7 @@ export function ClientForm({
           />
           <select
             id="legal_responsible_user_id"
-            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
+            className="ns-input"
             disabled={disabled}
             {...register("legal_responsible_user_id")}
           >
@@ -338,7 +338,7 @@ export function ClientForm({
             ))}
           </select>
           {errors.legal_responsible_user_id?.message ? (
-            <p className="text-sm text-red-600">
+            <p className="text-sm text-[var(--ns-danger)]">
               {String(errors.legal_responsible_user_id?.message)}
             </p>
           ) : null}
@@ -353,7 +353,7 @@ export function ClientForm({
           />
           <select
             id="legal_consultant_user_id"
-            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
+            className="ns-input"
             disabled={disabled}
             {...register("legal_consultant_user_id")}
           >
@@ -365,7 +365,7 @@ export function ClientForm({
             ))}
           </select>
           {errors.legal_consultant_user_id?.message ? (
-            <p className="text-sm text-red-600">
+            <p className="text-sm text-[var(--ns-danger)]">
               {String(errors.legal_consultant_user_id?.message)}
             </p>
           ) : null}
@@ -373,13 +373,13 @@ export function ClientForm({
       </div>
 
       {actionState ? (
-        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <div className="rounded-lg border border-[var(--ns-danger)]/30 bg-[var(--ns-danger)]/10 px-4 py-3 text-sm text-[var(--ns-danger)]">
           <p>{actionState.message}</p>
           {actionState.deletedClientId ? (
             <div className="mt-4 flex flex-wrap gap-3">
               <Link
                 href={`/clientes/${actionState.deletedClientId}`}
-                className="rounded-lg border border-red-200 bg-white px-3 py-2 text-sm font-semibold text-red-700 transition hover:bg-red-50"
+                className="rounded-lg border border-[var(--ns-danger)]/30 bg-[var(--ns-surface)] px-3 py-2 text-sm font-semibold text-[var(--ns-danger)] transition hover:bg-[var(--ns-danger)]/10"
               >
                 Ver cliente
               </Link>
@@ -392,16 +392,12 @@ export function ClientForm({
       ) : null}
 
       <div className="flex flex-wrap items-center gap-3">
-        <button
-          type="submit"
-          disabled={disabled}
-          className="rounded-lg bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-70"
-        >
+        <button type="submit" disabled={disabled} className="ns-btn-primary">
           {disabled ? "Salvando..." : submitLabel}
         </button>
         <button
           type="button"
-          className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+          className="ns-btn-secondary"
           onClick={() => {
             if (confirmNavigation()) {
               router.back();
@@ -417,7 +413,7 @@ export function ClientForm({
               event.preventDefault();
             }
           }}
-          className="rounded-lg px-4 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-slate-950"
+          className="rounded-lg px-4 py-2.5 text-sm font-semibold text-[var(--ns-text-secondary)] transition hover:bg-[var(--ns-surface-hover)] hover:text-[var(--ns-text)]"
         >
           Lista de clientes
         </Link>

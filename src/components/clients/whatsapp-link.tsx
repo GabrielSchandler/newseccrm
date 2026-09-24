@@ -21,7 +21,7 @@ export function WhatsAppLink({ phone, label = "WhatsApp", className }: WhatsAppL
       rel="noreferrer"
       className={
         className ??
-        "inline-flex items-center gap-2 rounded-lg border border-teal-200 bg-white px-4 py-2.5 text-sm font-semibold text-teal-700 transition hover:bg-teal-50"
+        "inline-flex items-center gap-2 rounded-lg border border-[var(--ns-primary)]/30 bg-[var(--ns-surface)] px-4 py-2.5 text-sm font-semibold text-[var(--ns-primary)] transition hover:bg-[var(--ns-primary)]/10"
       }
     >
       <MessageCircle className="h-4 w-4" />

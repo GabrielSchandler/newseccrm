@@ -30,44 +30,30 @@ export function DeleteClientButton({ clientId }: DeleteClientButtonProps) {
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setIsOpen(true)}
-        className="inline-flex items-center gap-2 rounded-lg border border-red-200 bg-white px-4 py-2.5 text-sm font-semibold text-red-700 transition hover:bg-red-50"
-      >
+      <button type="button" onClick={() => setIsOpen(true)} className="ns-btn-danger">
         <Trash2 className="h-4 w-4" />
         Desativar
       </button>
 
       {isOpen ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 px-4">
-          <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-lg">
-            <h2 className="text-lg font-semibold text-slate-950">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="ns-card w-full max-w-md p-6 shadow-lg">
+            <h2 className="text-lg font-semibold text-[var(--ns-text)]">
               Desativar cliente
             </h2>
-            <p className="mt-3 text-sm leading-6 text-slate-600">
+            <p className="mt-3 text-sm leading-6 text-[var(--ns-text-secondary)]">
               Tem certeza que deseja desativar este cliente?
             </p>
             {message ? (
-              <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+              <div className="mt-4 rounded-lg border border-[var(--ns-danger)]/30 bg-[var(--ns-danger)]/10 px-3 py-2 text-sm text-[var(--ns-danger)]">
                 {message}
               </div>
             ) : null}
             <div className="mt-6 flex flex-wrap justify-end gap-3">
-              <button
-                type="button"
-                onClick={() => setIsOpen(false)}
-                disabled={isPending}
-                className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-70"
-              >
+              <button type="button" onClick={() => setIsOpen(false)} disabled={isPending} className="ns-btn-secondary">
                 Cancelar
               </button>
-              <button
-                type="button"
-                onClick={handleDelete}
-                disabled={isPending}
-                className="rounded-lg bg-red-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-red-800 disabled:cursor-not-allowed disabled:opacity-70"
-              >
+              <button type="button" onClick={handleDelete} disabled={isPending} className="ns-btn-danger-solid">
                 {isPending ? "Desativando..." : "Confirmar desativacao"}
               </button>
             </div>

@@ -1,7 +1,7 @@
 export default function LoadingClientesPage() {
   return (
     <div className="p-6">
-      <div className="rounded-lg border border-slate-200 bg-white p-6 text-sm text-slate-600 shadow-sm">
+      <div className="ns-card p-6 text-sm text-[var(--ns-text-secondary)]">
         Carregando clientes...
       </div>
     </div>

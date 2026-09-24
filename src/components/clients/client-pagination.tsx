@@ -31,7 +31,7 @@ export function ClientPagination({
   const lastItem = Math.min(total, page * pageSize);
 
   return (
-    <div className="flex flex-col gap-3 rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600 shadow-sm md:flex-row md:items-center md:justify-between">
+    <div className="ns-card flex flex-col gap-3 px-4 py-3 text-sm text-[var(--ns-text-secondary)] md:flex-row md:items-center md:justify-between">
       <p>
         Mostrando {firstItem}-{lastItem} de {total} clientes
       </p>
@@ -39,9 +39,7 @@ export function ClientPagination({
         <Link
           href={buildHref(searchParams, Math.max(1, page - 1))}
           aria-disabled={page <= 1}
-          className={`rounded-lg border border-slate-300 bg-white px-3 py-2 font-semibold text-slate-700 transition hover:bg-slate-50 ${
-            page <= 1 ? "pointer-events-none opacity-50" : ""
-          }`}
+          className={`ns-btn-secondary ${page <= 1 ? "pointer-events-none opacity-50" : ""}`}
         >
           Anterior
         </Link>
@@ -51,9 +49,7 @@ export function ClientPagination({
         <Link
           href={buildHref(searchParams, Math.min(totalPages, page + 1))}
           aria-disabled={page >= totalPages}
-          className={`rounded-lg border border-slate-300 bg-white px-3 py-2 font-semibold text-slate-700 transition hover:bg-slate-50 ${
-            page >= totalPages ? "pointer-events-none opacity-50" : ""
-          }`}
+          className={`ns-btn-secondary ${page >= totalPages ? "pointer-events-none opacity-50" : ""}`}
         >
           Próxima
         </Link>

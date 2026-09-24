@@ -27,7 +27,7 @@ type NavItem = {
 
 const ITEMS: NavItem[] = [
   { href: "/atendimento", label: "Atendimento", icon: MessagesSquare, disponivel: true },
-  { href: "/clientes", label: "Clientes", icon: Users, disponivel: true, externo: true },
+  { href: "/clientes", label: "Clientes", icon: Users, disponivel: true },
   { href: "/comercial", label: "Comercial", icon: Briefcase, disponivel: true, externo: true },
   { href: "/juridico", label: "Jurídico", icon: Scale, disponivel: true, externo: true },
   { href: "/financeiro", label: "Financeiro", icon: Wallet, disponivel: true, externo: true },

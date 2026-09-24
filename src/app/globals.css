@@ -86,3 +86,139 @@ input {
   background: var(--ns-bg);
   color: var(--ns-text);
 }
+
+/*
+ * Utilitarios reutilizaveis do shell NewSec — extraidos ao migrar a area
+ * Clientes (primeira area do CRM antigo a virar visual novo) depois de ver
+ * o mesmo padrao de botao/card/badge se repetir em varios componentes.
+ * Evita reescrever "rounded-lg bg-[var(--ns-primary)] px-4 py-2.5..." por
+ * inteiro em cada arquivo. Escopados em .ns-shell, nao afetam o CRM antigo.
+ */
+.ns-shell .ns-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 0.5rem;
+  padding: 0.625rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  background: var(--ns-primary);
+  color: var(--ns-primary-foreground);
+  transition: opacity 0.15s;
+}
+.ns-shell .ns-btn-primary:hover {
+  opacity: 0.9;
+}
+.ns-shell .ns-btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.ns-shell .ns-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 0.5rem;
+  padding: 0.625rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border: 1px solid var(--ns-border);
+  background: var(--ns-surface);
+  color: var(--ns-text);
+  transition: background-color 0.15s;
+}
+.ns-shell .ns-btn-secondary:hover {
+  background: var(--ns-surface-hover);
+}
+.ns-shell .ns-btn-secondary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.ns-shell .ns-btn-danger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 0.5rem;
+  padding: 0.625rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border: 1px solid color-mix(in srgb, var(--ns-danger) 35%, transparent);
+  background: var(--ns-surface);
+  color: var(--ns-danger);
+  transition: background-color 0.15s;
+}
+.ns-shell .ns-btn-danger:hover {
+  background: color-mix(in srgb, var(--ns-danger) 10%, var(--ns-surface));
+}
+.ns-shell .ns-btn-danger:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.ns-shell .ns-btn-danger-solid {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 0.5rem;
+  padding: 0.625rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  background: var(--ns-danger);
+  color: var(--ns-primary-foreground);
+  transition: opacity 0.15s;
+}
+.ns-shell .ns-btn-danger-solid:hover {
+  opacity: 0.9;
+}
+.ns-shell .ns-btn-danger-solid:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.ns-shell .ns-card {
+  border-radius: 0.75rem;
+  border: 1px solid var(--ns-border);
+  background: var(--ns-surface);
+}
+
+.ns-shell .ns-input {
+  width: 100%;
+  border-radius: 0.5rem;
+  border: 1px solid var(--ns-border);
+  background: var(--ns-surface);
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  color: var(--ns-text);
+  outline: none;
+}
+.ns-shell .ns-input:focus-visible {
+  box-shadow: 0 0 0 2px var(--ns-primary);
+}
+.ns-shell .ns-input::placeholder {
+  color: var(--ns-text-secondary);
+}
+
+.ns-shell .ns-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 9999px;
+  border-width: 1px;
+  border-style: solid;
+  padding: 0.125rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.ns-shell .ns-badge-success {
+  border-color: color-mix(in srgb, var(--ns-success) 35%, transparent);
+  background: color-mix(in srgb, var(--ns-success) 12%, transparent);
+  color: var(--ns-success);
+}
+.ns-shell .ns-badge-danger {
+  border-color: color-mix(in srgb, var(--ns-danger) 35%, transparent);
+  background: color-mix(in srgb, var(--ns-danger) 12%, transparent);
+  color: var(--ns-danger);
+}

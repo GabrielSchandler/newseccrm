@@ -13,22 +13,22 @@ export default function ClientesErrorPage({ error, reset }: ClientesErrorPagePro
 
   return (
     <div className="p-6">
-      <div className="rounded-lg border border-red-200 bg-white p-6 shadow-sm">
+      <div className="ns-card p-6">
         <div className="flex items-start gap-3">
-          <div className="rounded-lg bg-red-50 p-2 text-red-700">
+          <div className="rounded-lg bg-[var(--ns-danger)]/10 p-2 text-[var(--ns-danger)]">
             <AlertTriangle className="h-5 w-5" />
           </div>
           <div>
-            <h2 className="text-lg font-semibold text-slate-950">
+            <h2 className="text-lg font-semibold text-[var(--ns-text)]">
               Não foi possível carregar clientes
             </h2>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--ns-text-secondary)]">
               {isProfileContextError
                 ? error.message
                 : "Ocorreu um erro ao carregar o módulo de clientes."}
             </p>
             {isProfileContextError ? (
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--ns-text-secondary)]">
                 Verifique se o usuário autenticado possui um registro vinculado
                 em public.user_profiles.
               </p>
@@ -37,18 +37,11 @@ export default function ClientesErrorPage({ error, reset }: ClientesErrorPagePro
         </div>
 
         <div className="mt-6 flex flex-wrap gap-3">
-          <button
-            type="button"
-            onClick={reset}
-            className="rounded-lg bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-800"
-          >
+          <button type="button" onClick={reset} className="ns-btn-primary">
             Tentar novamente
           </button>
-          <Link
-            href="/dashboard"
-            className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-          >
-            Voltar ao dashboard
+          <Link href="/atendimento" className="ns-btn-secondary">
+            Voltar ao início
           </Link>
         </div>
       </div>

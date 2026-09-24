@@ -20,8 +20,8 @@ export function ClientToast({ message }: ClientToastProps) {
   }
 
   return (
-    <div className="fixed right-4 top-4 z-50 flex max-w-sm items-center gap-3 rounded-lg border border-teal-200 bg-white px-4 py-3 text-sm font-medium text-slate-800 shadow-lg">
-      <CheckCircle2 className="h-5 w-5 text-teal-700" />
+    <div className="ns-card fixed right-4 top-4 z-50 flex max-w-sm items-center gap-3 px-4 py-3 text-sm font-medium text-[var(--ns-text)] shadow-lg">
+      <CheckCircle2 className="h-5 w-5 text-[var(--ns-success)]" />
       {message}
     </div>
   );

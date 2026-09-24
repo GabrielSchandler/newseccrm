@@ -20,7 +20,7 @@ import {
   type EmailAttachmentOption,
 } from "@/components/email/send-client-email-modal";
 import { ClientCalculationsSection } from "@/components/calculations/client-calculations-section";
-import { PageHeader } from "@/components/layout/page-header";
+import { TopBar } from "@/components/newsec/top-bar";
 import { PreSalesStatusBadge } from "@/components/pre-sales/pre-sales-status-badge";
 import {
   displayCpf,
@@ -105,12 +105,12 @@ function SummaryMetric({
   detail?: string;
 }) {
   return (
-    <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
-      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+    <div className="rounded-lg border border-[var(--ns-border)] bg-[var(--ns-bg)] px-4 py-3">
+      <p className="text-xs font-semibold uppercase tracking-wide text-[var(--ns-text-secondary)]">
         {label}
       </p>
-      <div className="mt-1 text-sm font-semibold text-slate-950">{value}</div>
-      {detail ? <p className="mt-1 text-xs text-slate-500">{detail}</p> : null}
+      <div className="mt-1 text-sm font-semibold text-[var(--ns-text)]">{value}</div>
+      {detail ? <p className="mt-1 text-xs text-[var(--ns-text-secondary)]">{detail}</p> : null}
     </div>
   );
 }
@@ -120,8 +120,9 @@ export default async function ClientePage({
   searchParams,
 }: ClientePageProps) {
   const [{ id }, queryParams] = await Promise.all([params, searchParams]);
-  const { supabase, companyId, role, businessArea, userProfileId } =
+  const { supabase, companyId, role, businessArea, userProfileId, activeCompany } =
     await getCurrentUserContext();
+  const companyName = activeCompany?.trade_name ?? activeCompany?.legal_name ?? "Empresa";
   const adminClient = createAdminClient();
 
   const { data, error } = await supabase
@@ -314,15 +315,18 @@ export default async function ClientePage({
   const latestPreSale = clientPreSales[0] ?? null;
 
   return (
-    <>
-      <PageHeader
-        title={client.full_name}
-        description={
-          isDeletedClient(client)
+    <div className="flex min-h-0 flex-1 flex-col">
+      <TopBar companyName={companyName} links={[{ href: "/clientes", label: "← Clientes" }]} />
+      <div className="flex-1 overflow-y-auto">
+      <div className="space-y-2 border-b border-[var(--ns-border)] px-6 py-6">
+        <p className="text-sm font-medium text-[var(--ns-primary)]">Clientes</p>
+        <h1 className="text-2xl font-semibold text-[var(--ns-text)]">{client.full_name}</h1>
+        <p className="max-w-3xl text-sm leading-6 text-[var(--ns-text-secondary)]">
+          {isDeletedClient(client)
             ? "Este cliente está excluído e não aparece na listagem padrão."
-            : "Dados cadastrados do cliente selecionado."
-        }
-      />
+            : "Dados cadastrados do cliente selecionado."}
+        </p>
+      </div>
       <div className="space-y-6 p-6">
         {successMessage ? <ClientToast message={successMessage} /> : null}
 
@@ -330,7 +334,7 @@ export default async function ClientePage({
           {isDeletedClient(client) ? null : (
             <Link
               href={`/clientes/${client.id}/editar`}
-              className="inline-flex items-center gap-2 rounded-lg bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-800"
+              className="ns-btn-primary"
             >
               <Edit className="h-4 w-4" />
               Editar
@@ -338,7 +342,7 @@ export default async function ClientePage({
           )}
           <Link
             href="/clientes"
-            className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+            className="ns-btn-secondary"
           >
             Voltar para clientes
           </Link>
@@ -415,19 +419,19 @@ export default async function ClientePage({
           ]}
         >
           <ClientTabPanel id="resumo">
-            <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+            <section className="ns-card p-6">
               <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
                 <div>
                   <ClientStatusBadge client={client} />
-                  <h2 className="mt-4 text-xl font-semibold text-slate-950">
+                  <h2 className="mt-4 text-xl font-semibold text-[var(--ns-text)]">
                     {client.full_name}
                   </h2>
-                  <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
+                  <p className="mt-2 max-w-3xl text-sm leading-6 text-[var(--ns-text-secondary)]">
                     Centralize a leitura principal do cliente antes de acessar dados,
                     documentos, pré-vendas ou histórico completo.
                   </p>
                 </div>
-                <div className="rounded-lg border border-teal-100 bg-teal-50 px-4 py-3 text-sm text-teal-900">
+                <div className="rounded-lg border border-[var(--ns-primary)]/20 bg-[var(--ns-primary)]/10 px-4 py-3 text-sm text-[var(--ns-primary)]">
                   <span className="font-semibold">Ultima atualizacao:</span>{" "}
                   {formatDateTime(client.updated_at)}
                 </div>
@@ -487,11 +491,11 @@ export default async function ClientePage({
                 />
               </div>
 
-              <div className="mt-6 rounded-lg border border-slate-200 bg-slate-50 p-4">
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              <div className="mt-6 rounded-lg border border-[var(--ns-border)] bg-[var(--ns-bg)] p-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-[var(--ns-text-secondary)]">
                   Observações
                 </p>
-                <p className="mt-2 whitespace-pre-line text-sm leading-6 text-slate-800">
+                <p className="mt-2 whitespace-pre-line text-sm leading-6 text-[var(--ns-text)]">
                   {displayValue(client.notes)}
                 </p>
               </div>
@@ -499,20 +503,20 @@ export default async function ClientePage({
           </ClientTabPanel>
 
           <ClientTabPanel id="dados">
-        <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+        <section className="ns-card p-6">
           <div className="mb-5">
             <ClientStatusBadge client={client} />
           </div>
           <div className="space-y-8">
             <div>
-              <h2 className="text-base font-semibold text-slate-950">Dados pessoais</h2>
+              <h2 className="text-base font-semibold text-[var(--ns-text)]">Dados pessoais</h2>
               <div className="mt-4 grid gap-5 md:grid-cols-2">
                 {personalDetails.map(([label, key]) => (
                   <div key={key}>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-[var(--ns-text-secondary)]">
                       {label}
                     </p>
-                    <p className="mt-1 text-sm font-medium text-slate-950">
+                    <p className="mt-1 text-sm font-medium text-[var(--ns-text)]">
                       {key === "birth_date" ? formatDate(client[key]) : null}
                       {key === "cpf" ? (
                         renderCopyableValue(
@@ -539,14 +543,14 @@ export default async function ClientePage({
             </div>
 
             <div>
-              <h2 className="text-base font-semibold text-slate-950">Contato</h2>
+              <h2 className="text-base font-semibold text-[var(--ns-text)]">Contato</h2>
               <div className="mt-4 grid gap-5 md:grid-cols-2">
                 {contactDetails.map(([label, key]) => (
                   <div key={key}>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-[var(--ns-text-secondary)]">
                       {label}
                     </p>
-                    <p className="mt-1 text-sm font-medium text-slate-950">
+                    <p className="mt-1 text-sm font-medium text-[var(--ns-text)]">
                       {key === "phone_mobile" || key === "phone_secondary" ? (
                         renderCopyableValue(
                           displayPhone(client[key]),
@@ -567,14 +571,14 @@ export default async function ClientePage({
             </div>
 
             <div>
-              <h2 className="text-base font-semibold text-slate-950">Endereço</h2>
+              <h2 className="text-base font-semibold text-[var(--ns-text)]">Endereço</h2>
               <div className="mt-4 grid gap-5 md:grid-cols-2">
                 {addressDetails.map(([label, key]) => (
                   <div key={key}>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-[var(--ns-text-secondary)]">
                       {label}
                     </p>
-                    <p className="mt-1 text-sm font-medium text-slate-950">
+                    <p className="mt-1 text-sm font-medium text-[var(--ns-text)]">
                       {renderCopyableValue(
                         displayValue(client[key]),
                         copyableValue(client[key]),
@@ -586,29 +590,29 @@ export default async function ClientePage({
             </div>
 
             <div>
-              <h2 className="text-base font-semibold text-slate-950">Auditoria</h2>
+              <h2 className="text-base font-semibold text-[var(--ns-text)]">Auditoria</h2>
               <div className="mt-4 grid gap-5 md:grid-cols-2">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-[var(--ns-text-secondary)]">
                     Criado em
                   </p>
-                  <p className="mt-1 text-sm font-medium text-slate-950">
+                  <p className="mt-1 text-sm font-medium text-[var(--ns-text)]">
                     {formatDateTime(client.created_at)}
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-[var(--ns-text-secondary)]">
                     Criado por
                   </p>
-                  <p className="mt-1 text-sm font-medium text-slate-950">
+                  <p className="mt-1 text-sm font-medium text-[var(--ns-text)]">
                     {displayValue(resolveUserDisplayName(createdByProfile, ""))}
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-[var(--ns-text-secondary)]">
                     Ultima atualizacao
                   </p>
-                  <p className="mt-1 text-sm font-medium text-slate-950">
+                  <p className="mt-1 text-sm font-medium text-[var(--ns-text)]">
                     {formatDateTime(client.updated_at)}
                   </p>
                 </div>
@@ -616,13 +620,13 @@ export default async function ClientePage({
             </div>
 
             <div>
-              <h2 className="text-base font-semibold text-slate-950">Comercial</h2>
+              <h2 className="text-base font-semibold text-[var(--ns-text)]">Comercial</h2>
               <div className="mt-4 grid gap-5 md:grid-cols-2">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-[var(--ns-text-secondary)]">
                     Consultor comercial responsável
                   </p>
-                  <p className="mt-1 text-sm font-medium text-slate-950">
+                  <p className="mt-1 text-sm font-medium text-[var(--ns-text)]">
                     {displayValue(resolveUserDisplayName(commercialConsultantProfile, ""))}
                   </p>
                 </div>
@@ -630,21 +634,21 @@ export default async function ClientePage({
             </div>
 
             <div>
-              <h2 className="text-base font-semibold text-slate-950">Jurídico</h2>
+              <h2 className="text-base font-semibold text-[var(--ns-text)]">Jurídico</h2>
               <div className="mt-4 grid gap-5 md:grid-cols-2">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-[var(--ns-text-secondary)]">
                     Adm responsável
                   </p>
-                  <p className="mt-1 text-sm font-medium text-slate-950">
+                  <p className="mt-1 text-sm font-medium text-[var(--ns-text)]">
                     {displayValue(resolveUserDisplayName(legalResponsibleProfile, ""))}
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-[var(--ns-text-secondary)]">
                     Consultor responsável
                   </p>
-                  <p className="mt-1 text-sm font-medium text-slate-950">
+                  <p className="mt-1 text-sm font-medium text-[var(--ns-text)]">
                     {displayValue(resolveUserDisplayName(legalConsultantProfile, ""))}
                   </p>
                 </div>
@@ -652,8 +656,8 @@ export default async function ClientePage({
             </div>
 
             <div>
-              <h2 className="text-base font-semibold text-slate-950">Observações</h2>
-              <p className="mt-3 whitespace-pre-line text-sm font-medium text-slate-950">
+              <h2 className="text-base font-semibold text-[var(--ns-text)]">Observações</h2>
+              <p className="mt-3 whitespace-pre-line text-sm font-medium text-[var(--ns-text)]">
                 {displayValue(client.notes)}
               </p>
             </div>
@@ -700,25 +704,25 @@ export default async function ClientePage({
                 }))}
               />
 
-        <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
-          <div className="border-b border-slate-200 px-6 py-4">
-            <h2 className="text-base font-semibold text-slate-950">
+        <section className="ns-card overflow-hidden">
+          <div className="border-b border-[var(--ns-border)] px-6 py-4">
+            <h2 className="text-base font-semibold text-[var(--ns-text)]">
               Documentos gerados deste cliente
             </h2>
-            <p className="mt-1 text-sm text-slate-600">
+            <p className="mt-1 text-sm text-[var(--ns-text-secondary)]">
               Contratos, recibos e outros documentos emitidos a partir das pré-vendas
               vinculadas a este cliente.
             </p>
           </div>
 
           {generatedDocumentsError ? (
-            <div className="px-6 py-4 text-sm text-red-700">
+            <div className="px-6 py-4 text-sm text-[var(--ns-danger)]">
               {generatedDocumentsError.message}
             </div>
           ) : generatedDocuments.length ? (
             <div className="overflow-x-auto">
               <table className="w-full min-w-[860px] border-collapse text-left text-sm">
-                <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+                <thead className="bg-[var(--ns-bg)] text-xs uppercase tracking-wide text-[var(--ns-text-secondary)]">
                   <tr>
                     <th className="px-6 py-3 font-semibold">Documento</th>
                     <th className="px-6 py-3 font-semibold">Tipo</th>
@@ -729,27 +733,27 @@ export default async function ClientePage({
                     <th className="px-6 py-3 font-semibold">Ações</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-[var(--ns-border)]">
                   {generatedDocuments.map((document) => {
                     const template = templates.find((item) => item.id === document.template_id);
                     const preSale = preSales.find((item) => item.id === document.pre_sale_id);
 
                     return (
-                      <tr key={document.id} className="transition hover:bg-slate-50">
-                        <td className="px-6 py-4 font-medium text-slate-950">
+                      <tr key={document.id} className="transition hover:bg-[var(--ns-bg)]">
+                        <td className="px-6 py-4 font-medium text-[var(--ns-text)]">
                           {displayValue(document.title)}
                         </td>
-                        <td className="px-6 py-4 text-slate-700">
+                        <td className="px-6 py-4 text-[var(--ns-text-secondary)]">
                           {formatTemplateType(document.document_type)}
                         </td>
-                        <td className="px-6 py-4 text-slate-700">
+                        <td className="px-6 py-4 text-[var(--ns-text-secondary)]">
                           {displayValue(template?.name ?? null)}
                         </td>
-                        <td className="px-6 py-4 text-slate-700">
+                        <td className="px-6 py-4 text-[var(--ns-text-secondary)]">
                           {document.pre_sale_id ? (
                             <Link
                               href={`/pre-vendas/${document.pre_sale_id}`}
-                              className="font-semibold text-teal-700 transition hover:text-teal-800"
+                              className="font-semibold text-[var(--ns-primary)] transition hover:text-[var(--ns-primary)]"
                             >
                               Ver pré-venda
                             </Link>
@@ -757,24 +761,24 @@ export default async function ClientePage({
                             "Não vinculada"
                           )}
                           {preSale?.status ? (
-                            <p className="mt-1 text-xs text-slate-500">
+                            <p className="mt-1 text-xs text-[var(--ns-text-secondary)]">
                               Status: {preSale.status}
                             </p>
                           ) : null}
                         </td>
-                        <td className="px-6 py-4 text-slate-700">
+                        <td className="px-6 py-4 text-[var(--ns-text-secondary)]">
                           {document.pdf_error_message
                             ? "DOCX gerado, PDF pendente"
                             : documentStatusLabels[document.status] ?? document.status}
                         </td>
-                        <td className="px-6 py-4 text-slate-700">
+                        <td className="px-6 py-4 text-[var(--ns-text-secondary)]">
                           {formatDateTime(document.created_at)}
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex flex-wrap gap-2">
                             <Link
                               href={`/documentos/gerados/${document.id}`}
-                              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                              className="ns-btn-secondary"
                             >
                               Visualizar
                             </Link>
@@ -782,7 +786,7 @@ export default async function ClientePage({
                               <Link
                                 href={`/documentos/gerados/${document.id}/imprimir?print=1`}
                                 target="_blank"
-                                className="rounded-lg border border-teal-300 bg-teal-50 px-3 py-2 text-sm font-semibold text-teal-800 transition hover:bg-teal-100"
+                                className="rounded-lg border border-[var(--ns-primary)]/30 bg-[var(--ns-primary)]/10 px-3 py-2 text-sm font-semibold text-[var(--ns-primary)] transition hover:bg-[var(--ns-primary)]/15"
                               >
                                 PDF HTML
                               </Link>
@@ -796,7 +800,7 @@ export default async function ClientePage({
               </table>
             </div>
           ) : (
-            <div className="px-6 py-6 text-sm text-slate-500">
+            <div className="px-6 py-6 text-sm text-[var(--ns-text-secondary)]">
               Nenhum documento gerado encontrado para este cliente.
             </div>
           )}
@@ -805,24 +809,24 @@ export default async function ClientePage({
           </ClientTabPanel>
 
           <ClientTabPanel id="pre-vendas">
-        <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
-          <div className="border-b border-slate-200 px-6 py-4">
-            <h2 className="text-base font-semibold text-slate-950">
+        <section className="ns-card overflow-hidden">
+          <div className="border-b border-[var(--ns-border)] px-6 py-4">
+            <h2 className="text-base font-semibold text-[var(--ns-text)]">
               Pré-vendas deste cliente
             </h2>
-            <p className="mt-1 text-sm text-slate-600">
+            <p className="mt-1 text-sm text-[var(--ns-text-secondary)]">
               Histórico comercial com acesso rapido as oportunidades abertas para este cliente.
             </p>
           </div>
 
           {clientPreSalesError ? (
-            <div className="px-6 py-4 text-sm text-red-700">
+            <div className="px-6 py-4 text-sm text-[var(--ns-danger)]">
               {clientPreSalesError.message}
             </div>
           ) : clientPreSales.length ? (
             <div className="overflow-x-auto">
               <table className="w-full min-w-[860px] border-collapse text-left text-sm">
-                <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+                <thead className="bg-[var(--ns-bg)] text-xs uppercase tracking-wide text-[var(--ns-text-secondary)]">
                   <tr>
                     <th className="px-6 py-3 font-semibold">Tipo</th>
                     <th className="px-6 py-3 font-semibold">Serviço</th>
@@ -834,7 +838,7 @@ export default async function ClientePage({
                     <th className="px-6 py-3 font-semibold">Ações</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-[var(--ns-border)]">
                   {clientPreSales.map((preSale) => {
                     const consultant =
                       consultants.find(
@@ -845,42 +849,42 @@ export default async function ClientePage({
                       null;
 
                     return (
-                      <tr key={preSale.id} className="transition hover:bg-slate-50">
-                        <td className="px-6 py-4 font-medium text-slate-950">
+                      <tr key={preSale.id} className="transition hover:bg-[var(--ns-bg)]">
+                        <td className="px-6 py-4 font-medium text-[var(--ns-text)]">
                           {formatPreSaleType(preSale.pre_sale_type)}
                         </td>
-                        <td className="px-6 py-4 text-slate-700">
+                        <td className="px-6 py-4 text-[var(--ns-text-secondary)]">
                           {displayValue(preSale.service_type)}
                         </td>
-                        <td className="px-6 py-4 text-slate-700">
+                        <td className="px-6 py-4 text-[var(--ns-text-secondary)]">
                           {displayValue(preSale.media)}
                         </td>
-                        <td className="px-6 py-4 text-slate-700">
+                        <td className="px-6 py-4 text-[var(--ns-text-secondary)]">
                           {renderCopyableValue(
                             displayValue(preSale.tracking_protocol),
                             copyableValue(preSale.tracking_protocol),
                           )}
                         </td>
-                        <td className="px-6 py-4 text-slate-700">
+                        <td className="px-6 py-4 text-[var(--ns-text-secondary)]">
                           {formatUserName(consultant)}
                         </td>
                         <td className="px-6 py-4">
                           <PreSalesStatusBadge status={preSale.status} />
                         </td>
-                        <td className="px-6 py-4 text-slate-700">
+                        <td className="px-6 py-4 text-[var(--ns-text-secondary)]">
                           {formatDateTime(preSale.created_at)}
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex flex-wrap gap-2">
                             <Link
                               href={`/pre-vendas/${preSale.id}`}
-                              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                              className="ns-btn-secondary"
                             >
                               Visualizar
                             </Link>
                             <Link
                               href={`/calculos/novo?preSaleId=${preSale.id}`}
-                              className="rounded-lg border border-teal-300 bg-teal-50 px-3 py-2 text-sm font-semibold text-teal-800 transition hover:bg-teal-100"
+                              className="rounded-lg border border-[var(--ns-primary)]/30 bg-[var(--ns-primary)]/10 px-3 py-2 text-sm font-semibold text-[var(--ns-primary)] transition hover:bg-[var(--ns-primary)]/15"
                             >
                               Simulação
                             </Link>
@@ -893,7 +897,7 @@ export default async function ClientePage({
               </table>
             </div>
           ) : (
-            <div className="px-6 py-6 text-sm text-slate-500">
+            <div className="px-6 py-6 text-sm text-[var(--ns-text-secondary)]">
               Nenhuma pré-venda encontrada para este cliente.
             </div>
           )}
@@ -905,6 +909,7 @@ export default async function ClientePage({
           </ClientTabPanel>
         </ClientDetailTabs>
       </div>
-    </>
+      </div>
+    </div>
   );
 }

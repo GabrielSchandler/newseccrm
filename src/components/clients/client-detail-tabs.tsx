@@ -42,7 +42,7 @@ export function ClientDetailTabs({ tabs, children }: ClientDetailTabsProps) {
 
   return (
     <div className="space-y-5">
-      <section className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm">
+      <section className="ns-card p-3">
         <div
           role="tablist"
           aria-label="Seções do cadastro do cliente"
@@ -62,8 +62,8 @@ export function ClientDetailTabs({ tabs, children }: ClientDetailTabsProps) {
                 onClick={() => selectTab(tab.id)}
                 className={`min-h-20 rounded-lg border px-4 py-3 text-left transition ${
                   isActive
-                    ? "border-teal-600 bg-teal-700 text-white shadow-sm"
-                    : "border-slate-200 bg-slate-50 text-slate-700 hover:border-teal-200 hover:bg-teal-50"
+                    ? "border-[var(--ns-primary)] bg-[var(--ns-primary)] text-[var(--ns-primary-foreground)] shadow-sm"
+                    : "border-[var(--ns-border)] bg-[var(--ns-bg)] text-[var(--ns-text)] hover:border-[var(--ns-primary)]/40 hover:bg-[var(--ns-primary)]/10"
                 }`}
               >
                 <span className="flex items-center justify-between gap-3">
@@ -72,8 +72,8 @@ export function ClientDetailTabs({ tabs, children }: ClientDetailTabsProps) {
                     <span
                       className={`rounded-lg px-2 py-0.5 text-xs font-semibold ${
                         isActive
-                          ? "bg-white/15 text-white"
-                          : "bg-white text-slate-600"
+                          ? "bg-[var(--ns-primary-foreground)]/15 text-[var(--ns-primary-foreground)]"
+                          : "bg-[var(--ns-surface)] text-[var(--ns-text-secondary)]"
                       }`}
                     >
                       {tab.count}
@@ -82,7 +82,7 @@ export function ClientDetailTabs({ tabs, children }: ClientDetailTabsProps) {
                 </span>
                 <span
                   className={`mt-1 block text-xs leading-5 ${
-                    isActive ? "text-teal-50" : "text-slate-500"
+                    isActive ? "text-[var(--ns-primary-foreground)]/80" : "text-[var(--ns-text-secondary)]"
                   }`}
                 >
                   {tab.description}

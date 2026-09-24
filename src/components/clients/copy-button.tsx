@@ -34,7 +34,7 @@ export function CopyButton({ value, label, className }: CopyButtonProps) {
       onClick={handleCopy}
       className={
         className ??
-        "inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+        "inline-flex items-center gap-1.5 rounded-lg border border-[var(--ns-border)] bg-[var(--ns-surface)] px-3 py-1.5 text-xs font-semibold text-[var(--ns-text)] transition hover:bg-[var(--ns-surface-hover)]"
       }
     >
       <Copy className="h-3.5 w-3.5" />

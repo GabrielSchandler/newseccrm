@@ -1,12 +1,13 @@
 import { ClientForm } from "@/components/clients/client-form";
-import { PageHeader } from "@/components/layout/page-header";
+import { TopBar } from "@/components/newsec/top-bar";
 import { createClientAction } from "@/app/(authenticated)/clientes/actions";
 import { getCurrentUserContext } from "@/lib/auth/current-user";
 import type { UserProfileOption } from "@/types/pre-sale";
 
 export default async function NovoClientePage() {
-  const { role, businessArea, userProfileId, supabase, companyId } =
+  const { role, businessArea, userProfileId, supabase, companyId, activeCompany } =
     await getCurrentUserContext();
+  const companyName = activeCompany?.trade_name ?? activeCompany?.legal_name ?? "Empresa";
   const [{ data: commercialConsultantsData }, { data: legalConsultantsData }] =
     await Promise.all([
       supabase
@@ -39,26 +40,32 @@ export default async function NovoClientePage() {
       : "";
 
   return (
-    <>
-      <PageHeader
-        title="Novo cliente"
-        description="Cadastre os dados basicos do cliente. O vínculo com a empresa vem do usuário autenticado."
-      />
-      <div className="p-6">
-        <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-          <ClientForm
-            submitLabel="Cadastrar cliente"
-            defaultValues={{
-              commercial_consultant_user_id: defaultCommercialConsultantId,
-            }}
-            onSubmitAction={createClientAction}
-            canReactivateDeletedClient={role === "admin"}
-            commercialConsultants={commercialConsultants}
-            legalAdmins={legalAdmins}
-            legalConsultants={legalConsultants}
-          />
+    <div className="flex min-h-0 flex-1 flex-col">
+      <TopBar companyName={companyName} links={[{ href: "/clientes", label: "← Clientes" }]} />
+      <div className="flex-1 overflow-y-auto">
+        <div className="space-y-2 border-b border-[var(--ns-border)] px-6 py-6">
+          <p className="text-sm font-medium text-[var(--ns-primary)]">Clientes</p>
+          <h1 className="text-2xl font-semibold text-[var(--ns-text)]">Novo cliente</h1>
+          <p className="max-w-3xl text-sm leading-6 text-[var(--ns-text-secondary)]">
+            Cadastre os dados basicos do cliente. O vínculo com a empresa vem do usuário autenticado.
+          </p>
+        </div>
+        <div className="p-6">
+          <div className="ns-card p-6">
+            <ClientForm
+              submitLabel="Cadastrar cliente"
+              defaultValues={{
+                commercial_consultant_user_id: defaultCommercialConsultantId,
+              }}
+              onSubmitAction={createClientAction}
+              canReactivateDeletedClient={role === "admin"}
+              commercialConsultants={commercialConsultants}
+              legalAdmins={legalAdmins}
+              legalConsultants={legalConsultants}
+            />
+          </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }

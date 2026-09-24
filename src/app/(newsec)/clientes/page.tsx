@@ -5,7 +5,7 @@ import { ClientPagination } from "@/components/clients/client-pagination";
 import { ClientSearch } from "@/components/clients/client-search";
 import { ClientToast } from "@/components/clients/client-toast";
 import { StatusMessage } from "@/components/clients/status-message";
-import { PageHeader } from "@/components/layout/page-header";
+import { TopBar } from "@/components/newsec/top-bar";
 import { getCurrentUserContext } from "@/lib/auth/current-user";
 import { onlyDigits } from "@/lib/clients/masks";
 import type { ClientListItem } from "@/types/client";
@@ -37,7 +37,8 @@ export default async function ClientesPage({ searchParams }: ClientesPageProps) 
   const page = Math.max(1, Number(params.page ?? "1") || 1);
   const offset = (page - 1) * pageSize;
   const shouldIncludeDeleted = Boolean(cpfSearch) || status !== "active";
-  const { supabase, companyId } = await getCurrentUserContext();
+  const { supabase, companyId, activeCompany } = await getCurrentUserContext();
+  const companyName = activeCompany?.trade_name ?? activeCompany?.legal_name ?? "Empresa";
   const successMessage =
     params.success === "created"
       ? "Cliente cadastrado com sucesso."
@@ -121,58 +122,22 @@ export default async function ClientesPage({ searchParams }: ClientesPageProps) 
     .returns<ClientListItem[]>();
 
   return (
-    <>
-      <PageHeader
-        title="Clientes"
-        description="Gerencie os clientes da empresa autenticada com busca, cadastro e edição."
-      />
-      <div className="space-y-6 p-6">
-        {successMessage ? <ClientToast message={successMessage} /> : null}
-
-        <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
-          <ClientSearch
-            defaultValues={{
-              q: search,
-              phone: params.phone,
-              status,
-              city: params.city,
-              state: params.state,
-              hasEmail,
-              sort,
-              pageSize: String(pageSize),
-            }}
-          />
-          <Link
-            href="/clientes/novo"
-            className="inline-flex items-center justify-center gap-2 rounded-lg bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-800"
-          >
-            <Plus className="h-4 w-4" />
-            Novo cliente
-          </Link>
+    <div className="flex min-h-0 flex-1 flex-col">
+      <TopBar companyName={companyName} />
+      <div className="flex-1 overflow-y-auto">
+        <div className="space-y-2 border-b border-[var(--ns-border)] px-6 py-6">
+          <p className="text-sm font-medium text-[var(--ns-primary)]">Clientes</p>
+          <h1 className="text-2xl font-semibold text-[var(--ns-text)]">Clientes</h1>
+          <p className="max-w-3xl text-sm leading-6 text-[var(--ns-text-secondary)]">
+            Gerencie os clientes da empresa autenticada com busca, cadastro e edição.
+          </p>
         </div>
+        <div className="space-y-6 p-6">
+          {successMessage ? <ClientToast message={successMessage} /> : null}
 
-        {error ? (
-          <StatusMessage type="error">{error.message}</StatusMessage>
-        ) : (
-          <>
-            <ClientList
-              clients={data ?? []}
-              sort={sort}
-              searchParams={{
-                q: search,
-                phone: params.phone,
-                status,
-                city: params.city,
-                state: params.state,
-                hasEmail,
-                pageSize: String(pageSize),
-              }}
-            />
-            <ClientPagination
-              page={page}
-              pageSize={pageSize}
-              total={count ?? 0}
-              searchParams={{
+          <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
+            <ClientSearch
+              defaultValues={{
                 q: search,
                 phone: params.phone,
                 status,
@@ -183,9 +148,48 @@ export default async function ClientesPage({ searchParams }: ClientesPageProps) 
                 pageSize: String(pageSize),
               }}
             />
-          </>
-        )}
+            <Link href="/clientes/novo" className="ns-btn-primary">
+              <Plus className="h-4 w-4" />
+              Novo cliente
+            </Link>
+          </div>
+
+          {error ? (
+            <StatusMessage type="error">{error.message}</StatusMessage>
+          ) : (
+            <>
+              <ClientList
+                clients={data ?? []}
+                sort={sort}
+                searchParams={{
+                  q: search,
+                  phone: params.phone,
+                  status,
+                  city: params.city,
+                  state: params.state,
+                  hasEmail,
+                  pageSize: String(pageSize),
+                }}
+              />
+              <ClientPagination
+                page={page}
+                pageSize={pageSize}
+                total={count ?? 0}
+                searchParams={{
+                  q: search,
+                  phone: params.phone,
+                  status,
+                  city: params.city,
+                  state: params.state,
+                  hasEmail,
+                  sort,
+                  pageSize: String(pageSize),
+                }}
+              />
+            </>
+          )}
+        </div>
       </div>
-    </>
+    </div>
   );
 }

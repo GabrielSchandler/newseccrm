@@ -88,8 +88,8 @@ function SortHeader({
   return (
     <Link
       href={buildSortHref(searchParams, sort, column)}
-      className={`inline-flex items-center gap-1 font-semibold transition hover:text-teal-700 ${
-        active ? "text-teal-700" : ""
+      className={`inline-flex items-center gap-1 font-semibold transition hover:text-[var(--ns-primary)] ${
+        active ? "text-[var(--ns-primary)]" : ""
       }`}
     >
       {config.label}
@@ -103,11 +103,11 @@ export function ClientList({ clients, sort, searchParams }: ClientListProps) {
 
   if (!clients.length) {
     return (
-      <div className="rounded-lg border border-slate-200 bg-white p-8 text-center shadow-sm">
-        <h3 className="text-lg font-semibold text-slate-950">
+      <div className="ns-card p-8 text-center">
+        <h3 className="text-lg font-semibold text-[var(--ns-text)]">
           Nenhum cliente encontrado
         </h3>
-        <p className="mt-2 text-sm text-slate-600">
+        <p className="mt-2 text-sm text-[var(--ns-text-secondary)]">
           Cadastre um novo cliente ou ajuste os termos da busca.
         </p>
       </div>
@@ -115,10 +115,10 @@ export function ClientList({ clients, sort, searchParams }: ClientListProps) {
   }
 
   return (
-    <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+    <div className="ns-card overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full min-w-[1080px] border-collapse text-left text-sm">
-          <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+          <thead className="bg-[var(--ns-bg)] text-xs uppercase tracking-wide text-[var(--ns-text-secondary)]">
             <tr>
               <th className="px-5 py-3">
                 <SortHeader column="full_name" sort={sort} searchParams={searchParams} />
@@ -141,45 +141,45 @@ export function ClientList({ clients, sort, searchParams }: ClientListProps) {
               <th className="px-5 py-3 text-right font-semibold">Ações</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody className="divide-y divide-[var(--ns-border)]">
             {clients.map((client) => (
               <tr
                 key={client.id}
                 onClick={() => router.push(`/clientes/${client.id}`)}
-                className={`cursor-pointer transition hover:bg-slate-50 ${
-                  client.deleted_at ? "bg-slate-50 opacity-70" : ""
+                className={`cursor-pointer transition hover:bg-[var(--ns-surface-hover)] ${
+                  client.deleted_at ? "bg-[var(--ns-bg)] opacity-70" : ""
                 }`}
               >
-                <td className="px-5 py-4 font-medium text-slate-950">
+                <td className="px-5 py-4 font-medium text-[var(--ns-text)]">
                   <div className="flex items-center gap-2">
                     <Link
                       href={`/clientes/${client.id}`}
-                      className="hover:text-teal-700"
+                      className="hover:text-[var(--ns-primary)]"
                     >
                       {client.full_name}
                     </Link>
                     <ClientStatusBadge client={client} />
                   </div>
                 </td>
-                <td className="px-5 py-4 text-slate-700">
+                <td className="px-5 py-4 text-[var(--ns-text-secondary)]">
                   <div className="flex items-center gap-2">
                     <span>{displayCpf(client.cpf)}</span>
                     <CopyButton value={displayCpf(client.cpf)} label="Copiar" />
                   </div>
                 </td>
-                <td className="px-5 py-4 text-slate-700">
+                <td className="px-5 py-4 text-[var(--ns-text-secondary)]">
                   <div className="flex items-center gap-2">
                     <span>{displayPhone(client.phone_mobile)}</span>
                     <CopyButton value={displayPhone(client.phone_mobile)} label="Copiar" />
                   </div>
                 </td>
-                <td className="px-5 py-4 text-slate-700">
+                <td className="px-5 py-4 text-[var(--ns-text-secondary)]">
                   {displayValue(client.city)}
                 </td>
-                <td className="px-5 py-4 text-slate-700">
+                <td className="px-5 py-4 text-[var(--ns-text-secondary)]">
                   {displayValue(client.state)}
                 </td>
-                <td className="px-5 py-4 text-slate-700">
+                <td className="px-5 py-4 text-[var(--ns-text-secondary)]">
                   {formatDate(client.created_at)}
                 </td>
                 <td className="px-5 py-4">
@@ -190,18 +190,18 @@ export function ClientList({ clients, sort, searchParams }: ClientListProps) {
                     <WhatsAppLink
                       phone={client.phone_mobile}
                       label="WhatsApp"
-                      className="inline-flex items-center gap-1.5 rounded-lg border border-teal-200 bg-white px-3 py-1.5 text-xs font-semibold text-teal-700 transition hover:bg-teal-50"
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--ns-primary)]/30 bg-[var(--ns-surface)] px-3 py-1.5 text-xs font-semibold text-[var(--ns-primary)] transition hover:bg-[var(--ns-primary)]/10"
                     />
                     <Link
                       href={`/clientes/${client.id}`}
-                      className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+                      className="rounded-lg border border-[var(--ns-border)] bg-[var(--ns-surface)] px-3 py-1.5 text-xs font-semibold text-[var(--ns-text)] transition hover:bg-[var(--ns-surface-hover)]"
                     >
                       Ver
                     </Link>
                     {client.deleted_at ? null : (
                       <Link
                         href={`/clientes/${client.id}/editar`}
-                        className="rounded-lg bg-teal-700 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-teal-800"
+                        className="rounded-lg bg-[var(--ns-primary)] px-3 py-1.5 text-xs font-semibold text-[var(--ns-primary-foreground)] transition hover:opacity-90"
                       >
                         Editar
                       </Link>

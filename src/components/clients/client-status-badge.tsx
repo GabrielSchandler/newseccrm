@@ -9,13 +9,7 @@ export function ClientStatusBadge({ client }: ClientStatusBadgeProps) {
   const deleted = isDeletedClient(client);
 
   return (
-    <span
-      className={`rounded-full border px-2 py-0.5 text-xs font-semibold ${
-        deleted
-          ? "border-red-200 bg-red-50 text-red-700"
-          : "border-teal-200 bg-teal-50 text-teal-700"
-      }`}
-    >
+    <span className={`ns-badge ${deleted ? "ns-badge-danger" : "ns-badge-success"}`}>
       {deleted ? "Excluído" : "Ativo"}
     </span>
   );

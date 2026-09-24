@@ -6,8 +6,8 @@ type StatusMessageProps = {
 export function StatusMessage({ type = "success", children }: StatusMessageProps) {
   const className =
     type === "success"
-      ? "border-teal-200 bg-teal-50 text-teal-800"
-      : "border-red-200 bg-red-50 text-red-700";
+      ? "border-[var(--ns-success)]/30 bg-[var(--ns-success)]/10 text-[var(--ns-success)]"
+      : "border-[var(--ns-danger)]/30 bg-[var(--ns-danger)]/10 text-[var(--ns-danger)]";
 
   return (
     <div className={`rounded-lg border px-4 py-3 text-sm ${className}`}>

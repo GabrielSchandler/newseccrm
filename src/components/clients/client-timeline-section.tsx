@@ -245,29 +245,29 @@ export function ClientTimelineSection({
   }
 
   return (
-    <section className="space-y-4 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+    <section className="ns-card space-y-4 p-6">
       <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
         <div>
-          <h2 className="text-base font-semibold text-slate-950">Linha do tempo do cliente</h2>
-          <p className="mt-1 text-sm leading-6 text-slate-600">
+          <h2 className="text-base font-semibold text-[var(--ns-text)]">Linha do tempo do cliente</h2>
+          <p className="mt-1 text-sm leading-6 text-[var(--ns-text-secondary)]">
             Tudo o que foi feito com este cliente fica registrado aqui, com ordem do mais novo para o mais antigo.
           </p>
         </div>
-        <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-600">
+        <div className="inline-flex items-center gap-2 rounded-full border border-[var(--ns-border)] bg-[var(--ns-bg)] px-3 py-1.5 text-xs font-medium text-[var(--ns-text-secondary)]">
           <History className="h-4 w-4" />
           Histórico centralizado
         </div>
       </div>
 
-      <div className="rounded-lg border border-teal-200 bg-teal-50/70 p-4">
+      <div className="rounded-lg border border-[var(--ns-primary)]/25 bg-[var(--ns-primary)]/5 p-4">
         <div className="flex items-start gap-3">
-          <div className="rounded-lg border border-teal-200 bg-white p-2 text-teal-700">
+          <div className="rounded-lg border border-[var(--ns-primary)]/25 bg-[var(--ns-surface)] p-2 text-[var(--ns-primary)]">
             <MessageSquarePlus className="h-4 w-4" />
           </div>
           <div className="flex-1 space-y-3">
             <div>
-              <p className="text-sm font-semibold text-slate-950">Nova anotacao</p>
-              <p className="mt-1 text-sm text-slate-600">
+              <p className="text-sm font-semibold text-[var(--ns-text)]">Nova anotacao</p>
+              <p className="mt-1 text-sm text-[var(--ns-text-secondary)]">
                 Use este campo para registrar tratativas, combinados, pendencias e qualquer contexto importante do atendimento.
               </p>
             </div>
@@ -277,19 +277,14 @@ export function ClientTimelineSection({
               disabled={isPending}
               onChange={(event) => setNote(event.target.value)}
               placeholder="Ex.: Cliente enviou documento complementar e pediu retorno ainda hoje. Pendência repassada ao jurídico."
-              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
+              className="ns-input"
             />
             <div className="flex flex-wrap items-center gap-3">
-              <button
-                type="button"
-                disabled={isPending}
-                onClick={handleSubmitNote}
-                className="rounded-lg bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-70"
-              >
+              <button type="button" disabled={isPending} onClick={handleSubmitNote} className="ns-btn-primary">
                 {isPending ? "Salvando..." : "Adicionar anotacao"}
               </button>
               {feedback ? (
-                <p className={`text-sm ${feedback.ok ? "text-teal-800" : "text-red-700"}`}>
+                <p className={`text-sm ${feedback.ok ? "text-[var(--ns-success)]" : "text-[var(--ns-danger)]"}`}>
                   {feedback.message}
                 </p>
               ) : null}
@@ -299,7 +294,7 @@ export function ClientTimelineSection({
       </div>
 
       {orderedEvents.length ? (
-        <div className="relative space-y-4 before:absolute before:bottom-0 before:left-[22px] before:top-0 before:w-px before:bg-slate-200">
+        <div className="relative space-y-4 before:absolute before:bottom-0 before:left-[22px] before:top-0 before:w-px before:bg-[var(--ns-border)]">
           {orderedEvents.map((event) => {
             const config = getEventConfig(event.event_type);
             const Icon = config.icon;
@@ -317,7 +312,7 @@ export function ClientTimelineSection({
                 >
                   <Icon className="h-4 w-4" />
                 </div>
-                <div className="rounded-lg border border-slate-200 bg-slate-50/60 p-4">
+                <div className="rounded-lg border border-[var(--ns-border)] bg-[var(--ns-bg)] p-4">
                   <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                     <div className="space-y-2">
                       <span
@@ -325,13 +320,13 @@ export function ClientTimelineSection({
                       >
                         {config.label}
                       </span>
-                      <h3 className="text-sm font-semibold text-slate-950">{event.title}</h3>
+                      <h3 className="text-sm font-semibold text-[var(--ns-text)]">{event.title}</h3>
                     </div>
-                    <p className="text-xs font-medium text-slate-500">{formatDateTime(event.created_at)}</p>
+                    <p className="text-xs font-medium text-[var(--ns-text-secondary)]">{formatDateTime(event.created_at)}</p>
                   </div>
 
                   {event.note && !isEditing ? (
-                    <p className="mt-3 whitespace-pre-line text-sm leading-6 text-slate-700">
+                    <p className="mt-3 whitespace-pre-line text-sm leading-6 text-[var(--ns-text)]">
                       {event.note}
                     </p>
                   ) : null}
@@ -343,23 +338,13 @@ export function ClientTimelineSection({
                         value={editingNote}
                         disabled={isPending}
                         onChange={(inputEvent) => setEditingNote(inputEvent.target.value)}
-                        className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
+                        className="ns-input"
                       />
                       <div className="flex flex-wrap gap-2">
-                        <button
-                          type="button"
-                          disabled={isPending}
-                          onClick={() => handleUpdateNote(event.id)}
-                          className="rounded-lg bg-teal-700 px-3 py-2 text-sm font-semibold text-white transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-70"
-                        >
+                        <button type="button" disabled={isPending} onClick={() => handleUpdateNote(event.id)} className="ns-btn-primary">
                           {isPending ? "Salvando..." : "Salvar anotacao"}
                         </button>
-                        <button
-                          type="button"
-                          disabled={isPending}
-                          onClick={cancelEditing}
-                          className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-70"
-                        >
+                        <button type="button" disabled={isPending} onClick={cancelEditing} className="ns-btn-secondary">
                           Cancelar
                         </button>
                       </div>
@@ -371,7 +356,7 @@ export function ClientTimelineSection({
                       {detailLines.map((line) => (
                         <span
                           key={line}
-                          className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs text-slate-600"
+                          className="rounded-full border border-[var(--ns-border)] bg-[var(--ns-surface)] px-2.5 py-1 text-xs text-[var(--ns-text-secondary)]"
                         >
                           {line}
                         </span>
@@ -379,26 +364,16 @@ export function ClientTimelineSection({
                     </div>
                   ) : null}
 
-                  <p className="mt-4 text-xs font-medium uppercase tracking-wide text-slate-500">
+                  <p className="mt-4 text-xs font-medium uppercase tracking-wide text-[var(--ns-text-secondary)]">
                     {formatActorLine(event)}
                   </p>
 
                   {canManageThisNote && !isEditing ? (
                     <div className="mt-3 flex flex-wrap gap-2">
-                      <button
-                        type="button"
-                        disabled={isPending}
-                        onClick={() => beginEditing(event)}
-                        className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-70"
-                      >
+                      <button type="button" disabled={isPending} onClick={() => beginEditing(event)} className="ns-btn-secondary text-xs">
                         Editar anotacao
                       </button>
-                      <button
-                        type="button"
-                        disabled={isPending}
-                        onClick={() => handleDeleteNote(event)}
-                        className="rounded-lg border border-red-200 bg-white px-3 py-2 text-xs font-semibold text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-70"
-                      >
+                      <button type="button" disabled={isPending} onClick={() => handleDeleteNote(event)} className="ns-btn-danger text-xs">
                         Remover anotacao
                       </button>
                     </div>
@@ -409,7 +384,7 @@ export function ClientTimelineSection({
           })}
         </div>
       ) : (
-        <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 px-4 py-6 text-sm text-slate-500">
+        <div className="rounded-lg border border-dashed border-[var(--ns-border)] bg-[var(--ns-bg)] px-4 py-6 text-sm text-[var(--ns-text-secondary)]">
           Ainda não há movimentações registradas nesta linha do tempo.
         </div>
       )}
