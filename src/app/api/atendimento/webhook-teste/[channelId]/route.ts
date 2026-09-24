@@ -49,13 +49,26 @@ export async function POST(request: NextRequest, context: { params: Promise<{ ch
 
   const { data: canal, error: canalError } = await admin
     .from("channels")
-    .select("id, company_id")
+    .select("id, company_id, business_area")
     .eq("id", channelId)
     .maybeSingle();
 
   if (canalError || !canal) {
     return NextResponse.json({ error: "Canal não encontrado." }, { status: 404 });
   }
+
+  // Roteamento inicial: equipe padrão da empresa pra essa área (comercial/jurídico) do canal.
+  // Sem isso, uma conversa nova fica sem team_id e só admin/manager enxerga — nem o membro da
+  // equipe nem o supervisor veriam a fila. Se não existir equipe pra essa área, fica sem
+  // responsável de fila mesmo (nada pra rotear) — não é erro, é reflexo de não haver equipe.
+  const { data: equipePadrao } = await admin
+    .from("teams")
+    .select("id")
+    .eq("company_id", canal.company_id)
+    .eq("business_area", canal.business_area)
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
 
   // Dedup por (channel_id, provider, external_event_id) — se já processado, responde OK sem refazer nada.
   const { error: eventoError } = await admin.from("inbound_events").insert({
@@ -124,6 +137,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ ch
         company_id: canal.company_id,
         channel_id: canal.id,
         contact_id: contatoId,
+        team_id: equipePadrao?.id ?? null,
         status: "aguardando_humano",
       })
       .select("id")
