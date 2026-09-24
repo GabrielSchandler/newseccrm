@@ -162,8 +162,18 @@ function normalizarSessao(sessao, mapeamentoAgentes, naoMapeados) {
  * Totalk nao descreve esse valor explicitamente (ver README.md, secao
  * "Suposicoes a validar"). Revalidar no piloto antes de confiar no valor
  * pra decidir quem e "cliente" numa mensagem importada.
+ *
+ * Resolucao de arquivo: NAO existe endpoint "obter arquivo por id" na API do
+ * Totalk (confirmado contra a documentacao oficial, 24/09/2026 — GET/POST
+ * /v2/file sao o fluxo de UPLOAD, nao consulta). O arquivo de uma mensagem
+ * ja existente vem embutido na propria mensagem, em details.file (um anexo)
+ * ou details.files (varios) — por isso nao ha chamada de rede nenhuma aqui,
+ * so leitura do objeto que listarMensagens() ja trouxe. "Midia indisponivel"
+ * passa a significar: a mensagem tem fileId/filesIds mas os details nao
+ * trouxeram o arquivo correspondente (fica explicito no relatorio, igual
+ * antes).
  */
-function normalizarMensagem(mensagem, { ehNota, arquivoResolvido, fileIdAusente }) {
+function normalizarMensagem(mensagem, { ehNota }) {
   const direcao = mensagem.direction === "FROM_HUB" ? "saida" : "entrada";
   let autoria;
   if (ehNota) autoria = "consultor";
@@ -171,6 +181,10 @@ function normalizarMensagem(mensagem, { ehNota, arquivoResolvido, fileIdAusente 
   else if (mensagem.origin === "BOT") autoria = "ia";
   else if (mensagem.userId) autoria = "humano";
   else autoria = "sistema";
+
+  const temReferenciaDeArquivo = Boolean(mensagem.fileId) || Boolean(mensagem.filesIds?.length);
+  const arquivoResolvido = mensagem.details?.file ?? mensagem.details?.files?.[0] ?? null;
+  const fileIdAusente = temReferenciaDeArquivo && !arquivoResolvido;
 
   return {
     idExterno: mensagem.id,
@@ -184,7 +198,7 @@ function normalizarMensagem(mensagem, { ehNota, arquivoResolvido, fileIdAusente 
     status: mensagem.status ?? null,
     timestamp: mensagem.timestamp ?? mensagem.createdAt,
     arquivoIdExterno: mensagem.fileId ?? null,
-    arquivoResolvido: arquivoResolvido ?? null,
+    arquivoResolvido,
     arquivoIndisponivel: fileIdAusente,
     origemImportacao: "totalk",
   };
@@ -298,13 +312,12 @@ async function main() {
         }
         contagens.mensagens.novos += 1;
 
-        const arquivoResolvido = mensagem.fileId ? await cliente.resolverArquivo(mensagem.fileId) : null;
-        const fileIdAusente = Boolean(mensagem.fileId) && !arquivoResolvido;
-        if (fileIdAusente) {
-          midiaIndisponivel.push({ mensagemId: mensagem.id, sessaoId: sessao.id, arquivoId: mensagem.fileId });
+        const mensagemNormalizada = normalizarMensagem(mensagem, { ehNota: false });
+        if (mensagemNormalizada.arquivoIndisponivel) {
+          midiaIndisponivel.push({ mensagemId: mensagem.id, sessaoId: sessao.id, arquivoId: mensagem.fileId ?? mensagem.filesIds?.[0] ?? null });
         }
 
-        mensagensNormalizadas.push(normalizarMensagem(mensagem, { ehNota: false, arquivoResolvido, fileIdAusente }));
+        mensagensNormalizadas.push(mensagemNormalizada);
       }
 
       const notas = await cliente.listarNotas(sessao.id);
@@ -319,7 +332,7 @@ async function main() {
         mensagensNormalizadas.push(
           normalizarMensagem(
             { ...nota, sessionId: nota.sessionId, type: "NOTE", direction: "FROM_HUB", text: nota.text },
-            { ehNota: true, arquivoResolvido: null, fileIdAusente: false },
+            { ehNota: true },
           ),
         );
       }

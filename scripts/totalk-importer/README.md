@@ -79,10 +79,10 @@ consistente):
   do Rafael e da Clara — a Mariana não é reprocessada (relatório mostra as
   mensagens/notas dela em `jaVistos`, não em `novos`).
 - **Mídia indisponível fica explícita**: a fixture da Mariana tem uma
-  mensagem de áudio (`arquivo-audio-0001`) que não existe em
-  `fixtures/arquivos.json` de propósito — aparece em
-  `relatorio-reconciliacao.md`, seção "Mídia indisponível", nunca é
-  ignorada.
+  mensagem de áudio com `fileId: "arquivo-audio-0001"` mas sem `details.file`
+  correspondente, de propósito (simula a API devolvendo a mensagem sem
+  conseguir embutir o arquivo) — aparece em `relatorio-reconciliacao.md`,
+  seção "Mídia indisponível", nunca é ignorada.
 - **Agente sem mapeamento não vira usuário novo**: `mapeamento-agentes.json`
   deixa `agente-bruno-0002` sem `userIdNewSec` de propósito — a sessão do
   Rafael (responsável Bruno) é importada mesmo assim, só com
@@ -144,37 +144,39 @@ enviada ao provedor):
   **Ainda precisa de revalidação contra uma chamada real** — se estiver
   invertido, é uma linha só pra trocar em `normalizarMensagem()`
   (`cliente-totalk.mjs` → `importar.mjs`).
-- **Resolução de arquivo/mídia — suposição CORRIGIDA (24/09/2026), não mais
-  "a confirmar":** `GET /v2/file/{id}` **não existe** (confirmei via 404
-  direto na doc). Mas também não é o caso de "listagem com filtro por ID"
-  como este README supunha antes — **`GET /v2/file` e `POST /v2/file` não
-  são de listagem/consulta, são o fluxo de UPLOAD** (`GET /v2/file` pede uma
-  URL temporária de upload dado `Type`/`Name`/`MimeType`; `POST /v2/file`
-  confirma o upload dado um `tempFileId` e devolve o `PublicFileV2DTO`
-  definitivo). Não existe nenhum endpoint de "obter arquivo já existente
-  por ID" na API pública do Totalk.
-  **A boa notícia:** não precisa de um — o schema de
-  `GET /v1/session/{id}/message` já traz o arquivo embutido em
+- **Resolução de arquivo/mídia — CORRIGIDO (24/09/2026), não é mais
+  suposição:** `GET /v2/file/{id}` **não existe** (confirmei via 404 direto
+  na doc). E não é o caso de "listagem com filtro por ID" como este README
+  supunha antes — **`GET /v2/file` e `POST /v2/file` são o fluxo de UPLOAD**
+  (`GET /v2/file` pede uma URL temporária de upload dado
+  `Type`/`Name`/`MimeType`; `POST /v2/file` confirma o upload dado um
+  `tempFileId` e devolve o `PublicFileV2DTO` definitivo), não consulta de
+  arquivo existente. Não existe nenhum endpoint de "obter arquivo já
+  existente por ID" na API pública do Totalk — **e não precisa de um**: o
+  schema de `GET /v1/session/{id}/message` já traz o arquivo embutido em
   `items[].details.file` (mensagem com 1 anexo) ou `details.files[]`
   (múltiplos), cada um como `PublicFileDTO` completo: `id`, `name`,
-  `extension`, `mimeType`, `size`, e crucialmente `publicUrl` /
-  `publicUrlDownload` — URL direta pra baixar o arquivo, sem chamada
-  adicional nenhuma.
-  **Isso invalida o desenho atual do código, não só a suposição**:
-  `resolverArquivo(fileId)` em `cliente-totalk.mjs` chama
-  `GET /v2/file/{fileId}` em modo real — essa chamada sempre falharia
-  (404) contra a API de verdade, fazendo TODO anexo aparecer como "mídia
-  indisponível" mesmo quando o arquivo está disponível. E as fixtures
-  (`fixtures/mensagens/*.json`, `fixtures/arquivos.json`) usam um formato
-  achatado (`fileId`/`filesIds` soltos na mensagem, `resolverArquivo`
-  buscando por id numa lista separada) que não corresponde ao formato real
-  da API (arquivo aninhado dentro de `details.file`/`details.files` da
-  própria mensagem). **Pendente pra próxima etapa de implementação:**
-  reescrever `normalizarMensagem()` pra ler `mensagem.details?.file` /
-  `details?.files`, apagar `resolverArquivo()` e a chamada a
-  `GET /v2/file/{id}` (dead code depois da correção), e atualizar as
-  fixtures pro formato aninhado real — com os testes manuais documentados
-  abaixo re-rodados pra confirmar que nada quebrou.
+  `extension`, `mimeType`, `size`, `publicUrl`/`publicUrlDownload` — sem
+  chamada adicional nenhuma.
+  **Código corrigido:** `resolverArquivo()` (que chamava
+  `GET /v2/file/{fileId}`, uma chamada que sempre falharia com 404 em modo
+  real) foi removida de `cliente-totalk.mjs`. `normalizarMensagem()`
+  (`importar.mjs`) agora lê `mensagem.details?.file ??
+  mensagem.details?.files?.[0]` direto do objeto que `listarMensagens()` já
+  trouxe — zero chamadas extras de rede pra resolver mídia. As fixtures
+  (`fixtures/mensagens/sessao-mariana-0001.json`) foram atualizadas pro
+  formato real (arquivo aninhado em `details.file`); `fixtures/arquivos.json`
+  foi removido (não é mais referenciado por nada).
+  **Reverificado depois da mudança** (os mesmos 5 cenários desta seção,
+  rodados de novo): mensagem `msg-mariana-0003` (contrato) resolve com o
+  `PublicFileDTO` completo (`mimeType`, `size`, `publicUrl`,
+  `publicUrlDownload`) direto de `details.file`, sem nenhuma chamada extra;
+  `msg-mariana-0005` (áudio, sem `details.file` de propósito) continua
+  caindo em "mídia indisponível" (1 item no relatório, como antes);
+  importar duas vezes seguidas ainda dá `novos: 0` na segunda; interromper
+  com `--falhar-apos-sessao=sessao-mariana-0001` e retomar ainda processa só
+  Rafael+Clara (6 mensagens) sem reprocessar a Mariana; `testar-retry.mjs`
+  passa igual (não usa resolução de arquivo).
 
 ## Quando a Entrega C (chat humano real) existir
 
@@ -187,8 +189,9 @@ checkpoint, retry, relatório) já fica pronto e não muda.
 ## Pendências externas reais
 
 - Token de API do Totalk — decisão/acesso do Gabriel.
-- Confirmar as duas suposições acima contra uma chamada real, assim que o
-  token existir.
+- Confirmar a suposição de `direction: FROM_HUB`/`TO_HUB` contra uma chamada
+  real, assim que o token existir (a suposição de resolução de arquivo já
+  foi corrigida contra a documentação oficial, não depende mais do token).
 - Definir `mapeamento-agentes.json` de verdade (hoje só tem um exemplo com
   UUID fictício) antes de qualquer importação real.
 - Cancelamento do Totalk continua bloqueado até os dois canais WhatsApp,

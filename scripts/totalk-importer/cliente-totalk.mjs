@@ -215,31 +215,5 @@ export function criarClienteTotalk({ modoFixture, baseUrl, token, pastaFixtures,
         }),
       );
     },
-
-    /**
-     * Resolve metadados de um arquivo por id. Em modo fixture, procura em
-     * arquivos.json; ausencia e tratada como "midia indisponivel" pelo
-     * chamador (nao lanca erro), conforme exigido pela especificacao —
-     * diferenca de contagem/arquivo indisponivel fica explicita no
-     * relatorio, nunca ignorada silenciosamente.
-     */
-    async resolverArquivo(fileId) {
-      if (!fileId) return null;
-
-      if (modoFixture) {
-        const dados = await lerFixture(pastaFixtures, "arquivos.json");
-        return dados.items.find((item) => item.id === fileId) ?? null;
-      }
-
-      try {
-        return await chamarComRetentativa(
-          () => requisitarReal({ baseUrl, token, metodo: "GET", caminho: `/v2/file/${fileId}` }),
-          { rotulo: `arquivo ${fileId}` },
-        );
-      } catch (erro) {
-        if (erro.status === 404) return null;
-        throw erro;
-      }
-    },
   };
 }

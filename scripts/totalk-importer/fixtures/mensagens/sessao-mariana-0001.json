@@ -43,7 +43,19 @@
       "origin": "DEFAULT",
       "text": "Claro! Segue o contrato.",
       "fileId": "arquivo-contrato-0001",
-      "filesIds": ["arquivo-contrato-0001"]
+      "filesIds": ["arquivo-contrato-0001"],
+      "details": {
+        "file": {
+          "id": "arquivo-contrato-0001",
+          "name": "contrato",
+          "extension": "pdf",
+          "mimeType": "application/pdf",
+          "type": "PDF",
+          "size": 293876,
+          "publicUrl": "https://exemplo-totalk.com.br/files/arquivo-contrato-0001.pdf",
+          "publicUrlDownload": "https://exemplo-totalk.com.br/files/arquivo-contrato-0001.pdf?download=true"
+        }
+      }
     },
     {
       "id": "msg-mariana-0004",
