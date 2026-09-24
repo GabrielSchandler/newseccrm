@@ -51,6 +51,23 @@ function dormir(ms) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
+/**
+ * Espera um texto aparecer na página, tentando várias vezes em vez de um
+ * único sleep fixo — o fetch client-side (Supabase) roda depois do
+ * "networkidle" do Playwright (dispara em useEffect, não é uma requisição
+ * de rede que o Playwright espere), então um sleep fixo às vezes corre
+ * antes do React terminar de re-renderizar (mais provável sob carga, como
+ * rodar o script de aceite várias vezes seguidas). Poll é mais robusto que
+ * aumentar o sleep fixo pra um número arbitrário maior.
+ */
+async function esperarTexto(page, texto, { tentativas = 16, intervaloMs = 500 } = {}) {
+  for (let i = 0; i < tentativas; i += 1) {
+    if ((await page.locator(`text=${texto}`).count()) > 0) return true;
+    await dormir(intervaloMs);
+  }
+  return false;
+}
+
 async function criarEmpresa(tradeName) {
   const { data: existente } = await admin.from("companies").select("id").eq("trade_name", tradeName).maybeSingle();
   if (existente?.id) return existente.id;
@@ -103,6 +120,22 @@ async function login(page, username, senha) {
 }
 
 async function main() {
+  // browser hoisted pro escopo da função (não do bloco try) — se qualquer
+  // etapa lançar exceção, o finally ainda consegue fechar o browser aberto.
+  // Sem isso, uma falha no meio do script (ex: elemento não encontrado)
+  // deixava o processo Node pendurado pra sempre (o handle do Chromium
+  // mantém o event loop vivo), como aconteceu de verdade rodando este
+  // script duas vezes seguidas — o processo continuava na lista de tarefas
+  // do Windows muito depois do "erro" já ter sido logado.
+  let browser;
+  try {
+    await executar({ registrarBrowser: (b) => { browser = b; } });
+  } finally {
+    if (browser) await browser.close();
+  }
+}
+
+async function executar({ registrarBrowser }) {
   const relatorio = [];
   const registrar = (etapa, ok, detalhe) => {
     relatorio.push({ etapa, ok, detalhe });
@@ -160,15 +193,16 @@ async function main() {
 
   // ---------- B. Bruno vê na fila da equipe e assume ----------
   const browser = await chromium.launch();
+  registrarBrowser(browser);
   const ctxBruno = await browser.newContext();
   const pgBruno = await ctxBruno.newPage();
   await login(pgBruno, bruno.username, bruno.senha);
 
   await pgBruno.goto(`${APP_URL}/atendimento`, { waitUntil: "networkidle" });
   await pgBruno.getByRole("button", { name: "Equipe" }).click();
-  await pgBruno.waitForTimeout(1500);
-  const veConversaNaFila = (await pgBruno.locator("text=Cliente Aceite").count()) > 0;
+  const veConversaNaFila = await esperarTexto(pgBruno, "Cliente Aceite");
   registrar("Bruno vê a conversa na fila da equipe", veConversaNaFila);
+  if (!veConversaNaFila) throw new Error("Bruno não viu a conversa na fila — abortando antes do click (evita hang de 30s).");
 
   await pgBruno.locator("text=Cliente Aceite").first().click();
   await pgBruno.waitForTimeout(300);
@@ -225,9 +259,9 @@ async function main() {
   await login(pgAna, ana.username, ana.senha);
   await pgAna.goto(`${APP_URL}/atendimento`, { waitUntil: "networkidle" });
   await pgAna.getByRole("button", { name: "Equipe" }).click();
-  await pgAna.waitForTimeout(1500);
-  const anaVeConversa = (await pgAna.locator("text=Cliente Aceite").count()) > 0;
+  const anaVeConversa = await esperarTexto(pgAna, "Cliente Aceite");
   registrar("Supervisora Ana vê a conversa da equipe (mesmo atribuída ao Bruno)", anaVeConversa);
+  if (!anaVeConversa) throw new Error("Ana não viu a conversa na fila da equipe — abortando antes do click.");
 
   await pgAna.locator("text=Cliente Aceite").first().click();
   await pgAna.waitForTimeout(300);
@@ -247,7 +281,7 @@ async function main() {
   const pgCarla = await ctxCarla.newPage();
   await login(pgCarla, carla.username, carla.senha);
   await pgCarla.goto(`${APP_URL}/atendimento`, { waitUntil: "networkidle" });
-  const carlaVeEmMeus = (await pgCarla.locator("text=Cliente Aceite").count()) > 0;
+  const carlaVeEmMeus = await esperarTexto(pgCarla, "Cliente Aceite");
   registrar("Carla vê a conversa em 'Meus' após a transferência", carlaVeEmMeus);
   await ctxCarla.close();
   await ctxAna.close();
@@ -310,7 +344,7 @@ async function main() {
   }
   registrar("Job pendente foi processado pelo worker (rodando em processo separado)", statusResiliencia === "enviado", `status final: ${statusResiliencia}`);
 
-  await browser.close();
+  // browser fechado pelo finally do main() (cobre também o caminho de erro).
 
   const falhas = relatorio.filter((r) => !r.ok);
   console.log(`\n[verificar-fluxo-chat-completo] ${relatorio.length - falhas.length}/${relatorio.length} etapas OK.`);
@@ -320,7 +354,14 @@ async function main() {
   }
 }
 
-main().catch((erro) => {
-  console.error("[verificar-fluxo-chat-completo] Interrompido:", erro);
-  process.exitCode = 1;
-});
+main()
+  .catch((erro) => {
+    console.error("[verificar-fluxo-chat-completo] Interrompido:", erro);
+    process.exitCode = 1;
+  })
+  .finally(() => {
+    // Saída forçada como rede de segurança: mesmo com o browser fechado no
+    // finally do main(), algum handle residual (ex: canal realtime do
+    // Supabase) poderia manter o processo vivo indefinidamente sem isto.
+    process.exit(process.exitCode ?? 0);
+  });

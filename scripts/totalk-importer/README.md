@@ -132,20 +132,49 @@ enviada ao provedor):
 
 ## Suposições a validar no piloto real
 
-- **`direction: FROM_HUB`/`TO_HUB`** — a documentação do Totalk não descreve
-  explicitamente o significado desses dois valores (perguntei diretamente ao
-  endpoint de envio de mensagem e a resposta não confirma). Este importador
-  assume, pelo nome do campo, que `FROM_HUB` = originado no hub (agente/
-  sistema → contato, mapeado pra `"saida"`) e `TO_HUB` = contato → hub
-  (mapeado pra `"entrada"`/`autoria: "cliente"`). **Revalidar contra uma
-  chamada real** antes de confiar nisso pra decidir quem é o cliente numa
-  mensagem importada — se estiver invertido, é uma linha só pra trocar em
-  `normalizarMensagem()` (`cliente-totalk.mjs` → `importar.mjs`).
-- **Endpoint de arquivo por ID** (`GET /v2/file/{id}`) — a documentação
-  lista só `get_v2-file` (listagem) e `post_v2-file` (URL de upload), sem uma
-  página explícita de "obter por ID". `resolverArquivo()` assume que
-  `GET /v2/file/{id}` existe; se não existir, ajustar pra usar a listagem
-  com filtro por ID quando o token real estiver configurado.
+- **`direction: FROM_HUB`/`TO_HUB`** — revisitei a documentação
+  (`GET /v1/session/{id}/message`, 24/09/2026): o enum confirmado tem
+  exatamente esses dois valores (nenhum terceiro), mas o significado
+  semântico continua sem descrição explícita na doc, e o endpoint de envio
+  (`POST /v1/session/{id}/message`) não devolve `direction` na resposta pra
+  confirmar por dedução (é sempre saída, então o campo nem aparece). Este
+  importador continua assumindo, pelo nome do campo, que `FROM_HUB` =
+  originado no hub (agente/sistema → contato, mapeado pra `"saida"`) e
+  `TO_HUB` = contato → hub (mapeado pra `"entrada"`/`autoria: "cliente"`).
+  **Ainda precisa de revalidação contra uma chamada real** — se estiver
+  invertido, é uma linha só pra trocar em `normalizarMensagem()`
+  (`cliente-totalk.mjs` → `importar.mjs`).
+- **Resolução de arquivo/mídia — suposição CORRIGIDA (24/09/2026), não mais
+  "a confirmar":** `GET /v2/file/{id}` **não existe** (confirmei via 404
+  direto na doc). Mas também não é o caso de "listagem com filtro por ID"
+  como este README supunha antes — **`GET /v2/file` e `POST /v2/file` não
+  são de listagem/consulta, são o fluxo de UPLOAD** (`GET /v2/file` pede uma
+  URL temporária de upload dado `Type`/`Name`/`MimeType`; `POST /v2/file`
+  confirma o upload dado um `tempFileId` e devolve o `PublicFileV2DTO`
+  definitivo). Não existe nenhum endpoint de "obter arquivo já existente
+  por ID" na API pública do Totalk.
+  **A boa notícia:** não precisa de um — o schema de
+  `GET /v1/session/{id}/message` já traz o arquivo embutido em
+  `items[].details.file` (mensagem com 1 anexo) ou `details.files[]`
+  (múltiplos), cada um como `PublicFileDTO` completo: `id`, `name`,
+  `extension`, `mimeType`, `size`, e crucialmente `publicUrl` /
+  `publicUrlDownload` — URL direta pra baixar o arquivo, sem chamada
+  adicional nenhuma.
+  **Isso invalida o desenho atual do código, não só a suposição**:
+  `resolverArquivo(fileId)` em `cliente-totalk.mjs` chama
+  `GET /v2/file/{fileId}` em modo real — essa chamada sempre falharia
+  (404) contra a API de verdade, fazendo TODO anexo aparecer como "mídia
+  indisponível" mesmo quando o arquivo está disponível. E as fixtures
+  (`fixtures/mensagens/*.json`, `fixtures/arquivos.json`) usam um formato
+  achatado (`fileId`/`filesIds` soltos na mensagem, `resolverArquivo`
+  buscando por id numa lista separada) que não corresponde ao formato real
+  da API (arquivo aninhado dentro de `details.file`/`details.files` da
+  própria mensagem). **Pendente pra próxima etapa de implementação:**
+  reescrever `normalizarMensagem()` pra ler `mensagem.details?.file` /
+  `details?.files`, apagar `resolverArquivo()` e a chamada a
+  `GET /v2/file/{id}` (dead code depois da correção), e atualizar as
+  fixtures pro formato aninhado real — com os testes manuais documentados
+  abaixo re-rodados pra confirmar que nada quebrou.
 
 ## Quando a Entrega C (chat humano real) existir
 

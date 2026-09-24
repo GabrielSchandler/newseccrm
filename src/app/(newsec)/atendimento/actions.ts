@@ -1,6 +1,5 @@
 "use server";
 
-import crypto from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { getCurrentUserContext } from "@/lib/auth/current-user";
 
@@ -8,12 +7,15 @@ export type AtendimentoActionState = { ok: boolean; message: string };
 
 /**
  * Envia mensagem de saída: grava a mensagem (status "pendente") e enfileira
- * o job de envio (outbound_jobs) — o worker persistente é quem de fato
- * chama o provedor depois. idempotencyKey é gerada no cliente (uma vez por
- * tentativa de envio) — reenviar com a MESMA chave (duplo clique, retry de
- * rede) não duplica: a constraint unique em messages(conversation_id,
- * idempotency_key) barra a segunda inserção, e aqui isso é tratado como
- * sucesso silencioso (idempotente), não erro.
+ * o job de envio (outbound_jobs) numa ÚNICA transação, via RPC
+ * (enviar_mensagem_com_job — ver 0007_atendimento_confiabilidade.sql).
+ * Antes eram dois INSERTs separados: se o segundo falhasse por qualquer
+ * motivo, a mensagem ficava presa em "pendente" pra sempre, sem job — bug
+ * real encontrado em produção-de-teste (0006). Com a RPC, se o job não
+ * puder ser criado, a mensagem também não é — nunca sobra estado órfão.
+ * idempotencyKey é gerada no cliente (uma vez por tentativa de envio) —
+ * reenviar com a MESMA chave (duplo clique, retry de rede) não duplica, a
+ * própria função trata isso como sucesso idempotente.
  */
 export async function enviarMensagemAction(
   conversationId: string,
@@ -25,43 +27,20 @@ export async function enviarMensagemAction(
 
   const { supabase, userProfileId, companyId } = await getCurrentUserContext();
 
-  const { data: mensagem, error: mensagemError } = await supabase
-    .from("messages")
-    .insert({
-      company_id: companyId,
-      conversation_id: conversationId,
-      direction: "saida",
-      author_type: "humano",
-      author_user_profile_id: userProfileId,
-      message_type: "texto",
-      body: textoLimpo,
-      status: "pendente",
-      idempotency_key: idempotencyKey,
-    })
-    .select("id")
-    .single();
-
-  if (mensagemError) {
-    if (mensagemError.code === "23505") {
-      // Mesma idempotency_key já gravada antes — reenvio (duplo clique/retry), não é erro.
-      return { ok: true, message: "Mensagem já enviada." };
-    }
-    return { ok: false, message: `Não foi possível enviar: ${mensagemError.message}.` };
-  }
-
-  const { error: jobError } = await supabase.from("outbound_jobs").insert({
-    company_id: companyId,
-    conversation_id: conversationId,
-    message_id: mensagem.id,
-    idempotency_key: idempotencyKey,
+  const { data, error } = await supabase.rpc("enviar_mensagem_com_job", {
+    p_conversation_id: conversationId,
+    p_company_id: companyId,
+    p_author_user_profile_id: userProfileId,
+    p_body: textoLimpo,
+    p_message_type: "texto",
+    p_idempotency_key: idempotencyKey,
   });
 
-  if (jobError && jobError.code !== "23505") {
-    return { ok: false, message: `Mensagem gravada, mas não foi possível enfileirar o envio: ${jobError.message}.` };
-  }
+  if (error) return { ok: false, message: `Não foi possível enviar: ${error.message}.` };
 
+  const resultado = data?.[0];
   revalidatePath("/atendimento");
-  return { ok: true, message: "Mensagem enviada." };
+  return { ok: true, message: resultado?.ja_existia ? "Mensagem já enviada." : "Mensagem enviada." };
 }
 
 /** Nota interna — nunca gera outbound_jobs (bloqueado estruturalmente por trigger, além de nunca ser chamado aqui). */
@@ -182,32 +161,31 @@ export async function concluirConversaAction(conversationId: string): Promise<At
   return { ok: true, message: "Conversa concluída." };
 }
 
-/** Tenta reenviar uma mensagem que falhou — cria um NOVO job com idempotency_key nova, mesma mensagem. */
+/**
+ * Tenta reenviar uma mensagem que falhou — RESETA o job existente (via RPC
+ * reenviar_mensagem_falhada), não cria um novo. outbound_jobs tem
+ * message_id único (0004): criar um segundo job pro mesmo message_id
+ * quebrava com um bug real (23505) sempre que o usuário tentasse reenviar
+ * de verdade. A RPC roda como SECURITY DEFINER (UPDATE de outbound_jobs é
+ * restrito por RLS a admin/manager, ver 0006) mas checa autorização
+ * explicitamente antes de tocar em qualquer coisa — é o único caminho
+ * controlado pra um usuário comum resetar o próprio job.
+ */
 export async function reenviarMensagemFalhadaAction(messageId: string, conversationId: string): Promise<AtendimentoActionState> {
-  const { supabase, companyId } = await getCurrentUserContext();
+  const { supabase } = await getCurrentUserContext();
 
-  const { data: mensagem, error: buscaError } = await supabase
-    .from("messages")
-    .select("id, status")
-    .eq("id", messageId)
-    .maybeSingle();
-
-  if (buscaError || !mensagem) return { ok: false, message: "Mensagem não encontrada ou sem acesso." };
-  if (mensagem.status !== "falha") return { ok: false, message: "Só é possível reenviar mensagens com falha." };
-
-  await supabase.from("messages").update({ status: "pendente", failed_reason: null }).eq("id", messageId);
-
-  const { error: jobError } = await supabase.from("outbound_jobs").insert({
-    company_id: companyId,
-    conversation_id: conversationId,
-    message_id: messageId,
-    idempotency_key: crypto.randomUUID(),
+  const { data, error } = await supabase.rpc("reenviar_mensagem_falhada", {
+    p_message_id: messageId,
+    p_conversation_id: conversationId,
   });
 
-  if (jobError) return { ok: false, message: `Não foi possível reenfileirar: ${jobError.message}.` };
+  if (error) return { ok: false, message: `Não foi possível reenfileirar: ${error.message}.` };
+
+  const resultado = data?.[0];
+  if (!resultado?.ok) return { ok: false, message: resultado?.mensagem ?? "Não foi possível reenfileirar." };
 
   revalidatePath("/atendimento");
-  return { ok: true, message: "Reenvio agendado." };
+  return { ok: true, message: resultado.mensagem };
 }
 
 export async function reabrirConversaAction(conversationId: string): Promise<AtendimentoActionState> {
