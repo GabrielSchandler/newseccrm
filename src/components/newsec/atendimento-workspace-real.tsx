@@ -39,6 +39,17 @@ type UsuarioEmpresa = { id: string; full_name: string | null };
 
 type MensagemComAutor = Message & { author: { id: string; full_name: string | null } | null };
 
+/**
+ * O Totalk (histórico importado) assinava toda mensagem de saída com um prefixo tipo
+ * "*Ana:*" ou "*GRS Soluções:*" dentro do próprio texto — sem negrito de verdade (o "*" é
+ * literal), só feio agora que a tela já mostra quem respondeu de forma própria, em cima do
+ * balão (ver `remetenteDe`). Só afeta a EXIBIÇÃO: o `body` guardado no banco nunca é alterado.
+ */
+function corpoSemAssinaturaAntiga(mensagem: MensagemComAutor): string | null {
+  if (!mensagem.body || mensagem.direction !== "saida") return mensagem.body;
+  return mensagem.body.replace(/^\*[^*\n]{1,60}:\*\s*/, "");
+}
+
 /** Rótulo de quem mandou uma mensagem de saída — nunca deixa "quem enviou" implícito. */
 function remetenteDe(mensagem: MensagemComAutor): string {
   switch (mensagem.author_type) {
@@ -547,7 +558,7 @@ export function AtendimentoWorkspaceReal({
                       <StickyNote aria-hidden="true" className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--ns-warning)]" />
                       <div>
                         <p className="font-medium">Nota interna — nunca vai para o cliente</p>
-                        <p className="text-[var(--ns-text-secondary)]">{mensagem.body}</p>
+                        <p className="text-[var(--ns-text-secondary)]">{corpoSemAssinaturaAntiga(mensagem)}</p>
                       </div>
                     </div>
                   );
@@ -572,10 +583,10 @@ export function AtendimentoWorkspaceReal({
                       {mensagem.message_type === "documento" ? (
                         <div className="flex items-center gap-2">
                           <FileText aria-hidden="true" className="h-4 w-4 shrink-0" />
-                          <span className="underline">{mensagem.body ?? "documento"}</span>
+                          <span className="underline">{corpoSemAssinaturaAntiga(mensagem) ?? "documento"}</span>
                         </div>
                       ) : (
-                        <p>{mensagem.body}</p>
+                        <p>{corpoSemAssinaturaAntiga(mensagem)}</p>
                       )}
                       <div
                         className={`mt-1 flex items-center justify-end gap-1.5 text-[10px] ${
