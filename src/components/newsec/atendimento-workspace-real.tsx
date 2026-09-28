@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { AlertTriangle, Check, FileText, Phone, RefreshCw, Send, StickyNote, UserPlus, Users2 } from "lucide-react";
+import { AlertTriangle, Bot, Check, FileText, Phone, RefreshCw, Send, StickyNote, UserPlus, Users2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/browser";
 import type { ConversaEstado } from "@/lib/demo/atendimento-data";
 import type { ConversationStatus, Message } from "@/types/atendimento";
@@ -16,16 +16,22 @@ import {
 } from "@/app/(newsec)/atendimento/actions";
 import { EstadoBadge } from "./estado-badge";
 
+type TelefoneContato = { phone_e164: string; is_primary: boolean };
+
 type ConversaLista = {
   id: string;
   status: ConversationStatus;
+  created_at: string;
   last_activity_at: string;
   last_message_preview: string | null;
   unread_count: number;
   assigned_user_profile_id: string | null;
   client_id: string | null;
-  contact: { id: string; display_name: string | null } | null;
+  team_id: string | null;
+  external_id: string | null;
+  contact: { id: string; display_name: string | null; contact_phone_numbers: TelefoneContato[] } | null;
   channel: { id: string; name: string } | null;
+  team: { id: string; name: string } | null;
   assigned_user_profile: { id: string; full_name: string | null } | null;
 };
 
@@ -39,7 +45,14 @@ const STATUS_PARA_BADGE: Record<ConversationStatus, ConversaEstado> = {
   encerrada: "ENCERRADA",
 };
 
-type Aba = "meus" | "equipe";
+type Aba = "meus" | "equipe" | "ia";
+type SubFiltro = "todas" | "nao_lidas" | "aguardando_resposta";
+
+const SUB_FILTROS: { id: SubFiltro; rotulo: string; ajuda: string }[] = [
+  { id: "todas", rotulo: "Todas", ajuda: "Todas as conversas deste escopo." },
+  { id: "nao_lidas", rotulo: "Não lidas", ajuda: "O cliente mandou mensagem que ainda não foi vista." },
+  { id: "aguardando_resposta", rotulo: "Aguardando resposta", ajuda: "O cliente está esperando resposta de um humano." },
+];
 
 function iniciaisDe(nome: string | null) {
   if (!nome) return "?";
@@ -51,10 +64,32 @@ function iniciaisDe(nome: string | null) {
     .toUpperCase();
 }
 
+/** Telefone principal do contato (ou o primeiro, se nenhum estiver marcado como principal). */
+function telefoneDoContato(contact: ConversaLista["contact"]): string | null {
+  const telefones = contact?.contact_phone_numbers ?? [];
+  return telefones.find((t) => t.is_primary)?.phone_e164 ?? telefones[0]?.phone_e164 ?? null;
+}
+
+/** Formata um telefone em E.164 sem "+" (só dígitos, com DDI 55) pro padrão brasileiro de leitura. */
+function formatarTelefone(e164: string | null): string | null {
+  if (!e164) return null;
+  const digitos = e164.replace(/\D/g, "");
+  const semDDI = digitos.startsWith("55") && digitos.length >= 12 ? digitos.slice(2) : digitos;
+  if (semDDI.length === 11) return `(${semDDI.slice(0, 2)}) ${semDDI.slice(2, 7)}-${semDDI.slice(7)}`;
+  if (semDDI.length === 10) return `(${semDDI.slice(0, 2)}) ${semDDI.slice(2, 6)}-${semDDI.slice(6)}`;
+  return `+${digitos}`;
+}
+
+function formatarDataHora(iso: string | null) {
+  if (!iso) return "—";
+  return new Date(iso).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+}
+
 export function AtendimentoWorkspaceReal({
   companyId,
   userProfileId,
   isAdminOuManager,
+  isPlatformOwner,
 }: {
   companyId: string;
   userProfileId: string;
@@ -62,9 +97,14 @@ export function AtendimentoWorkspaceReal({
   isPlatformOwner: boolean;
 }) {
   const supabase = useMemo(() => createClient(), []);
+  // A aba "IA" (conversas sem responsável, só a IA atendendo) é visível pra quem supervisiona —
+  // mesmo corte de "isAdminOuManager" usado no resto da tela pra "ver toda a empresa".
+  const podeVerIA = isAdminOuManager || isPlatformOwner;
   const [aba, setAba] = useState<Aba>("meus");
+  const [subFiltro, setSubFiltro] = useState<SubFiltro>("todas");
   const [busca, setBusca] = useState("");
   const [conversas, setConversas] = useState<ConversaLista[] | null>(null);
+  const [contagensAbas, setContagensAbas] = useState<Record<Aba, number | null>>({ meus: null, equipe: null, ia: null });
   const [erroLista, setErroLista] = useState<string | null>(null);
   const [carregandoLista, setCarregandoLista] = useState(true);
 
@@ -79,23 +119,35 @@ export function AtendimentoWorkspaceReal({
   const [usuariosEmpresa, setUsuariosEmpresa] = useState<UsuarioEmpresa[]>([]);
   const [transferenciaAberta, setTransferenciaAberta] = useState(false);
 
+  const SELECT_CONVERSAS =
+    "id, status, created_at, last_activity_at, last_message_preview, unread_count, assigned_user_profile_id, client_id, team_id, external_id, " +
+    "contact:contacts(id, display_name, contact_phone_numbers(phone_e164, is_primary)), channel:channels(id, name), team:teams(id, name), " +
+    "assigned_user_profile:user_profiles!conversations_assigned_user_profile_id_fkey(id, full_name)";
+
+  /**
+   * Aplica o escopo da aba (quem atende) — company_id sempre explícito: RLS libera platform owner pra
+   * ver todas as empresas, mas aqui o recorte é sempre a empresa ativa (ver AGENTS.md §9).
+   *
+   * Tipado como `any` de propósito: encadear `.eq()`/`.neq()` genericamente sobre o tipo do
+   * PostgrestFilterBuilder do Supabase estoura profundidade de instanciação do TypeScript
+   * (TS2589) — o retorno de cada chamador já é tipado explicitamente onde importa.
+   */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  function comEscopoDaAba(query: any, valorAba: Aba): any {
+    let escopado = query.eq("company_id", companyId);
+    if (valorAba === "meus") escopado = escopado.eq("assigned_user_profile_id", userProfileId);
+    else if (valorAba === "ia") escopado = escopado.eq("status", "ia");
+    else escopado = escopado.neq("status", "ia");
+    return escopado;
+  }
+
   const carregarConversas = useCallback(async () => {
     setCarregandoLista(true);
     setErroLista(null);
 
-    let query = supabase
-      .from("conversations")
-      .select(
-        "id, status, last_activity_at, last_message_preview, unread_count, assigned_user_profile_id, client_id, " +
-          "contact:contacts(id, display_name), channel:channels(id, name), " +
-          "assigned_user_profile:user_profiles!conversations_assigned_user_profile_id_fkey(id, full_name)",
-      )
+    const query = comEscopoDaAba(supabase.from("conversations").select(SELECT_CONVERSAS), aba)
       .order("last_activity_at", { ascending: false })
       .limit(50);
-
-    if (aba === "meus") {
-      query = query.eq("assigned_user_profile_id", userProfileId);
-    }
 
     const { data, error } = await query;
 
@@ -106,7 +158,26 @@ export function AtendimentoWorkspaceReal({
       setConversas((data ?? []) as unknown as ConversaLista[]);
     }
     setCarregandoLista(false);
-  }, [supabase, aba, userProfileId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [supabase, aba, userProfileId, companyId]);
+
+  /** Contagem total de cada aba (independente da aba selecionada), pro numerinho ao lado do rótulo. */
+  const carregarContagensAbas = useCallback(async () => {
+    const abasParaContar: Aba[] = podeVerIA ? ["meus", "equipe", "ia"] : ["meus", "equipe"];
+    const resultados = await Promise.all(
+      abasParaContar.map((valorAba) =>
+        comEscopoDaAba(supabase.from("conversations").select("id", { count: "exact", head: true }), valorAba),
+      ),
+    );
+    setContagensAbas((atual) => {
+      const novo = { ...atual };
+      abasParaContar.forEach((valorAba, indice) => {
+        novo[valorAba] = resultados[indice].count ?? 0;
+      });
+      return novo;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [supabase, userProfileId, companyId, podeVerIA]);
 
   const carregarMensagens = useCallback(
     async (conversationId: string) => {
@@ -133,6 +204,17 @@ export function AtendimentoWorkspaceReal({
   }, [carregarConversas]);
 
   useEffect(() => {
+    carregarContagensAbas();
+  }, [carregarContagensAbas]);
+
+  // A aba "IA" não tem os sub-filtros de "quem precisa de humano" — se o usuário
+  // trocar de aba com um sub-filtro selecionado, volta pra "Todas" em vez de aplicar
+  // um filtro que não faz sentido ali (nunca some silenciosamente, nunca fica preso).
+  useEffect(() => {
+    if (aba === "ia") setSubFiltro("todas");
+  }, [aba]);
+
+  useEffect(() => {
     if (selecionadaId) carregarMensagens(selecionadaId);
   }, [selecionadaId, carregarMensagens]);
 
@@ -153,12 +235,34 @@ export function AtendimentoWorkspaceReal({
 
   const conversaSelecionada = conversas?.find((c) => c.id === selecionadaId) ?? null;
 
+  /** Contagem de cada sub-filtro dentro da aba atual — computada da lista já carregada, sem round-trip novo. */
+  const contagensSubFiltro = useMemo(() => {
+    const lista = conversas ?? [];
+    return {
+      todas: lista.length,
+      nao_lidas: lista.filter((c) => c.unread_count > 0).length,
+      aguardando_resposta: lista.filter((c) => c.status === "aguardando_humano").length,
+    };
+  }, [conversas]);
+
   const conversasFiltradas = useMemo(() => {
     if (!conversas) return [];
-    if (!busca.trim()) return conversas;
+    let lista = conversas;
+
+    if (aba !== "ia") {
+      if (subFiltro === "nao_lidas") lista = lista.filter((c) => c.unread_count > 0);
+      else if (subFiltro === "aguardando_resposta") lista = lista.filter((c) => c.status === "aguardando_humano");
+    }
+
     const termo = busca.trim().toLowerCase();
-    return conversas.filter((c) => c.contact?.display_name?.toLowerCase().includes(termo));
-  }, [conversas, busca]);
+    if (!termo) return lista;
+    const digitosBusca = termo.replace(/\D/g, "");
+    return lista.filter((c) => {
+      const nomeBate = c.contact?.display_name?.toLowerCase().includes(termo);
+      const telefoneBate = digitosBusca.length >= 3 && (telefoneDoContato(c.contact) ?? "").includes(digitosBusca);
+      return nomeBate || telefoneBate;
+    });
+  }, [conversas, busca, subFiltro, aba]);
 
   function mostrarAviso(texto: string) {
     setAviso(texto);
@@ -182,6 +286,7 @@ export function AtendimentoWorkspaceReal({
       setRascunhos((atual) => ({ ...atual, [selecionadaId]: "" }));
       await carregarMensagens(selecionadaId);
       await carregarConversas();
+      await carregarContagensAbas();
     }
   }
 
@@ -190,6 +295,7 @@ export function AtendimentoWorkspaceReal({
     const resultado = await assumirConversaAction(selecionadaId);
     mostrarAviso(resultado.message);
     await carregarConversas();
+    await carregarContagensAbas();
   }
 
   async function handleTransferir(paraUserProfileId: string) {
@@ -198,6 +304,7 @@ export function AtendimentoWorkspaceReal({
     mostrarAviso(resultado.message);
     setTransferenciaAberta(false);
     await carregarConversas();
+    await carregarContagensAbas();
   }
 
   async function handleConcluirOuReabrir() {
@@ -208,6 +315,7 @@ export function AtendimentoWorkspaceReal({
         : await concluirConversaAction(selecionadaId);
     mostrarAviso(resultado.message);
     await carregarConversas();
+    await carregarContagensAbas();
   }
 
   async function handleReenviar(messageId: string) {
@@ -229,23 +337,51 @@ export function AtendimentoWorkspaceReal({
             type="search"
             value={busca}
             onChange={(event) => setBusca(event.target.value)}
-            placeholder="Buscar por nome do contato..."
+            placeholder="Buscar por nome ou telefone..."
             className="w-full rounded-lg border border-[var(--ns-border)] bg-[var(--ns-surface)] px-3 py-2 text-sm text-[var(--ns-text)] outline-none placeholder:text-[var(--ns-text-secondary)] focus-visible:ring-2 focus-visible:ring-[var(--ns-primary)]"
           />
+          {/* Pergunta 1: de quem é a conversa? "IA" só existe pra quem supervisiona — quem atende comum
+              não vê conversa de ninguém além da própria (RLS já garante isso; aqui é só não oferecer a aba). */}
           <div className="flex gap-1 rounded-lg bg-[var(--ns-surface-hover)] p-1 text-sm">
-            {(["meus", "equipe"] as const).map((valor) => (
+            {(podeVerIA ? (["meus", "equipe", "ia"] as const) : (["meus", "equipe"] as const)).map((valor) => (
               <button
                 key={valor}
                 type="button"
                 onClick={() => setAba(valor)}
-                className={`flex-1 rounded-md px-2 py-1.5 font-medium capitalize transition ${
+                className={`flex flex-1 items-center justify-center gap-1 rounded-md px-2 py-1.5 font-medium transition ${
                   aba === valor ? "bg-[var(--ns-surface)] text-[var(--ns-text)] shadow-sm" : "text-[var(--ns-text-secondary)] hover:text-[var(--ns-text)]"
                 }`}
               >
-                {valor === "meus" ? "Meus" : "Equipe"}
+                {valor === "ia" && <Bot aria-hidden="true" className="h-3.5 w-3.5" />}
+                {valor === "meus" ? "Meus" : valor === "equipe" ? "Equipe" : "IA"}
+                {contagensAbas[valor] !== null && (
+                  <span className="text-[11px] font-normal text-[var(--ns-text-secondary)]">{contagensAbas[valor]}</span>
+                )}
               </button>
             ))}
           </div>
+
+          {/* Pergunta 2: o que falta fazer? Não existe pra "IA" — lá ninguém da equipe "lê" ou "responde". */}
+          {aba !== "ia" && (
+            <div className="flex gap-1 rounded-lg bg-[var(--ns-surface-hover)] p-1 text-xs">
+              {SUB_FILTROS.map((filtro) => (
+                <button
+                  key={filtro.id}
+                  type="button"
+                  title={filtro.ajuda}
+                  onClick={() => setSubFiltro(filtro.id)}
+                  className={`flex-1 rounded-md px-1.5 py-1 font-medium transition ${
+                    subFiltro === filtro.id ? "bg-[var(--ns-surface)] text-[var(--ns-text)] shadow-sm" : "text-[var(--ns-text-secondary)] hover:text-[var(--ns-text)]"
+                  }`}
+                >
+                  {filtro.rotulo}
+                  <span className="ml-1 text-[10px] font-normal text-[var(--ns-text-secondary)]">
+                    {contagensSubFiltro[filtro.id]}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="flex-1 overflow-y-auto">
@@ -258,35 +394,38 @@ export function AtendimentoWorkspaceReal({
           {!carregandoLista && !erroLista && conversasFiltradas.length === 0 && (
             <p className="p-6 text-center text-sm text-[var(--ns-text-secondary)]">Nenhuma conversa nesse filtro.</p>
           )}
-          {conversasFiltradas.map((conversa) => (
-            <button
-              key={conversa.id}
-              type="button"
-              onClick={() => setSelecionadaId(conversa.id)}
-              className={`flex w-full flex-col gap-1 border-b border-[var(--ns-border)] px-3 py-3 text-left transition ${
-                conversa.id === selecionadaId ? "bg-[var(--ns-primary)]/10" : "hover:bg-[var(--ns-surface-hover)]"
-              }`}
-            >
-              <div className="flex items-center justify-between gap-2">
-                <span className="truncate text-sm font-semibold text-[var(--ns-text)]">
-                  {conversa.contact?.display_name ?? "Contato sem nome"}
-                </span>
-                <span className="shrink-0 text-xs text-[var(--ns-text-secondary)]">
-                  {new Date(conversa.last_activity_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
-                </span>
-              </div>
-              <span className="truncate text-xs text-[var(--ns-text-secondary)]">{conversa.last_message_preview ?? "—"}</span>
-              <div className="flex items-center gap-2">
-                <EstadoBadge estado={STATUS_PARA_BADGE[conversa.status]} />
-                <span className="text-[11px] text-[var(--ns-text-secondary)]">{conversa.channel?.name ?? "Canal"}</span>
-                {conversa.unread_count > 0 && (
-                  <span className="ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[var(--ns-primary)] px-1 text-[11px] font-semibold text-[var(--ns-primary-foreground)]">
-                    {conversa.unread_count}
+          {conversasFiltradas.map((conversa) => {
+            const telefone = formatarTelefone(telefoneDoContato(conversa.contact));
+            return (
+              <button
+                key={conversa.id}
+                type="button"
+                onClick={() => setSelecionadaId(conversa.id)}
+                className={`flex w-full flex-col gap-1 border-b border-[var(--ns-border)] px-3 py-3 text-left transition ${
+                  conversa.id === selecionadaId ? "bg-[var(--ns-primary)]/10" : "hover:bg-[var(--ns-surface-hover)]"
+                }`}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="truncate text-sm font-semibold text-[var(--ns-text)]">
+                    {conversa.contact?.display_name ?? "Contato sem nome"}
                   </span>
-                )}
-              </div>
-            </button>
-          ))}
+                  <span className="shrink-0 text-xs text-[var(--ns-text-secondary)]">
+                    {new Date(conversa.last_activity_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                  </span>
+                </div>
+                <span className="truncate text-xs text-[var(--ns-text-secondary)]">{conversa.last_message_preview ?? "—"}</span>
+                <div className="flex items-center gap-2">
+                  <EstadoBadge estado={STATUS_PARA_BADGE[conversa.status]} />
+                  <span className="truncate text-[11px] text-[var(--ns-text-secondary)]">{telefone ?? conversa.channel?.name ?? "Canal"}</span>
+                  {conversa.unread_count > 0 && (
+                    <span className="ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[var(--ns-primary)] px-1 text-[11px] font-semibold text-[var(--ns-primary-foreground)]">
+                      {conversa.unread_count}
+                    </span>
+                  )}
+                </div>
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -307,6 +446,8 @@ export function AtendimentoWorkspaceReal({
                     {conversaSelecionada.contact?.display_name ?? "Contato sem nome"}
                   </p>
                   <p className="truncate text-xs text-[var(--ns-text-secondary)]">
+                    {formatarTelefone(telefoneDoContato(conversaSelecionada.contact)) ?? "Sem telefone cadastrado"}
+                    {" · "}
                     {conversaSelecionada.channel?.name ?? "Canal"} ·{" "}
                     {conversaSelecionada.assigned_user_profile?.full_name ?? "sem responsável"}
                   </p>
@@ -483,40 +624,85 @@ export function AtendimentoWorkspaceReal({
         )}
       </div>
 
-      <aside className="hidden h-full w-[320px] shrink-0 flex-col overflow-y-auto border-l border-[var(--ns-border)] p-4 lg:flex">
+      <aside className="hidden h-full w-[320px] shrink-0 flex-col overflow-y-auto border-l border-[var(--ns-border)] lg:flex">
         {!conversaSelecionada ? (
-          <p className="text-sm text-[var(--ns-text-secondary)]">Selecione uma conversa.</p>
+          <p className="p-4 text-sm text-[var(--ns-text-secondary)]">Selecione uma conversa.</p>
         ) : (
           <>
-            <div className="mb-4 flex items-center gap-3">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--ns-primary)]/15 text-sm font-semibold text-[var(--ns-primary)]">
-                {iniciaisDe(conversaSelecionada.contact?.display_name ?? null)}
+            <div className="border-b border-[var(--ns-border)] px-4 py-4">
+              <div className="mb-3 flex items-center gap-3">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--ns-primary)]/15 text-sm font-semibold text-[var(--ns-primary)]">
+                  {iniciaisDe(conversaSelecionada.contact?.display_name ?? null)}
+                </div>
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-[var(--ns-text)]">
+                    {conversaSelecionada.contact?.display_name ?? "Contato sem nome"}
+                  </p>
+                  <p className="truncate text-xs tabular-nums text-[var(--ns-text-secondary)]">
+                    {formatarTelefone(telefoneDoContato(conversaSelecionada.contact)) ?? "Sem telefone cadastrado"}
+                  </p>
+                </div>
               </div>
-              <div className="min-w-0">
-                <p className="truncate text-sm font-semibold text-[var(--ns-text)]">
-                  {conversaSelecionada.contact?.display_name ?? "Contato sem nome"}
-                </p>
-                <p className={`text-xs ${conversaSelecionada.client_id ? "text-[var(--ns-success)]" : "text-[var(--ns-warning)]"}`}>
-                  {conversaSelecionada.client_id ? "Cliente cadastrado" : "Contato · cadastro pendente"}
-                </p>
+              <div className="flex flex-wrap gap-1.5">
+                <span
+                  className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
+                    conversaSelecionada.client_id
+                      ? "bg-[var(--ns-success)]/15 text-[var(--ns-success)]"
+                      : "bg-[var(--ns-warning)]/15 text-[var(--ns-warning)]"
+                  }`}
+                >
+                  {conversaSelecionada.client_id ? "Cliente cadastrado" : "Cadastro pendente"}
+                </span>
+                {conversaSelecionada.external_id && (
+                  <span
+                    className="rounded-full bg-[var(--ns-surface-hover)] px-2 py-0.5 text-[11px] font-medium text-[var(--ns-text-secondary)]"
+                    title="Histórico trazido pelo importador do Totalk, não uma conversa iniciada aqui."
+                  >
+                    Importado do Totalk
+                  </span>
+                )}
               </div>
+              {conversaSelecionada.client_id && (
+                <a
+                  href={`/clientes/${conversaSelecionada.client_id}`}
+                  className="mt-3 inline-block text-xs font-medium text-[var(--ns-primary)] hover:underline"
+                >
+                  Ver perfil completo do cliente →
+                </a>
+              )}
             </div>
-            <button
-              type="button"
-              onClick={() => carregarConversas()}
-              className="mb-4 inline-flex items-center justify-center gap-2 rounded-lg border border-[var(--ns-border)] px-3 py-2 text-xs font-medium text-[var(--ns-text)] transition hover:bg-[var(--ns-surface-hover)]"
-            >
-              <RefreshCw aria-hidden="true" className="h-3.5 w-3.5" />
-              Atualizar
-            </button>
-            <div className="mb-4 rounded-lg border border-dashed border-[var(--ns-border)] p-3 text-xs text-[var(--ns-text-secondary)]">
-              Resumo automático, pré-venda, pós-venda e ações de cadastro/análise ainda não estão integrados nesta
-              entrega (dependem da Entrega D — ações do CRM no atendimento). O que aparece aqui é dado real do banco.
+
+            <section className="border-b border-[var(--ns-border)] px-4 py-3.5">
+              <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-[var(--ns-text-secondary)]">Atendimento</h3>
+              <dl className="space-y-1.5">
+                <LinhaFicha rotulo="Status" valor={<EstadoBadge estado={STATUS_PARA_BADGE[conversaSelecionada.status]} />} />
+                <LinhaFicha rotulo="Equipe" valor={conversaSelecionada.team?.name ?? "Sem equipe"} />
+                <LinhaFicha rotulo="Responsável" valor={conversaSelecionada.assigned_user_profile?.full_name ?? "Sem responsável"} />
+                <LinhaFicha rotulo="Canal" valor={conversaSelecionada.channel?.name ?? "—"} />
+                <LinhaFicha rotulo="Iniciada em" valor={formatarDataHora(conversaSelecionada.created_at)} />
+                <LinhaFicha rotulo="Última atividade" valor={formatarDataHora(conversaSelecionada.last_activity_at)} />
+              </dl>
+            </section>
+
+            <section className="border-b border-[var(--ns-border)] px-4 py-3.5">
+              <button
+                type="button"
+                onClick={() => carregarConversas()}
+                className="inline-flex items-center justify-center gap-2 rounded-lg border border-[var(--ns-border)] px-3 py-2 text-xs font-medium text-[var(--ns-text)] transition hover:bg-[var(--ns-surface-hover)]"
+              >
+                <RefreshCw aria-hidden="true" className="h-3.5 w-3.5" />
+                Atualizar
+              </button>
+            </section>
+
+            <div className="px-4 py-3.5 text-xs leading-relaxed text-[var(--ns-text-secondary)]">
+              Resumo automático da IA, etiquetas, pré-venda, pós-venda e ações de cadastro/análise ainda não estão
+              integrados nesta entrega (dependem da Entrega D — ações do CRM no atendimento, e da IA com credencial
+              por empresa). Tudo o que aparece acima é dado real do banco, sem dado fictício.
             </div>
-            <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-[var(--ns-text-secondary)]">Canal</div>
-            <p className="mb-4 text-xs text-[var(--ns-text)]">{conversaSelecionada.channel?.name ?? "—"}</p>
+
             {isAdminOuManager && (
-              <p className="text-xs text-[var(--ns-text-secondary)]">
+              <p className="px-4 pb-4 text-xs text-[var(--ns-text-secondary)]">
                 Você vê todas as conversas da empresa (admin/gerente). Consultores veem só as próprias + a fila da
                 equipe.
               </p>
@@ -524,6 +710,15 @@ export function AtendimentoWorkspaceReal({
           </>
         )}
       </aside>
+    </div>
+  );
+}
+
+function LinhaFicha({ rotulo, valor }: { rotulo: string; valor: React.ReactNode }) {
+  return (
+    <div className="flex items-baseline justify-between gap-2 py-0.5">
+      <dt className="shrink-0 text-[12px] text-[var(--ns-text-secondary)]">{rotulo}</dt>
+      <dd className="min-w-0 truncate text-right text-[12.5px] text-[var(--ns-text)]">{valor}</dd>
     </div>
   );
 }

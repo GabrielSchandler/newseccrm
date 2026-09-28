@@ -12,6 +12,10 @@
  * https://flwchat.readme.io/reference/paginação — o chamador deve manter o
  * mesmo pageSize entre paginas e parar quando "hasMorePages" for false.
  *
+ * Caminhos reais confirmados contra a conta da GRS em 28/09/2026: /core/v1/{department,agent,contact}
+ * (departamento e agente vem como lista simples, sem paginacao) e /chat/v1/session[/{id}/message|note].
+ * A documentacao generica (flwchat.readme.io, /v1/... e /v2/...) NAO vale pra esta conta.
+ *
  * IMPORTANTE: este cliente e so leitura (GET/POST de listagem/filtro). Nunca
  * chama endpoint de envio de mensagem, campanha, chatbot ou OTP — o
  * importador de historico nao pode disparar nada real no Totalk.
@@ -21,11 +25,18 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 
 const TAMANHO_PAGINA_PADRAO = 3;
+// A API real aceita ate 100 itens por pagina (500 ja devolve erro 500 — testado em 28/09/2026).
+export const TAMANHO_PAGINA_REAL = 100;
 const MAX_TENTATIVAS = 5;
 const ATRASO_BASE_MS = 500;
 
 function dormir(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/** Resposta da API real pode ser pagina ({ items }) ou lista simples (departamento/agente). */
+function extrairItens(resposta) {
+  return Array.isArray(resposta) ? resposta : resposta.items;
 }
 
 /**
@@ -119,10 +130,12 @@ async function requisitarReal({ baseUrl, token, metodo, caminho, query, corpo })
   return resposta.json();
 }
 
-export function criarClienteTotalk({ modoFixture, baseUrl, token, pastaFixtures, tamanhoPagina = TAMANHO_PAGINA_PADRAO }) {
+export function criarClienteTotalk({ modoFixture, baseUrl, token, pastaFixtures, tamanhoPagina = TAMANHO_PAGINA_PADRAO, intervaloMinimoMs = 0 }) {
   if (!modoFixture && !token) {
     throw new Error("Modo real exige TOTALK_IMPORT_TOKEN configurado (ver README.md deste diretorio).");
   }
+
+  let ultimaRequisicaoEm = 0;
 
   async function paginaDe(rotulo, { metodo, caminho, query, corpo, arquivoFixture }) {
     if (modoFixture) {
@@ -130,22 +143,30 @@ export function criarClienteTotalk({ modoFixture, baseUrl, token, pastaFixtures,
       return paginarEmMemoria(dados.items, { pageNumber: query?.PageNumber ?? 1, pageSize: query?.PageSize ?? tamanhoPagina });
     }
 
-    return chamarComRetentativa(() => requisitarReal({ baseUrl, token, metodo, caminho, query, corpo }), { rotulo });
+    return chamarComRetentativa(async () => {
+      // Espaca as chamadas pra ficar abaixo do limite continuo do Totalk (1000 req/5min).
+      const espera = ultimaRequisicaoEm + intervaloMinimoMs - Date.now();
+      if (espera > 0) await dormir(espera);
+      ultimaRequisicaoEm = Date.now();
+      return requisitarReal({ baseUrl, token, metodo, caminho, query, corpo });
+    }, { rotulo });
   }
 
-  /** Percorre todas as paginas de um recurso, retornando a lista completa. */
-  async function listarTudo(rotulo, paginaFn) {
+  /** Percorre as paginas de um recurso ate acabar (ou ate "limite" itens), retornando a lista. */
+  async function listarTudo(rotulo, paginaFn, { limite = null } = {}) {
     const itens = [];
     let pageNumber = 1;
 
     for (;;) {
       const resposta = await paginaFn(pageNumber);
-      itens.push(...resposta.items);
-      if (!resposta.hasMorePages) break;
+      itens.push(...extrairItens(resposta));
+      // Lista simples (departamento/agente reais) nao tem paginacao: uma chamada so.
+      if (Array.isArray(resposta) || !resposta.hasMorePages) break;
+      if (limite && itens.length >= limite) break;
       pageNumber += 1;
     }
 
-    return itens;
+    return limite ? itens.slice(0, limite) : itens;
   }
 
   return {
@@ -153,7 +174,7 @@ export function criarClienteTotalk({ modoFixture, baseUrl, token, pastaFixtures,
       return listarTudo("departamentos", (pageNumber) =>
         paginaDe("departamentos", {
           metodo: "GET",
-          caminho: "/v1/department",
+          caminho: "/core/v1/department",
           query: { PageNumber: pageNumber, PageSize: tamanhoPagina },
           arquivoFixture: "departamentos.json",
         }),
@@ -164,7 +185,7 @@ export function criarClienteTotalk({ modoFixture, baseUrl, token, pastaFixtures,
       return listarTudo("agentes", (pageNumber) =>
         paginaDe("agentes", {
           metodo: "GET",
-          caminho: "/v1/agent",
+          caminho: "/core/v1/agent",
           query: { PageNumber: pageNumber, PageSize: tamanhoPagina },
           arquivoFixture: "agentes.json",
         }),
@@ -174,23 +195,30 @@ export function criarClienteTotalk({ modoFixture, baseUrl, token, pastaFixtures,
     async listarContatos() {
       return listarTudo("contatos", (pageNumber) =>
         paginaDe("contatos", {
-          metodo: "POST",
-          caminho: "/v1/contact/filter",
+          metodo: "GET",
+          caminho: "/core/v1/contact",
           query: { PageNumber: pageNumber, PageSize: tamanhoPagina },
-          corpo: { pageNumber, pageSize: tamanhoPagina, status: "ACTIVE" },
           arquivoFixture: "contatos.json",
         }),
       );
     },
 
-    async listarSessoes() {
-      return listarTudo("sessoes", (pageNumber) =>
-        paginaDe("sessoes", {
-          metodo: "GET",
-          caminho: "/v2/session",
-          query: { PageNumber: pageNumber, PageSize: tamanhoPagina, IncludeDetails: ["AgentDetails", "ContactDetails", "DepartmentsDetails"] },
-          arquivoFixture: "sessoes.json",
-        }),
+    /**
+     * "ordem" so importa na API real. Importacao completa usa ASCENDING (sessao nova
+     * entra no fim e nao desloca as paginas ja lidas); piloto com "limite" usa
+     * DESCENDING pra pegar as mais recentes sem percorrer tudo.
+     */
+    async listarSessoes({ limite = null, ordem = "ASCENDING" } = {}) {
+      return listarTudo(
+        "sessoes",
+        (pageNumber) =>
+          paginaDe("sessoes", {
+            metodo: "GET",
+            caminho: "/chat/v1/session",
+            query: { PageNumber: pageNumber, PageSize: tamanhoPagina, OrderBy: "createdAt", OrderDirection: ordem },
+            arquivoFixture: "sessoes.json",
+          }),
+        { limite },
       );
     },
 
@@ -198,7 +226,7 @@ export function criarClienteTotalk({ modoFixture, baseUrl, token, pastaFixtures,
       return listarTudo(`mensagens de ${sessionId}`, (pageNumber) =>
         paginaDe(`mensagens de ${sessionId}`, {
           metodo: "GET",
-          caminho: `/v1/session/${sessionId}/message`,
+          caminho: `/chat/v1/session/${sessionId}/message`,
           query: { PageNumber: pageNumber, PageSize: tamanhoPagina, OrderBy: "createdAt", OrderDirection: "ASCENDING" },
           arquivoFixture: path.join("mensagens", `${sessionId}.json`),
         }),
@@ -209,7 +237,7 @@ export function criarClienteTotalk({ modoFixture, baseUrl, token, pastaFixtures,
       return listarTudo(`notas de ${sessionId}`, (pageNumber) =>
         paginaDe(`notas de ${sessionId}`, {
           metodo: "GET",
-          caminho: `/v1/session/${sessionId}/note`,
+          caminho: `/chat/v1/session/${sessionId}/note`,
           query: { PageNumber: pageNumber, PageSize: tamanhoPagina },
           arquivoFixture: path.join("notas", `${sessionId}.json`),
         }),

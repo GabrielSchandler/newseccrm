@@ -52,7 +52,7 @@ import process from "node:process";
 import { fileURLToPath } from "node:url";
 import nextEnv from "@next/env";
 import { createClient } from "@supabase/supabase-js";
-import { criarClienteTotalk } from "./cliente-totalk.mjs";
+import { criarClienteTotalk, TAMANHO_PAGINA_REAL } from "./cliente-totalk.mjs";
 
 const { loadEnvConfig } = nextEnv;
 
@@ -63,10 +63,14 @@ const ARQUIVO_CHECKPOINT = path.join(PASTA_CHECKPOINT, "estado.json");
 const PASTA_SAIDA = path.join(DIRETORIO_SCRIPT, "saida");
 
 function parseArgs(argv) {
-  const parsed = { real: false, reiniciar: false, falharAposSessao: null, destino: null, dryRun: false, empresaId: null, canalId: null };
+  const parsed = { real: false, reiniciar: false, falharAposSessao: null, destino: null, dryRun: false, empresaId: null, canalId: null, limiteSessoes: null };
 
   for (const valor of argv) {
-    if (valor === "--real") parsed.real = true;
+    if (valor.startsWith("--limite-sessoes=")) {
+      const limite = Number.parseInt(valor.split("=")[1], 10);
+      if (!Number.isInteger(limite) || limite <= 0) throw new Error(`--limite-sessoes deve ser um inteiro positivo, recebi "${valor.split("=")[1]}".`);
+      parsed.limiteSessoes = limite;
+    } else if (valor === "--real") parsed.real = true;
     else if (valor === "--reiniciar") parsed.reiniciar = true;
     else if (valor === "--dry-run") parsed.dryRun = true;
     else if (valor.startsWith("--falhar-apos-sessao=")) parsed.falharAposSessao = valor.split("=")[1];
@@ -133,11 +137,25 @@ function marcarVisto(checkpoint, tipo, idExterno) {
   return true;
 }
 
+/**
+ * Telefone so com digitos e DDI 55 (mesma regra de normalizeTotalkPhone em
+ * src/lib/totalk/api.ts, que ja e a convencao das fixtures e do CRM). A API
+ * real devolve o numero como "+55|11999999999" (com "|"), a fixture como
+ * "5511999999999" — ambos convergem pra "5511999999999". Sem digitos = null.
+ */
+function normalizarTelefone(valor) {
+  const digitos = String(valor ?? "").replace(/\D/g, "");
+  if (!digitos) return null;
+  if (digitos.startsWith("55") && (digitos.length === 12 || digitos.length === 13)) return digitos;
+  if (digitos.length === 10 || digitos.length === 11) return `55${digitos}`;
+  return digitos;
+}
+
 function normalizarContato(contato) {
   return {
     idExterno: contato.id,
     nome: contato.name,
-    telefone: contato.phoneNumber,
+    telefone: normalizarTelefone(contato.phoneNumber),
     telefoneFormatado: contato.phoneNumberFormatted,
     email: contato.email,
     instagram: contato.instagram,
@@ -180,12 +198,14 @@ function normalizarSessao(sessao, mapeamentoAgentes, naoMapeados) {
 }
 
 /**
- * direcao: assumido pelo nome do campo da API (FROM_HUB = originado no hub,
- * ou seja enviado pelo agente/sistema ao contato; TO_HUB = enviado pelo
- * contato ao hub). NAO confirmado contra uma chamada real — documentacao do
- * Totalk nao descreve esse valor explicitamente (ver README.md, secao
- * "Suposicoes a validar"). Revalidar no piloto antes de confiar no valor
- * pra decidir quem e "cliente" numa mensagem importada.
+ * direcao: FROM_HUB = originado no hub (enviado pela empresa ao contato ->
+ * "saida"); TO_HUB = enviado pelo contato ao hub ("entrada"). Confirmado
+ * contra a API real em 28/09/2026 por evidencia indireta (a doc nao descreve
+ * o valor): (1) mensagens tipo TRACK — rastreio de clique em anuncio, que so
+ * nasce do cliente — aparecem exclusivamente em TO_HUB; (2) a unica mensagem
+ * FAILED/DELETED de envio da amostra esta em FROM_HUB (falha de envio so
+ * ocorre em mensagem da empresa); (3) a maioria das sessoes comeca por
+ * TO_HUB. Mesmo assim, conferir visualmente 2-3 conversas do piloto.
  *
  * Resolucao de arquivo: NAO existe endpoint "obter arquivo por id" na API do
  * Totalk (confirmado contra a documentacao oficial, 24/09/2026 — GET/POST
@@ -508,12 +528,16 @@ async function main() {
     baseUrl: process.env.TOTALK_IMPORT_BASE_URL,
     token: process.env.TOTALK_IMPORT_TOKEN,
     pastaFixtures: PASTA_FIXTURES,
+    // Fixtures continuam com pagina pequena (exercita a paginacao); a API real usa 100 por pagina
+    // e ~171 req/min, abaixo do limite continuo do Totalk (1000 req/5min).
+    ...(modoFixture ? {} : { tamanhoPagina: TAMANHO_PAGINA_REAL, intervaloMinimoMs: 350 }),
   });
 
   const mapeamentoAgentes = JSON.parse(await readFile(path.join(DIRETORIO_SCRIPT, "mapeamento-agentes.json"), "utf8"));
   const naoMapeados = new Set();
   const midiaIndisponivel = [];
   const responsaveisInvalidos = [];
+  const sessoesSemContato = [];
   const erros = [];
 
   const checkpoint = await carregarCheckpoint(args.reiniciar);
@@ -575,7 +599,14 @@ async function main() {
   // pras sessoes abaixo, mesmo que a etapa ja tivesse sido marcada
   // concluida numa rodada anterior. Resolucao por telefone e idempotente
   // (nunca recria), entao relistar e barato e seguro.
-  const contatos = await cliente.listarContatos();
+  // Sessoes primeiro: com --limite-sessoes (piloto) so importamos os contatos
+  // dessas sessoes, nao os milhares de contatos da conta.
+  const sessoes = await cliente.listarSessoes({
+    limite: args.limiteSessoes,
+    ordem: args.limiteSessoes ? "DESCENDING" : "ASCENDING",
+  });
+  const contatosDoPiloto = args.limiteSessoes ? new Set(sessoes.map((sessao) => sessao.contactId)) : null;
+  const contatos = (await cliente.listarContatos()).filter((contato) => !contatosDoPiloto || contatosDoPiloto.has(contato.id));
   if (!checkpoint.etapasConcluidas.has("contatos")) {
     contagens.contatos.esperado = contatos.length;
   } else {
@@ -612,7 +643,6 @@ async function main() {
   }
   checkpoint.etapasConcluidas.add("contatos");
 
-  const sessoes = await cliente.listarSessoes();
   contagens.sessoes.esperado = sessoes.length;
 
   for (const sessao of sessoes) {
@@ -642,6 +672,13 @@ async function main() {
 
       if (supabaseAdmin) {
         const contactId = mapaContatoParaId.get(sessao.contactId) ?? null;
+
+        // conversations.contact_id e NOT NULL: sessao de contato sem telefone (ou que nao
+        // veio na listagem) nao tem onde ser gravada — vai pro relatorio, nao derruba o lote.
+        if (!args.dryRun && !contactId) {
+          sessoesSemContato.push({ sessaoId: sessao.id, contatoIdExterno: sessao.contactId ?? null });
+          continue;
+        }
 
         if (args.dryRun) {
           const { conversationId: idExistente } = await preverConversa(supabaseAdmin, destino.canal.id, sessaoNormalizada);
@@ -787,6 +824,7 @@ async function main() {
     agentesNaoMapeados: [...naoMapeados],
     midiaIndisponivel,
     responsaveisInvalidos,
+    sessoesSemContato,
     erros,
   };
 
@@ -802,6 +840,9 @@ async function main() {
   }
   if (midiaIndisponivel.length > 0) {
     console.log(`[totalk] Midia indisponivel (${midiaIndisponivel.length}): ver saida/relatorio-reconciliacao.json`);
+  }
+  if (sessoesSemContato.length > 0) {
+    console.log(`[totalk] Sessoes puladas por contato sem telefone/ausente (${sessoesSemContato.length}): ver saida/relatorio-reconciliacao.json`);
   }
   if (responsaveisInvalidos.length > 0) {
     console.log(`[totalk] Responsavel mapeado nao existe no destino (${responsaveisInvalidos.length}): conversa importada sem responsavel, ver saida/relatorio-reconciliacao.json`);
@@ -848,6 +889,13 @@ function formatarRelatorioMarkdown(relatorio) {
     (relatorio.responsaveisInvalidos ?? []).length === 0
       ? "Nenhum."
       : relatorio.responsaveisInvalidos.map((item) => `- sessão ${item.sessaoId}: user_profiles.id ${item.userIdMapeado} não existe neste ambiente`).join("\n"),
+  );
+
+  linhas.push("", "## Sessões puladas: contato sem telefone ou ausente (conversations.contact_id é obrigatório)", "");
+  linhas.push(
+    (relatorio.sessoesSemContato ?? []).length === 0
+      ? "Nenhuma."
+      : relatorio.sessoesSemContato.map((item) => `- sessão ${item.sessaoId} (contato externo ${item.contatoIdExterno})`).join("\n"),
   );
 
   linhas.push("", "## Erros", "");
