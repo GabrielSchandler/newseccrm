@@ -37,6 +37,22 @@ type ConversaLista = {
 
 type UsuarioEmpresa = { id: string; full_name: string | null };
 
+type MensagemComAutor = Message & { author: { id: string; full_name: string | null } | null };
+
+/** Rótulo de quem mandou uma mensagem de saída — nunca deixa "quem enviou" implícito. */
+function remetenteDe(mensagem: MensagemComAutor): string {
+  switch (mensagem.author_type) {
+    case "ia":
+      return "IA";
+    case "humano":
+      return mensagem.author?.full_name ?? "Equipe (usuário removido)";
+    case "sistema":
+      return "Sistema";
+    default:
+      return "Equipe";
+  }
+}
+
 const STATUS_PARA_BADGE: Record<ConversationStatus, ConversaEstado> = {
   ia: "IA",
   aguardando_humano: "AGUARDANDO_HUMANO",
@@ -45,7 +61,7 @@ const STATUS_PARA_BADGE: Record<ConversationStatus, ConversaEstado> = {
   encerrada: "ENCERRADA",
 };
 
-type Aba = "meus" | "equipe" | "ia";
+type Aba = "meus" | "outros" | "ia";
 type SubFiltro = "todas" | "nao_lidas" | "aguardando_resposta";
 
 const SUB_FILTROS: { id: SubFiltro; rotulo: string; ajuda: string }[] = [
@@ -104,12 +120,12 @@ export function AtendimentoWorkspaceReal({
   const [subFiltro, setSubFiltro] = useState<SubFiltro>("todas");
   const [busca, setBusca] = useState("");
   const [conversas, setConversas] = useState<ConversaLista[] | null>(null);
-  const [contagensAbas, setContagensAbas] = useState<Record<Aba, number | null>>({ meus: null, equipe: null, ia: null });
+  const [contagensAbas, setContagensAbas] = useState<Record<Aba, number | null>>({ meus: null, outros: null, ia: null });
   const [erroLista, setErroLista] = useState<string | null>(null);
   const [carregandoLista, setCarregandoLista] = useState(true);
 
   const [selecionadaId, setSelecionadaId] = useState<string | null>(null);
-  const [mensagens, setMensagens] = useState<Message[] | null>(null);
+  const [mensagens, setMensagens] = useState<MensagemComAutor[] | null>(null);
   const [erroMensagens, setErroMensagens] = useState<string | null>(null);
 
   const [rascunhos, setRascunhos] = useState<Record<string, string>>({});
@@ -135,9 +151,17 @@ export function AtendimentoWorkspaceReal({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   function comEscopoDaAba(query: any, valorAba: Aba): any {
     let escopado = query.eq("company_id", companyId);
-    if (valorAba === "meus") escopado = escopado.eq("assigned_user_profile_id", userProfileId);
-    else if (valorAba === "ia") escopado = escopado.eq("status", "ia");
-    else escopado = escopado.neq("status", "ia");
+    if (valorAba === "meus") {
+      escopado = escopado.eq("assigned_user_profile_id", userProfileId);
+    } else if (valorAba === "ia") {
+      escopado = escopado.eq("status", "ia");
+    } else {
+      // "Outros" = atendimento humano de outro login — atribuído a outra pessoa, ou ainda sem
+      // ninguém (fila). Nunca repete o que já está em "Meus" (por isso o `.neq`, não só excluir
+      // a IA) — `.or()` cobre o nulo porque `assigned_user_profile_id <> meuId` sozinho descarta
+      // linha nula em SQL (NULL <> x nunca é verdadeiro).
+      escopado = escopado.neq("status", "ia").or(`assigned_user_profile_id.is.null,assigned_user_profile_id.neq.${userProfileId}`);
+    }
     return escopado;
   }
 
@@ -163,7 +187,7 @@ export function AtendimentoWorkspaceReal({
 
   /** Contagem total de cada aba (independente da aba selecionada), pro numerinho ao lado do rótulo. */
   const carregarContagensAbas = useCallback(async () => {
-    const abasParaContar: Aba[] = podeVerIA ? ["meus", "equipe", "ia"] : ["meus", "equipe"];
+    const abasParaContar: Aba[] = podeVerIA ? ["meus", "outros", "ia"] : ["meus", "outros"];
     const resultados = await Promise.all(
       abasParaContar.map((valorAba) =>
         comEscopoDaAba(supabase.from("conversations").select("id", { count: "exact", head: true }), valorAba),
@@ -184,7 +208,7 @@ export function AtendimentoWorkspaceReal({
       setErroMensagens(null);
       const { data, error } = await supabase
         .from("messages")
-        .select("*")
+        .select("*, author:user_profiles!messages_author_user_profile_id_fkey(id, full_name)")
         .eq("conversation_id", conversationId)
         .order("created_at", { ascending: true })
         .limit(200);
@@ -193,7 +217,7 @@ export function AtendimentoWorkspaceReal({
         setErroMensagens(`Não foi possível carregar as mensagens: ${error.message}`);
         setMensagens(null);
       } else {
-        setMensagens((data ?? []) as Message[]);
+        setMensagens((data ?? []) as unknown as MensagemComAutor[]);
       }
     },
     [supabase],
@@ -340,10 +364,13 @@ export function AtendimentoWorkspaceReal({
             placeholder="Buscar por nome ou telefone..."
             className="w-full rounded-lg border border-[var(--ns-border)] bg-[var(--ns-surface)] px-3 py-2 text-sm text-[var(--ns-text)] outline-none placeholder:text-[var(--ns-text-secondary)] focus-visible:ring-2 focus-visible:ring-[var(--ns-primary)]"
           />
-          {/* Pergunta 1: de quem é a conversa? "IA" só existe pra quem supervisiona — quem atende comum
-              não vê conversa de ninguém além da própria (RLS já garante isso; aqui é só não oferecer a aba). */}
+          {/* Pergunta 1: de quem é a conversa? "Outros" é o atendimento humano de outro login (atribuído a
+              outra pessoa, ou ainda sem ninguém) — não é "a equipe" no sentido de departamento/`teams`,
+              porque quem supervisiona pode ver conversa de qualquer equipe aqui, não só a própria. "IA" só
+              existe pra quem supervisiona — quem atende comum não vê conversa de ninguém além da própria
+              (RLS já garante isso; aqui é só não oferecer a aba). */}
           <div className="flex gap-1 rounded-lg bg-[var(--ns-surface-hover)] p-1 text-sm">
-            {(podeVerIA ? (["meus", "equipe", "ia"] as const) : (["meus", "equipe"] as const)).map((valor) => (
+            {(podeVerIA ? (["meus", "outros", "ia"] as const) : (["meus", "outros"] as const)).map((valor) => (
               <button
                 key={valor}
                 type="button"
@@ -353,7 +380,7 @@ export function AtendimentoWorkspaceReal({
                 }`}
               >
                 {valor === "ia" && <Bot aria-hidden="true" className="h-3.5 w-3.5" />}
-                {valor === "meus" ? "Meus" : valor === "equipe" ? "Equipe" : "IA"}
+                {valor === "meus" ? "Meus" : valor === "outros" ? "Outros" : "IA"}
                 {contagensAbas[valor] !== null && (
                   <span className="text-[11px] font-normal text-[var(--ns-text-secondary)]">{contagensAbas[valor]}</span>
                 )}
@@ -528,7 +555,15 @@ export function AtendimentoWorkspaceReal({
 
                 const doCliente = mensagem.direction === "entrada";
                 return (
-                  <div key={mensagem.id} className={`flex ${doCliente ? "justify-start" : "justify-end"}`}>
+                  <div key={mensagem.id} className={`flex flex-col ${doCliente ? "items-start" : "items-end"}`}>
+                    {/* Quem enviou — nunca fica implícito: nome de quem atendeu, ou "IA" quando foi o
+                        assistente. Cliente não precisa de rótulo: só existe uma pessoa do lado esquerdo. */}
+                    {!doCliente && (
+                      <span className="mb-0.5 flex items-center gap-1 px-1 text-[10px] font-medium text-[var(--ns-text-secondary)]">
+                        {mensagem.author_type === "ia" && <Bot aria-hidden="true" className="h-3 w-3" />}
+                        {remetenteDe(mensagem)}
+                      </span>
+                    )}
                     <div
                       className={`max-w-[70%] rounded-2xl px-3 py-2 text-sm ${
                         doCliente ? "bg-[var(--ns-surface-hover)] text-[var(--ns-text)]" : "bg-[var(--ns-primary)] text-[var(--ns-primary-foreground)]"
@@ -703,8 +738,9 @@ export function AtendimentoWorkspaceReal({
 
             {isAdminOuManager && (
               <p className="px-4 pb-4 text-xs text-[var(--ns-text-secondary)]">
-                Você vê todas as conversas da empresa (admin/gerente). Consultores veem só as próprias + a fila da
-                equipe.
+                Você vê todas as conversas da empresa (admin/gerente), inclusive em &quot;Outros&quot;. Consultores
+                veem só as próprias em &quot;Meus&quot; + o que está sem responsável ou com outra pessoa em
+                &quot;Outros&quot;.
               </p>
             )}
           </>

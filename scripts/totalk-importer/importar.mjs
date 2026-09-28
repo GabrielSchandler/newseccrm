@@ -198,14 +198,18 @@ function normalizarSessao(sessao, mapeamentoAgentes, naoMapeados) {
 }
 
 /**
- * direcao: FROM_HUB = originado no hub (enviado pela empresa ao contato ->
- * "saida"); TO_HUB = enviado pelo contato ao hub ("entrada"). Confirmado
- * contra a API real em 28/09/2026 por evidencia indireta (a doc nao descreve
- * o valor): (1) mensagens tipo TRACK — rastreio de clique em anuncio, que so
- * nasce do cliente — aparecem exclusivamente em TO_HUB; (2) a unica mensagem
- * FAILED/DELETED de envio da amostra esta em FROM_HUB (falha de envio so
- * ocorre em mensagem da empresa); (3) a maioria das sessoes comeca por
- * TO_HUB. Mesmo assim, conferir visualmente 2-3 conversas do piloto.
+ * direcao: FROM_HUB = o contato mandou pro hub ("entrada"); TO_HUB = o hub
+ * (agente/IA/sistema) mandou pro contato ("saida"). CORRIGIDO em 28/09/2026 —
+ * a primeira suposição (FROM_HUB="saida") estava ao contrário; foi escrita
+ * por evidência indireta (tipo de mensagem, status de falha) sem cruzar com o
+ * TEXTO de uma conversa real. Confirmado desta vez contra uma sessão real
+ * inteira (Gean Maycon, empresa GRS Soluções), lendo o conteúdo: a primeira
+ * mensagem da sessão ("Olá! Vim pelo site da GRS...", claramente o cliente
+ * chegando) tem direction=FROM_HUB; a resposta ("Olá! Tudo bem? Sou a Ana...",
+ * claramente a agente) tem direction=TO_HUB, origin=BOT. O erro anterior
+ * inverteu toda conversa importada em homologação — corrigido no código e nas
+ * 3 fixtures de mensagem (mariana/rafael/clara), que também tinham o valor
+ * trocado. Ver "Correção de direção" no README.md.
  *
  * Resolucao de arquivo: NAO existe endpoint "obter arquivo por id" na API do
  * Totalk (confirmado contra a documentacao oficial, 24/09/2026 — GET/POST
@@ -218,7 +222,7 @@ function normalizarSessao(sessao, mapeamentoAgentes, naoMapeados) {
  * antes).
  */
 function normalizarMensagem(mensagem, { ehNota }) {
-  const direcao = mensagem.direction === "FROM_HUB" ? "saida" : "entrada";
+  const direcao = mensagem.direction === "FROM_HUB" ? "entrada" : "saida";
   let autoria;
   // "humano" pra nota, nao um rotulo proprio ("consultor") — messages_author_type_check
   // (0004) so aceita cliente|humano|ia|sistema, mesma convencao do sistema ao
@@ -751,7 +755,9 @@ async function main() {
       for (const nota of notas) {
         const novaLocalmente = marcarVisto(checkpoint, "nota", nota.id);
         const notaNormalizada = normalizarMensagem(
-          { ...nota, sessionId: nota.sessionId, type: "NOTE", direction: "FROM_HUB", text: nota.text },
+          // TO_HUB = "saida" (ver normalizarMensagem) — nota interna e sempre escrita por um humano da
+          // equipe, nunca pelo contato, entao trocou junto com a correcao da direcao (era FROM_HUB).
+          { ...nota, sessionId: nota.sessionId, type: "NOTE", direction: "TO_HUB", text: nota.text },
           { ehNota: true },
         );
 

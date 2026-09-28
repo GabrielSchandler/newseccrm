@@ -8,7 +8,7 @@
       "type": "TEXT",
       "sessionId": "sessao-mariana-0001",
       "userId": null,
-      "direction": "TO_HUB",
+      "direction": "FROM_HUB",
       "status": "READ",
       "origin": "DEFAULT",
       "text": "Oi, tudo bem? Gostaria de solicitar a análise das parcelas do meu financiamento.",
@@ -23,7 +23,7 @@
       "type": "TEXT",
       "sessionId": "sessao-mariana-0001",
       "userId": "agente-ana-0001",
-      "direction": "FROM_HUB",
+      "direction": "TO_HUB",
       "status": "READ",
       "origin": "DEFAULT",
       "text": "Olá, Mariana! Claro, posso ajudar. Pode me enviar o contrato do financiamento?",
@@ -38,12 +38,14 @@
       "type": "DOCUMENT",
       "sessionId": "sessao-mariana-0001",
       "userId": null,
-      "direction": "TO_HUB",
+      "direction": "FROM_HUB",
       "status": "READ",
       "origin": "DEFAULT",
       "text": "Claro! Segue o contrato.",
       "fileId": "arquivo-contrato-0001",
-      "filesIds": ["arquivo-contrato-0001"],
+      "filesIds": [
+        "arquivo-contrato-0001"
+      ],
       "details": {
         "file": {
           "id": "arquivo-contrato-0001",
@@ -65,7 +67,7 @@
       "type": "TEXT",
       "sessionId": "sessao-mariana-0001",
       "userId": "agente-ana-0001",
-      "direction": "FROM_HUB",
+      "direction": "TO_HUB",
       "status": "READ",
       "origin": "DEFAULT",
       "text": "Recebido, obrigada! Vou preparar a análise e retorno ainda hoje.",
@@ -80,12 +82,14 @@
       "type": "AUDIO",
       "sessionId": "sessao-mariana-0001",
       "userId": null,
-      "direction": "TO_HUB",
+      "direction": "FROM_HUB",
       "status": "READ",
       "origin": "DEFAULT",
       "text": null,
       "fileId": "arquivo-audio-0001",
-      "filesIds": ["arquivo-audio-0001"]
+      "filesIds": [
+        "arquivo-audio-0001"
+      ]
     },
     {
       "id": "msg-mariana-0006",
@@ -95,7 +99,7 @@
       "type": "TEXT",
       "sessionId": "sessao-mariana-0001",
       "userId": "agente-ana-0001",
-      "direction": "FROM_HUB",
+      "direction": "TO_HUB",
       "status": "DELIVERED",
       "origin": "DEFAULT",
       "text": "Perfeito, vou te enviar ainda hoje.",

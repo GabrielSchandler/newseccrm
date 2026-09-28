@@ -195,18 +195,24 @@ enviada ao provedor):
 
 ## Suposições a validar no piloto real
 
-- **`direction: FROM_HUB`/`TO_HUB`** — revisitei a documentação
-  (`GET /v1/session/{id}/message`, 24/09/2026): o enum confirmado tem
-  exatamente esses dois valores (nenhum terceiro), mas o significado
-  semântico continua sem descrição explícita na doc, e o endpoint de envio
-  (`POST /v1/session/{id}/message`) não devolve `direction` na resposta pra
-  confirmar por dedução (é sempre saída, então o campo nem aparece). Este
-  importador continua assumindo, pelo nome do campo, que `FROM_HUB` =
-  originado no hub (agente/sistema → contato, mapeado pra `"saida"`) e
-  `TO_HUB` = contato → hub (mapeado pra `"entrada"`/`autoria: "cliente"`).
-  **Ainda precisa de revalidação contra uma chamada real** — se estiver
-  invertido, é uma linha só pra trocar em `normalizarMensagem()`
-  (`cliente-totalk.mjs` → `importar.mjs`).
+- **`direction: FROM_HUB`/`TO_HUB` — CORRIGIDO (28/09/2026), estava ao
+  contrário.** A primeira suposição (`FROM_HUB` = agente/sistema → contato)
+  foi escrita por evidência indireta (tipo de mensagem TRACK, status de
+  falha) sem cruzar com o texto de uma conversa real, e saiu invertida. A
+  correção veio de rodar o piloto de verdade contra homologação e o Gabriel
+  perceber, pela tela de Atendimento, que as mensagens do cliente apareciam
+  do lado errado (e pareciam "duplicadas" — eram, na real, os dois lados
+  trocados criando uma leitura confusa). Confirmado lendo o conteúdo de uma
+  sessão real (Gean Maycon, GRS Soluções): a primeira mensagem da sessão
+  ("Olá! Vim pelo site da GRS...", claramente o cliente chegando) tem
+  `direction=FROM_HUB`; a resposta da agente Ana tem `direction=TO_HUB`,
+  `origin=BOT`. Mapeamento correto: `FROM_HUB` = contato → hub
+  (`"entrada"`/`autoria: "cliente"`); `TO_HUB` = hub → contato (`"saida"`).
+  As 3 fixtures de mensagem (mariana/rafael/clara) tinham o valor trocado
+  também e foram corrigidas junto. **As 20 sessões importadas em
+  homologação antes desta correção ficaram com direção, autoria e status
+  errados** — apagadas e reimportadas com o código corrigido (ver
+  checkpoint em `docs/PROGRESS.md`).
 - **Resolução de arquivo/mídia — CORRIGIDO (24/09/2026), não é mais
   suposição:** `GET /v2/file/{id}` **não existe** (confirmei via 404 direto
   na doc). E não é o caso de "listagem com filtro por ID" como este README
@@ -274,10 +280,9 @@ que o pipeline funciona corretamente contra homologação.
 
 ## Pendências externas reais
 
-- Token de API do Totalk — decisão/acesso do Gabriel.
-- Confirmar a suposição de `direction: FROM_HUB`/`TO_HUB` contra uma chamada
-  real, assim que o token existir (a suposição de resolução de arquivo já
-  foi corrigida contra a documentação oficial, não depende mais do token).
+- Token de API do Totalk — já configurado (28/09/2026), decisão do Gabriel.
+- ~~Confirmar a suposição de `direction: FROM_HUB`/`TO_HUB`~~ — corrigido
+  (28/09/2026, ver "Suposições a validar no piloto real" acima).
 - Definir `mapeamento-agentes.json` de verdade (hoje só tem um exemplo com
   UUID fictício — por isso toda conversa importada até agora foi sem
   responsável) antes de qualquer importação real.
