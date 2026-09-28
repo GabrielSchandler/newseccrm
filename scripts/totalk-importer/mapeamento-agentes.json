@@ -1,45 +1,45 @@
 {
-  "_comentario": "Mapeia agente do Totalk (agentId) para o user_profiles.id real do NewSec/GRSCRM. O importador NUNCA cria usuário novo sozinho a partir de um agente legado (ver NEWSEC-CORRECOES-E-CONTINUACAO-CLAUDE.md secao 12). Entrada com userIdNewSec null fica marcada como 'requer mapeamento manual' no relatorio de reconciliacao, e a conversa/mensagem e importada mesmo assim (sem responsavel atribuido em vez de travar o piloto). Cruzamento feito com o Gabriel em 28/09/2026 (nomes reais, ver docs/PROGRESS.md); os 8 agentId abaixo são os 8 agentes reais da conta do Totalk da GRS — userIdNewSec ainda como null porque falta o user_profiles.id de cada login, que só existe no banco de PRODUÇÃO do GRSCRM (não em homologação, onde os usuários são de teste). Preencher antes de importar de verdade.",
+  "_comentario": "Mapeia agente do Totalk (agentId) para o user_profiles.id real do GRSCRM (PRODUÇÃO). O importador NUNCA cria usuário novo sozinho a partir de um agente legado (ver NEWSEC-CORRECOES-E-CONTINUACAO-CLAUDE.md secao 12). Cruzamento feito com o Gabriel em 28/09/2026 (nomes reais, ver docs/PROGRESS.md); user_profiles.id confirmado por consulta read-only à produção (empresa GRS: ef4f2233-f4e9-43e8-ab6d-1bb41513d39d) no mesmo dia. NÃO usar este arquivo com --destino=homologacao — os ids abaixo são de produção, não existem lá.",
   "mapeamentos": {
     "092254fa-8231-44b1-9a47-d57e469df0a5": {
       "nomeTotalk": "Caroline Ribeiro",
-      "userIdNewSec": null,
-      "observacao": "CRM: login caroline.ribeiro (Comercial · Consultor)."
+      "userIdNewSec": "e4828c40-ff3e-49ad-a7bd-c277ed27d516",
+      "observacao": "CRM: login caroline.ribeiro (Comercial · seller)."
     },
     "e31e4603-3f57-4e15-8e47-0946c1598b97": {
       "nomeTotalk": "Eder Henrique",
-      "userIdNewSec": null,
-      "observacao": "CRM: login eder.henrique (Comercial · Consultor)."
+      "userIdNewSec": "0e3c4af4-7ce5-43bb-b334-58c0c7308aaf",
+      "observacao": "CRM: login eder.henrique (Comercial · seller)."
     },
     "3f7ac626-0cf5-4e21-8af9-31393111115d": {
       "nomeTotalk": "Mariza",
-      "userIdNewSec": null,
-      "observacao": "CRM: login mariza.vieira (Comercial · Consultor)."
+      "userIdNewSec": "5bada33c-338a-42f8-81a8-66118627ccca",
+      "observacao": "CRM: login mariza.vieira (Comercial · seller)."
     },
     "51699334-6e96-4e22-b280-30aa30a5b64d": {
       "nomeTotalk": "Graciele",
-      "userIdNewSec": null,
-      "observacao": "CRM: login graciele.brito (Jurídico · Consultor jurídico)."
+      "userIdNewSec": "c01c2430-c087-4531-882c-ddabf5c7752c",
+      "observacao": "CRM: login graciele.brito (Jurídico · seller)."
     },
     "c4c38630-b1b8-4bd1-b85a-92d8b331ab7b": {
       "nomeTotalk": "Verônica",
-      "userIdNewSec": null,
-      "observacao": "CRM: login veronica.silva (Jurídico · Adm jurídico) — Gabriel confirmou tratar como jurídico."
+      "userIdNewSec": "4a6dc2cb-6a67-4147-8cfb-3d2a16c57312",
+      "observacao": "CRM: login veronica.silva (Jurídico · seller) — Gabriel confirmou tratar como jurídico."
     },
     "1aebc0ac-0e73-45dd-9335-deec4869c753": {
       "nomeTotalk": "Ronaldo",
-      "userIdNewSec": null,
-      "observacao": "CRM: login ronaldo.martins (Jurídico · Consultor) — Gabriel se refere a ele como supervisor."
+      "userIdNewSec": "c72ac803-959a-4ca5-875c-2419de485e9d",
+      "observacao": "CRM: login ronaldo.martins (Jurídico · seller) — Gabriel se refere a ele como supervisor."
     },
     "088a60ee-e000-48f2-8114-ed152b6722d1": {
       "nomeTotalk": "GRS Soluções",
-      "userIdNewSec": null,
-      "observacao": "Login compartilhado — Gabriel, Tatiane e Henry mandavam mensagem por essa conta administradora. Não dá pra saber quem digitou cada mensagem, então por decisão do Gabriel (28/09/2026) tudo desse login vira responsabilidade do Gabriel (login gabriel.schandler) por padrão."
+      "userIdNewSec": "f7f881c2-b56d-4411-8160-3d0c264d2dc2",
+      "observacao": "Login compartilhado — Gabriel, Tatiane e Henry mandavam mensagem por essa conta administradora. Não dá pra saber quem digitou cada mensagem; por decisão do Gabriel (28/09/2026) tudo desse login vira responsabilidade do Gabriel (login gabriel.schandler)."
     },
     "2d1960bf-e99c-4656-b97f-df2eee2b8b3e": {
       "nomeTotalk": "Comercial GRS",
-      "userIdNewSec": null,
-      "observacao": "Segunda conta do mesmo grupo (userId do Totalk diferente de 'GRS Soluções', mas Gabriel confirmou que é o mesmo uso — Gabriel/Tatiane/Henry). Mesma decisão: vira responsabilidade do Gabriel por padrão."
+      "userIdNewSec": "f7f881c2-b56d-4411-8160-3d0c264d2dc2",
+      "observacao": "Segunda conta do mesmo grupo (userId do Totalk diferente de 'GRS Soluções', mas Gabriel confirmou que é o mesmo uso — Gabriel/Tatiane/Henry). Mesma decisão: vira responsabilidade do Gabriel."
     }
   }
 }
