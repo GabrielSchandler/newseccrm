@@ -193,6 +193,7 @@ function normalizarSessao(sessao, mapeamentoAgentes, naoMapeados) {
     iniciadoEm: sessao.startAt,
     encerradoEm: sessao.endAt,
     primeiraRespostaEm: sessao.firstResponseAt,
+    naoLidas: sessao.unreadCount ?? 0,
     origemImportacao: "totalk",
   };
 }
@@ -419,6 +420,44 @@ async function inserirConversaComFallback(supabaseAdmin, insercao) {
 
   const semResponsavel = { ...insercao, assigned_user_profile_id: null };
   return supabaseAdmin.from("conversations").insert(semResponsavel).select("id, assigned_user_profile_id").single();
+}
+
+/**
+ * Atualiza o "estado de lista" da conversa (status/last_activity_at/preview/nao-lidas) — chamado
+ * SEMPRE, tanto pra conversa nova quanto pra uma que ja existia, depois que as mensagens/notas da
+ * sessao ja foram gravadas. Sem isso, reimportar uma sessao que ja existe insere a mensagem nova
+ * certinho (dedupe por external_id continua garantindo isso), mas ela fica "invisivel" — a conversa
+ * nao sobe na lista, o preview continua mostrando o texto antigo, nao aparece como nao lida.
+ *
+ * Por decisao do Gabriel (28/09/2026, enquanto o Totalk continua sendo a fonte viva durante o
+ * periodo de validacao): status e nao-lidas SEMPRE seguem o Totalk, mesmo que um consultor ja
+ * tenha mexido na conversa dentro do NewSec — reflete a sessao de origem, nao preserva edicao
+ * manual. Reavaliar essa regra quando o Totalk for desligado de vez (a´i o NewSec vira a unica
+ * fonte de verdade e este importador para de rodar).
+ */
+async function atualizarBookkeepingConversa(supabaseAdmin, { conversationId, sessaoNormalizada }) {
+  const { data: ultima, error: erroUltima } = await supabaseAdmin
+    .from("messages")
+    .select("body, message_type")
+    .eq("conversation_id", conversationId)
+    .eq("is_internal_note", false)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (erroUltima) throw new Error(`buscar ultima mensagem da conversa ${conversationId}: ${erroUltima.message}`);
+
+  const preview = ultima ? (ultima.body?.slice(0, 200) ?? `[${ultima.message_type}]`) : null;
+
+  const { error } = await supabaseAdmin
+    .from("conversations")
+    .update({
+      status: mapearStatusConversa(sessaoNormalizada.status),
+      last_activity_at: sessaoNormalizada.atualizadoEm ?? sessaoNormalizada.criadoEm,
+      last_message_preview: preview,
+      unread_count: sessaoNormalizada.naoLidas,
+    })
+    .eq("id", conversationId);
+  if (error) throw new Error(`atualizar estado da conversa ${conversationId}: ${error.message}`);
 }
 
 /** Verificacao read-only pro modo --dry-run — nunca insere. */
@@ -786,6 +825,10 @@ async function main() {
         } else {
           contagens.notas.jaVistos += 1;
         }
+      }
+
+      if (supabaseAdmin && !args.dryRun && conversationId) {
+        await atualizarBookkeepingConversa(supabaseAdmin, { conversationId, sessaoNormalizada });
       }
 
       checkpoint.sessoesConcluidas.add(sessao.id);
