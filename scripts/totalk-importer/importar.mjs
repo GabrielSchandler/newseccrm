@@ -495,16 +495,54 @@ async function atualizarBookkeepingConversa(supabaseAdmin, { conversationId, ses
 
   const preview = ultima ? (ultima.body?.slice(0, 200) ?? `[${ultima.message_type}]`) : null;
 
-  const { error } = await supabaseAdmin
-    .from("conversations")
-    .update({
-      status: mapearStatusConversa(sessaoNormalizada.status),
-      last_activity_at: sessaoNormalizada.atualizadoEm ?? sessaoNormalizada.criadoEm,
-      last_message_preview: preview,
-      unread_count: sessaoNormalizada.naoLidas,
-    })
-    .eq("id", conversationId);
+  // Responsável também segue o Totalk (mesma regra do status). Isso é o que preenche
+  // retroativamente as conversas importadas antes da correção do mapeamento (29/09/2026),
+  // que ficaram todas sem responsável — resolverOuCriarConversa só define o responsável na
+  // CRIAÇÃO, então sem isto uma conversa já existente nunca ganharia o responsável certo.
+  const atualizacao = {
+    status: mapearStatusConversa(sessaoNormalizada.status),
+    last_activity_at: sessaoNormalizada.atualizadoEm ?? sessaoNormalizada.criadoEm,
+    last_message_preview: preview,
+    unread_count: sessaoNormalizada.naoLidas,
+    assigned_user_profile_id: sessaoNormalizada.responsavelUserId,
+  };
+
+  let { error } = await supabaseAdmin.from("conversations").update(atualizacao).eq("id", conversationId);
+  if (error?.code === "23503") {
+    // Responsável mapeado não existe neste banco — atualiza o resto sem ele, não trava a sessão.
+    ({ error } = await supabaseAdmin
+      .from("conversations")
+      .update({ ...atualizacao, assigned_user_profile_id: null })
+      .eq("id", conversationId));
+  }
   if (error) throw new Error(`atualizar estado da conversa ${conversationId}: ${error.message}`);
+}
+
+/** user_profiles.id do NewSec pro usuário do Totalk que escreveu a mensagem (null se não mapeado). */
+function autorNewSec(userIdTotalk, mapeamentoAgentes) {
+  if (!userIdTotalk) return null;
+  return mapeamentoAgentes.mapeamentos?.[userIdTotalk]?.userIdNewSec ?? null;
+}
+
+/**
+ * Preenche author_user_profile_id em mensagens humanas que JÁ existiam no banco (importadas antes
+ * da correção do mapeamento) — um UPDATE por autor por conversa, não um por mensagem. Só toca
+ * mensagem com autor ainda vazio: nunca sobrescreve autoria já definida.
+ */
+async function preencherAutoresExistentes(supabaseAdmin, conversationId, externalIdsPorAutor) {
+  for (const [autorId, externalIds] of externalIdsPorAutor) {
+    for (let i = 0; i < externalIds.length; i += 100) {
+      const lote = externalIds.slice(i, i + 100);
+      const { error } = await supabaseAdmin
+        .from("messages")
+        .update({ author_user_profile_id: autorId })
+        .eq("conversation_id", conversationId)
+        .eq("author_type", "humano")
+        .is("author_user_profile_id", null)
+        .in("external_id", lote);
+      if (error) throw new Error(`preencher autor das mensagens da conversa ${conversationId}: ${error.message}`);
+    }
+  }
 }
 
 /** Verificacao read-only pro modo --dry-run — nunca insere. */
@@ -525,7 +563,7 @@ async function preverConversa(supabaseAdmin, channelId, sessaoNormalizada) {
  * especificacao). Dedupe por (conversation_id, external_id), unico desde
  * 0004 — mesma logica de idempotencia das outras entidades.
  */
-async function gravarMensagemHistorica(supabaseAdmin, { companyId, conversationId, mensagemNormalizada, externalIdsExistentes }) {
+async function gravarMensagemHistorica(supabaseAdmin, { companyId, conversationId, mensagemNormalizada, externalIdsExistentes, autorId = null }) {
   if (externalIdsExistentes.has(mensagemNormalizada.idExterno)) {
     return { foiCriado: false };
   }
@@ -535,6 +573,8 @@ async function gravarMensagemHistorica(supabaseAdmin, { companyId, conversationI
     conversation_id: conversationId,
     direction: mensagemNormalizada.direcao,
     author_type: mensagemNormalizada.autoria,
+    // Só mensagem humana tem autor pessoa — IA/sistema/cliente ficam sem (a tela mostra "IA"/"Sistema").
+    author_user_profile_id: mensagemNormalizada.autoria === "humano" ? autorId : null,
     is_internal_note: mensagemNormalizada.ehNotaInterna,
     message_type: mapearTipoMensagem(mensagemNormalizada.tipo),
     body: mensagemNormalizada.texto,
@@ -845,10 +885,13 @@ async function main() {
 
       const mensagens = await cliente.listarMensagens(sessao.id);
       contagens.mensagens.esperado += mensagens.length;
+      // Mensagens humanas que já existiam no banco, agrupadas por autor — preenchidas no fim da sessão.
+      const autoresParaPreencher = new Map();
 
       for (const mensagem of mensagens) {
         const novaLocalmente = marcarVisto(checkpoint, "mensagem", mensagem.id);
         const mensagemNormalizada = normalizarMensagem(mensagem, { ehNota: false });
+        const autorId = autorNewSec(mensagem.userId, mapeamentoAgentes);
 
         if (mensagemNormalizada.arquivoIndisponivel) {
           midiaIndisponivel.push({ mensagemId: mensagem.id, sessaoId: sessao.id, arquivoId: mensagem.fileId ?? mensagem.filesIds?.[0] ?? null });
@@ -856,6 +899,10 @@ async function main() {
 
         if (supabaseAdmin) {
           const jaExiste = externalIdsExistentes.has(mensagemNormalizada.idExterno);
+          if (jaExiste && autorId && mensagemNormalizada.autoria === "humano") {
+            if (!autoresParaPreencher.has(autorId)) autoresParaPreencher.set(autorId, []);
+            autoresParaPreencher.get(autorId).push(mensagemNormalizada.idExterno);
+          }
           if (args.dryRun) {
             if (jaExiste) contagens.mensagens.jaVistos += 1;
             else contagens.mensagens.novos += 1;
@@ -867,6 +914,7 @@ async function main() {
                   conversationId,
                   mensagemNormalizada,
                   externalIdsExistentes,
+                  autorId,
                 }),
               `mensagem ${mensagemNormalizada.idExterno}`,
             );
@@ -899,6 +947,11 @@ async function main() {
 
         if (supabaseAdmin) {
           const jaExiste = externalIdsExistentes.has(notaNormalizada.idExterno);
+          const autorNotaId = autorNewSec(nota.userId, mapeamentoAgentes);
+          if (jaExiste && autorNotaId) {
+            if (!autoresParaPreencher.has(autorNotaId)) autoresParaPreencher.set(autorNotaId, []);
+            autoresParaPreencher.get(autorNotaId).push(notaNormalizada.idExterno);
+          }
           if (args.dryRun) {
             if (jaExiste) contagens.notas.jaVistos += 1;
             else contagens.notas.novos += 1;
@@ -910,6 +963,7 @@ async function main() {
                   conversationId,
                   mensagemNormalizada: notaNormalizada,
                   externalIdsExistentes,
+                  autorId: autorNotaId,
                 }),
               `nota ${notaNormalizada.idExterno}`,
             );
@@ -929,6 +983,12 @@ async function main() {
       }
 
       if (supabaseAdmin && !args.dryRun && conversationId) {
+        if (autoresParaPreencher.size > 0) {
+          await comRetentativaDeRede(
+            () => preencherAutoresExistentes(supabaseAdmin, conversationId, autoresParaPreencher),
+            `autores ${sessao.id}`,
+          );
+        }
         await comRetentativaDeRede(
           () => atualizarBookkeepingConversa(supabaseAdmin, { conversationId, sessaoNormalizada }),
           `bookkeeping ${sessao.id}`,

@@ -1,45 +1,53 @@
 {
-  "_comentario": "Mapeia agente do Totalk (agentId) para o user_profiles.id real do GRSCRM (PRODUÇÃO). O importador NUNCA cria usuário novo sozinho a partir de um agente legado (ver NEWSEC-CORRECOES-E-CONTINUACAO-CLAUDE.md secao 12). Cruzamento feito com o Gabriel em 28/09/2026 (nomes reais, ver docs/PROGRESS.md); user_profiles.id confirmado por consulta read-only à produção (empresa GRS: ef4f2233-f4e9-43e8-ab6d-1bb41513d39d) no mesmo dia. NÃO usar este arquivo com --destino=homologacao — os ids abaixo são de produção, não existem lá.",
+  "_comentario": "Mapeia o USUARIO do agente no Totalk (agent.userId — é o que session.userId e message.userId referenciam) para o user_profiles.id real do GRSCRM (PRODUÇÃO). CORRIGIDO em 29/09/2026: a versão anterior usava agent.id como chave, que NUNCA aparece nas sessões/mensagens — por isso as 614 primeiras conversas importadas ficaram sem responsável. O agentId fica aqui só como referência. O importador NUNCA cria usuário novo sozinho. Cruzamento feito com o Gabriel em 28/09/2026; user_profiles.id confirmado por consulta read-only à produção (empresa GRS: ef4f2233-f4e9-43e8-ab6d-1bb41513d39d). NÃO usar com --destino=homologacao — os ids são de produção.",
   "mapeamentos": {
-    "092254fa-8231-44b1-9a47-d57e469df0a5": {
+    "38795604-8bf7-452c-9d12-9f87eda894ef": {
       "nomeTotalk": "Caroline Ribeiro",
+      "agentIdTotalk": "092254fa-8231-44b1-9a47-d57e469df0a5",
       "userIdNewSec": "e4828c40-ff3e-49ad-a7bd-c277ed27d516",
       "observacao": "CRM: login caroline.ribeiro (Comercial · seller)."
     },
-    "e31e4603-3f57-4e15-8e47-0946c1598b97": {
+    "cc262bdf-fe40-4dd3-80ac-e90f4cc7b3f0": {
       "nomeTotalk": "Eder Henrique",
+      "agentIdTotalk": "e31e4603-3f57-4e15-8e47-0946c1598b97",
       "userIdNewSec": "0e3c4af4-7ce5-43bb-b334-58c0c7308aaf",
       "observacao": "CRM: login eder.henrique (Comercial · seller)."
     },
-    "3f7ac626-0cf5-4e21-8af9-31393111115d": {
+    "30be67e2-145d-4859-83d3-167f28cb0e36": {
       "nomeTotalk": "Mariza",
+      "agentIdTotalk": "3f7ac626-0cf5-4e21-8af9-31393111115d",
       "userIdNewSec": "5bada33c-338a-42f8-81a8-66118627ccca",
       "observacao": "CRM: login mariza.vieira (Comercial · seller)."
     },
-    "51699334-6e96-4e22-b280-30aa30a5b64d": {
+    "488bea60-da8f-48ad-a496-140c7b07810f": {
       "nomeTotalk": "Graciele",
+      "agentIdTotalk": "51699334-6e96-4e22-b280-30aa30a5b64d",
       "userIdNewSec": "c01c2430-c087-4531-882c-ddabf5c7752c",
       "observacao": "CRM: login graciele.brito (Jurídico · seller)."
     },
-    "c4c38630-b1b8-4bd1-b85a-92d8b331ab7b": {
+    "3d6c6b3a-2fb1-4b0f-a6b4-17cf70fe5723": {
       "nomeTotalk": "Verônica",
+      "agentIdTotalk": "c4c38630-b1b8-4bd1-b85a-92d8b331ab7b",
       "userIdNewSec": "4a6dc2cb-6a67-4147-8cfb-3d2a16c57312",
       "observacao": "CRM: login veronica.silva (Jurídico · seller) — Gabriel confirmou tratar como jurídico."
     },
-    "1aebc0ac-0e73-45dd-9335-deec4869c753": {
+    "74d281e4-b9f1-42d4-8d32-ecb6fcb71313": {
       "nomeTotalk": "Ronaldo",
+      "agentIdTotalk": "1aebc0ac-0e73-45dd-9335-deec4869c753",
       "userIdNewSec": "c72ac803-959a-4ca5-875c-2419de485e9d",
       "observacao": "CRM: login ronaldo.martins (Jurídico · seller) — Gabriel se refere a ele como supervisor."
     },
-    "088a60ee-e000-48f2-8114-ed152b6722d1": {
+    "74a2423e-5bc4-4556-8b32-62342ab322b4": {
       "nomeTotalk": "GRS Soluções",
+      "agentIdTotalk": "088a60ee-e000-48f2-8114-ed152b6722d1",
       "userIdNewSec": "f7f881c2-b56d-4411-8160-3d0c264d2dc2",
-      "observacao": "Login compartilhado — Gabriel, Tatiane e Henry mandavam mensagem por essa conta administradora. Não dá pra saber quem digitou cada mensagem; por decisão do Gabriel (28/09/2026) tudo desse login vira responsabilidade do Gabriel (login gabriel.schandler)."
+      "observacao": "Login compartilhado — Gabriel, Tatiane e Henry. Por decisão do Gabriel (28/09/2026) tudo desse login vira responsabilidade do Gabriel (gabriel.schandler)."
     },
-    "2d1960bf-e99c-4656-b97f-df2eee2b8b3e": {
+    "6632d94c-f391-48b1-ad66-42e409138ec3": {
       "nomeTotalk": "Comercial GRS",
+      "agentIdTotalk": "2d1960bf-e99c-4656-b97f-df2eee2b8b3e",
       "userIdNewSec": "f7f881c2-b56d-4411-8160-3d0c264d2dc2",
-      "observacao": "Segunda conta do mesmo grupo (userId do Totalk diferente de 'GRS Soluções', mas Gabriel confirmou que é o mesmo uso — Gabriel/Tatiane/Henry). Mesma decisão: vira responsabilidade do Gabriel."
+      "observacao": "Segunda conta do mesmo grupo Gabriel/Tatiane/Henry. Mesma decisão: vira responsabilidade do Gabriel."
     }
   }
 }
