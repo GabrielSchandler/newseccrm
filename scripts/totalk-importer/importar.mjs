@@ -7,14 +7,19 @@
  * de leitura:
  * - Sem --destino (padrao, seguro): so escreve em arquivos locais dentro de
  *   saida/ — nunca toca no banco.
- * - --destino=homologacao: grava de verdade nas tabelas reais (contacts,
- *   contact_phone_numbers, conversations, messages) da empresa/canal
- *   informados via --empresa-id/--canal-id (nunca escolhidos sozinho).
- *   Producao NAO e um destino suportado aqui — decisao separada, nunca
- *   automatica (ver README.md).
- * - --destino=homologacao --dry-run: consulta o banco de homologacao pra
- *   mostrar exatamente o que SERIA gravado (contagem novo/ja existe por
- *   recurso), sem gravar nada.
+ * - --destino=homologacao ou --destino=producao: grava de verdade nas tabelas
+ *   reais (contacts, contact_phone_numbers, conversations, messages) da
+ *   empresa/canal informados via --empresa-id/--canal-id (nunca escolhidos
+ *   sozinho). Cada destino le suas PROPRIAS variaveis de ambiente
+ *   (homologacao: NEXT_PUBLIC_SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY;
+ *   producao: PRODUCAO_SUPABASE_URL/PRODUCAO_SUPABASE_SERVICE_ROLE_KEY —
+ *   nomes diferentes de proposito, pra nunca escrever no banco errado por
+ *   engano). --destino=producao exige tambem --confirmo-producao (trava
+ *   deliberada extra, so pra producao — habilitado em 29/09/2026, decisao
+ *   do Gabriel, apos o schema ja aplicado em producao).
+ * - --destino=<ambiente> --dry-run: consulta o banco real pra mostrar
+ *   exatamente o que SERIA gravado (contagem novo/ja existe por recurso),
+ *   sem gravar nada.
  *
  * Garantias exigidas pela especificacao (NEWSEC-CORRECOES-E-CONTINUACAO-CLAUDE.md,
  * secao 12), todas verificadas por este script:
@@ -22,7 +27,7 @@
  *   checkpoint local (rodada normal) quanto por consulta direta ao destino
  *   (contact_phone_numbers.phone_e164, conversations.external_id,
  *   messages.external_id — funciona mesmo se o checkpoint local for
- *   perdido, nao e a fonte de verdade pra dedupe em --destino=homologacao).
+ *   perdido, nao e a fonte de verdade pra dedupe com --destino).
  * - Retomar lote nao reprocessa tudo (checkpoint por sessao concluida,
  *   salvo em disco so DEPOIS que os dados da sessao estao gravados de
  *   verdade — nunca marca "concluida" antes de escrever, pra nao mascarar
@@ -43,6 +48,8 @@
  *   node scripts/totalk-importer/importar.mjs --real                                        (le da API real, ainda escreve so em arquivo local)
  *   node scripts/totalk-importer/importar.mjs --destino=homologacao --empresa-id=<uuid> --canal-id=<uuid> --dry-run   (preview contra o banco real, nada gravado)
  *   node scripts/totalk-importer/importar.mjs --destino=homologacao --empresa-id=<uuid> --canal-id=<uuid>             (grava de verdade em homologacao)
+ *   node scripts/totalk-importer/importar.mjs --real --destino=producao --empresa-id=<uuid> --canal-id=<uuid> --confirmo-producao --dry-run   (preview contra producao, nada gravado)
+ *   node scripts/totalk-importer/importar.mjs --real --destino=producao --empresa-id=<uuid> --canal-id=<uuid> --confirmo-producao             (grava de verdade em producao)
  *   node scripts/totalk-importer/importar.mjs --falhar-apos-sessao=sessao-mariana-0001      (flag de teste — ver "Como foi testado")
  */
 
@@ -56,6 +63,35 @@ import { criarClienteTotalk, TAMANHO_PAGINA_REAL } from "./cliente-totalk.mjs";
 
 const { loadEnvConfig } = nextEnv;
 
+function dormir(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Repete uma chamada ao Supabase até 4 vezes com backoff exponencial (500ms→1s→2s)
+ * quando a falha é de REDE (fetch failed / timeout / conexão caiu) — nunca quando é
+ * erro de negócio (RLS, constraint, dado inválido), que deve propagar na hora.
+ * Adicionado em 29/09/2026 depois de uma importação real de produção cair no meio
+ * (~400/7518 sessões) por um "TypeError: fetch failed" isolado — numa rodada de
+ * milhares de escritas ao longo de horas, uma falha de rede passageira é esperada,
+ * não excepcional; sem isso, cada uma exige alguém notar e reiniciar manualmente.
+ */
+async function comRetentativaDeRede(fn, rotulo) {
+  const MAX_TENTATIVAS = 4;
+  for (let tentativa = 1; tentativa <= MAX_TENTATIVAS; tentativa += 1) {
+    try {
+      return await fn();
+    } catch (erro) {
+      const ehErroDeRede =
+        erro instanceof TypeError || /fetch failed|ECONNRESET|ETIMEDOUT|network/i.test(erro?.message ?? "");
+      if (!ehErroDeRede || tentativa === MAX_TENTATIVAS) throw erro;
+      const atrasoMs = 500 * 2 ** (tentativa - 1);
+      console.warn(`[totalk] ${rotulo}: falha de rede (${erro.message}), tentativa ${tentativa}/${MAX_TENTATIVAS} — aguardando ${atrasoMs}ms.`);
+      await dormir(atrasoMs);
+    }
+  }
+}
+
 const DIRETORIO_SCRIPT = path.dirname(fileURLToPath(import.meta.url));
 const PASTA_FIXTURES = path.join(DIRETORIO_SCRIPT, "fixtures");
 const PASTA_CHECKPOINT = path.join(DIRETORIO_SCRIPT, ".checkpoint");
@@ -63,7 +99,17 @@ const ARQUIVO_CHECKPOINT = path.join(PASTA_CHECKPOINT, "estado.json");
 const PASTA_SAIDA = path.join(DIRETORIO_SCRIPT, "saida");
 
 function parseArgs(argv) {
-  const parsed = { real: false, reiniciar: false, falharAposSessao: null, destino: null, dryRun: false, empresaId: null, canalId: null, limiteSessoes: null };
+  const parsed = {
+    real: false,
+    reiniciar: false,
+    falharAposSessao: null,
+    destino: null,
+    dryRun: false,
+    empresaId: null,
+    canalId: null,
+    limiteSessoes: null,
+    confirmoProducao: false,
+  };
 
   for (const valor of argv) {
     if (valor.startsWith("--limite-sessoes=")) {
@@ -73,6 +119,7 @@ function parseArgs(argv) {
     } else if (valor === "--real") parsed.real = true;
     else if (valor === "--reiniciar") parsed.reiniciar = true;
     else if (valor === "--dry-run") parsed.dryRun = true;
+    else if (valor === "--confirmo-producao") parsed.confirmoProducao = true;
     else if (valor.startsWith("--falhar-apos-sessao=")) parsed.falharAposSessao = valor.split("=")[1];
     else if (valor.startsWith("--destino=")) parsed.destino = valor.split("=")[1];
     else if (valor.startsWith("--empresa-id=")) parsed.empresaId = valor.split("=")[1];
@@ -528,34 +575,57 @@ function mapearTipoMensagem(tipoTotalk) {
   }
 }
 
+/**
+ * Variáveis de ambiente por destino — nomes DIFERENTES de propósito (não
+ * reaproveita NEXT_PUBLIC_SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY do
+ * .env.local, que neste repositório já apontam pra homologação). Isso
+ * evita o pior cenário possível aqui: escrever em produção sem querer
+ * porque o .env.local do dia estava apontando pro banco errado, ou vice
+ * versa. Cada ambiente tem sua própria variável, nomeada pra deixar óbvio
+ * qual banco está sendo usado só de olhar o .env.local.
+ */
+const VARIAVEIS_POR_DESTINO = {
+  homologacao: { url: "NEXT_PUBLIC_SUPABASE_URL", chave: "SUPABASE_SERVICE_ROLE_KEY" },
+  producao: { url: "PRODUCAO_SUPABASE_URL", chave: "PRODUCAO_SUPABASE_SERVICE_ROLE_KEY" },
+};
+
 async function resolverDestino(args) {
   if (!args.destino) return null;
-  if (args.destino !== "homologacao") {
-    throw new Error(`--destino="${args.destino}" não suportado — só "homologacao" existe. Produção é uma decisão operacional separada, nunca automática (ver README.md).`);
+  if (!Object.hasOwn(VARIAVEIS_POR_DESTINO, args.destino)) {
+    throw new Error(`--destino="${args.destino}" não suportado — só "homologacao" ou "producao" existem.`);
   }
   if (!args.empresaId || !args.canalId) {
-    throw new Error("--destino=homologacao exige --empresa-id=<uuid> e --canal-id=<uuid> explícitos (nunca escolhido sozinho).");
+    throw new Error(`--destino=${args.destino} exige --empresa-id=<uuid> e --canal-id=<uuid> explícitos (nunca escolhido sozinho).`);
+  }
+  // Segunda trava, só pra produção: precisa do flag extra além de --destino=producao — ninguém
+  // acerta essa combinação por hábito de copiar e colar um comando de homologação.
+  if (args.destino === "producao" && !args.confirmoProducao) {
+    throw new Error(
+      "--destino=producao exige também --confirmo-producao — trava deliberada, pra nunca gravar em produção por engano " +
+        "(ex: copiar e colar um comando que era de homologação). Confirme que é essa mesma a intenção antes de acrescentar a flag.",
+    );
   }
 
-  const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const { url: chaveUrl, chave: chaveServiceRole } = VARIAVEIS_POR_DESTINO[args.destino];
+  const SUPABASE_URL = process.env[chaveUrl];
+  const SERVICE_ROLE_KEY = process.env[chaveServiceRole];
   if (!SUPABASE_URL || !SERVICE_ROLE_KEY) {
-    throw new Error("Faltam NEXT_PUBLIC_SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY no .env.local pra --destino=homologacao.");
+    throw new Error(`Faltam ${chaveUrl}/${chaveServiceRole} no .env.local pra --destino=${args.destino}.`);
   }
   const supabaseAdmin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, { auth: { autoRefreshToken: false, persistSession: false } });
 
   const { data: empresa, error: erroEmpresa } = await supabaseAdmin.from("companies").select("id, legal_name").eq("id", args.empresaId).maybeSingle();
   if (erroEmpresa) throw new Error(`buscar empresa --empresa-id=${args.empresaId}: ${erroEmpresa.message}`);
-  if (!empresa) throw new Error(`Empresa --empresa-id=${args.empresaId} não encontrada em homologação.`);
+  if (!empresa) throw new Error(`Empresa --empresa-id=${args.empresaId} não encontrada em ${args.destino}.`);
 
   const { data: canal, error: erroCanal } = await supabaseAdmin.from("channels").select("id, name, provider, company_id").eq("id", args.canalId).maybeSingle();
   if (erroCanal) throw new Error(`buscar canal --canal-id=${args.canalId}: ${erroCanal.message}`);
-  if (!canal) throw new Error(`Canal --canal-id=${args.canalId} não encontrado em homologação.`);
+  if (!canal) throw new Error(`Canal --canal-id=${args.canalId} não encontrado em ${args.destino}.`);
   if (canal.company_id !== empresa.id) {
     throw new Error(`Canal ${args.canalId} pertence à empresa ${canal.company_id}, não à empresa informada ${empresa.id}.`);
   }
 
-  return { supabaseAdmin, empresa, canal };
+  return { ambiente: args.destino, supabaseAdmin, empresa, canal };
 }
 
 async function main() {
@@ -586,8 +656,9 @@ async function main() {
   const checkpoint = await carregarCheckpoint(args.reiniciar);
   const retomando = checkpoint.sessoesConcluidas.size > 0 || checkpoint.etapasConcluidas.size > 0;
 
+  const rotuloAmbiente = destino?.ambiente === "producao" ? "PRODUÇÃO — ⚠️ banco real da GRS" : "homologação";
   const descricaoDestino = destino
-    ? `homologação (empresa "${destino.empresa.legal_name}" [${destino.empresa.id}], canal "${destino.canal.name}" [${destino.canal.id}, provider=${destino.canal.provider}])${args.dryRun ? " — DRY-RUN, nada será gravado" : ""}`
+    ? `${rotuloAmbiente} (empresa "${destino.empresa.legal_name}" [${destino.empresa.id}], canal "${destino.canal.name}" [${destino.canal.id}, provider=${destino.canal.provider}])${args.dryRun ? " — DRY-RUN, nada será gravado" : ""}`
     : "arquivo local (saida/) — nada é gravado no banco";
 
   console.log(
@@ -668,7 +739,10 @@ async function main() {
           else contagens.contatos.novos += 1;
         }
       } else {
-        const { contactId, foiCriado } = await resolverOuCriarContato(supabaseAdmin, destino.empresa.id, contatoNormalizado);
+        const { contactId, foiCriado } = await comRetentativaDeRede(
+          () => resolverOuCriarContato(supabaseAdmin, destino.empresa.id, contatoNormalizado),
+          `contato ${contato.id}`,
+        );
         if (contactId) mapaContatoParaId.set(contato.id, contactId);
         if (!checkpoint.etapasConcluidas.has("contatos")) {
           if (foiCriado) contagens.contatos.novos += 1;
@@ -687,8 +761,19 @@ async function main() {
   checkpoint.etapasConcluidas.add("contatos");
 
   contagens.sessoes.esperado = sessoes.length;
+  const totalSessoes = sessoes.length;
+  let sessoesProcessadas = 0;
 
   for (const sessao of sessoes) {
+    sessoesProcessadas += 1;
+    // Log de progresso a cada 25 sessoes (e sempre na ultima) — numa importacao
+    // completa (milhares de sessoes, cada uma com pelo menos 2 chamadas de rede
+    // ao Totalk) e a unica forma de acompanhar de fora sem abrir o banco.
+    if (sessoesProcessadas % 25 === 0 || sessoesProcessadas === totalSessoes) {
+      const percentual = Math.round((sessoesProcessadas / totalSessoes) * 100);
+      console.log(`[totalk] progresso: ${sessoesProcessadas}/${totalSessoes} sessoes (${percentual}%)`);
+    }
+
     if (marcarVisto(checkpoint, "sessao", sessao.id)) {
       contagens.sessoes.novos += 1;
       sessoesNormalizadas.push(normalizarSessao(sessao, mapeamentoAgentes, naoMapeados));
@@ -727,12 +812,16 @@ async function main() {
           const { conversationId: idExistente } = await preverConversa(supabaseAdmin, destino.canal.id, sessaoNormalizada);
           conversationId = idExistente;
         } else {
-          const { conversationId: idResolvido, responsavelInvalido } = await resolverOuCriarConversa(supabaseAdmin, {
-            companyId: destino.empresa.id,
-            channelId: destino.canal.id,
-            contactId,
-            sessaoNormalizada,
-          });
+          const { conversationId: idResolvido, responsavelInvalido } = await comRetentativaDeRede(
+            () =>
+              resolverOuCriarConversa(supabaseAdmin, {
+                companyId: destino.empresa.id,
+                channelId: destino.canal.id,
+                contactId,
+                sessaoNormalizada,
+              }),
+            `conversa ${sessao.id}`,
+          );
           if (responsavelInvalido) {
             responsaveisInvalidos.push({ sessaoId: sessao.id, userIdMapeado: sessaoNormalizada.responsavelUserId });
           }
@@ -740,11 +829,15 @@ async function main() {
         }
 
         if (conversationId) {
-          const { data: existentes, error: erroExistentes } = await supabaseAdmin
-            .from("messages")
-            .select("external_id")
-            .eq("conversation_id", conversationId)
-            .not("external_id", "is", null);
+          const { data: existentes, error: erroExistentes } = await comRetentativaDeRede(
+            () =>
+              supabaseAdmin
+                .from("messages")
+                .select("external_id")
+                .eq("conversation_id", conversationId)
+                .not("external_id", "is", null),
+            `listar mensagens da conversa ${conversationId}`,
+          );
           if (erroExistentes) throw new Error(`listar mensagens existentes da conversa ${conversationId}: ${erroExistentes.message}`);
           externalIdsExistentes = new Set((existentes ?? []).map((m) => m.external_id));
         }
@@ -767,12 +860,16 @@ async function main() {
             if (jaExiste) contagens.mensagens.jaVistos += 1;
             else contagens.mensagens.novos += 1;
           } else if (conversationId) {
-            const { foiCriado } = await gravarMensagemHistorica(supabaseAdmin, {
-              companyId: destino.empresa.id,
-              conversationId,
-              mensagemNormalizada,
-              externalIdsExistentes,
-            });
+            const { foiCriado } = await comRetentativaDeRede(
+              () =>
+                gravarMensagemHistorica(supabaseAdmin, {
+                  companyId: destino.empresa.id,
+                  conversationId,
+                  mensagemNormalizada,
+                  externalIdsExistentes,
+                }),
+              `mensagem ${mensagemNormalizada.idExterno}`,
+            );
             if (foiCriado) {
               contagens.mensagens.novos += 1;
               externalIdsExistentes.add(mensagemNormalizada.idExterno);
@@ -806,12 +903,16 @@ async function main() {
             if (jaExiste) contagens.notas.jaVistos += 1;
             else contagens.notas.novos += 1;
           } else if (conversationId) {
-            const { foiCriado } = await gravarMensagemHistorica(supabaseAdmin, {
-              companyId: destino.empresa.id,
-              conversationId,
-              mensagemNormalizada: notaNormalizada,
-              externalIdsExistentes,
-            });
+            const { foiCriado } = await comRetentativaDeRede(
+              () =>
+                gravarMensagemHistorica(supabaseAdmin, {
+                  companyId: destino.empresa.id,
+                  conversationId,
+                  mensagemNormalizada: notaNormalizada,
+                  externalIdsExistentes,
+                }),
+              `nota ${notaNormalizada.idExterno}`,
+            );
             if (foiCriado) {
               contagens.notas.novos += 1;
               externalIdsExistentes.add(notaNormalizada.idExterno);
@@ -828,7 +929,10 @@ async function main() {
       }
 
       if (supabaseAdmin && !args.dryRun && conversationId) {
-        await atualizarBookkeepingConversa(supabaseAdmin, { conversationId, sessaoNormalizada });
+        await comRetentativaDeRede(
+          () => atualizarBookkeepingConversa(supabaseAdmin, { conversationId, sessaoNormalizada }),
+          `bookkeeping ${sessao.id}`,
+        );
       }
 
       checkpoint.sessoesConcluidas.add(sessao.id);
@@ -867,7 +971,7 @@ async function main() {
   const relatorio = {
     geradoEm: new Date().toISOString(),
     modo: modoFixture ? "fixture" : "real",
-    destino: destino ? { ambiente: "homologacao", empresaId: destino.empresa.id, canalId: destino.canal.id, dryRun: args.dryRun } : { ambiente: "arquivo-local" },
+    destino: destino ? { ambiente: destino.ambiente, empresaId: destino.empresa.id, canalId: destino.canal.id, dryRun: args.dryRun } : { ambiente: "arquivo-local" },
     retomandoCheckpointAnterior: retomando,
     contagens,
     agentesNaoMapeados: [...naoMapeados],
