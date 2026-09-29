@@ -145,9 +145,12 @@ export function criarClienteTotalk({ modoFixture, baseUrl, token, pastaFixtures,
 
     return chamarComRetentativa(async () => {
       // Espaca as chamadas pra ficar abaixo do limite continuo do Totalk (1000 req/5min).
-      const espera = ultimaRequisicaoEm + intervaloMinimoMs - Date.now();
+      // Cada chamada RESERVA seu horario antes de esperar — com sessoes em paralelo, calcular
+      // a espera e so depois marcar o horario deixava varias chamadas sairem juntas.
+      const meuHorario = Math.max(Date.now(), ultimaRequisicaoEm + intervaloMinimoMs);
+      ultimaRequisicaoEm = meuHorario;
+      const espera = meuHorario - Date.now();
       if (espera > 0) await dormir(espera);
-      ultimaRequisicaoEm = Date.now();
       return requisitarReal({ baseUrl, token, metodo, caminho, query, corpo });
     }, { rotulo });
   }

@@ -563,6 +563,78 @@ async function preverConversa(supabaseAdmin, channelId, sessaoNormalizada) {
  * especificacao). Dedupe por (conversation_id, external_id), unico desde
  * 0004 — mesma logica de idempotencia das outras entidades.
  */
+/**
+ * Quantas sessões processar ao mesmo tempo com --destino (sem destino fica 1, pra os testes
+ * de fixture continuarem determinísticos). Cada consulta ao banco de produção leva ~450ms
+ * (medido em 29/09/2026) — em série, as ~7.500 sessões levavam mais de um dia. 3 em paralelo
+ * continua bem abaixo do limite do Totalk (1000 req/5min), que o cliente já espaça.
+ */
+const CONCORRENCIA_SESSOES = 3;
+
+/** Todos os telefones já cadastrados da empresa numa passada só (páginas de 1000). */
+async function carregarTelefonesExistentes(supabaseAdmin, companyId) {
+  const mapa = new Map();
+  for (let inicio = 0; ; inicio += 1000) {
+    const { data, error } = await comRetentativaDeRede(
+      () =>
+        supabaseAdmin
+          .from("contact_phone_numbers")
+          .select("phone_e164, contact_id")
+          .eq("company_id", companyId)
+          .order("id")
+          .range(inicio, inicio + 999),
+      "carregar telefones existentes",
+    );
+    if (error) throw new Error(`carregar telefones existentes: ${error.message}`);
+    for (const linha of data ?? []) mapa.set(linha.phone_e164, linha.contact_id);
+    if (!data || data.length < 1000) break;
+  }
+  return mapa;
+}
+
+/**
+ * Grava as mensagens novas de uma sessão numa única chamada (lotes de 500), em vez de uma
+ * chamada por mensagem. Se o lote bater em duplicata (corrida, ou um lote anterior que foi
+ * gravado mas a resposta se perdeu na rede e a retentativa mandou de novo), cai pra uma por
+ * uma, ignorando as que já existem. Devolve os external_id efetivamente gravados agora.
+ */
+async function gravarLoteMensagens(supabaseAdmin, linhas) {
+  const gravadas = new Set();
+  for (let i = 0; i < linhas.length; i += 500) {
+    const lote = linhas.slice(i, i + 500);
+    const { error } = await supabaseAdmin.from("messages").insert(lote);
+    if (!error) {
+      for (const linha of lote) gravadas.add(linha.external_id);
+      continue;
+    }
+    if (error.code !== "23505") throw new Error(`gravar lote de mensagens: ${error.message}`);
+    for (const linha of lote) {
+      const { error: erroLinha } = await supabaseAdmin.from("messages").insert(linha);
+      if (!erroLinha) gravadas.add(linha.external_id);
+      else if (erroLinha.code !== "23505") throw new Error(`gravar mensagem historica ${linha.external_id}: ${erroLinha.message}`);
+    }
+  }
+  return gravadas;
+}
+
+function montarLinhaMensagem(companyId, conversationId, mensagemNormalizada, autorId = null) {
+  return {
+    company_id: companyId,
+    conversation_id: conversationId,
+    direction: mensagemNormalizada.direcao,
+    author_type: mensagemNormalizada.autoria,
+    // Só mensagem humana tem autor pessoa — IA/sistema/cliente ficam sem (a tela mostra "IA"/"Sistema").
+    author_user_profile_id: mensagemNormalizada.autoria === "humano" ? autorId : null,
+    is_internal_note: mensagemNormalizada.ehNotaInterna,
+    message_type: mapearTipoMensagem(mensagemNormalizada.tipo),
+    body: mensagemNormalizada.texto,
+    status: mapearStatusMensagem(mensagemNormalizada),
+    external_id: mensagemNormalizada.idExterno,
+    created_at: mensagemNormalizada.timestamp,
+    updated_at: mensagemNormalizada.timestamp,
+  };
+}
+
 async function gravarMensagemHistorica(supabaseAdmin, { companyId, conversationId, mensagemNormalizada, externalIdsExistentes, autorId = null }) {
   if (externalIdsExistentes.has(mensagemNormalizada.idExterno)) {
     return { foiCriado: false };
@@ -687,6 +759,23 @@ async function main() {
   });
 
   const mapeamentoAgentes = JSON.parse(await readFile(path.join(DIRETORIO_SCRIPT, "mapeamento-agentes.json"), "utf8"));
+
+  // Só vale mapeamento pra usuário que existe DE VERDADE na empresa de destino. Sem isto, um
+  // consultor mapeado que não está naquela empresa (outro ambiente, ou alguém transferido/
+  // desligado) faz o banco recusar o lote inteiro de mensagens (trigger NS010) e a importação
+  // para no meio. Mapeamento inválido vira "sem responsável/autor" e aparece no log — não derruba.
+  if (supabaseAdmin) {
+    const { data: usuarios, error: erroUsuarios } = await supabaseAdmin.from("user_profiles").select("id").eq("company_id", destino.empresa.id);
+    if (erroUsuarios) throw new Error(`listar usuarios da empresa de destino: ${erroUsuarios.message}`);
+    const validos = new Set((usuarios ?? []).map((u) => u.id));
+    for (const [userIdTotalk, entrada] of Object.entries(mapeamentoAgentes.mapeamentos ?? {})) {
+      if (entrada.userIdNewSec && !validos.has(entrada.userIdNewSec)) {
+        console.warn(`[totalk] mapeamento ignorado: ${entrada.nomeTotalk ?? userIdTotalk} -> ${entrada.userIdNewSec} nao existe na empresa de destino.`);
+        entrada.userIdNewSec = null;
+      }
+    }
+  }
+
   const naoMapeados = new Set();
   const midiaIndisponivel = [];
   const responsaveisInvalidos = [];
@@ -767,6 +856,10 @@ async function main() {
     contagens.contatos.jaVistos = checkpoint.vistos.contato.size;
   }
 
+  // Telefones já cadastrados, numa consulta só — antes era uma ida ao banco por contato
+  // (~7.000 × ~450ms = 50 minutos só pra reconferir contatos que já existiam).
+  const telefoneParaContato = supabaseAdmin && !args.dryRun ? await carregarTelefonesExistentes(supabaseAdmin, destino.empresa.id) : new Map();
+
   for (const contato of contatos) {
     const novoLocalmente = !checkpoint.etapasConcluidas.has("contatos") ? marcarVisto(checkpoint, "contato", contato.id) : false;
     const contatoNormalizado = normalizarContato(contato);
@@ -779,10 +872,14 @@ async function main() {
           else contagens.contatos.novos += 1;
         }
       } else {
-        const { contactId, foiCriado } = await comRetentativaDeRede(
-          () => resolverOuCriarContato(supabaseAdmin, destino.empresa.id, contatoNormalizado),
-          `contato ${contato.id}`,
-        );
+        const existente = contatoNormalizado.telefone ? telefoneParaContato.get(contatoNormalizado.telefone) : undefined;
+        const { contactId, foiCriado } = existente
+          ? { contactId: existente, foiCriado: false }
+          : await comRetentativaDeRede(
+              () => resolverOuCriarContato(supabaseAdmin, destino.empresa.id, contatoNormalizado),
+              `contato ${contato.id}`,
+            );
+        if (contactId && contatoNormalizado.telefone) telefoneParaContato.set(contatoNormalizado.telefone, contactId);
         if (contactId) mapaContatoParaId.set(contato.id, contactId);
         if (!checkpoint.etapasConcluidas.has("contatos")) {
           if (foiCriado) contagens.contatos.novos += 1;
@@ -804,7 +901,15 @@ async function main() {
   const totalSessoes = sessoes.length;
   let sessoesProcessadas = 0;
 
-  for (const sessao of sessoes) {
+  // Com sessões em paralelo, gravações do checkpoint em disco passam por uma fila — duas
+  // escritas simultâneas no mesmo arquivo podiam se intercalar e corrompê-lo.
+  let filaCheckpoint = Promise.resolve();
+  const salvarCheckpointEmFila = () => {
+    filaCheckpoint = filaCheckpoint.then(() => salvarCheckpoint(checkpoint));
+    return filaCheckpoint;
+  };
+
+  async function processarSessao(sessao) {
     sessoesProcessadas += 1;
     // Log de progresso a cada 25 sessoes (e sempre na ultima) — numa importacao
     // completa (milhares de sessoes, cada uma com pelo menos 2 chamadas de rede
@@ -830,7 +935,7 @@ async function main() {
     // checkpoint local diga "concluida" (ex: rodada anterior so escreveu
     // arquivo local, e agora e a primeira vez gravando de verdade).
     if (!supabaseAdmin && checkpoint.sessoesConcluidas.has(sessao.id)) {
-      continue;
+      return;
     }
 
     try {
@@ -845,7 +950,7 @@ async function main() {
         // veio na listagem) nao tem onde ser gravada — vai pro relatorio, nao derruba o lote.
         if (!args.dryRun && !contactId) {
           sessoesSemContato.push({ sessaoId: sessao.id, contatoIdExterno: sessao.contactId ?? null });
-          continue;
+          return;
         }
 
         if (args.dryRun) {
@@ -887,6 +992,8 @@ async function main() {
       contagens.mensagens.esperado += mensagens.length;
       // Mensagens humanas que já existiam no banco, agrupadas por autor — preenchidas no fim da sessão.
       const autoresParaPreencher = new Map();
+      // Mensagens/notas novas desta sessão — gravadas todas de uma vez no fim (gravarLoteMensagens).
+      const linhasNovas = [];
 
       for (const mensagem of mensagens) {
         const novaLocalmente = marcarVisto(checkpoint, "mensagem", mensagem.id);
@@ -907,22 +1014,12 @@ async function main() {
             if (jaExiste) contagens.mensagens.jaVistos += 1;
             else contagens.mensagens.novos += 1;
           } else if (conversationId) {
-            const { foiCriado } = await comRetentativaDeRede(
-              () =>
-                gravarMensagemHistorica(supabaseAdmin, {
-                  companyId: destino.empresa.id,
-                  conversationId,
-                  mensagemNormalizada,
-                  externalIdsExistentes,
-                  autorId,
-                }),
-              `mensagem ${mensagemNormalizada.idExterno}`,
-            );
-            if (foiCriado) {
-              contagens.mensagens.novos += 1;
-              externalIdsExistentes.add(mensagemNormalizada.idExterno);
-            } else {
+            if (jaExiste) {
               contagens.mensagens.jaVistos += 1;
+            } else {
+              linhasNovas.push({ tipo: "mensagens", linha: montarLinhaMensagem(destino.empresa.id, conversationId, mensagemNormalizada, autorId) });
+              // Evita mandar duas vezes a mesma mensagem se o Totalk repetir um item entre páginas.
+              externalIdsExistentes.add(mensagemNormalizada.idExterno);
             }
           }
         } else if (novaLocalmente) {
@@ -956,22 +1053,11 @@ async function main() {
             if (jaExiste) contagens.notas.jaVistos += 1;
             else contagens.notas.novos += 1;
           } else if (conversationId) {
-            const { foiCriado } = await comRetentativaDeRede(
-              () =>
-                gravarMensagemHistorica(supabaseAdmin, {
-                  companyId: destino.empresa.id,
-                  conversationId,
-                  mensagemNormalizada: notaNormalizada,
-                  externalIdsExistentes,
-                  autorId: autorNotaId,
-                }),
-              `nota ${notaNormalizada.idExterno}`,
-            );
-            if (foiCriado) {
-              contagens.notas.novos += 1;
-              externalIdsExistentes.add(notaNormalizada.idExterno);
-            } else {
+            if (jaExiste) {
               contagens.notas.jaVistos += 1;
+            } else {
+              linhasNovas.push({ tipo: "notas", linha: montarLinhaMensagem(destino.empresa.id, conversationId, notaNormalizada, autorNotaId) });
+              externalIdsExistentes.add(notaNormalizada.idExterno);
             }
           }
         } else if (novaLocalmente) {
@@ -983,6 +1069,16 @@ async function main() {
       }
 
       if (supabaseAdmin && !args.dryRun && conversationId) {
+        if (linhasNovas.length > 0) {
+          const gravadas = await comRetentativaDeRede(
+            () => gravarLoteMensagens(supabaseAdmin, linhasNovas.map((item) => item.linha)),
+            `lote de mensagens ${sessao.id}`,
+          );
+          for (const item of linhasNovas) {
+            if (gravadas.has(item.linha.external_id)) contagens[item.tipo].novos += 1;
+            else contagens[item.tipo].jaVistos += 1;
+          }
+        }
         if (autoresParaPreencher.size > 0) {
           await comRetentativaDeRede(
             () => preencherAutoresExistentes(supabaseAdmin, conversationId, autoresParaPreencher),
@@ -1001,7 +1097,7 @@ async function main() {
       // --destino) — nunca marca "concluida" antes de escrever, senao uma
       // queda no meio do processo mascararia perda de dado (o checkpoint
       // diria "ja fiz" sem ter feito).
-      await salvarCheckpoint(checkpoint);
+      await salvarCheckpointEmFila();
 
       if (args.falharAposSessao === sessao.id) {
         // Flag de teste: simula uma queda logo depois de concluir esta
@@ -1012,10 +1108,34 @@ async function main() {
       }
     } catch (erro) {
       erros.push({ etapa: `sessao ${sessao.id}`, detalhe: erro.message });
-      await salvarCheckpoint(checkpoint);
+      await salvarCheckpointEmFila();
       throw erro;
     }
   }
+
+  // Várias sessões ao mesmo tempo só quando grava de verdade no banco; sem destino (fixtures,
+  // arquivo local) segue uma por vez, na ordem — os testes de retomada dependem disso.
+  const concorrencia = supabaseAdmin && !args.dryRun ? CONCORRENCIA_SESSOES : 1;
+  let proximaSessao = 0;
+  let houveFalha = false;
+  async function trabalhador() {
+    while (!houveFalha && proximaSessao < sessoes.length) {
+      const sessao = sessoes[proximaSessao];
+      proximaSessao += 1;
+      try {
+        await processarSessao(sessao);
+      } catch (erro) {
+        houveFalha = true;
+        throw erro;
+      }
+    }
+  }
+  // allSettled: se uma sessão falhar, as outras em andamento terminam direito (nada fica pela
+  // metade à toa) antes de o erro ser repassado e a importação parar.
+  const resultados = await Promise.allSettled(Array.from({ length: concorrencia }, () => trabalhador()));
+  await filaCheckpoint;
+  const primeiraFalha = resultados.find((r) => r.status === "rejected");
+  if (primeiraFalha) throw primeiraFalha.reason;
 
   await salvarCheckpoint(checkpoint);
 
