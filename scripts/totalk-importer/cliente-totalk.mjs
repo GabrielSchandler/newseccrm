@@ -29,6 +29,8 @@ const TAMANHO_PAGINA_PADRAO = 3;
 export const TAMANHO_PAGINA_REAL = 100;
 const MAX_TENTATIVAS = 5;
 const ATRASO_BASE_MS = 500;
+const MAX_TENTATIVAS_LIMITE_TAXA = 8;
+const ATRASO_BASE_LIMITE_TAXA_MS = 5_000;
 
 function dormir(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -77,20 +79,27 @@ async function lerFixture(pastaFixtures, caminhoRelativo) {
 async function chamarComRetentativa(fn, { rotulo }) {
   let ultimoErro;
 
-  for (let tentativa = 1; tentativa <= MAX_TENTATIVAS; tentativa += 1) {
+  for (let tentativa = 1; ; tentativa += 1) {
     try {
       return await fn();
     } catch (erro) {
       ultimoErro = erro;
-      const transitorio = erro.status === 429 || (erro.status >= 500 && erro.status < 600);
+      const limiteDeTaxa = erro.status === 429;
+      const transitorio = limiteDeTaxa || (erro.status >= 500 && erro.status < 600);
+      // 429 = o Totalk bloqueou por excesso de chamadas numa janela de 5 minutos. Esperar
+      // segundos não resolve (foi o que derrubou a importação real em 54%, 30/09/2026): espera
+      // 5s, 10s, 20s, 40s, 60s, 60s, 60s — ~4,5 min no total, cobre a janela inteira.
+      const maxTentativas = limiteDeTaxa ? MAX_TENTATIVAS_LIMITE_TAXA : MAX_TENTATIVAS;
 
-      if (!transitorio || tentativa === MAX_TENTATIVAS) {
+      if (!transitorio || tentativa >= maxTentativas) {
         throw erro;
       }
 
-      const atrasoMs = ATRASO_BASE_MS * 2 ** (tentativa - 1);
+      const atrasoMs = limiteDeTaxa
+        ? Math.min(60_000, ATRASO_BASE_LIMITE_TAXA_MS * 2 ** (tentativa - 1))
+        : ATRASO_BASE_MS * 2 ** (tentativa - 1);
       console.warn(
-        `[totalk] ${rotulo}: falha transitoria (${erro.status ?? erro.message}), tentativa ${tentativa}/${MAX_TENTATIVAS} — aguardando ${atrasoMs}ms antes de repetir.`,
+        `[totalk] ${rotulo}: falha transitoria (${erro.status ?? erro.message}), tentativa ${tentativa}/${maxTentativas} — aguardando ${atrasoMs}ms antes de repetir.`,
       );
       await dormir(atrasoMs);
     }

@@ -711,36 +711,6 @@ function montarLinhaMensagem(companyId, conversationId, mensagemNormalizada, aut
   };
 }
 
-async function gravarMensagemHistorica(supabaseAdmin, { companyId, conversationId, mensagemNormalizada, externalIdsExistentes, autorId = null }) {
-  if (externalIdsExistentes.has(mensagemNormalizada.idExterno)) {
-    return { foiCriado: false };
-  }
-
-  const insercao = {
-    company_id: companyId,
-    conversation_id: conversationId,
-    direction: mensagemNormalizada.direcao,
-    author_type: mensagemNormalizada.autoria,
-    // Só mensagem humana tem autor pessoa — IA/sistema/cliente ficam sem (a tela mostra "IA"/"Sistema").
-    author_user_profile_id: mensagemNormalizada.autoria === "humano" ? autorId : null,
-    is_internal_note: mensagemNormalizada.ehNotaInterna,
-    message_type: mapearTipoMensagem(mensagemNormalizada.tipo),
-    body: mensagemNormalizada.texto,
-    status: mapearStatusMensagem(mensagemNormalizada),
-    external_id: mensagemNormalizada.idExterno,
-    created_at: mensagemNormalizada.timestamp,
-    updated_at: mensagemNormalizada.timestamp,
-  };
-
-  const { error } = await supabaseAdmin.from("messages").insert(insercao);
-  if (error) {
-    if (error.code === "23505") return { foiCriado: false };
-    throw new Error(`gravar mensagem historica ${mensagemNormalizada.idExterno}: ${error.message}`);
-  }
-
-  return { foiCriado: true };
-}
-
 /** Tipos do Totalk (TEXT/STICKER/IMAGE/AUDIO/VIDEO/DOCUMENT/CONTACT/LOCATION/LIST/BUTTONS/TRANSITION/TRACK/NOTE) -> constraint messages_type_check (0004). */
 function mapearTipoMensagem(tipoTotalk) {
   switch (tipoTotalk) {
@@ -831,7 +801,10 @@ async function main() {
     pastaFixtures: PASTA_FIXTURES,
     // Fixtures continuam com pagina pequena (exercita a paginacao); a API real usa 100 por pagina
     // e ~171 req/min, abaixo do limite continuo do Totalk (1000 req/5min).
-    ...(modoFixture ? {} : { tamanhoPagina: TAMANHO_PAGINA_REAL, intervaloMinimoMs: 350 }),
+    // Intervalo entre chamadas à API do Totalk (limite: 1000 req/5min). 450ms = ~667/5min, deixa
+    // folga pro copiar-anexos.mjs (1200ms = 250/5min) rodar junto: 917/5min. Com 350ms os dois
+    // juntos davam ~1107/5min e o Totalk bloqueou (429) — ajustável por TOTALK_INTERVALO_MS.
+    ...(modoFixture ? {} : { tamanhoPagina: TAMANHO_PAGINA_REAL, intervaloMinimoMs: Number(process.env.TOTALK_INTERVALO_MS ?? 450) }),
   });
 
   const mapeamentoAgentes = JSON.parse(await readFile(path.join(DIRETORIO_SCRIPT, "mapeamento-agentes.json"), "utf8"));
