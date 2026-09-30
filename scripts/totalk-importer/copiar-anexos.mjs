@@ -171,10 +171,19 @@ async function main() {
         }
         const caminho = `${conversa.company_id}/${conversationId}/${msg.id}/${nomeSeguro(arquivo.name ? `${arquivo.name}` : null, indice)}`;
         if (!args.dryRun) {
-          const { error: erroUpload } = await comRetentativa(
-            () => db.storage.from(BUCKET).upload(caminho, conteudo, { contentType: arquivo.mimeType ?? "application/octet-stream", upsert: true }),
-            `upload ${msg.externalId}`,
-          );
+          // O Storage devolve erro passageiro ("Bad Gateway", erro sem mensagem) como objeto, não
+          // como exceção — transforma em exceção pra comRetentativa repetir (5 arquivos ficaram de
+          // fora na 1ª passada em produção, 30/09/2026, por isso).
+          const { error: erroUpload } = await comRetentativa(async () => {
+            const resultado = await db.storage
+              .from(BUCKET)
+              .upload(caminho, conteudo, { contentType: arquivo.mimeType ?? "application/octet-stream", upsert: true });
+            const mensagem = resultado.error?.message ?? "";
+            if (resultado.error && (!mensagem || mensagem === "<none>" || /gateway|timeout|temporar|unavailable|5\d\d/i.test(mensagem))) {
+              throw new TypeError(`storage passageiro: ${mensagem || "sem mensagem"}`);
+            }
+            return resultado;
+          }, `upload ${msg.externalId}`);
           if (erroUpload) {
             if (/exceeded|too large|size/i.test(erroUpload.message)) {
               relatorio.grandesDemais.push({ mensagem: msg.externalId, bytes: conteudo.length });
