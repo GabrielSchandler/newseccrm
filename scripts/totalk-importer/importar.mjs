@@ -418,14 +418,24 @@ async function preverContato(supabaseAdmin, companyId, contatoNormalizado) {
  * fica marcada como "responsavelInvalido" pra quem chamou reportar.
  */
 async function resolverOuCriarConversa(supabaseAdmin, { companyId, channelId, contactId, sessaoNormalizada }) {
+  // Procura pela sessão na EMPRESA, não só no canal: o id da sessão do Totalk é único no
+  // Totalk inteiro. Até 30/09/2026 todas as conversas iam pra um canal genérico só; agora cada
+  // uma vai pro canal do número de WhatsApp em que o cliente foi atendido — as que já tinham
+  // sido importadas no canal genérico são achadas aqui e MOVIDAS pro canal certo, sem duplicar.
   const { data: existente, error: erroSelect } = await supabaseAdmin
     .from("conversations")
-    .select("id")
-    .eq("channel_id", channelId)
+    .select("id, channel_id")
+    .eq("company_id", companyId)
     .eq("external_id", sessaoNormalizada.idExterno)
     .maybeSingle();
   if (erroSelect) throw new Error(`buscar conversa externa ${sessaoNormalizada.idExterno}: ${erroSelect.message}`);
-  if (existente) return { conversationId: existente.id, foiCriado: false, responsavelInvalido: false };
+  if (existente) {
+    if (existente.channel_id !== channelId) {
+      const { error: erroMover } = await supabaseAdmin.from("conversations").update({ channel_id: channelId }).eq("id", existente.id);
+      if (erroMover) throw new Error(`mover conversa ${existente.id} pro canal do numero certo: ${erroMover.message}`);
+    }
+    return { conversationId: existente.id, foiCriado: false, responsavelInvalido: false };
+  }
 
   const insercao = {
     company_id: companyId,
@@ -444,7 +454,7 @@ async function resolverOuCriarConversa(supabaseAdmin, { companyId, channelId, co
       const { data: recuperada } = await supabaseAdmin
         .from("conversations")
         .select("id")
-        .eq("channel_id", channelId)
+        .eq("company_id", companyId)
         .eq("external_id", sessaoNormalizada.idExterno)
         .single();
       return { conversationId: recuperada.id, foiCriado: false, responsavelInvalido: false };
@@ -546,14 +556,80 @@ async function preencherAutoresExistentes(supabaseAdmin, conversationId, externa
 }
 
 /** Verificacao read-only pro modo --dry-run — nunca insere. */
-async function preverConversa(supabaseAdmin, channelId, sessaoNormalizada) {
+async function preverConversa(supabaseAdmin, companyId, sessaoNormalizada) {
   const { data } = await supabaseAdmin
     .from("conversations")
     .select("id")
-    .eq("channel_id", channelId)
+    .eq("company_id", companyId)
     .eq("external_id", sessaoNormalizada.idExterno)
     .maybeSingle();
   return { existe: Boolean(data), conversationId: data?.id ?? null };
+}
+
+function formatarNumeroCanal(bruto) {
+  const d = String(bruto ?? "").replace(/\D/g, "").replace(/^55(?=\d{10,11}$)/, "");
+  if (d.length === 11) return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
+  if (d.length === 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
+  return null;
+}
+
+/**
+ * Um canal do NewSec por número de WhatsApp do Totalk — pedido do Gabriel (30/09/2026): o
+ * cliente tem que continuar sendo atendido pelo MESMO número quando o WhatsApp for conectado
+ * no NewSec, então cada conversa precisa ficar ligada ao número em que aconteceu. O canal é
+ * localizado por provider="totalk" + provider_channel_external_id = id do canal no Totalk, e
+ * criado (inativo — ninguém envia mensagem real por ele ainda) se ainda não existir. Quando o
+ * número for conectado de verdade, é ESTE registro que ganha o provedor real, mantendo as
+ * conversas nele. Número que sumiu do Totalk (banido) não tem mais o telefone na API — fica
+ * com nome genérico até alguém informar o número.
+ */
+async function resolverCanaisPorNumero(supabaseAdmin, companyId, sessoes, departamentos, somenteLeitura) {
+  const infoPorCanal = new Map();
+  for (const departamento of departamentos) {
+    for (const canal of departamento.channels ?? []) {
+      const atual = infoPorCanal.get(canal.id) ?? { numero: canal.number, departamentos: new Set() };
+      atual.departamentos.add(String(departamento.name ?? "").toUpperCase());
+      infoPorCanal.set(canal.id, atual);
+    }
+  }
+
+  const mapa = new Map();
+  const idsTotalk = [...new Set(sessoes.map((s) => s.channelId).filter(Boolean))];
+  for (const idTotalk of idsTotalk) {
+    const { data: existente, error } = await supabaseAdmin
+      .from("channels")
+      .select("id, name")
+      .eq("company_id", companyId)
+      .eq("provider", "totalk")
+      .eq("provider_channel_external_id", idTotalk)
+      .maybeSingle();
+    if (error) throw new Error(`buscar canal do numero ${idTotalk}: ${error.message}`);
+    if (existente) {
+      mapa.set(idTotalk, existente.id);
+      continue;
+    }
+    if (somenteLeitura) continue;
+
+    const info = infoPorCanal.get(idTotalk);
+    const numero = formatarNumeroCanal(info?.numero);
+    const soJuridico = info && info.departamentos.size > 0 && [...info.departamentos].every((d) => d.includes("JURID"));
+    const { data: novo, error: erroNovo } = await supabaseAdmin
+      .from("channels")
+      .insert({
+        company_id: companyId,
+        name: numero ? `WhatsApp ${numero}` : "WhatsApp (número desativado no Totalk)",
+        business_area: soJuridico ? "legal" : "commercial",
+        provider: "totalk",
+        provider_channel_external_id: idTotalk,
+        status: "inactive",
+      })
+      .select("id, name")
+      .single();
+    if (erroNovo) throw new Error(`criar canal do numero ${idTotalk}: ${erroNovo.message}`);
+    console.log(`[totalk] canal criado: ${novo.name} (Totalk ${idTotalk})`);
+    mapa.set(idTotalk, novo.id);
+  }
+  return mapa;
 }
 
 /**
@@ -813,8 +889,11 @@ async function main() {
 
   // Departamentos e agentes: so pra conferencia/relatorio (mapeamento usa
   // mapeamento-agentes.json, nao estas listas), mas contam pro dedupe geral.
+  // Lidos sempre (1 chamada): trazem os números de WhatsApp de cada canal, usados pra criar um
+  // canal do NewSec por número (resolverCanaisPorNumero).
+  const departamentosTotalk = await cliente.listarDepartamentos();
   if (!checkpoint.etapasConcluidas.has("departamentos")) {
-    const departamentos = await cliente.listarDepartamentos();
+    const departamentos = departamentosTotalk;
     contagens.departamentos.esperado = departamentos.length;
     for (const departamento of departamentos) {
       if (marcarVisto(checkpoint, "departamento", departamento.id)) contagens.departamentos.novos += 1;
@@ -904,6 +983,12 @@ async function main() {
   // procurou um cliente de agosto e ele ainda não tinha sido importado).
   if (!args.limiteSessoes && supabaseAdmin) sessoes.reverse();
 
+  // Canal do NewSec pra cada número de WhatsApp do Totalk (ver resolverCanaisPorNumero). Sessão
+  // cujo canal não se resolva cai no --canal-id informado, como antes.
+  const canalPorNumero = supabaseAdmin
+    ? await resolverCanaisPorNumero(supabaseAdmin, destino.empresa.id, sessoes, departamentosTotalk, args.dryRun)
+    : new Map();
+
   contagens.sessoes.esperado = sessoes.length;
   const totalSessoes = sessoes.length;
   let sessoesProcessadas = 0;
@@ -961,14 +1046,14 @@ async function main() {
         }
 
         if (args.dryRun) {
-          const { conversationId: idExistente } = await preverConversa(supabaseAdmin, destino.canal.id, sessaoNormalizada);
+          const { conversationId: idExistente } = await preverConversa(supabaseAdmin, destino.empresa.id, sessaoNormalizada);
           conversationId = idExistente;
         } else {
           const { conversationId: idResolvido, responsavelInvalido } = await comRetentativaDeRede(
             () =>
               resolverOuCriarConversa(supabaseAdmin, {
                 companyId: destino.empresa.id,
-                channelId: destino.canal.id,
+                channelId: canalPorNumero.get(sessao.channelId) ?? destino.canal.id,
                 contactId,
                 sessaoNormalizada,
               }),
