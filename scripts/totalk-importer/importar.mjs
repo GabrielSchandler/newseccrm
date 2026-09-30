@@ -242,6 +242,10 @@ function normalizarSessao(sessao, mapeamentoAgentes, naoMapeados) {
     iniciadoEm: sessao.startAt,
     encerradoEm: sessao.endAt,
     primeiraRespostaEm: sessao.firstResponseAt,
+    // Hora da última MENSAGEM da sessão. Não usar updatedAt pra ordenar: o Totalk atualiza
+    // updatedAt em mudanças sem mensagem (ex: encerramento em lote) — em 30/09/2026, 130 das
+    // 300 primeiras da lista eram conversas de julho "atualizadas" naquela madrugada.
+    ultimaInteracaoEm: sessao.lastInteractionDate ?? null,
     naoLidas: sessao.unreadCount ?? 0,
     origemImportacao: "totalk",
   };
@@ -446,7 +450,7 @@ async function resolverOuCriarConversa(supabaseAdmin, { companyId, channelId, co
     external_id: sessaoNormalizada.idExterno,
     assigned_user_profile_id: sessaoNormalizada.responsavelUserId,
     status: mapearStatusConversa(sessaoNormalizada.status),
-    last_activity_at: sessaoNormalizada.atualizadoEm ?? sessaoNormalizada.criadoEm,
+    last_activity_at: sessaoNormalizada.ultimaInteracaoEm ?? sessaoNormalizada.criadoEm,
     first_response_at: sessaoNormalizada.primeiraRespostaEm,
   };
 
@@ -497,7 +501,7 @@ async function inserirConversaComFallback(supabaseAdmin, insercao) {
 async function atualizarBookkeepingConversa(supabaseAdmin, { conversationId, sessaoNormalizada }) {
   const { data: ultima, error: erroUltima } = await supabaseAdmin
     .from("messages")
-    .select("body, message_type")
+    .select("body, message_type, created_at")
     .eq("conversation_id", conversationId)
     .eq("is_internal_note", false)
     .order("created_at", { ascending: false })
@@ -513,7 +517,7 @@ async function atualizarBookkeepingConversa(supabaseAdmin, { conversationId, ses
   // CRIAÇÃO, então sem isto uma conversa já existente nunca ganharia o responsável certo.
   const atualizacao = {
     status: mapearStatusConversa(sessaoNormalizada.status),
-    last_activity_at: sessaoNormalizada.atualizadoEm ?? sessaoNormalizada.criadoEm,
+    last_activity_at: sessaoNormalizada.ultimaInteracaoEm ?? ultima?.created_at ?? sessaoNormalizada.criadoEm,
     last_message_preview: preview,
     unread_count: sessaoNormalizada.naoLidas,
     assigned_user_profile_id: sessaoNormalizada.responsavelUserId,
@@ -976,7 +980,7 @@ async function main() {
         () =>
           supabaseAdmin
             .from("conversations")
-            .select("external_id, channel_id, last_activity_at")
+            .select("id, external_id, channel_id, last_activity_at, status")
             .eq("company_id", destino.empresa.id)
             .not("external_id", "is", null)
             .order("id")
@@ -989,6 +993,7 @@ async function main() {
     }
   }
   let sessoesSemMudanca = 0;
+  let atividadesCorrigidas = 0;
 
   contagens.sessoes.esperado = sessoes.length;
   const totalSessoes = sessoes.length;
@@ -1013,15 +1018,29 @@ async function main() {
     }
 
     const jaImportada = estadoConversas.get(sessao.id);
-    if (jaImportada) {
+    if (jaImportada && sessao.lastInteractionDate) {
       const canalEsperado = canalPorNumero.get(sessao.channelId) ?? destino.canal.id;
-      const atualizadaNoTotalk = sessao.updatedAt ?? sessao.createdAt;
-      if (
-        jaImportada.channel_id === canalEsperado &&
-        atualizadaNoTotalk &&
-        new Date(jaImportada.last_activity_at).getTime() >= new Date(atualizadaNoTotalk).getTime()
-      ) {
+      const mesmoCanal = jaImportada.channel_id === canalEsperado;
+      const mesmoStatus = jaImportada.status === mapearStatusConversa(sessao.status);
+      const ultimaNoTotalk = new Date(sessao.lastInteractionDate).getTime();
+      const ultimaNoBanco = new Date(jaImportada.last_activity_at).getTime();
+
+      if (mesmoCanal && mesmoStatus && Math.abs(ultimaNoBanco - ultimaNoTotalk) < 2000) {
+        // Nada novo: mesma última mensagem, mesmo canal, mesmo status.
         sessoesSemMudanca += 1;
+        contagens.sessoes.jaVistos += 1;
+        return;
+      }
+      if (mesmoCanal && mesmoStatus && ultimaNoBanco > ultimaNoTotalk) {
+        // Importada antes da correção de 30/09/2026, com last_activity_at = updatedAt do Totalk
+        // (sempre >= a última mensagem). Todas as mensagens até a última interação já estavam
+        // aqui (foram importadas depois dela), então só corrige a data — sem reconsultar o Totalk.
+        const { error } = await comRetentativaDeRede(
+          () => supabaseAdmin.from("conversations").update({ last_activity_at: sessao.lastInteractionDate }).eq("id", jaImportada.id),
+          `corrigir atividade ${sessao.id}`,
+        );
+        if (error) throw new Error(`corrigir ultima atividade da conversa ${jaImportada.id}: ${error.message}`);
+        atividadesCorrigidas += 1;
         contagens.sessoes.jaVistos += 1;
         return;
       }
@@ -1245,6 +1264,7 @@ async function main() {
   const primeiraFalha = resultados.find((r) => r.status === "rejected");
   if (primeiraFalha) throw primeiraFalha.reason;
   if (sessoesSemMudanca > 0) console.log(`[totalk] ${sessoesSemMudanca} sessoes puladas: ja importadas e sem atividade nova no Totalk.`);
+  if (atividadesCorrigidas > 0) console.log(`[totalk] ${atividadesCorrigidas} conversas com a data da ultima mensagem corrigida (ordem da lista).`);
 
   await salvarCheckpoint(checkpoint);
 
