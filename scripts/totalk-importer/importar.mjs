@@ -897,6 +897,13 @@ async function main() {
   }
   checkpoint.etapasConcluidas.add("contatos");
 
+  // Importação completa: a LISTAGEM é em ordem crescente (estável — sessão nova entra no fim e
+  // não desloca as páginas já lidas), mas o PROCESSAMENTO vai da mais recente pra mais antiga.
+  // A lista toda já está em memória neste ponto, então inverter é seguro. Assim, se a importação
+  // parar no meio, o que já entrou é o que a equipe mais consulta (pedido do Gabriel, 30/09/2026:
+  // procurou um cliente de agosto e ele ainda não tinha sido importado).
+  if (!args.limiteSessoes && supabaseAdmin) sessoes.reverse();
+
   contagens.sessoes.esperado = sessoes.length;
   const totalSessoes = sessoes.length;
   let sessoesProcessadas = 0;
