@@ -109,6 +109,7 @@ function parseArgs(argv) {
     canalId: null,
     limiteSessoes: null,
     confirmoProducao: false,
+    reprocessarTudo: false,
   };
 
   for (const valor of argv) {
@@ -120,6 +121,7 @@ function parseArgs(argv) {
     else if (valor === "--reiniciar") parsed.reiniciar = true;
     else if (valor === "--dry-run") parsed.dryRun = true;
     else if (valor === "--confirmo-producao") parsed.confirmoProducao = true;
+    else if (valor === "--reprocessar-tudo") parsed.reprocessarTudo = true;
     else if (valor.startsWith("--falhar-apos-sessao=")) parsed.falharAposSessao = valor.split("=")[1];
     else if (valor.startsWith("--destino=")) parsed.destino = valor.split("=")[1];
     else if (valor.startsWith("--empresa-id=")) parsed.empresaId = valor.split("=")[1];
@@ -962,6 +964,32 @@ async function main() {
     ? await resolverCanaisPorNumero(supabaseAdmin, destino.empresa.id, sessoes, departamentosTotalk, args.dryRun)
     : new Map();
 
+  // Estado das conversas já importadas (id da sessão -> canal e última atividade), numa passada.
+  // Sessão que já está no canal certo e não teve atividade no Totalk depois da última importação
+  // é PULADA — sem isso, retomar depois de uma queda (ou reimportar pra pegar só o que é novo
+  // durante a validação) reconsultava no Totalk cada uma das milhares de sessões já feitas.
+  // --reprocessar-tudo desliga o atalho (ex: depois de corrigir alguma regra de importação).
+  const estadoConversas = new Map();
+  if (supabaseAdmin && !args.dryRun && !args.reprocessarTudo) {
+    for (let inicio = 0; ; inicio += 1000) {
+      const { data, error } = await comRetentativaDeRede(
+        () =>
+          supabaseAdmin
+            .from("conversations")
+            .select("external_id, channel_id, last_activity_at")
+            .eq("company_id", destino.empresa.id)
+            .not("external_id", "is", null)
+            .order("id")
+            .range(inicio, inicio + 999),
+        "carregar conversas ja importadas",
+      );
+      if (error) throw new Error(`carregar conversas ja importadas: ${error.message}`);
+      for (const c of data ?? []) estadoConversas.set(c.external_id, c);
+      if (!data || data.length < 1000) break;
+    }
+  }
+  let sessoesSemMudanca = 0;
+
   contagens.sessoes.esperado = sessoes.length;
   const totalSessoes = sessoes.length;
   let sessoesProcessadas = 0;
@@ -982,6 +1010,21 @@ async function main() {
     if (sessoesProcessadas % 25 === 0 || sessoesProcessadas === totalSessoes) {
       const percentual = Math.round((sessoesProcessadas / totalSessoes) * 100);
       console.log(`[totalk] progresso: ${sessoesProcessadas}/${totalSessoes} sessoes (${percentual}%)`);
+    }
+
+    const jaImportada = estadoConversas.get(sessao.id);
+    if (jaImportada) {
+      const canalEsperado = canalPorNumero.get(sessao.channelId) ?? destino.canal.id;
+      const atualizadaNoTotalk = sessao.updatedAt ?? sessao.createdAt;
+      if (
+        jaImportada.channel_id === canalEsperado &&
+        atualizadaNoTotalk &&
+        new Date(jaImportada.last_activity_at).getTime() >= new Date(atualizadaNoTotalk).getTime()
+      ) {
+        sessoesSemMudanca += 1;
+        contagens.sessoes.jaVistos += 1;
+        return;
+      }
     }
 
     if (marcarVisto(checkpoint, "sessao", sessao.id)) {
@@ -1201,6 +1244,7 @@ async function main() {
   await filaCheckpoint;
   const primeiraFalha = resultados.find((r) => r.status === "rejected");
   if (primeiraFalha) throw primeiraFalha.reason;
+  if (sessoesSemMudanca > 0) console.log(`[totalk] ${sessoesSemMudanca} sessoes puladas: ja importadas e sem atividade nova no Totalk.`);
 
   await salvarCheckpoint(checkpoint);
 
